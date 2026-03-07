@@ -37,6 +37,8 @@ Clancy is for developers who:
 - Your tickets are large, vague, or span multiple sessions — Clancy works best with small, well-scoped tickets
 - You don't use a Kanban board — you can still use `/clancy:map-codebase` for codebase scanning, but the run loop won't apply
 
+Evaluating other tools? See [COMPARISON.md](./COMPARISON.md) for a side-by-side with GSD and PAUL.
+
 ---
 
 ## Expectations
