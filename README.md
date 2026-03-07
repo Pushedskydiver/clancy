@@ -6,9 +6,7 @@ Autonomous, board-driven development for Claude Code.
 
 Named after Chief Clancy Wiggum (Ralph's dad, The Simpsons) — because Clancy equips and deploys Ralph before sending him to work. Built on the [Ralph technique](https://ghuntley.com/ralph/) coined by Geoffrey Huntley. Clancy extends that foundation with Kanban board integration, structured codebase docs, and a git workflow built for team development.
 
-```bash
-npx chief-clancy
-```
+> **Work in progress** — Clancy is not yet published to npm. This repo is public for feedback and early eyes only. Watch for a release.
 
 ---
 
