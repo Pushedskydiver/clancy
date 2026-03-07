@@ -39,7 +39,7 @@ Clancy is named after **Chief Clancy Wiggum** from The Simpsons — Ralph Wiggum
 
 ## Contributors
 
-See [github.com/your-username/clancy/graphs/contributors](https://github.com/your-username/clancy/graphs/contributors).
+See [github.com/Pushedskydiver/clancy/graphs/contributors](https://github.com/Pushedskydiver/clancy/graphs/contributors).
 
 ---
 

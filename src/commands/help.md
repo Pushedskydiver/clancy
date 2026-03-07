@@ -38,8 +38,8 @@ Clancy picks one ticket per loop, fresh context every iteration. No context rot.
 
 ### Links
 
-- GitHub: github.com/your-username/clancy
-- Issues: github.com/your-username/clancy/issues
+- GitHub: github.com/Pushedskydiver/clancy
+- Issues: github.com/Pushedskydiver/clancy/issues
 - Lineage: ghuntley.com/ralph/
 
 ---

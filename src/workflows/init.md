@@ -64,7 +64,7 @@ If the user selects [4], show the dead-end message and stop:
 Clancy currently supports Jira, GitHub Issues, and Linear out of the box.
 
 Your board isn't supported yet — but you can add it:
-  · Open an issue:   github.com/your-username/clancy/issues
+  · Open an issue:   github.com/Pushedskydiver/clancy/issues
   · Contribute one:  see CONTRIBUTING.md — adding a board is just a script
                      template + a boards.json entry
 
