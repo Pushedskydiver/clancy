@@ -186,7 +186,15 @@ If a key is entered:
    Figma MCP enabled.
    ```
 
-If `GET /v1/me` fails (non-200): tell the user the key couldn't be verified, ask to check it, offer skip or retry. Never silently continue with an unverified key.
+If `GET /v1/me` fails (non-200), show:
+```
+✗ Couldn't verify Figma API key (HTTP {status}).
+Double-check it at figma.com/settings → Personal access tokens.
+
+[1] Try a different key
+[2] Skip Figma for now
+```
+Never silently continue with an unverified key. If the user picks [1], re-prompt for the key and repeat the verification. If [2], skip to Enhancement 2.
 
 Write `FIGMA_API_KEY` to `.clancy/.env`. Add usage note to CLAUDE.md Clancy section.
 
