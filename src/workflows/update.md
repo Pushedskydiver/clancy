@@ -29,12 +29,14 @@ npx chief-clancy@latest
 
 This re-runs the installer, which copies the latest command files into the correct `.claude/commands/clancy/` directory (global or local, matching the existing install location).
 
-The update only touches `.claude/commands/clancy/`. It never modifies:
-- `.clancy/` project folder
+The update only touches `.claude/commands/clancy/` (slash commands and workflows). It never modifies:
+- `.clancy/clancy-once.sh` or `.clancy/clancy-afk.sh` — shell scripts are not updated
 - `.clancy/docs/` codebase documentation
 - `.clancy/progress.txt` progress log
 - `.clancy/.env` credentials
 - `CLAUDE.md`
+
+**To update the shell scripts** (`.clancy/clancy-once.sh`, `.clancy/clancy-afk.sh`), re-run `/clancy:init` — it will detect the existing setup and re-scaffold the scripts without asking for credentials again.
 
 ---
 
