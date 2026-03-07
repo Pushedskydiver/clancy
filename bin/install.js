@@ -116,6 +116,7 @@ async function main() {
       ['/clancy:status',       'Show next tickets without running'],
       ['/clancy:review',       'Score next ticket and get recommendations'],
       ['/clancy:logs',         'Display progress log'],
+      ['/clancy:settings',     'View and change configuration'],
       ['/clancy:update',       'Update Clancy to latest version'],
       ['/clancy:help',         'Show all commands'],
     ];

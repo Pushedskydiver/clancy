@@ -163,7 +163,9 @@ Before starting:
 4. Commit your work following the conventions in GIT.md
 5. When done, confirm you are finished."
 
-echo "$PROMPT" | claude --dangerously-skip-permissions
+CLAUDE_ARGS=(--dangerously-skip-permissions)
+[ -n "${CLANCY_MODEL:-}" ] && CLAUDE_ARGS+=(--model "$CLANCY_MODEL")
+echo "$PROMPT" | claude "${CLAUDE_ARGS[@]}"
 
 # Squash merge back into target branch
 git checkout "$TARGET_BRANCH"
