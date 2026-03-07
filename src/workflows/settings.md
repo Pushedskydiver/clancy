@@ -45,6 +45,7 @@ General
 Jira
 [4] Status filter     {CLANCY_JQL_STATUS:-To Do}
 [5] Sprint filter     {on if CLANCY_JQL_SPRINT set, else off}
+[6] Label filter      {CLANCY_LABEL if set, else off — only pick up tickets with this label}
 
 Optional enhancements
 [{N}] Figma MCP       {enabled if FIGMA_API_KEY set, else not set}
@@ -139,6 +140,23 @@ Filter tickets to the active sprint? (Requires Jira Software)
 
 If on: write `CLANCY_JQL_SPRINT=true` to `.clancy/.env`.
 If off: remove `CLANCY_JQL_SPRINT` from `.clancy/.env` (or comment it out).
+
+---
+
+### [6] Jira label filter (Jira only)
+
+```
+Jira label filter — current: {label name or "off"}
+Only pick up tickets with this label. Useful for mixed backlogs
+where some tickets are not suitable for autonomous implementation.
+
+[1] Set label name
+[2] Off (pick up all assigned tickets regardless of label)
+[3] Cancel
+```
+
+If [1]: prompt `Label name (must already exist in Jira):` then write `CLANCY_LABEL=<value>` to `.clancy/.env`.
+If [2]: remove `CLANCY_LABEL` from `.clancy/.env`.
 
 ---
 

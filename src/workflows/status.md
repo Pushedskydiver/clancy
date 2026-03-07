@@ -23,11 +23,13 @@ Detect board from `.clancy/.env`:
 
 **Jira:**
 
-Build the JQL string first. If `CLANCY_JQL_SPRINT` is set in `.clancy/.env`, include the sprint clause:
-- Sprint clause present: `project=$JIRA_PROJECT_KEY AND sprint in openSprints() AND assignee=currentUser() AND status="$CLANCY_JQL_STATUS" ORDER BY priority ASC`
-- Sprint clause absent: `project=$JIRA_PROJECT_KEY AND assignee=currentUser() AND status="$CLANCY_JQL_STATUS" ORDER BY priority ASC`
+Build the JQL string first using the same clauses as `clancy-once.sh`:
+- Sprint clause: include `AND sprint in openSprints()` if `CLANCY_JQL_SPRINT` is set
+- Label clause: include `AND labels = "$CLANCY_LABEL"` if `CLANCY_LABEL` is set
+- `CLANCY_JQL_STATUS` defaults to `To Do` if not set
 
-Where `CLANCY_JQL_STATUS` defaults to `To Do` if not set.
+Full JQL (with both optional clauses shown):
+`project=$JIRA_PROJECT_KEY [AND sprint in openSprints()] [AND labels = "$CLANCY_LABEL"] AND assignee=currentUser() AND status="$CLANCY_JQL_STATUS" ORDER BY priority ASC`
 
 ```bash
 RESPONSE=$(curl -s \

@@ -104,6 +104,14 @@ else
   SPRINT_CLAUSE=""
 fi
 
+# Optional label filter — set CLANCY_LABEL in .env to only pick up tickets with that label.
+# Useful for mixed backlogs where not every ticket is suitable for autonomous implementation.
+if [ -n "${CLANCY_LABEL:-}" ]; then
+  LABEL_CLAUSE="AND labels = \"$CLANCY_LABEL\""
+else
+  LABEL_CLAUSE=""
+fi
+
 RESPONSE=$(curl -s \
   -u "$JIRA_USER:$JIRA_API_TOKEN" \
   -X POST \
@@ -111,7 +119,7 @@ RESPONSE=$(curl -s \
   -H "Accept: application/json" \
   "$JIRA_BASE_URL/rest/api/3/search/jql" \
   -d "{
-    \"jql\": \"project=$JIRA_PROJECT_KEY $SPRINT_CLAUSE AND assignee=currentUser() AND status=\\\"${CLANCY_JQL_STATUS:-To Do}\\\" ORDER BY priority ASC\",
+    \"jql\": \"project=$JIRA_PROJECT_KEY $SPRINT_CLAUSE $LABEL_CLAUSE AND assignee=currentUser() AND status=\\\"${CLANCY_JQL_STATUS:-To Do}\\\" ORDER BY priority ASC\",
     \"maxResults\": 1,
     \"fields\": [\"summary\", \"description\", \"issuelinks\", \"parent\", \"customfield_10014\"]
   }")
