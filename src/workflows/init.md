@@ -73,25 +73,24 @@ Do not scaffold anything after this message. Stop completely.
 
 ### Q2: Board-specific config
 
-**Jira:**
-```
-Jira base URL (e.g. https://your-org.atlassian.net):
-Jira project key (e.g. PROJ):
-Jira email (your Atlassian account email):
-Jira API token (from id.atlassian.com/manage-profile/security/api-tokens):
-```
+Ask each question individually and wait for an answer before moving to the next.
 
-**GitHub Issues:**
-```
-GitHub repo (owner/name, e.g. acme/my-app):
-GitHub personal access token (needs repo scope):
-```
+**Jira** — ask in this order:
 
-**Linear:**
-```
-Linear API key (from linear.app/settings/api):
-Linear team ID (from linear.app/settings/teams — click your team, copy the ID from the URL):
-```
+1. `Jira base URL (e.g. https://your-org.atlassian.net):`
+2. `Jira project key (e.g. PROJ):`
+3. `Jira email (your Atlassian account email):`
+4. `Jira API token (from id.atlassian.com/manage-profile/security/api-tokens):`
+
+**GitHub Issues** — ask in this order:
+
+1. `GitHub repo (owner/name, e.g. acme/my-app):`
+2. `GitHub personal access token (needs repo scope):`
+
+**Linear** — ask in this order:
+
+1. `Linear API key (from linear.app/settings/api):`
+2. `Linear team ID (from linear.app/settings/teams — click your team, copy the ID from the URL):`
 
 ---
 
