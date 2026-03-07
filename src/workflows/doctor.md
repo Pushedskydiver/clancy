@@ -78,9 +78,10 @@ Source `.clancy/.env` and detect which board is configured:
 ## Step 5 — Check optional integrations
 
 **Figma** — if `FIGMA_API_KEY` is set:
-- Call Figma `whoami` endpoint
-- Print authenticated user email and plan
-- Warn if on Starter plan (6 calls/month)
+- Call `GET https://api.figma.com/v1/me` with `X-Figma-Token: $FIGMA_API_KEY`
+- On success: print `✓ Figma connected — {email}`
+- On 403: print `✗ Figma authentication failed. Check FIGMA_API_KEY in .clancy/.env.`
+- Note: Figma's API does not expose plan information — check your plan at figma.com/settings
 
 **Playwright** — if `PLAYWRIGHT_ENABLED=true`:
 - Check `.clancy/docs/PLAYWRIGHT.md` exists

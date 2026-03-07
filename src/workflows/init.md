@@ -173,41 +173,20 @@ If no: skip to Enhancement 2.
 If yes: `Figma API key (from figma.com/settings → Personal access tokens):`
 
 If a key is entered:
-1. Verify the key by calling the Figma `whoami` API immediately
-2. Detect plan from the response and show appropriate message:
-
-   **Starter/View/Collab (6 calls/month):**
+1. Verify the key by calling `GET https://api.figma.com/v1/me` with `X-Figma-Token: {key}`
+2. On success, show:
    ```
-   Figma connected: {email}
+   ✓ Figma connected: {email}
 
-   Your Figma plan allows only 6 MCP tool calls per month.
-   Clancy uses 3 calls per ticket (metadata, design context, screenshot).
-   That's approximately 2 tickets with Figma MCP context — not enough for
-   meaningful AFK use.
+   Note: Figma's API does not expose plan information.
+   Clancy uses 3 MCP calls per ticket (metadata, design context, screenshot).
+   Check your plan at figma.com/settings to confirm you have enough MCP calls for your usage.
+   Pro plans: 200 calls/day (~66 tickets). Starter: 6 calls/month (not suitable for AFK use).
 
-   Options:
-   [1] Skip Figma MCP (recommended)
-   [2] What plan do I need?
-   [3] Enable anyway (yolo mode)
-   ```
-
-   Option 2 shows upgrade info and loops back. Option 3 sets `FIGMA_YOLO=true`.
-
-   **Pro (200 calls/day):**
-   ```
-   Figma connected: {email}
-   Plan: Pro — 200 MCP tool calls/day (~66 tickets with Figma context)
    Figma MCP enabled.
    ```
 
-   **Enterprise (600 calls/day):**
-   ```
-   Figma connected: {email}
-   Plan: Enterprise — 600 MCP tool calls/day (~200 tickets with Figma context)
-   Figma MCP enabled.
-   ```
-
-If `whoami` fails: tell the user the key couldn't be verified, ask to check it, offer skip or retry. Never silently continue with an unverified key.
+If `GET /v1/me` fails (non-200): tell the user the key couldn't be verified, ask to check it, offer skip or retry. Never silently continue with an unverified key.
 
 Write `FIGMA_API_KEY` to `.clancy/.env`. Add usage note to CLAUDE.md Clancy section.
 
