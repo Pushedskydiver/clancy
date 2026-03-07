@@ -108,7 +108,7 @@ echo "Picking up: [#${ISSUE_NUMBER}] $TITLE"
 echo "Milestone: $MILESTONE | Target branch: $TARGET_BRANCH"
 
 git checkout "$TARGET_BRANCH"
-git checkout -b "$TICKET_BRANCH"
+git checkout -B "$TICKET_BRANCH"
 
 PROMPT="You are implementing GitHub Issue #${ISSUE_NUMBER}.
 
@@ -132,7 +132,11 @@ echo "$PROMPT" | claude "${CLAUDE_ARGS[@]}"
 # Squash merge back into target branch
 git checkout "$TARGET_BRANCH"
 git merge --squash "$TICKET_BRANCH"
-git commit -m "feat(#${ISSUE_NUMBER}): $TITLE"
+if git diff --cached --quiet; then
+  echo "⚠ No changes staged after squash merge. Claude may not have committed any work."
+else
+  git commit -m "feat(#${ISSUE_NUMBER}): $TITLE"
+fi
 
 # Delete ticket branch locally
 git branch -d "$TICKET_BRANCH"

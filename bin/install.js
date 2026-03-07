@@ -99,6 +99,9 @@ async function main() {
     copyDir(COMMANDS_SRC, dest);
     copyDir(WORKFLOWS_SRC, workflowsDest);
 
+    // Write VERSION file so /clancy:doctor and /clancy:update can read the installed version
+    fs.writeFileSync(path.join(dest, 'VERSION'), PKG.version);
+
     console.log('');
     console.log(green('  ✓ Clancy installed successfully.'));
     console.log('');
@@ -117,6 +120,7 @@ async function main() {
       ['/clancy:review',       'Score next ticket and get recommendations'],
       ['/clancy:logs',         'Display progress log'],
       ['/clancy:settings',     'View and change configuration'],
+      ['/clancy:doctor',       'Diagnose your setup'],
       ['/clancy:update',       'Update Clancy to latest version'],
       ['/clancy:help',         'Show all commands'],
     ];

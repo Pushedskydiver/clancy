@@ -145,7 +145,7 @@ echo "Picking up: [$TICKET_KEY] $SUMMARY"
 echo "Epic: $EPIC_INFO | Target branch: $TARGET_BRANCH | Blockers: $BLOCKERS"
 
 git checkout "$TARGET_BRANCH"
-git checkout -b "$TICKET_BRANCH"
+git checkout -B "$TICKET_BRANCH"
 
 PROMPT="You are implementing Jira ticket $TICKET_KEY.
 
@@ -170,7 +170,11 @@ echo "$PROMPT" | claude "${CLAUDE_ARGS[@]}"
 # Squash merge back into target branch
 git checkout "$TARGET_BRANCH"
 git merge --squash "$TICKET_BRANCH"
-git commit -m "feat($TICKET_KEY): $SUMMARY"
+if git diff --cached --quiet; then
+  echo "⚠ No changes staged after squash merge. Claude may not have committed any work."
+else
+  git commit -m "feat($TICKET_KEY): $SUMMARY"
+fi
 
 # Delete ticket branch locally (never push deletes)
 git branch -d "$TICKET_BRANCH"

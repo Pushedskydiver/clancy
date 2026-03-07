@@ -85,6 +85,7 @@ npx chief-clancy
 | `/clancy:map-codebase` | Full 5-agent parallel codebase scan, writes 10 docs                      |
 | `/clancy:update-docs`  | Incremental refresh — re-runs agents for changed areas                   |
 | `/clancy:settings`     | View and change configuration — model, iterations, board, and more      |
+| `/clancy:doctor`       | Diagnose your setup — test every integration, report what's broken       |
 | `/clancy:update`       | Update Clancy to latest version                                          |
 | `/clancy:help`         | Command reference                                                        |
 

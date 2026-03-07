@@ -37,18 +37,9 @@ git rev-parse --git-dir >/dev/null 2>&1 || {
 MAX_ITERATIONS=${MAX_ITERATIONS:-20}
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Detect which once script to use based on .env credentials
-if [ -n "${JIRA_BASE_URL:-}" ]; then
-  ONCE_SCRIPT="$SCRIPT_DIR/clancy-once.sh"
-elif [ -n "${GITHUB_TOKEN:-}" ]; then
-  ONCE_SCRIPT="$SCRIPT_DIR/clancy-once-github.sh"
-elif [ -n "${LINEAR_API_KEY:-}" ]; then
-  ONCE_SCRIPT="$SCRIPT_DIR/clancy-once-linear.sh"
-else
-  echo "✗ No board credentials found in .clancy/.env."
-  echo "  Set JIRA_BASE_URL, GITHUB_TOKEN, or LINEAR_API_KEY."
-  exit 0
-fi
+# clancy-once.sh is always the runtime filename regardless of board.
+# /clancy:init copies the correct board variant as clancy-once.sh.
+ONCE_SCRIPT="$SCRIPT_DIR/clancy-once.sh"
 
 if [ ! -f "$ONCE_SCRIPT" ]; then
   echo "✗ Script not found: $ONCE_SCRIPT"
@@ -65,13 +56,23 @@ while [ "$i" -lt "$MAX_ITERATIONS" ]; do
   echo ""
   echo "=== Iteration $i of $MAX_ITERATIONS ==="
 
-  OUTPUT=$(bash "$ONCE_SCRIPT" 2>&1)
-  echo "$OUTPUT"
+  # Stream output in real-time via tee while also capturing for stop-condition check.
+  TMPFILE=$(mktemp)
+  bash "$ONCE_SCRIPT" 2>&1 | tee "$TMPFILE"
+  OUTPUT=$(cat "$TMPFILE")
+  rm -f "$TMPFILE"
 
-  # Stop if no tickets found
+  # Stop if no tickets remain
   if echo "$OUTPUT" | grep -qE "No tickets found|No issues found|All done"; then
     echo ""
     echo "✓ Clancy finished — no more tickets."
+    exit 0
+  fi
+
+  # Stop if a preflight check failed (lines starting with ✗)
+  if echo "$OUTPUT" | grep -qE "^✗ "; then
+    echo ""
+    echo "✗ Clancy stopped — preflight check failed. See output above."
     exit 0
   fi
 

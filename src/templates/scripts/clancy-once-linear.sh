@@ -112,7 +112,7 @@ echo "Picking up: [$IDENTIFIER] $TITLE"
 echo "Epic: $EPIC_INFO | Target branch: $TARGET_BRANCH"
 
 git checkout "$TARGET_BRANCH"
-git checkout -b "$TICKET_BRANCH"
+git checkout -B "$TICKET_BRANCH"
 
 PROMPT="You are implementing Linear issue $IDENTIFIER.
 
@@ -136,7 +136,11 @@ echo "$PROMPT" | claude "${CLAUDE_ARGS[@]}"
 # Squash merge back into target branch
 git checkout "$TARGET_BRANCH"
 git merge --squash "$TICKET_BRANCH"
-git commit -m "feat($IDENTIFIER): $TITLE"
+if git diff --cached --quiet; then
+  echo "⚠ No changes staged after squash merge. Claude may not have committed any work."
+else
+  git commit -m "feat($IDENTIFIER): $TITLE"
+fi
 
 # Delete ticket branch locally
 git branch -d "$TICKET_BRANCH"

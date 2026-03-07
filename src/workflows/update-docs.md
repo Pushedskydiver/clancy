@@ -6,6 +6,18 @@ Incrementally refresh `.clancy/docs/` by re-running only the agents covering are
 
 ---
 
+## Step 0 — Preflight
+
+Check `.clancy/` exists and `.clancy/.env` is present.
+
+If either is missing:
+```
+.clancy/ not found. Run /clancy:init to set up Clancy first.
+```
+Stop.
+
+---
+
 ## Step 1 — Determine what changed
 
 Ask: "What changed since your last codebase scan? (or press Enter to auto-detect via git diff)"

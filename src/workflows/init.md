@@ -81,6 +81,12 @@ Ask each question individually and wait for an answer before moving to the next.
 1. `GitHub repo (owner/name, e.g. acme/my-app):`
 2. `GitHub personal access token (needs repo scope):`
 
+After collecting GitHub credentials, show:
+```
+Important: Clancy only picks up GitHub Issues that have the "clancy" label applied.
+Add this label to any issue you want Clancy to work on.
+```
+
 **Linear** — ask in this order:
 
 1. `Linear API key (from linear.app/settings/api):`

@@ -215,6 +215,12 @@ GitHub Issues — ask in this order:
 1. `GitHub repo (owner/name, e.g. acme/my-app):`
 2. `GitHub personal access token (needs repo scope):`
 
+After collecting GitHub credentials, remind the user:
+```
+Important: Clancy only picks up GitHub Issues that have the "clancy" label applied.
+Add this label to any issue you want Clancy to work on.
+```
+
 Linear — ask in this order:
 1. `Linear API key (from linear.app/settings/api):`
 2. `Linear team ID (from linear.app/settings/teams — click your team, copy the ID from the URL):`
