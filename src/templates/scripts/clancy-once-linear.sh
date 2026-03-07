@@ -1,7 +1,32 @@
 #!/usr/bin/env bash
+# Strict mode: exit on error (-e), undefined variables (-u), pipe failures (-o pipefail).
+# This means any command that fails will stop the script immediately rather than silently continuing.
 set -euo pipefail
 
+# ─── WHAT THIS SCRIPT DOES ─────────────────────────────────────────────────────
+#
 # Board: Linear
+#
+# 1. Preflight  — checks all required tools, credentials, and API reachability
+# 2. Fetch      — pulls the next unstarted issue assigned to you via GraphQL
+# 3. Branch     — creates a feature branch from the issue's parent branch (or base branch)
+# 4. Implement  — passes the issue to Claude Code, which reads .clancy/docs/ and implements it
+# 5. Merge      — squash-merges the feature branch back into the target branch
+# 6. Log        — appends a completion entry to .clancy/progress.txt
+#
+# This script is run once per issue. The loop is handled by clancy-afk.sh.
+#
+# NOTE: Linear personal API keys do NOT use a "Bearer" prefix in the Authorization
+# header. OAuth access tokens do. This is correct per Linear's documentation.
+#
+# NOTE: state.type "unstarted" is a fixed enum value — it filters by state category,
+# not state name. This works regardless of what your team named their backlog column.
+#
+# NOTE: Failures use exit 0, not exit 1. This is intentional — clancy-afk.sh
+# detects stop conditions by reading script output rather than exit codes, so a
+# non-zero exit would be treated as an unexpected crash rather than a clean stop.
+#
+# ───────────────────────────────────────────────────────────────────────────────
 
 # ─── PREFLIGHT ─────────────────────────────────────────────────────────────────
 
@@ -66,16 +91,28 @@ echo "✓ Preflight passed. Starting Clancy..."
 
 # ─── END PREFLIGHT ─────────────────────────────────────────────────────────────
 
+# ─── FETCH ISSUE ───────────────────────────────────────────────────────────────
+
 # Fetch one unstarted issue assigned to the current user on the configured team.
-# state.type "unstarted" is a fixed enum — filters by state type, not state name.
-# This works regardless of what the team named their "To Do" column.
 # Note: personal API keys do NOT use "Bearer" prefix — this is intentional.
+#
+# GraphQL query (expanded for readability):
+#   viewer {
+#     assignedIssues(
+#       filter: {
+#         state: { type: { eq: "unstarted" } }   ← fixed enum, works regardless of column name
+#         team: { id: { eq: "$LINEAR_TEAM_ID" } }
+#       }
+#       first: 1
+#       orderBy: priority
+#     ) {
+#       nodes { id identifier title description parent { identifier title } }
+#     }
+#   }
 RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
   -H "Content-Type: application/json" \
   -H "Authorization: $LINEAR_API_KEY" \
-  -d "{
-    \"query\": \"{ viewer { assignedIssues(filter: { state: { type: { eq: \\\"unstarted\\\" } } team: { id: { eq: \\\"$LINEAR_TEAM_ID\\\" } } } first: 1 orderBy: priority) { nodes { id identifier title description parent { identifier title } } } } }\"
-  }")
+  -d "{\"query\": \"{ viewer { assignedIssues(filter: { state: { type: { eq: \\\"unstarted\\\" } } team: { id: { eq: \\\"$LINEAR_TEAM_ID\\\" } } } first: 1 orderBy: priority) { nodes { id identifier title description parent { identifier title } } } } } }\"}")
 
 NODE_COUNT=$(echo "$RESPONSE" | jq '.data.viewer.assignedIssues.nodes | length')
 if [ "$NODE_COUNT" -eq 0 ]; then
@@ -108,10 +145,14 @@ else
   TARGET_BRANCH="$BASE_BRANCH"
 fi
 
+# ─── IMPLEMENT ─────────────────────────────────────────────────────────────────
+
 echo "Picking up: [$IDENTIFIER] $TITLE"
 echo "Epic: $EPIC_INFO | Target branch: $TARGET_BRANCH"
 
 git checkout "$TARGET_BRANCH"
+# -B creates the branch if it doesn't exist, or resets it to HEAD if it does.
+# This handles retries cleanly without failing on an already-existing branch.
 git checkout -B "$TICKET_BRANCH"
 
 PROMPT="You are implementing Linear issue $IDENTIFIER.
@@ -133,7 +174,9 @@ CLAUDE_ARGS=(--dangerously-skip-permissions)
 [ -n "${CLANCY_MODEL:-}" ] && CLAUDE_ARGS+=(--model "$CLANCY_MODEL")
 echo "$PROMPT" | claude "${CLAUDE_ARGS[@]}"
 
-# Squash merge back into target branch
+# ─── MERGE & LOG ───────────────────────────────────────────────────────────────
+
+# Squash all commits from the feature branch into a single commit on the target branch.
 git checkout "$TARGET_BRANCH"
 git merge --squash "$TICKET_BRANCH"
 if git diff --cached --quiet; then

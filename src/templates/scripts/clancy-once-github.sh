@@ -1,7 +1,30 @@
 #!/usr/bin/env bash
+# Strict mode: exit on error (-e), undefined variables (-u), pipe failures (-o pipefail).
+# This means any command that fails will stop the script immediately rather than silently continuing.
 set -euo pipefail
 
+# ─── WHAT THIS SCRIPT DOES ─────────────────────────────────────────────────────
+#
 # Board: GitHub Issues
+#
+# 1. Preflight  — checks all required tools, credentials, and repo reachability
+# 2. Fetch      — pulls the next open issue with the 'clancy' label assigned to you
+# 3. Branch     — creates a feature branch from the issue's milestone branch (or base branch)
+# 4. Implement  — passes the issue to Claude Code, which reads .clancy/docs/ and implements it
+# 5. Merge      — squash-merges the feature branch back into the target branch
+# 6. Close      — marks the GitHub issue as closed via the API
+# 7. Log        — appends a completion entry to .clancy/progress.txt
+#
+# This script is run once per issue. The loop is handled by clancy-afk.sh.
+#
+# NOTE: GitHub's /issues endpoint returns pull requests too. This script filters
+# them out by checking for the presence of the 'pull_request' key in each result.
+#
+# NOTE: Failures use exit 0, not exit 1. This is intentional — clancy-afk.sh
+# detects stop conditions by reading script output rather than exit codes, so a
+# non-zero exit would be treated as an unexpected crash rather than a clean stop.
+#
+# ───────────────────────────────────────────────────────────────────────────────
 
 # ─── PREFLIGHT ─────────────────────────────────────────────────────────────────
 
@@ -68,6 +91,8 @@ echo "✓ Preflight passed. Starting Clancy..."
 
 # ─── END PREFLIGHT ─────────────────────────────────────────────────────────────
 
+# ─── FETCH ISSUE ───────────────────────────────────────────────────────────────
+
 # Fetch open issues assigned to the authenticated user with the 'clancy' label.
 # GitHub's issues endpoint returns PRs too — filter them out by checking for pull_request key.
 # per_page=3 so we can find one real issue even if the first result(s) are PRs.
@@ -104,10 +129,14 @@ else
   TARGET_BRANCH="$BASE_BRANCH"
 fi
 
+# ─── IMPLEMENT ─────────────────────────────────────────────────────────────────
+
 echo "Picking up: [#${ISSUE_NUMBER}] $TITLE"
 echo "Milestone: $MILESTONE | Target branch: $TARGET_BRANCH"
 
 git checkout "$TARGET_BRANCH"
+# -B creates the branch if it doesn't exist, or resets it to HEAD if it does.
+# This handles retries cleanly without failing on an already-existing branch.
 git checkout -B "$TICKET_BRANCH"
 
 PROMPT="You are implementing GitHub Issue #${ISSUE_NUMBER}.
@@ -129,7 +158,9 @@ CLAUDE_ARGS=(--dangerously-skip-permissions)
 [ -n "${CLANCY_MODEL:-}" ] && CLAUDE_ARGS+=(--model "$CLANCY_MODEL")
 echo "$PROMPT" | claude "${CLAUDE_ARGS[@]}"
 
-# Squash merge back into target branch
+# ─── MERGE, CLOSE & LOG ────────────────────────────────────────────────────────
+
+# Squash all commits from the feature branch into a single commit on the target branch.
 git checkout "$TARGET_BRANCH"
 git merge --squash "$TICKET_BRANCH"
 if git diff --cached --quiet; then

@@ -1,5 +1,21 @@
 #!/usr/bin/env bash
+# Strict mode: exit on error (-e), undefined variables (-u), pipe failures (-o pipefail).
+# This means any command that fails will stop the script immediately rather than silently continuing.
 set -euo pipefail
+
+# ─── WHAT THIS SCRIPT DOES ─────────────────────────────────────────────────────
+#
+# Loop runner for Clancy. Calls clancy-once.sh repeatedly until:
+#   - No more tickets are found ("No tickets found", "All done", etc.)
+#   - A preflight check fails (output line starting with ✗)
+#   - MAX_ITERATIONS is reached
+#   - The user presses Ctrl+C
+#
+# This script does not know about boards. All board logic lives in clancy-once.sh,
+# which is always the runtime filename regardless of which board is configured.
+# /clancy:init copies the correct board variant as clancy-once.sh during setup.
+#
+# ───────────────────────────────────────────────────────────────────────────────
 
 # ─── PREFLIGHT ─────────────────────────────────────────────────────────────────
 
@@ -56,7 +72,9 @@ while [ "$i" -lt "$MAX_ITERATIONS" ]; do
   echo ""
   echo "=== Iteration $i of $MAX_ITERATIONS ==="
 
-  # Stream output in real-time via tee while also capturing for stop-condition check.
+  # Run clancy-once.sh and stream its output live via tee.
+  # tee writes to both stdout (visible to user) and a temp file (for stop-condition checks).
+  # Without tee, output would be buffered in a variable and hidden during implementation.
   TMPFILE=$(mktemp)
   bash "$ONCE_SCRIPT" 2>&1 | tee "$TMPFILE"
   OUTPUT=$(cat "$TMPFILE")

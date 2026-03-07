@@ -1,12 +1,30 @@
 #!/usr/bin/env bash
+# Strict mode: exit on error (-e), undefined variables (-u), pipe failures (-o pipefail).
+# This means any command that fails will stop the script immediately rather than silently continuing.
 set -euo pipefail
 
+# ─── WHAT THIS SCRIPT DOES ─────────────────────────────────────────────────────
+#
 # Board: Jira
-# NOTE: This file has no -jira suffix by design.
-# During /clancy:init, the correct board template is copied into
-# the user's .clancy/ directory as clancy-once.sh regardless of board.
-# clancy-once.sh is always the runtime filename — the board is determined
-# by which template was copied, not the filename.
+#
+# 1. Preflight — checks all required tools, credentials, and board reachability
+# 2. Fetch    — pulls the next assigned "To Do" ticket from Jira (maxResults: 1)
+# 3. Branch   — creates a feature branch from the ticket's epic branch (or base branch)
+# 4. Implement — passes the ticket to Claude Code, which reads .clancy/docs/ and implements it
+# 5. Merge    — squash-merges the feature branch back into the target branch
+# 6. Log      — appends a completion entry to .clancy/progress.txt
+#
+# This script is run once per ticket. The loop is handled by clancy-afk.sh.
+#
+# NOTE: This file has no -jira suffix by design. /clancy:init copies the correct
+# board variant into the user's .clancy/ directory as clancy-once.sh regardless
+# of board. The board is determined by which template was copied, not the filename.
+#
+# NOTE: Failures use exit 0, not exit 1. This is intentional — clancy-afk.sh
+# detects stop conditions by reading script output rather than exit codes, so a
+# non-zero exit would be treated as an unexpected crash rather than a clean stop.
+#
+# ───────────────────────────────────────────────────────────────────────────────
 
 # ─── PREFLIGHT ─────────────────────────────────────────────────────────────────
 
@@ -75,8 +93,10 @@ echo "✓ Preflight passed. Starting Clancy..."
 
 # ─── END PREFLIGHT ─────────────────────────────────────────────────────────────
 
-# Build JQL — sprint filter is optional (requires Jira Software license)
-# Use the new /rest/api/3/search/jql endpoint (POST) — the old /search was removed Aug 2025.
+# ─── FETCH TICKET ──────────────────────────────────────────────────────────────
+
+# Build JQL — sprint filter is optional (requires Jira Software license).
+# Uses the /rest/api/3/search/jql POST endpoint — the old GET /search was removed Aug 2025.
 # maxResults:1 is intentional — pick one ticket per run, never paginate.
 if [ -n "${CLANCY_JQL_SPRINT:-}" ]; then
   SPRINT_CLAUSE="AND sprint in openSprints()"
@@ -141,10 +161,14 @@ else
   TARGET_BRANCH="$BASE_BRANCH"
 fi
 
+# ─── IMPLEMENT ─────────────────────────────────────────────────────────────────
+
 echo "Picking up: [$TICKET_KEY] $SUMMARY"
 echo "Epic: $EPIC_INFO | Target branch: $TARGET_BRANCH | Blockers: $BLOCKERS"
 
 git checkout "$TARGET_BRANCH"
+# -B creates the branch if it doesn't exist, or resets it to HEAD if it does.
+# This handles retries cleanly without failing on an already-existing branch.
 git checkout -B "$TICKET_BRANCH"
 
 PROMPT="You are implementing Jira ticket $TICKET_KEY.
@@ -167,7 +191,9 @@ CLAUDE_ARGS=(--dangerously-skip-permissions)
 [ -n "${CLANCY_MODEL:-}" ] && CLAUDE_ARGS+=(--model "$CLANCY_MODEL")
 echo "$PROMPT" | claude "${CLAUDE_ARGS[@]}"
 
-# Squash merge back into target branch
+# ─── MERGE & LOG ───────────────────────────────────────────────────────────────
+
+# Squash all commits from the feature branch into a single commit on the target branch.
 git checkout "$TARGET_BRANCH"
 git merge --squash "$TICKET_BRANCH"
 if git diff --cached --quiet; then
