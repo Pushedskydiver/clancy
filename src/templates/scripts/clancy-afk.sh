@@ -50,7 +50,7 @@ git rev-parse --git-dir >/dev/null 2>&1 || {
 
 # ─── END PREFLIGHT ─────────────────────────────────────────────────────────────
 
-MAX_ITERATIONS=${MAX_ITERATIONS:-20}
+MAX_ITERATIONS=${MAX_ITERATIONS:-5}
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # clancy-once.sh is always the runtime filename regardless of board.

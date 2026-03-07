@@ -37,7 +37,7 @@ Show all current values. Board-specific settings only appear when that board is 
 Clancy settings — .clancy/.env
 
 General
-[1] Max iterations    {MAX_ITERATIONS:-20}        tickets per /clancy:run session
+[1] Max iterations    {MAX_ITERATIONS:-5}          tickets per /clancy:run session
 [2] Claude model      {CLANCY_MODEL:-default}     model used for each ticket session
 [3] Base branch       {CLANCY_BASE_BRANCH:-main}
 
@@ -73,7 +73,7 @@ After the user picks a number, handle it as below. After saving, print `✓ Save
 Max iterations — current: {value}
 How many tickets should /clancy:run process per session?
 
-[1] 20 (default)
+[1] 5 (default)
 [2] Enter a different number
 ```
 

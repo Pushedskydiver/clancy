@@ -23,7 +23,7 @@ Run Clancy in loop mode. Processes tickets from the Kanban board until the queue
 The command may be invoked as `/clancy:run` or `/clancy:run N` where N is a positive integer.
 
 - If N is provided: use it as `MAX_ITERATIONS` for this session only. Never write it to `.clancy/.env`.
-- If no argument: read `MAX_ITERATIONS` from `.clancy/.env`. If not set there, default to 20.
+- If no argument: read `MAX_ITERATIONS` from `.clancy/.env`. If not set there, default to 5.
 
 ---
 

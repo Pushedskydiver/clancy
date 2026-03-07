@@ -3,7 +3,7 @@
 Run Clancy in loop mode — processes tickets from your Kanban board until the queue is empty or MAX_ITERATIONS is reached.
 
 Usage:
-  /clancy:run       — uses MAX_ITERATIONS from .clancy/.env (default 20)
+  /clancy:run       — uses MAX_ITERATIONS from .clancy/.env (default 5)
   /clancy:run 5     — overrides MAX_ITERATIONS to 5 for this session only
 
 @.claude/clancy/workflows/run.md
