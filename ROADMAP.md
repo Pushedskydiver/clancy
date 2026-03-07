@@ -11,6 +11,9 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 - `/clancy:init`, `/clancy:run`, `/clancy:once`, `/clancy:status`, `/clancy:review`, `/clancy:logs`
 - `/clancy:map-codebase` with 5 parallel specialist agents (10 docs)
 - `/clancy:update-docs` incremental refresh
+- `/clancy:settings` — view and change config, switch boards without re-running init
+- `/clancy:doctor` — diagnose your setup, test every configured integration
+- `/clancy:uninstall`, `/clancy:update`, `/clancy:help`
 - Figma MCP three-tier integration
 - Playwright visual checks with Storybook detection
 - Slack/Teams webhook notifications
@@ -20,8 +23,7 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 
 ## v0.2.0 — Stability and DX
 
-- `/clancy:doctor` — diagnose your setup, test every configured integration
-- Improved error messages across all scripts
+- Jira/Linear ticket status transition after completion — mark ticket done, prevent re-pickup in AFK loops
 - `--dry-run` flag for `clancy-once.sh` — shows what would be done without doing it
 - Shellcheck CI for all shell scripts
 - More test fixtures (edge cases discovered post-release)
