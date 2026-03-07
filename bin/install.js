@@ -47,8 +47,14 @@ function copyDir(src, dest) {
 
 async function main() {
   console.log('');
-  console.log(bold('  Chief Clancy') + '  ' + dim(`v${PKG.version}`));
-  console.log('  Autonomous, board-driven development for Claude Code.');
+  console.log(blue('  ██████╗██╗      █████╗ ███╗   ██╗ ██████╗██╗   ██╗'));
+  console.log(blue(' ██╔════╝██║     ██╔══██╗████╗  ██║██╔════╝╚██╗ ██╔╝'));
+  console.log(blue(' ██║     ██║     ███████║██╔██╗ ██║██║      ╚████╔╝ '));
+  console.log(blue(' ██║     ██║     ██╔══██║██║╚██╗██║██║       ╚██╔╝  '));
+  console.log(blue(' ╚██████╗███████╗██║  ██║██║ ╚████║╚██████╗   ██║   '));
+  console.log(blue('  ╚═════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝   ╚═╝  '));
+  console.log('');
+  console.log('  ' + bold(`v${PKG.version}`) + dim('  Autonomous, board-driven development for Claude Code.'));
   console.log(dim('  Named after Chief Clancy Wiggum. Built on the Ralph technique by Geoffrey Huntley.'));
 
   const installChoice = await choose(
