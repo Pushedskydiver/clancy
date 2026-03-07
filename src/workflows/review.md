@@ -8,7 +8,7 @@ Fetch the next ticket from the board and score how well-specified it is. Returns
 
 ## Step 1 — Preflight checks
 
-Same as status workflow. Check `.clancy/`, `.env`, and board credentials.
+Same as status workflow. Check `.clancy/`, `.clancy/.env`, and board credentials.
 
 ---
 

@@ -46,17 +46,17 @@ Print `✓` or `✗` for each.
 - `.clancy/` exists → `✓ .clancy/ found`
 - `.clancy/clancy-once.sh` exists and is executable → `✓ clancy-once.sh`
 - `.clancy/clancy-afk.sh` exists and is executable → `✓ clancy-afk.sh`
-- `.env` exists → `✓ .env found`
+- `.clancy/.env` exists → `✓ .clancy/.env found`
 - `.clancy/docs/` has non-empty files → `✓ codebase docs present ({N} files)`
 
 If `.clancy/` is missing: `✗ .clancy/ not found — run /clancy:init`
-If `.env` is missing: `✗ .env not found — run /clancy:init`
+If `.clancy/.env` is missing: `✗ .clancy/.env not found — run /clancy:init`
 
 ---
 
 ## Step 4 — Check board credentials
 
-Source `.env` and detect which board is configured:
+Source `.clancy/.env` and detect which board is configured:
 
 **Jira** — if `JIRA_BASE_URL` is set:
 1. Check all required vars are non-empty: `JIRA_BASE_URL`, `JIRA_USER`, `JIRA_API_TOKEN`, `JIRA_PROJECT_KEY`
@@ -104,7 +104,7 @@ Clancy doctor — {N} checks passed, {N} warnings, {N} failures
 ✓ .clancy/ set up — 10 docs present
 ✓ Jira connected — PROJ reachable
 ⚠ Figma — Starter plan (6 calls/month, ~2 tickets)
-✗ PLAYWRIGHT_STORYBOOK_PORT — not set in .env
+✗ PLAYWRIGHT_STORYBOOK_PORT — not set in .clancy/.env
 
 Fix the ✗ items, then run /clancy:once to verify end-to-end.
 ```

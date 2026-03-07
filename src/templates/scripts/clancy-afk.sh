@@ -18,13 +18,13 @@ command -v curl >/dev/null 2>&1 || {
   exit 0
 }
 
-[ -f .env ] || {
-  echo "✗ .env not found."
-  echo "  Copy .clancy/.env.example to .env and fill in your credentials."
+[ -f .clancy/.env ] || {
+  echo "✗ .clancy/.env not found."
+  echo "  Copy .clancy/.env.example to .clancy/.env and fill in your credentials."
   exit 0
 }
 # shellcheck source=/dev/null
-source .env
+source .clancy/.env
 
 git rev-parse --git-dir >/dev/null 2>&1 || {
   echo "✗ Not a git repository."
@@ -45,7 +45,7 @@ elif [ -n "${GITHUB_TOKEN:-}" ]; then
 elif [ -n "${LINEAR_API_KEY:-}" ]; then
   ONCE_SCRIPT="$SCRIPT_DIR/clancy-once-linear.sh"
 else
-  echo "✗ No board credentials found in .env."
+  echo "✗ No board credentials found in .clancy/.env."
   echo "  Set JIRA_BASE_URL, GITHUB_TOKEN, or LINEAR_API_KEY."
   exit 0
 fi

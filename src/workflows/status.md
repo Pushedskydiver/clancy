@@ -8,8 +8,8 @@ Read-only board check. Fetches the next 3 tickets Clancy would pick up and displ
 
 ## Step 1 — Preflight checks
 
-1. Check `.clancy/` exists and `.env` is present.
-2. Source `.env` and check board credentials are present.
+1. Check `.clancy/` exists and `.clancy/.env` is present.
+2. Source `.clancy/.env` and check board credentials are present.
 3. On any missing config, show a specific error and stop:
    ```
    Missing config. Run /clancy:init to set up Clancy.
@@ -19,7 +19,7 @@ Read-only board check. Fetches the next 3 tickets Clancy would pick up and displ
 
 ## Step 2 — Detect board and fetch tickets
 
-Detect board from `.env`:
+Detect board from `.clancy/.env`:
 
 **Jira:**
 ```bash
@@ -92,7 +92,7 @@ If API call fails, show the error clearly:
 Board API error: {error message}
 
 Tips:
-- Check your credentials in .env
+- Check your credentials in .clancy/.env
 - For Jira: ensure you have VPN access if required
 - Run /clancy:init to reconfigure
 ```

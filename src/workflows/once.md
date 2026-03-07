@@ -26,9 +26,9 @@ Pick up exactly one ticket from the Kanban board, implement it, commit, squash-m
    ```
    Stop.
 
-2. Check `.env` exists and board credentials are present. If not:
+2. Check `.clancy/.env` exists and board credentials are present. If not:
    ```
-   Missing credentials in .env. Run /clancy:init to reconfigure.
+   Missing credentials in .clancy/.env. Run /clancy:init to reconfigure.
    ```
    Stop.
 

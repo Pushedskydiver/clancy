@@ -11,7 +11,7 @@ Full wizard for setting up Clancy in a project. Follow every step exactly. Do no
 Before asking any questions, silently check:
 
 - Is this an existing project? Check for `package.json`, `.git`, `src/`, `app/`, `lib/`
-- Is a board already configured? Check `.env` for `JIRA_BASE_URL`, `GITHUB_TOKEN`, `LINEAR_API_KEY`
+- Is a board already configured? Check `.clancy/.env` for `JIRA_BASE_URL`, `GITHUB_TOKEN`, `LINEAR_API_KEY`
 - Does `CLAUDE.md` already exist? Flag for merge — never overwrite
 - Does `.clancy/` already exist? Warn and offer re-init or abort
 
@@ -71,8 +71,8 @@ Your board isn't supported yet — but you can add it:
 In the meantime, you can still use Clancy manually:
   · Run /clancy:map-codebase to scan and document your codebase
   · Copy src/templates/scripts/clancy-once.sh as a starting point
-  · Implement your board's API fetch, store credentials in .env
-  · Point clancy-afk.sh at your custom script via CLANCY_ONCE_SCRIPT in .env
+  · Implement your board's API fetch, store credentials in .clancy/.env
+  · Point clancy-afk.sh at your custom script via CLANCY_ONCE_SCRIPT in .clancy/.env
 ```
 
 Do not scaffold anything after this message. Stop completely.
@@ -113,7 +113,7 @@ Common values: To Do, Selected for Development, Ready, Open
 [2] Enter a different value
 ```
 
-Store as `CLANCY_JQL_STATUS` in `.env`.
+Store as `CLANCY_JQL_STATUS` in `.clancy/.env`.
 
 ---
 
@@ -125,7 +125,7 @@ Does your Jira project use sprints?
 [y/N]:
 ```
 
-If yes: add `CLANCY_JQL_SPRINT=true` to `.env`.
+If yes: add `CLANCY_JQL_SPRINT=true` to `.clancy/.env`.
 If no: omit the sprint clause from JQL entirely.
 
 ---
@@ -141,7 +141,7 @@ Common values: main, develop, master
 [2] Enter a different value
 ```
 
-Store as `CLANCY_BASE_BRANCH` in `.env`.
+Store as `CLANCY_BASE_BRANCH` in `.clancy/.env`.
 
 ---
 
@@ -166,11 +166,11 @@ Create `.clancy/` directory and the following:
    - STACK.md, INTEGRATIONS.md, ARCHITECTURE.md, CONVENTIONS.md, TESTING.md
    - GIT.md, DESIGN-SYSTEM.md, ACCESSIBILITY.md, DEFINITION-OF-DONE.md, CONCERNS.md
 5. Copy the correct `.env.example` variant to `.clancy/.env.example`
-6. Write `.env` with collected credentials (if the user provided them)
+6. Write collected credentials to `.clancy/.env` (if the user provided them)
 7. Handle `CLAUDE.md`:
    - If no CLAUDE.md: copy `src/templates/CLAUDE.md` as `CLAUDE.md`
    - If CLAUDE.md exists: append the Clancy section (between `<!-- clancy:start -->` and `<!-- clancy:end -->` delimiters) to the end — never overwrite
-8. Check `.gitignore` — if `.env` is not listed, append it
+8. Check `.gitignore` — if `.clancy/.env` is not listed, append it
 
 ---
 
@@ -178,7 +178,7 @@ Create `.clancy/` directory and the following:
 
 ```
 Would you like to configure optional enhancements? [y/N]
-You can always set these up later by editing .env
+You can always set these up later by editing .clancy/.env
 ```
 
 If yes, walk through each in order. Type `skip` to skip any individual item.
@@ -228,7 +228,7 @@ If a key is entered:
 
 If `whoami` fails: tell the user the key couldn't be verified, ask to check it, offer skip or retry. Never silently continue with an unverified key.
 
-Write `FIGMA_API_KEY` to `.env`. Add usage note to CLAUDE.md Clancy section.
+Write `FIGMA_API_KEY` to `.clancy/.env`. Add usage note to CLAUDE.md Clancy section.
 
 ---
 
@@ -308,7 +308,7 @@ How many seconds should Clancy wait for a server to be ready?
 [2] Enter a different value
 ```
 
-Write to `.env`:
+Write to `.clancy/.env`:
 ```
 PLAYWRIGHT_ENABLED=true
 PLAYWRIGHT_DEV_COMMAND=<value>
@@ -341,7 +341,7 @@ workflow via Teams → channel → ... → Workflows. The URL must come from tha
 workflow's trigger, not from the old Office 365 Connectors setup (retired April 2026).
 ```
 
-Write `CLANCY_NOTIFY_WEBHOOK=<url>` to `.env`.
+Write `CLANCY_NOTIFY_WEBHOOK=<url>` to `.clancy/.env`.
 
 ---
 
@@ -354,7 +354,7 @@ How many tickets should /clancy:run process per session?
 [2] Enter a different value
 ```
 
-Write `MAX_ITERATIONS=<value>` to `.env`.
+Write `MAX_ITERATIONS=<value>` to `.clancy/.env`.
 
 ---
 
@@ -378,7 +378,7 @@ Clancy is ready.
 Scripts:   .clancy/clancy-once.sh
            .clancy/clancy-afk.sh
 Docs:      .clancy/docs/ (10 files)
-Config:    .env
+Config:    .clancy/.env
 CLAUDE.md: updated
 
 Next steps:

@@ -2,7 +2,7 @@
 
 ## Overview
 
-Remove Clancy's slash commands from the local project, globally, or both. Optionally remove the `.clancy/` project folder. Never touch `.env` or `CLAUDE.md` under any circumstances.
+Remove Clancy's slash commands from the local project, globally, or both. Optionally remove the `.clancy/` project folder (which includes `.clancy/.env`). Never touch `CLAUDE.md` under any circumstances.
 
 ---
 
@@ -30,7 +30,7 @@ Show exactly this message, filling in the detected location:
 
 ```
 This will remove Clancy's slash commands from [location].
-Your .clancy/ folder and .env file will not be touched.
+Your .clancy/ folder will not be touched.
 Continue? (yes / no)
 ```
 
@@ -48,7 +48,7 @@ Check whether `.clancy/` exists in the current project directory.
 If it does, ask separately:
 
 ```
-.clancy/ contains your codebase docs and progress log.
+.clancy/ contains your codebase docs, progress log, and credentials (.env).
 Remove it too? This cannot be undone. (yes / no)
 ```
 
@@ -69,7 +69,7 @@ Clancy uninstalled. To reinstall: npx chief-clancy
 
 ## Hard constraints
 
-- **Never touch `.env`** — under any circumstances, in any scenario
+- **Never touch any `.env` at the project root** — Clancy's credentials live in `.clancy/.env` and are only removed as part of `.clancy/` in Step 3
 - **Never touch `CLAUDE.md`** — under any circumstances, in any scenario
 - Steps 1–2 (commands removal) and Step 3 (`.clancy/` removal) are always asked separately — never bundle them into one confirmation
 - If the user says no to commands removal in Step 2, skip Step 3 entirely and stop

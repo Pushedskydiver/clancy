@@ -14,7 +14,7 @@ Named after Chief Clancy Wiggum (Ralph's dad, The Simpsons) — because Clancy e
 
 Clancy does three things:
 
-1. **Scaffolds itself** into a project — scripts, docs, CLAUDE.md, .env
+1. **Scaffolds itself** into a project — scripts, docs, CLAUDE.md, .clancy/.env
 2. **Scans your codebase** with 5 parallel specialist agents and writes 10 structured docs that Claude reads before every run
 3. **Runs autonomously** — picking one ticket per loop from your Kanban board, implementing it, committing, squash-merging, and logging progress
 
@@ -107,6 +107,7 @@ npx chief-clancy
     DEFINITION-OF-DONE.md
     CONCERNS.md
   progress.txt        — append-only log of completed tickets
+  .env                — your board credentials (gitignored)
   .env.example        — credential template for your board
 ```
 
@@ -116,7 +117,7 @@ Clancy also merges a section into your `CLAUDE.md` (or creates one) that tells C
 
 ## Optional enhancements
 
-Set during `/clancy:init` advanced setup, or by editing `.env` directly.
+Set during `/clancy:init` advanced setup, or by editing `.clancy/.env` directly.
 
 ### Figma MCP
 

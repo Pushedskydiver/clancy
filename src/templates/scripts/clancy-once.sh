@@ -25,14 +25,14 @@ command -v curl >/dev/null 2>&1 || {
   exit 0
 }
 
-[ -f .env ] || {
-  echo "✗ .env not found."
-  echo "  Copy .clancy/.env.example to .env and fill in your credentials."
+[ -f .clancy/.env ] || {
+  echo "✗ .clancy/.env not found."
+  echo "  Copy .clancy/.env.example to .clancy/.env and fill in your credentials."
   echo "  Then run: /clancy:init"
   exit 0
 }
 # shellcheck source=/dev/null
-source .env
+source .clancy/.env
 
 git rev-parse --git-dir >/dev/null 2>&1 || {
   echo "✗ Not a git repository."
@@ -45,10 +45,10 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
   echo "  Consider stashing or committing first to avoid confusion."
 fi
 
-[ -n "${JIRA_BASE_URL:-}"    ] || { echo "✗ JIRA_BASE_URL is not set in .env";    exit 0; }
-[ -n "${JIRA_USER:-}"        ] || { echo "✗ JIRA_USER is not set in .env";        exit 0; }
-[ -n "${JIRA_API_TOKEN:-}"   ] || { echo "✗ JIRA_API_TOKEN is not set in .env";   exit 0; }
-[ -n "${JIRA_PROJECT_KEY:-}" ] || { echo "✗ JIRA_PROJECT_KEY is not set in .env"; exit 0; }
+[ -n "${JIRA_BASE_URL:-}"    ] || { echo "✗ JIRA_BASE_URL is not set in .clancy/.env";    exit 0; }
+[ -n "${JIRA_USER:-}"        ] || { echo "✗ JIRA_USER is not set in .clancy/.env";        exit 0; }
+[ -n "${JIRA_API_TOKEN:-}"   ] || { echo "✗ JIRA_API_TOKEN is not set in .clancy/.env";   exit 0; }
+[ -n "${JIRA_PROJECT_KEY:-}" ] || { echo "✗ JIRA_PROJECT_KEY is not set in .clancy/.env"; exit 0; }
 
 PING=$(curl -s -o /dev/null -w "%{http_code}" \
   -u "$JIRA_USER:$JIRA_API_TOKEN" \
@@ -56,9 +56,9 @@ PING=$(curl -s -o /dev/null -w "%{http_code}" \
 
 case "$PING" in
   200) ;;
-  401) echo "✗ Jira authentication failed. Check JIRA_USER and JIRA_API_TOKEN in .env."; exit 0 ;;
+  401) echo "✗ Jira authentication failed. Check JIRA_USER and JIRA_API_TOKEN in .clancy/.env."; exit 0 ;;
   403) echo "✗ Jira access denied. Your token may lack Browse Projects permission."; exit 0 ;;
-  404) echo "✗ Jira project '$JIRA_PROJECT_KEY' not found. Check JIRA_PROJECT_KEY in .env."; exit 0 ;;
+  404) echo "✗ Jira project '$JIRA_PROJECT_KEY' not found. Check JIRA_PROJECT_KEY in .clancy/.env."; exit 0 ;;
   000) echo "✗ Could not reach Jira at $JIRA_BASE_URL. Check JIRA_BASE_URL and your network."; exit 0 ;;
   *)   echo "✗ Jira returned unexpected status $PING. Check your config."; exit 0 ;;
 esac

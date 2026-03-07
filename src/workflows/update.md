@@ -33,7 +33,7 @@ The update only touches `.claude/commands/clancy/`. It never modifies:
 - `.clancy/` project folder
 - `.clancy/docs/` codebase documentation
 - `.clancy/progress.txt` progress log
-- `.env` credentials
+- `.clancy/.env` credentials
 - `CLAUDE.md`
 
 ---

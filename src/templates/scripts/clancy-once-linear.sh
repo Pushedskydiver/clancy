@@ -20,14 +20,14 @@ command -v curl >/dev/null 2>&1 || {
   exit 0
 }
 
-[ -f .env ] || {
-  echo "✗ .env not found."
-  echo "  Copy .clancy/.env.example to .env and fill in your credentials."
+[ -f .clancy/.env ] || {
+  echo "✗ .clancy/.env not found."
+  echo "  Copy .clancy/.env.example to .clancy/.env and fill in your credentials."
   echo "  Then run: /clancy:init"
   exit 0
 }
 # shellcheck source=/dev/null
-source .env
+source .clancy/.env
 
 git rev-parse --git-dir >/dev/null 2>&1 || {
   echo "✗ Not a git repository."
@@ -40,8 +40,8 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
   echo "  Consider stashing or committing first to avoid confusion."
 fi
 
-[ -n "${LINEAR_API_KEY:-}"  ] || { echo "✗ LINEAR_API_KEY is not set in .env";  exit 0; }
-[ -n "${LINEAR_TEAM_ID:-}"  ] || { echo "✗ LINEAR_TEAM_ID is not set in .env";  exit 0; }
+[ -n "${LINEAR_API_KEY:-}"  ] || { echo "✗ LINEAR_API_KEY is not set in .clancy/.env";  exit 0; }
+[ -n "${LINEAR_TEAM_ID:-}"  ] || { echo "✗ LINEAR_TEAM_ID is not set in .clancy/.env";  exit 0; }
 
 # Linear ping — verify API key with a minimal query
 # Note: personal API keys do NOT use a "Bearer" prefix — this is correct per Linear docs.
@@ -52,7 +52,7 @@ PING_BODY=$(curl -s -X POST https://api.linear.app/graphql \
   -d '{"query": "{ viewer { id } }"}')
 
 echo "$PING_BODY" | jq -e '.data.viewer.id' >/dev/null 2>&1 || {
-  echo "✗ Linear authentication failed. Check LINEAR_API_KEY in .env."; exit 0
+  echo "✗ Linear authentication failed. Check LINEAR_API_KEY in .clancy/.env."; exit 0
 }
 
 if [ "${PLAYWRIGHT_ENABLED:-}" = "true" ]; then

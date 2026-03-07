@@ -270,16 +270,16 @@ Never overwrite the entire file. Always preserve existing content.
 
 ## .gitignore check
 
-Read the project's `.gitignore`. If `.env` is not present, append:
+Read the project's `.gitignore`. If `.clancy/.env` is not present, append:
 ```
 # Clancy credentials
-.env
+.clancy/.env
 ```
 
 If no `.gitignore` exists, create one with:
 ```
-# Environment
-.env
+# Clancy credentials
+.clancy/.env
 
 # Dependencies
 node_modules/

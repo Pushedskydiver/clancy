@@ -20,14 +20,14 @@ command -v curl >/dev/null 2>&1 || {
   exit 0
 }
 
-[ -f .env ] || {
-  echo "✗ .env not found."
-  echo "  Copy .clancy/.env.example to .env and fill in your credentials."
+[ -f .clancy/.env ] || {
+  echo "✗ .clancy/.env not found."
+  echo "  Copy .clancy/.env.example to .clancy/.env and fill in your credentials."
   echo "  Then run: /clancy:init"
   exit 0
 }
 # shellcheck source=/dev/null
-source .env
+source .clancy/.env
 
 git rev-parse --git-dir >/dev/null 2>&1 || {
   echo "✗ Not a git repository."
@@ -40,8 +40,8 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
   echo "  Consider stashing or committing first to avoid confusion."
 fi
 
-[ -n "${GITHUB_TOKEN:-}"  ] || { echo "✗ GITHUB_TOKEN is not set in .env";  exit 0; }
-[ -n "${GITHUB_REPO:-}"   ] || { echo "✗ GITHUB_REPO is not set in .env";   exit 0; }
+[ -n "${GITHUB_TOKEN:-}"  ] || { echo "✗ GITHUB_TOKEN is not set in .clancy/.env";  exit 0; }
+[ -n "${GITHUB_REPO:-}"   ] || { echo "✗ GITHUB_REPO is not set in .clancy/.env";   exit 0; }
 
 PING=$(curl -s -o /dev/null -w "%{http_code}" \
   -H "Authorization: Bearer $GITHUB_TOKEN" \
@@ -50,9 +50,9 @@ PING=$(curl -s -o /dev/null -w "%{http_code}" \
 
 case "$PING" in
   200) ;;
-  401) echo "✗ GitHub authentication failed. Check GITHUB_TOKEN in .env."; exit 0 ;;
+  401) echo "✗ GitHub authentication failed. Check GITHUB_TOKEN in .clancy/.env."; exit 0 ;;
   403) echo "✗ GitHub access denied. Your token may lack the repo scope."; exit 0 ;;
-  404) echo "✗ GitHub repo '$GITHUB_REPO' not found. Check GITHUB_REPO in .env."; exit 0 ;;
+  404) echo "✗ GitHub repo '$GITHUB_REPO' not found. Check GITHUB_REPO in .clancy/.env."; exit 0 ;;
   000) echo "✗ Could not reach GitHub. Check your network."; exit 0 ;;
   *)   echo "✗ GitHub returned unexpected status $PING. Check your config."; exit 0 ;;
 esac

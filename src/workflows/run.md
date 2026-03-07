@@ -22,8 +22,8 @@ Run Clancy in loop mode. Processes tickets from the Kanban board until the queue
 
 The command may be invoked as `/clancy:run` or `/clancy:run N` where N is a positive integer.
 
-- If N is provided: use it as `MAX_ITERATIONS` for this session only. Never write it to `.env`.
-- If no argument: read `MAX_ITERATIONS` from `.env`. If not set there, default to 20.
+- If N is provided: use it as `MAX_ITERATIONS` for this session only. Never write it to `.clancy/.env`.
+- If no argument: read `MAX_ITERATIONS` from `.clancy/.env`. If not set there, default to 20.
 
 ---
 
@@ -35,13 +35,13 @@ The command may be invoked as `/clancy:run` or `/clancy:run N` where N is a posi
    ```
    Stop.
 
-2. Check `.env` exists. If not:
+2. Check `.clancy/.env` exists. If not:
    ```
-   .env not found. Run /clancy:init first.
+   .clancy/.env not found. Run /clancy:init first.
    ```
    Stop.
 
-3. Source `.env` and check that board credentials are present.
+3. Source `.clancy/.env` and check that board credentials are present.
 
    **Jira:** `JIRA_BASE_URL`, `JIRA_USER`, `JIRA_API_TOKEN`, `JIRA_PROJECT_KEY`
    **GitHub:** `GITHUB_TOKEN`, `GITHUB_REPO`
@@ -49,8 +49,8 @@ The command may be invoked as `/clancy:run` or `/clancy:run N` where N is a posi
 
    If any required var is missing:
    ```
-   Missing credentials in .env: <var name>
-   Run /clancy:init to reconfigure, or edit .env directly.
+   Missing credentials in .clancy/.env: <var name>
+   Run /clancy:init to reconfigure, or edit .clancy/.env directly.
    ```
    Stop.
 
@@ -96,6 +96,6 @@ Run /clancy:once for more detail on the next ticket.
 
 ## Notes
 
-- The `N` argument is session-only. It never modifies `.env`.
-- If the user wants to permanently change their default, they edit `.env` directly or re-run `/clancy:init` advanced setup.
+- The `N` argument is session-only. It never modifies `.clancy/.env`.
+- If the user wants to permanently change their default, they edit `.clancy/.env` directly or re-run `/clancy:init` advanced setup.
 - Do not attempt to run scripts from `src/templates/` — only run scripts in `.clancy/`.

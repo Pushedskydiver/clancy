@@ -86,7 +86,7 @@ Warning: {filename} is missing or empty. The {agent} agent may have failed.
 Run /clancy:update-docs to re-run only that agent.
 ```
 
-Also check: if `PLAYWRIGHT_ENABLED=true` in `.env`, verify `.clancy/docs/PLAYWRIGHT.md` exists. If not, create it from the template (see scaffold.md).
+Also check: if `PLAYWRIGHT_ENABLED=true` in `.clancy/.env`, verify `.clancy/docs/PLAYWRIGHT.md` exists. If not, create it from the template (see scaffold.md).
 
 ---
 
