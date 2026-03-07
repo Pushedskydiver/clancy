@@ -92,7 +92,7 @@ Ask each question individually and wait for an answer before moving to the next.
 
 Output:
 
-What status name means "ready to be picked up"?
+Which Jira status should Clancy pick tickets from?
 Common values: To Do, Selected for Development, Ready, Open
 
 [1] To Do (default)
