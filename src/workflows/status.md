@@ -22,15 +22,21 @@ Read-only board check. Fetches the next 3 tickets Clancy would pick up and displ
 Detect board from `.clancy/.env`:
 
 **Jira:**
+
+Build the JQL string first. If `CLANCY_JQL_SPRINT` is set in `.clancy/.env`, include the sprint clause:
+- Sprint clause present: `project=$JIRA_PROJECT_KEY AND sprint in openSprints() AND assignee=currentUser() AND status="$CLANCY_JQL_STATUS" ORDER BY priority ASC`
+- Sprint clause absent: `project=$JIRA_PROJECT_KEY AND assignee=currentUser() AND status="$CLANCY_JQL_STATUS" ORDER BY priority ASC`
+
+Where `CLANCY_JQL_STATUS` defaults to `To Do` if not set.
+
 ```bash
-BUILD_JQL
-# Build JQL — same as clancy-once.sh but with maxResults=3
 RESPONSE=$(curl -s \
   -u "$JIRA_USER:$JIRA_API_TOKEN" \
   -X POST \
   -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
   "$JIRA_BASE_URL/rest/api/3/search/jql" \
-  -d '{"jql": "<same JQL as once>", "maxResults": 3, "fields": ["summary", "parent", "customfield_10014", "status"]}')
+  -d '{"jql": "<jql as above>", "maxResults": 3, "fields": ["summary", "parent", "customfield_10014", "status"]}')
 ```
 
 **GitHub Issues:**
