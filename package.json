@@ -13,16 +13,16 @@
     "autonomous",
     "slash-commands"
   ],
-  "homepage": "https://github.com/your-username/clancy#readme",
+  "homepage": "https://github.com/Pushedskydiver/clancy#readme",
   "bugs": {
-    "url": "https://github.com/your-username/clancy/issues"
+    "url": "https://github.com/Pushedskydiver/clancy/issues"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/your-username/clancy.git"
+    "url": "git+https://github.com/Pushedskydiver/clancy.git"
   },
   "license": "MIT",
-  "author": "",
+  "author": "Alex Clapperton",
   "bin": {
     "clancy": "bin/install.js"
   },
