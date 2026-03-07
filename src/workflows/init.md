@@ -108,7 +108,9 @@ Linear team ID (from linear.app/settings/teams — click your team, copy the ID 
 ```
 What status name means "ready to be picked up"?
 Common values: To Do, Selected for Development, Ready, Open
-Press Enter to use "To Do":
+
+[1] To Do (default)
+[2] Enter a different value
 ```
 
 Store as `CLANCY_JQL_STATUS` in `.env`.
@@ -176,14 +178,14 @@ Would you like to configure optional enhancements? [y/N]
 You can always set these up later by editing .env
 ```
 
-If yes, walk through each in order. Enter skips any individual item.
+If yes, walk through each in order. Type `skip` to skip any individual item.
 
 ### Enhancement 1: Figma MCP
 
 ```
 Fetch design specs from Figma when a ticket has a Figma URL in its description.
 
-Figma API key (Enter to skip):
+Figma API key (type your key, or type "skip" to skip):
 ```
 
 If a key is entered:
@@ -258,30 +260,49 @@ What UI work requires the full dev server instead of Storybook?
 **Step 4: Dev server command**
 Auto-detect from `package.json` scripts (priority: `dev`, `start`, `serve`).
 ```
-Dev server start command: [detected] — press Enter to confirm or type yours:
+Dev server start command:
+  Detected: {value}
+
+[1] Yes, use this
+[2] Enter a different command
 ```
 
 **Step 5: Dev server port**
 Auto-detect from `vite.config.*`, `next.config.*`, or common defaults (5173, 3000, 8080).
 ```
-Dev server port: [detected] — press Enter to confirm or type yours:
+Dev server port:
+  Detected: {value}
+
+[1] Yes, use this
+[2] Enter a different port
 ```
 
 **Step 6: (If Storybook confirmed) Storybook command**
 Auto-detect from `package.json` scripts (`storybook`, `storybook:dev`).
 ```
-Storybook start command: [detected] — press Enter to confirm or type yours:
+Storybook start command:
+  Detected: {value}
+
+[1] Yes, use this
+[2] Enter a different command
 ```
 
 **Step 7: (If Storybook confirmed) Storybook port**
 Auto-detect from `.storybook/main.js|ts` or default to 6006.
 ```
-Storybook port: [detected] — press Enter to confirm or type yours:
+Storybook port:
+  Detected: {value}
+
+[1] Yes, use this
+[2] Enter a different port
 ```
 
 **Step 8: Startup wait**
 ```
-How many seconds should Clancy wait for a server to be ready? [15]:
+How many seconds should Clancy wait for a server to be ready?
+
+[1] 15 seconds (default)
+[2] Enter a different value
 ```
 
 Write to `.env`:
@@ -303,7 +324,7 @@ Create `.clancy/docs/PLAYWRIGHT.md` — see PLAYWRIGHT.md template in scaffold.m
 ```
 Post to a webhook when a ticket completes or Clancy hits an error.
 
-Paste your webhook URL (Slack or Teams — Enter to skip):
+Paste your webhook URL (Slack or Teams), or type "skip" to skip:
 ```
 
 Auto-detect platform from URL:
@@ -324,7 +345,10 @@ Write `CLANCY_NOTIFY_WEBHOOK=<url>` to `.env`.
 ### Enhancement 4: Max iterations
 
 ```
-How many tickets should /clancy:run process per session? [20]:
+How many tickets should /clancy:run process per session?
+
+[1] 20 (default)
+[2] Enter a different value
 ```
 
 Write `MAX_ITERATIONS=<value>` to `.env`.
