@@ -1,0 +1,42 @@
+{
+  "name": "clancy",
+  "version": "0.1.0",
+  "description": "Autonomous, board-driven development for Claude Code — scaffolds docs, integrates Kanban boards, runs tickets in a loop.",
+  "keywords": [
+    "claude",
+    "claude-code",
+    "ai",
+    "kanban",
+    "jira",
+    "github-issues",
+    "linear",
+    "autonomous",
+    "slash-commands"
+  ],
+  "homepage": "https://github.com/your-username/clancy#readme",
+  "bugs": {
+    "url": "https://github.com/your-username/clancy/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/your-username/clancy.git"
+  },
+  "license": "MIT",
+  "author": "",
+  "bin": {
+    "clancy": "bin/install.js"
+  },
+  "main": "bin/install.js",
+  "files": [
+    "bin/",
+    "src/",
+    "registry/"
+  ],
+  "scripts": {
+    "test": "bash test/unit/jira.test.sh && bash test/unit/github.test.sh && bash test/unit/linear.test.sh",
+    "smoke": "bash test/smoke/smoke.sh"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

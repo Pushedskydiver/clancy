@@ -1,0 +1,29 @@
+{
+  "issues": [
+    {
+      "key": "PROJ-55",
+      "fields": {
+        "summary": "Fix typo on login page",
+        "description": {
+          "version": 1,
+          "type": "doc",
+          "content": [
+            {
+              "type": "paragraph",
+              "content": [
+                {
+                  "type": "text",
+                  "text": "The word 'Passowrd' on the login page should be 'Password'."
+                }
+              ]
+            }
+          ]
+        },
+        "issuelinks": [],
+        "parent": null,
+        "customfield_10014": null
+      }
+    }
+  ],
+  "isLast": true
+}

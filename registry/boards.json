@@ -1,0 +1,44 @@
+{
+  "boards": [
+    {
+      "id": "jira",
+      "name": "Jira",
+      "author": "Atlassian",
+      "url": "https://www.atlassian.com/software/jira",
+      "env": [
+        "JIRA_BASE_URL",
+        "JIRA_USER",
+        "JIRA_API_TOKEN",
+        "JIRA_PROJECT_KEY",
+        "CLANCY_JQL_STATUS",
+        "CLANCY_JQL_SPRINT",
+        "CLANCY_EPIC_BRANCH"
+      ],
+      "script": "clancy-once.sh"
+    },
+    {
+      "id": "github",
+      "name": "GitHub Issues",
+      "author": "GitHub",
+      "url": "https://github.com",
+      "env": [
+        "GITHUB_TOKEN",
+        "GITHUB_REPO",
+        "CLANCY_EPIC_BRANCH"
+      ],
+      "script": "clancy-once-github.sh"
+    },
+    {
+      "id": "linear",
+      "name": "Linear",
+      "author": "Linear",
+      "url": "https://linear.app",
+      "env": [
+        "LINEAR_API_KEY",
+        "LINEAR_TEAM_ID",
+        "CLANCY_EPIC_BRANCH"
+      ],
+      "script": "clancy-once-linear.sh"
+    }
+  ]
+}
