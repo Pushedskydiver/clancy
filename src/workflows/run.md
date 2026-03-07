@@ -25,6 +25,24 @@ The command may be invoked as `/clancy:run` or `/clancy:run N` where N is a posi
 - If N is provided: use it as `MAX_ITERATIONS` for this session only. Never write it to `.clancy/.env`.
 - If no argument: read `MAX_ITERATIONS` from `.clancy/.env`. If not set there, default to 5.
 
+If the resolved value of `MAX_ITERATIONS` is **10 or greater**, show a warning before continuing:
+
+```
+⚠ You're about to run Clancy for up to {N} tickets.
+
+At rough estimates per ticket (Sonnet):
+  Simple tickets  ~$0.25–$0.75 each  →  up to ~${low} total
+  Complex tickets ~$2.00–$5.00 each  →  up to ~${high} total
+
+Mistakes compound — if Claude misreads a ticket, it will do so {N} times before you check.
+Consider starting with /clancy:once or a smaller run to validate first.
+
+Continue with {N} tickets? [Y/n]
+```
+
+Where `{low}` = N × 0.75 (rounded to nearest dollar) and `{high}` = N × 5 (rounded to nearest dollar).
+If the user types `n` or `N`: print `Cancelled.` and stop. Any other input (including enter) continues.
+
 ---
 
 ## Step 2 — Preflight checks
