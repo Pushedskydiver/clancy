@@ -18,7 +18,7 @@ integration, structured codebase docs, and a git workflow built for team develop
 |---|---|
 | `/clancy:init` | Wizard — choose board, collect config, scaffold everything, offer map-codebase |
 | `/clancy:run` | Run in loop mode until queue is empty or MAX_ITERATIONS hit |
-| `/clancy:run 5` | Same, but override MAX_ITERATIONS to 5 for this session |
+| `/clancy:run 20` | Same, but override MAX_ITERATIONS to 20 for this session |
 | `/clancy:once` | Pick up one ticket and stop — good for first runs and debugging |
 | `/clancy:status` | Show next tickets without running — read-only board check |
 | `/clancy:review` | Score next ticket (0–100%) with actionable recommendations |

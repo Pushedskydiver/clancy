@@ -125,7 +125,7 @@ npx chief-clancy
 | ---------------------- | ------------------------------------------------------------------------ |
 | `/clancy:init`         | Wizard — choose board, collect config, scaffold everything               |
 | `/clancy:run`          | Loop mode — processes tickets until queue is empty or MAX_ITERATIONS hit |
-| `/clancy:run 5`        | Same, override MAX_ITERATIONS to 5 for this session                      |
+| `/clancy:run 20`       | Same, override MAX_ITERATIONS to 20 for this session                     |
 | `/clancy:once`         | Pick up one ticket and stop                                              |
 | `/clancy:status`       | Show next tickets without running — read-only                            |
 | `/clancy:review`       | Score next ticket (0–100%) with actionable recommendations               |
