@@ -14,7 +14,20 @@ Same as status workflow. Check `.clancy/`, `.clancy/.env`, and board credentials
 
 ## Step 2 — Fetch next ticket
 
-Use the same query as `clancy-once.sh` for the detected board, `maxResults=1`.
+Detect board from `.clancy/.env` and fetch with `maxResults=1`. The query must match `clancy-once.sh` exactly — what review shows is what run would pick up.
+
+**Jira:** Build JQL using the same clauses as `clancy-once.sh`:
+- Sprint clause: include `AND sprint in openSprints()` if `CLANCY_JQL_SPRINT` is set
+- Label clause: include `AND labels = "$CLANCY_LABEL"` if `CLANCY_LABEL` is set
+- `CLANCY_JQL_STATUS` defaults to `To Do` if not set
+
+Full JQL: `project=$JIRA_PROJECT_KEY [AND sprint in openSprints()] [AND labels = "$CLANCY_LABEL"] AND assignee=currentUser() AND status="$CLANCY_JQL_STATUS" ORDER BY priority ASC`
+
+Request fields: `summary`, `description`, `issuelinks`, `parent`, `customfield_10014`
+
+**GitHub Issues:** `GET /repos/$GITHUB_REPO/issues?state=open&assignee=@me&labels=clancy&per_page=1` — filter out PRs (entries with `pull_request` key)
+
+**Linear:** GraphQL `viewer.assignedIssues` with `filter: { state: { type: { eq: "unstarted" } }, team: { id: { eq: "$LINEAR_TEAM_ID" } } }`, `first: 1`, `orderBy: priority`
 
 Fetch full ticket content: summary, description (full text), acceptance criteria (if present), epic/parent info, blockers/issue links.
 
