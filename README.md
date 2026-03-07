@@ -84,6 +84,7 @@ npx chief-clancy
 | `/clancy:logs`         | Format and display `.clancy/progress.txt`                                |
 | `/clancy:map-codebase` | Full 5-agent parallel codebase scan, writes 10 docs                      |
 | `/clancy:update-docs`  | Incremental refresh — re-runs agents for changed areas                   |
+| `/clancy:settings`     | View and change configuration — model, iterations, board, and more      |
 | `/clancy:update`       | Update Clancy to latest version                                          |
 | `/clancy:help`         | Command reference                                                        |
 
@@ -191,6 +192,51 @@ while :; do cat PROMPT.md | claude-code; done
 ```
 
 Clancy is what happens when you take that idea seriously for team development. See [CREDITS.md](./CREDITS.md) for the full story.
+
+---
+
+## Security
+
+### Permissions model
+
+Clancy runs Claude with `--dangerously-skip-permissions`, which suppresses all permission prompts so it can work unattended. This means Claude has full read/write access to your file system and can execute shell commands without asking.
+
+**Only run Clancy on codebases you own and trust.** Review the scripts in `.clancy/` before your first run if you want to see exactly what executes.
+
+### Protect your credentials from Claude
+
+Your board tokens and API keys live in `.clancy/.env`. Although Claude doesn't need to read this file during a run (the shell script sources it before invoking Claude), adding it to Claude Code's deny list is good defence-in-depth. Add it to `.claude/settings.json` in your project, or `~/.claude/settings.json` globally:
+
+```json
+{
+  "permissions": {
+    "deny": [
+      "Read(.clancy/.env)",
+      "Read(.env)",
+      "Read(.env.*)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)"
+    ]
+  }
+}
+```
+
+This prevents Claude from reading these files regardless of what commands run. Clancy automatically adds `.clancy/.env` to `.gitignore` during init, but the deny list is an additional layer.
+
+### Token scopes
+
+Use the minimum permissions each integration requires:
+
+| Integration | Recommended scope |
+|---|---|
+| GitHub PAT | `repo` — read/write issues and contents for your repo only |
+| Jira API token | Standard user — no admin rights needed |
+| Linear API key | Personal API key — read/write to your assigned issues |
+| Figma API key | Read-only access is sufficient |
+
+### Webhook URLs
+
+If you configure Slack or Teams notifications, treat the webhook URL as a secret — anyone who has it can post to your channel. Keep `.clancy/.env` gitignored (Clancy does this automatically during init) and never share the URL.
 
 ---
 
