@@ -51,6 +51,7 @@ Optional enhancements
 [{N}] Playwright      {enabled if PLAYWRIGHT_ENABLED=true, else off}
 [{N}] Notifications   {configured if CLANCY_NOTIFY_WEBHOOK set, else not set}
 
+[{N}] Switch board    currently: {Jira / GitHub Issues / Linear}
 [{N}] Exit
 
 Which setting would you like to change?
@@ -186,6 +187,91 @@ If [2]: remove `CLANCY_NOTIFY_WEBHOOK` from `.clancy/.env`.
 
 ---
 
+### Switch board
+
+Show which board is currently active, then offer the other two:
+
+```
+Switch board — currently: {Jira / GitHub Issues / Linear}
+
+[1] {board A}
+[2] {board B}
+[3] Cancel
+```
+
+Only show the two boards that are not currently active. If the user picks Cancel, loop back to the menu without changing anything.
+
+**Step 1: Collect new credentials**
+
+Ask each credential question individually and wait for an answer, exactly as in the init workflow Q2:
+
+Jira — ask in this order:
+1. `Jira base URL (e.g. https://your-org.atlassian.net):`
+2. `Jira project key (e.g. PROJ):`
+3. `Jira email (your Atlassian account email):`
+4. `Jira API token (from id.atlassian.com/manage-profile/security/api-tokens):`
+
+GitHub Issues — ask in this order:
+1. `GitHub repo (owner/name, e.g. acme/my-app):`
+2. `GitHub personal access token (needs repo scope):`
+
+Linear — ask in this order:
+1. `Linear API key (from linear.app/settings/api):`
+2. `Linear team ID (from linear.app/settings/teams — click your team, copy the ID from the URL):`
+
+**Step 2: Verify credentials**
+
+Verify the new credentials before making any changes — same checks as the init preflight and doctor workflow. Show the result:
+
+```
+Verifying...
+✓ Connected — {board-specific confirmation, e.g. "PROJ reachable" / "acme/my-app found" / "Linear authenticated"}
+```
+
+If verification fails, tell the user clearly and offer:
+
+```
+Could not connect. Check your credentials and try again.
+
+[1] Try again
+[2] Cancel
+```
+
+Never modify any files if verification fails.
+
+**Step 3: Confirm the switch**
+
+Once verified, show a single confirmation before making changes:
+
+```
+Ready to switch from {old board} to {new board}.
+Your other settings (model, iterations, branch, enhancements) will be kept.
+
+Confirm? [Y/n]
+```
+
+If no: print `Cancelled. No changes made.` and loop back to the menu.
+
+**Step 4: Apply the switch**
+
+1. Remove all vars belonging to the old board from `.clancy/.env`:
+   - Jira: `JIRA_BASE_URL`, `JIRA_USER`, `JIRA_API_TOKEN`, `JIRA_PROJECT_KEY`, `CLANCY_JQL_STATUS`, `CLANCY_JQL_SPRINT`
+   - GitHub: `GITHUB_TOKEN`, `GITHUB_REPO`
+   - Linear: `LINEAR_API_KEY`, `LINEAR_TEAM_ID`
+2. Write the new board credentials to `.clancy/.env`
+3. If switching to Jira: also ask the status filter question (same as init Q3) and write `CLANCY_JQL_STATUS` to `.clancy/.env`
+4. Replace `.clancy/clancy-once.sh` with the correct board variant from the installed commands directory
+
+Print:
+
+```
+✓ Switched to {new board}.
+```
+
+Then loop back to the main settings menu.
+
+---
+
 ### Exit
 
 Print nothing extra. Stop.
@@ -206,5 +292,6 @@ When updating a value:
 ## Notes
 
 - All changes are written to `.clancy/.env` immediately after confirmation
-- Board credentials (Jira URL, tokens, GitHub repo, Linear key) are never shown or editable here — use `/clancy:init` to reconfigure those
+- Switching boards verifies credentials before making any changes — nothing is written if verification fails
+- `/clancy:init` remains available for a full re-setup (re-scaffolds scripts and docs)
 - This command never restarts any servers or triggers any ticket processing
