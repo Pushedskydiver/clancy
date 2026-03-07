@@ -51,6 +51,21 @@ Clancy is powerful but not magic. Here's what to expect:
 
 **Some tickets will need a retry.** If Claude gets stuck or produces something obviously wrong, delete the branch and run `/clancy:once` again. Fresh context, fresh attempt. If it fails twice on the same ticket, the ticket probably needs more detail.
 
+**Clancy is token-heavy.** Each ticket starts a fresh Claude session that reads your codebase docs, CLAUDE.md, and then implements the ticket — before writing a single line of code, it has already consumed significant context. Rough estimates per ticket:
+
+| Ticket complexity | Approximate total tokens | Approximate cost (Sonnet) |
+|---|---|---|
+| Simple (small change, clear scope) | 50,000–100,000 | $0.25–$0.75 |
+| Medium (feature, 5–15 files touched) | 100,000–250,000 | $0.75–$2.00 |
+| Complex (large feature, many files) | 250,000–500,000+ | $2.00–$5.00+ |
+
+These are rough estimates — actual usage depends on your codebase doc size, how many files Claude reads during implementation, and how much code it writes. **Check Claude Code's usage dashboard after your first `/clancy:once` run to see real numbers for your codebase.**
+
+A few ways to manage costs:
+- Use a lighter model — set `CLANCY_MODEL=claude-haiku-4-5` in `.clancy/.env` for simpler tickets (significantly cheaper, less capable)
+- Keep `.clancy/docs/` files concise — they're read in full on every ticket
+- Use small, well-scoped tickets — fewer files read, less output generated
+
 ---
 
 ## Supported boards

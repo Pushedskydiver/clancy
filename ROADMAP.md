@@ -25,6 +25,7 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 
 - Jira/Linear ticket status transition after completion — mark ticket done, prevent re-pickup in AFK loops
 - `--dry-run` flag for `clancy-once.sh` — shows what would be done without doing it
+- Targeted doc loading — load only relevant `.clancy/docs/` files per ticket rather than all 10 every run (token optimisation)
 - Shellcheck CI for all shell scripts
 - More test fixtures (edge cases discovered post-release)
 
