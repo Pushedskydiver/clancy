@@ -27,21 +27,13 @@ It looks like Clancy is already set up in this project.
 
 ## Step 2 — Welcome message
 
-Display this exactly:
+Output these three paragraphs, each separated by a blank line:
 
-```
-Clancy is an autonomous coding agent that pulls tickets from your Kanban
-board, implements them, commits, and squash-merges — one ticket per run,
-fresh context every time.
+Clancy is an autonomous coding agent that pulls tickets from your Kanban board, implements them, commits, and squash-merges — one ticket per run, fresh context every time.
 
-Named after Chief Clancy Wiggum (Ralph's dad, The Simpsons), because Clancy
-equips Ralph before sending him to work. Built on the Ralph technique coined
-by Geoffrey Huntley (ghuntley.com/ralph/) — a bash loop that solves context
-rot through simplicity. Clancy extends that foundation with board integration,
-structured codebase docs, and a git workflow built for team development.
+Named after Chief Clancy Wiggum (Ralph's dad, The Simpsons), because Clancy equips Ralph before sending him to work. Built on the Ralph technique coined by Geoffrey Huntley (ghuntley.com/ralph/) — a bash loop that solves context rot through simplicity. Clancy extends that foundation with board integration, structured codebase docs, and a git workflow built for team development.
 
 Let's get you set up.
-```
 
 ---
 
