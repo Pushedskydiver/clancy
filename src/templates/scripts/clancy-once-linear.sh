@@ -37,16 +37,8 @@ git rev-parse --git-dir >/dev/null 2>&1 || {
 
 if ! git diff --quiet || ! git diff --cached --quiet; then
   echo "⚠ Working directory has uncommitted changes."
-  echo "  Clancy will create a new branch from $CLANCY_EPIC_BRANCH."
   echo "  Consider stashing or committing first to avoid confusion."
 fi
-
-git show-ref --verify --quiet "refs/heads/${CLANCY_EPIC_BRANCH:-}" || {
-  echo "✗ Epic branch '${CLANCY_EPIC_BRANCH:-}' not found."
-  echo "  Create it: git checkout -b ${CLANCY_EPIC_BRANCH:-}"
-  echo "  Or update CLANCY_EPIC_BRANCH in .env"
-  exit 0
-}
 
 [ -n "${LINEAR_API_KEY:-}"  ] || { echo "✗ LINEAR_API_KEY is not set in .env";  exit 0; }
 [ -n "${LINEAR_TEAM_ID:-}"  ] || { echo "✗ LINEAR_TEAM_ID is not set in .env";  exit 0; }
@@ -102,13 +94,24 @@ if [ -n "$PARENT_TITLE" ] && [ "$PARENT_TITLE" != "null" ]; then
   EPIC_INFO="${PARENT_ID} — ${PARENT_TITLE}"
 fi
 
-EPIC_BRANCH="${CLANCY_EPIC_BRANCH:-$(git branch --show-current)}"
+BASE_BRANCH="${CLANCY_BASE_BRANCH:-main}"
 TICKET_BRANCH="feature/$(echo "$IDENTIFIER" | tr '[:upper:]' '[:lower:]')"
 
-echo "Picking up: [$IDENTIFIER] $TITLE"
-echo "Epic: $EPIC_INFO"
+# Auto-detect target branch from ticket's parent.
+# If the issue has a parent, branch from epic/{parent-id} (creating it from
+# BASE_BRANCH if it doesn't exist yet). Otherwise branch from BASE_BRANCH directly.
+if [ "$PARENT_ID" != "none" ]; then
+  TARGET_BRANCH="epic/$(echo "$PARENT_ID" | tr '[:upper:]' '[:lower:]')"
+  git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" \
+    || git checkout -b "$TARGET_BRANCH" "$BASE_BRANCH"
+else
+  TARGET_BRANCH="$BASE_BRANCH"
+fi
 
-git checkout "$EPIC_BRANCH"
+echo "Picking up: [$IDENTIFIER] $TITLE"
+echo "Epic: $EPIC_INFO | Target branch: $TARGET_BRANCH"
+
+git checkout "$TARGET_BRANCH"
 git checkout -b "$TICKET_BRANCH"
 
 PROMPT="You are implementing Linear issue $IDENTIFIER.
@@ -128,8 +131,8 @@ Before starting:
 
 echo "$PROMPT" | claude --dangerously-skip-permissions
 
-# Squash merge back into epic branch
-git checkout "$EPIC_BRANCH"
+# Squash merge back into target branch
+git checkout "$TARGET_BRANCH"
 git merge --squash "$TICKET_BRANCH"
 git commit -m "feat($IDENTIFIER): $TITLE"
 

@@ -37,16 +37,8 @@ git rev-parse --git-dir >/dev/null 2>&1 || {
 
 if ! git diff --quiet || ! git diff --cached --quiet; then
   echo "⚠ Working directory has uncommitted changes."
-  echo "  Clancy will create a new branch from $CLANCY_EPIC_BRANCH."
   echo "  Consider stashing or committing first to avoid confusion."
 fi
-
-git show-ref --verify --quiet "refs/heads/${CLANCY_EPIC_BRANCH:-}" || {
-  echo "✗ Epic branch '${CLANCY_EPIC_BRANCH:-}' not found."
-  echo "  Create it: git checkout -b ${CLANCY_EPIC_BRANCH:-}"
-  echo "  Or update CLANCY_EPIC_BRANCH in .env"
-  exit 0
-}
 
 [ -n "${GITHUB_TOKEN:-}"  ] || { echo "✗ GITHUB_TOKEN is not set in .env";  exit 0; }
 [ -n "${GITHUB_REPO:-}"   ] || { echo "✗ GITHUB_REPO is not set in .env";   exit 0; }
@@ -97,13 +89,25 @@ TITLE=$(echo "$ISSUE" | jq -r '.title')
 BODY=$(echo "$ISSUE" | jq -r '.body // "No description"')
 MILESTONE=$(echo "$ISSUE" | jq -r '.milestone.title // "none"')
 
-EPIC_BRANCH="${CLANCY_EPIC_BRANCH:-$(git branch --show-current)}"
+BASE_BRANCH="${CLANCY_BASE_BRANCH:-main}"
 TICKET_BRANCH="feature/issue-${ISSUE_NUMBER}"
 
-echo "Picking up: [#${ISSUE_NUMBER}] $TITLE"
-echo "Milestone: $MILESTONE"
+# GitHub has no native epic concept — use milestone as the grouping signal.
+# If the issue has a milestone, branch from milestone/{slug} (creating it from
+# BASE_BRANCH if it doesn't exist yet). Otherwise branch from BASE_BRANCH directly.
+if [ "$MILESTONE" != "none" ]; then
+  MILESTONE_SLUG=$(echo "$MILESTONE" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd '[:alnum:]-')
+  TARGET_BRANCH="milestone/${MILESTONE_SLUG}"
+  git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" \
+    || git checkout -b "$TARGET_BRANCH" "$BASE_BRANCH"
+else
+  TARGET_BRANCH="$BASE_BRANCH"
+fi
 
-git checkout "$EPIC_BRANCH"
+echo "Picking up: [#${ISSUE_NUMBER}] $TITLE"
+echo "Milestone: $MILESTONE | Target branch: $TARGET_BRANCH"
+
+git checkout "$TARGET_BRANCH"
 git checkout -b "$TICKET_BRANCH"
 
 PROMPT="You are implementing GitHub Issue #${ISSUE_NUMBER}.
@@ -123,8 +127,8 @@ Before starting:
 
 echo "$PROMPT" | claude --dangerously-skip-permissions
 
-# Squash merge back into epic branch
-git checkout "$EPIC_BRANCH"
+# Squash merge back into target branch
+git checkout "$TARGET_BRANCH"
 git merge --squash "$TICKET_BRANCH"
 git commit -m "feat(#${ISSUE_NUMBER}): $TITLE"
 

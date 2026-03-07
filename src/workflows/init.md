@@ -130,15 +130,18 @@ If no: omit the sprint clause from JQL entirely.
 
 ---
 
-### Q4: Epic branch
+### Q4: Base branch
 
 ```
-What is the name of your epic branch?
-(The branch Clancy squash-merges completed tickets into)
-Example: epic/PROJ-1-user-auth, develop, main
+What is your base branch?
+(The main integration branch Clancy branches from when a ticket has no parent epic)
+Common values: main, develop, master
+
+[1] main (default)
+[2] Enter a different value
 ```
 
-Store as `CLANCY_EPIC_BRANCH` in `.env`.
+Store as `CLANCY_BASE_BRANCH` in `.env`.
 
 ---
 

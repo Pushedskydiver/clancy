@@ -18,8 +18,8 @@ Before every run, read all docs in `.clancy/docs/`:
 
 ### Git workflow
 - Read GIT.md before every run — follow its conventions exactly
-- Default (if GIT.md is silent): one feature branch per ticket `feature/{ticket-key-lowercase}`, squash merge into epic branch, conventional commits `feat(TICKET-123): summary`
-- Epic branch is stored in `.env` as `CLANCY_EPIC_BRANCH` — always branch from it and merge back into it
+- Default (if GIT.md is silent): one feature branch per ticket `feature/{ticket-key-lowercase}`, squash merge into target branch, conventional commits `feat(TICKET-123): summary`
+- Target branch is auto-detected from the ticket: if it has a parent epic, Clancy branches from and merges into `epic/{epic-key}` (created from `CLANCY_BASE_BRANCH` if it doesn't exist); otherwise branches from `CLANCY_BASE_BRANCH` directly
 - Delete ticket branch locally after merge — never push deletes
 
 ### Progress

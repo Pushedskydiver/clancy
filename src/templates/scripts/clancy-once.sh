@@ -42,16 +42,8 @@ git rev-parse --git-dir >/dev/null 2>&1 || {
 
 if ! git diff --quiet || ! git diff --cached --quiet; then
   echo "⚠ Working directory has uncommitted changes."
-  echo "  Clancy will create a new branch from $CLANCY_EPIC_BRANCH."
   echo "  Consider stashing or committing first to avoid confusion."
 fi
-
-git show-ref --verify --quiet "refs/heads/${CLANCY_EPIC_BRANCH:-}" || {
-  echo "✗ Epic branch '${CLANCY_EPIC_BRANCH:-}' not found."
-  echo "  Create it: git checkout -b ${CLANCY_EPIC_BRANCH:-}"
-  echo "  Or update CLANCY_EPIC_BRANCH in .env"
-  exit 0
-}
 
 [ -n "${JIRA_BASE_URL:-}"    ] || { echo "✗ JIRA_BASE_URL is not set in .env";    exit 0; }
 [ -n "${JIRA_USER:-}"        ] || { echo "✗ JIRA_USER is not set in .env";        exit 0; }
@@ -135,13 +127,24 @@ BLOCKERS=$(echo "$RESPONSE" | jq -r '
   | if length > 0 then "Blocked by: " + join(", ") else "None" end
 ' 2>/dev/null || echo "None")
 
-EPIC_BRANCH="${CLANCY_EPIC_BRANCH:-$(git branch --show-current)}"
+BASE_BRANCH="${CLANCY_BASE_BRANCH:-main}"
 TICKET_BRANCH="feature/$(echo "$TICKET_KEY" | tr '[:upper:]' '[:lower:]')"
 
-echo "Picking up: [$TICKET_KEY] $SUMMARY"
-echo "Epic: $EPIC_INFO | Blockers: $BLOCKERS"
+# Auto-detect target branch from ticket's parent epic.
+# If the ticket has a parent epic, branch from epic/{epic-key} (creating it from
+# BASE_BRANCH if it doesn't exist yet). Otherwise branch from BASE_BRANCH directly.
+if [ "$EPIC_INFO" != "none" ]; then
+  TARGET_BRANCH="epic/$(echo "$EPIC_INFO" | tr '[:upper:]' '[:lower:]')"
+  git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" \
+    || git checkout -b "$TARGET_BRANCH" "$BASE_BRANCH"
+else
+  TARGET_BRANCH="$BASE_BRANCH"
+fi
 
-git checkout "$EPIC_BRANCH"
+echo "Picking up: [$TICKET_KEY] $SUMMARY"
+echo "Epic: $EPIC_INFO | Target branch: $TARGET_BRANCH | Blockers: $BLOCKERS"
+
+git checkout "$TARGET_BRANCH"
 git checkout -b "$TICKET_BRANCH"
 
 PROMPT="You are implementing Jira ticket $TICKET_KEY.
@@ -162,8 +165,8 @@ Before starting:
 
 echo "$PROMPT" | claude --dangerously-skip-permissions
 
-# Squash merge back into epic branch
-git checkout "$EPIC_BRANCH"
+# Squash merge back into target branch
+git checkout "$TARGET_BRANCH"
 git merge --squash "$TICKET_BRANCH"
 git commit -m "feat($TICKET_KEY): $SUMMARY"
 
