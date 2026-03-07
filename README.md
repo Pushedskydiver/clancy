@@ -39,6 +39,20 @@ Clancy is for developers who:
 
 ---
 
+## Expectations
+
+Clancy is powerful but not magic. Here's what to expect:
+
+**It will get things wrong sometimes.** Claude can misread a ticket, make the wrong architectural choice, or produce code that doesn't compile. This is normal. Use `/clancy:once` to watch the first few runs, then review the output before going fully AFK. Over time you'll learn which ticket types Clancy handles well on your codebase.
+
+**Ticket quality matters more than you think.** A vague ticket produces vague implementation. Clancy works best when tickets have a clear summary, a description that explains the _why_, and concrete acceptance criteria. Use `/clancy:review` to score a ticket before running — it'll tell you exactly what's missing.
+
+**You still own the code.** Clancy commits and merges locally, but it never pushes to remote. Review the squash commit before pushing. Treat it like code from a junior developer who works very fast — it needs a sanity check, not a full rewrite.
+
+**Some tickets will need a retry.** If Claude gets stuck or produces something obviously wrong, delete the branch and run `/clancy:once` again. Fresh context, fresh attempt. If it fails twice on the same ticket, the ticket probably needs more detail.
+
+---
+
 ## Supported boards
 
 - **Jira** — via REST API v3, JQL, ADF description parsing
