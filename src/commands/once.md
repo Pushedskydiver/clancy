@@ -8,6 +8,6 @@ Good for:
 - Debugging a specific ticket
 - When you only have time for one ticket
 
-@.claude/commands/clancy/workflows/once.md
+@.claude/clancy/workflows/once.md
 
 Run one ticket as documented in the workflow above.

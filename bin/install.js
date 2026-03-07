@@ -12,6 +12,10 @@ const WORKFLOWS_SRC = path.join(__dirname, '..', 'src', 'workflows');
 const GLOBAL_DEST = path.join(process.env.HOME || process.env.USERPROFILE, '.claude', 'commands', 'clancy');
 const LOCAL_DEST = path.join(process.cwd(), '.claude', 'commands', 'clancy');
 
+// Workflows live outside commands/ so Claude Code doesn't expose them as slash commands
+const GLOBAL_WORKFLOWS_DEST = path.join(process.env.HOME || process.env.USERPROFILE, '.claude', 'clancy', 'workflows');
+const LOCAL_WORKFLOWS_DEST = path.join(process.cwd(), '.claude', 'clancy', 'workflows');
+
 // ANSI helpers
 const dim    = s => `\x1b[2m${s}\x1b[0m`;
 const bold   = s => `\x1b[1m${s}\x1b[0m`;
@@ -65,11 +69,13 @@ async function main() {
     ]
   );
 
-  let dest;
+  let dest, workflowsDest;
   if (installChoice === '1' || installChoice.toLowerCase() === 'global') {
     dest = GLOBAL_DEST;
+    workflowsDest = GLOBAL_WORKFLOWS_DEST;
   } else if (installChoice === '2' || installChoice.toLowerCase() === 'local') {
     dest = LOCAL_DEST;
+    workflowsDest = LOCAL_WORKFLOWS_DEST;
   } else {
     console.log(red('\n  Invalid choice. Run npx chief-clancy again and enter 1 or 2.'));
     rl.close();
@@ -91,7 +97,7 @@ async function main() {
     }
 
     copyDir(COMMANDS_SRC, dest);
-    copyDir(WORKFLOWS_SRC, path.join(dest, 'workflows'));
+    copyDir(WORKFLOWS_SRC, workflowsDest);
 
     console.log('');
     console.log(green('  ✓ Clancy installed successfully.'));

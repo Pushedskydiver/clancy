@@ -11,6 +11,6 @@ Agents run simultaneously:
 
 Takes approximately 2 minutes for a typical codebase.
 
-@.claude/commands/clancy/workflows/map-codebase.md
+@.claude/clancy/workflows/map-codebase.md
 
 Run the 5-agent scan as documented in the workflow above. Spawn all agents simultaneously.
