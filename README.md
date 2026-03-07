@@ -22,6 +22,23 @@ One ticket per run. Fresh context window every iteration. No context rot.
 
 ---
 
+## Who this is for
+
+Clancy is for developers who:
+
+- Use a Kanban board (Jira, GitHub Issues, or Linear) and want Claude to work through their backlog unattended
+- Are comfortable with Claude Code and want to extend it for team workflows — not just solo hacking
+- Have a codebase with enough structure that an AI agent can make meaningful progress on a ticket without constant hand-holding
+- Want to go AFK and come back to committed, merged work
+
+**Clancy is not for you if:**
+
+- You want to supervise every change — use Claude Code directly instead
+- Your tickets are large, vague, or span multiple sessions — Clancy works best with small, well-scoped tickets
+- You don't use a Kanban board — you can still use `/clancy:map-codebase` for codebase scanning, but the run loop won't apply
+
+---
+
 ## Supported boards
 
 - **Jira** — via REST API v3, JQL, ADF description parsing
