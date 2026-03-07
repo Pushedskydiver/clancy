@@ -34,7 +34,7 @@ Let's get you set up.
 
 ---
 
-## Step 3 — Questions (up to 5, board-dependent)
+## Step 3 — Questions (board-dependent)
 
 ### Q1: Board selection
 
@@ -111,16 +111,19 @@ If no: omit the sprint clause from JQL entirely.
 
 ---
 
-### Q4: Base branch
+### Q4: Base branch (auto-detect)
 
-Output:
+Silently detect the base branch — do not ask unless detection fails:
 
-What is your base branch? (Clancy branches from this when a ticket has no parent epic)
+1. Run `git symbolic-ref refs/remotes/origin/HEAD 2>/dev/null` and strip the `refs/remotes/origin/` prefix
+2. If that fails, check whether `main`, `master`, or `develop` exist as local branches (in that order)
+3. If still unresolved, default to `main`
 
-[1] main (default)
-[2] Enter a different value
+Only if detection produces an unexpected result (e.g. something other than main/master/develop), confirm with the user:
 
-Store as `CLANCY_BASE_BRANCH` in `.clancy/.env`.
+Detected base branch: `{branch}` — is this correct? [Y/n]
+
+Store the detected (or confirmed) value as `CLANCY_BASE_BRANCH` in `.clancy/.env`.
 
 ---
 
