@@ -1,0 +1,63 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 480">
+  <defs>
+    <style>
+      .text { font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', Consolas, monospace; }
+    </style>
+  </defs>
+
+  <!-- Window background -->
+  <rect width="920" height="480" rx="12" fill="#1e2d45"/>
+  <rect x="1" y="1" width="918" height="478" rx="11" fill="#0c1220"/>
+
+  <!-- Title bar -->
+  <rect x="1" y="1" width="918" height="36" rx="11" fill="#0f1929"/>
+  <rect x="1" y="26" width="918" height="12" fill="#0f1929"/>
+
+  <!-- Window buttons -->
+  <circle cx="24" cy="19" r="7" fill="#f7768e"/>
+  <circle cx="48" cy="19" r="7" fill="#e0af68"/>
+  <circle cx="72" cy="19" r="7" fill="#9ece6a"/>
+
+  <!-- Title -->
+  <text x="460" y="24" text-anchor="middle" class="text" font-size="13" fill="#2d4a6e">Terminal</text>
+
+  <!-- Content -->
+  <g transform="translate(32, 56)" font-size="14" class="text">
+
+    <!-- Prompt line -->
+    <text y="0" fill="#3b82f6">~</text>
+    <text y="0" x="16" fill="#2d4a6e">$</text>
+    <text y="0" x="36" fill="#e2e8f0">npx chief-clancy</text>
+
+    <!-- ASCII art -->
+    <text y="36"  fill="#3b82f6" xml:space="preserve">  &#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2557;&#x2588;&#x2588;&#x2557;      &#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2557; &#x2588;&#x2588;&#x2588;&#x2557;   &#x2588;&#x2588;&#x2557; &#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2557;&#x2588;&#x2588;&#x2557;   &#x2588;&#x2588;&#x2557;</text>
+    <text y="56"  fill="#3b82f6" xml:space="preserve"> &#x2588;&#x2588;&#x2554;&#x2550;&#x2550;&#x2550;&#x2550;&#x255D;&#x2588;&#x2588;&#x2551;     &#x2588;&#x2588;&#x2554;&#x2550;&#x2550;&#x2588;&#x2588;&#x2557;&#x2588;&#x2588;&#x2588;&#x2588;&#x2557;  &#x2588;&#x2588;&#x2551;&#x2588;&#x2588;&#x2554;&#x2550;&#x2550;&#x2550;&#x2550;&#x255D;&#x255A;&#x2588;&#x2588;&#x2557; &#x2588;&#x2588;&#x2554;&#x255D;</text>
+    <text y="76"  fill="#3b82f6" xml:space="preserve"> &#x2588;&#x2588;&#x2551;     &#x2588;&#x2588;&#x2551;     &#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2551;&#x2588;&#x2588;&#x2554;&#x2588;&#x2588;&#x2557; &#x2588;&#x2588;&#x2551;&#x2588;&#x2588;&#x2551;      &#x255A;&#x2588;&#x2588;&#x2588;&#x2588;&#x2554;&#x255D; </text>
+    <text y="96"  fill="#3b82f6" xml:space="preserve"> &#x2588;&#x2588;&#x2551;     &#x2588;&#x2588;&#x2551;     &#x2588;&#x2588;&#x2554;&#x2550;&#x2550;&#x2588;&#x2588;&#x2551;&#x2588;&#x2588;&#x2551;&#x255A;&#x2588;&#x2588;&#x2557;&#x2588;&#x2588;&#x2551;&#x2588;&#x2588;&#x2551;       &#x255A;&#x2588;&#x2588;&#x2554;&#x255D;  </text>
+    <text y="116" fill="#3b82f6" xml:space="preserve"> &#x255A;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2557;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2557;&#x2588;&#x2588;&#x2551;  &#x2588;&#x2588;&#x2551;&#x2588;&#x2588;&#x2551; &#x255A;&#x2588;&#x2588;&#x2588;&#x2588;&#x2551;&#x255A;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2557;   &#x2588;&#x2588;&#x2551;   </text>
+    <text y="136" fill="#3b82f6" xml:space="preserve">  &#x255A;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x255D;&#x255A;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x255D;&#x255A;&#x2550;&#x255D;  &#x255A;&#x2550;&#x255D;&#x255A;&#x2550;&#x255D;  &#x255A;&#x2550;&#x2550;&#x2550;&#x255D; &#x255A;&#x2550;&#x2550;&#x2550;&#x2550;&#x2550;&#x255D;   &#x255A;&#x2550;&#x255D;  </text>
+
+    <!-- Version + tagline -->
+    <text y="172" fill="#e2e8f0">  <tspan font-weight="bold">v0.1.0</tspan><tspan fill="#2d4a6e">  Autonomous, board-driven development for Claude Code.</tspan></text>
+    <text y="192" fill="#2d4a6e">  Named after Chief Clancy Wiggum. Built on the Ralph technique by Geoffrey Huntley.</text>
+
+    <!-- Interactive install prompt -->
+    <text y="228" fill="#e2e8f0">  Where would you like to install?</text>
+    <text y="248" fill="#2d4a6e">    [1]<tspan fill="#e2e8f0"> Global </tspan><tspan fill="#2d4a6e">(~/.claude)   — available in all projects</tspan></text>
+    <text y="268" fill="#2d4a6e">    [2]<tspan fill="#e2e8f0"> Local  </tspan><tspan fill="#2d4a6e">(./.claude)  — this project only</tspan></text>
+    <text y="288" fill="#2d4a6e">  Choice [1]: <tspan fill="#e2e8f0">1</tspan></text>
+
+    <!-- Install output -->
+    <text y="320" fill="#22c55e">  ✓ <tspan fill="#e2e8f0">Installed commands/clancy</tspan></text>
+    <text y="340" fill="#22c55e">  ✓ <tspan fill="#e2e8f0">Installed commands/clancy/workflows</tspan></text>
+
+    <!-- Done message -->
+    <text y="376"><tspan fill="#22c55e">  Done!</tspan><tspan fill="#e2e8f0"> Run </tspan><tspan fill="#3b82f6">/clancy:init</tspan><tspan fill="#e2e8f0"> to get started.</tspan></text>
+
+    <!-- New prompt -->
+    <text y="416" fill="#3b82f6">~</text>
+    <text y="416" x="16" fill="#2d4a6e">$</text>
+    <text y="416" x="36" fill="#e2e8f0">▋</text>
+
+  </g>
+</svg>
