@@ -32,7 +32,7 @@ Required structure:
 - `#!/usr/bin/env bash` + `set -euo pipefail`
 - Full preflight checks (copy from existing script, adapt credential checks)
 - Board API fetch (one ticket, don't paginate)
-- Create feature branch from `$CLANCY_EPIC_BRANCH`
+- Create feature branch from `$CLANCY_BASE_BRANCH`
 - Pipe prompt to `claude --dangerously-skip-permissions`
 - Squash merge back to epic branch
 - Delete local ticket branch
@@ -48,7 +48,7 @@ Add to `registry/boards.json`. The `author` and `url` fields are **required** â€
   "name": "Your Board Name",
   "author": "Company Name",
   "url": "https://your-board.com",
-  "env": ["YOUR_BOARD_TOKEN", "CLANCY_EPIC_BRANCH"],
+  "env": ["YOUR_BOARD_TOKEN", "CLANCY_BASE_BRANCH"],
   "script": "clancy-once-{board}.sh"
 }
 ```

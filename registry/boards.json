@@ -12,7 +12,7 @@
         "JIRA_PROJECT_KEY",
         "CLANCY_JQL_STATUS",
         "CLANCY_JQL_SPRINT",
-        "CLANCY_EPIC_BRANCH"
+        "CLANCY_BASE_BRANCH"
       ],
       "script": "clancy-once.sh"
     },
@@ -24,7 +24,7 @@
       "env": [
         "GITHUB_TOKEN",
         "GITHUB_REPO",
-        "CLANCY_EPIC_BRANCH"
+        "CLANCY_BASE_BRANCH"
       ],
       "script": "clancy-once-github.sh"
     },
@@ -36,7 +36,7 @@
       "env": [
         "LINEAR_API_KEY",
         "LINEAR_TEAM_ID",
-        "CLANCY_EPIC_BRANCH"
+        "CLANCY_BASE_BRANCH"
       ],
       "script": "clancy-once-linear.sh"
     }

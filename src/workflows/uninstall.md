@@ -8,10 +8,12 @@ Remove Clancy's slash commands from the local project, globally, or both. Option
 
 ## Step 1 — Detect install locations
 
-Check both locations silently:
+Check both locations silently. Each install has two parts — commands and workflows:
 
-- **Project-local:** `.claude/commands/clancy/` (relative to current working directory)
-- **Global:** `~/.claude/commands/clancy/`
+- **Project-local commands:** `.claude/commands/clancy/`
+- **Project-local workflows:** `.claude/clancy/`
+- **Global commands:** `~/.claude/commands/clancy/`
+- **Global workflows:** `~/.claude/clancy/`
 
 | Scenario | Action |
 |---|---|
@@ -33,9 +35,9 @@ Continue? (yes / no)
 ```
 
 - `no` → print "Nothing removed." and stop
-- `yes` → delete the commands directory, print "✓ Clancy commands removed from [location]."
+- `yes` → delete both the commands directory and the workflows directory for the chosen location(s), print "✓ Clancy removed from [location]."
 
-If "Both" was chosen in Step 1: confirm once for both, remove both, print two confirmation lines.
+If "Both" was chosen in Step 1: confirm once for both, remove all four directories, print two confirmation lines.
 
 ---
 
