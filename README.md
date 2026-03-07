@@ -7,7 +7,7 @@ Autonomous, board-driven development for Claude Code.
 Named after Chief Clancy Wiggum (Ralph's dad, The Simpsons) — because Clancy equips and deploys Ralph before sending him to work. Built on the [Ralph technique](https://ghuntley.com/ralph/) coined by Geoffrey Huntley. Clancy extends that foundation with Kanban board integration, structured codebase docs, and a git workflow built for team development.
 
 ```bash
-npx clancy
+npx chief-clancy
 ```
 
 ---
@@ -37,7 +37,7 @@ Community can add boards — see [CONTRIBUTING.md](./CONTRIBUTING.md).
 ## Install
 
 ```bash
-npx clancy
+npx chief-clancy
 ```
 
 You'll be asked: global install (`~/.claude`) or local (`./.claude`). Either works. Global makes commands available in all projects.
@@ -54,7 +54,7 @@ You'll be asked: global install (`~/.claude`) or local (`./.claude`). Either wor
 
 ```bash
 # 1. Install Clancy commands
-npx clancy
+npx chief-clancy
 
 # 2. Open a project in Claude Code, then:
 /clancy:init

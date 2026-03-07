@@ -1,5 +1,5 @@
 {
-  "name": "clancy",
+  "name": "chief-clancy",
   "version": "0.1.0",
   "description": "Autonomous, board-driven development for Claude Code — scaffolds docs, integrates Kanban boards, runs tickets in a loop.",
   "keywords": [

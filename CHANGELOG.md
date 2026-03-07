@@ -12,7 +12,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 ### Added
 
 - Initial release
-- `npx clancy` installer — global or local install
+- `npx chief-clancy` installer — global or local install
 - `/clancy:init` — full wizard with Jira, GitHub Issues, and Linear support
 - `/clancy:run` — loop runner with optional iteration count override
 - `/clancy:once` — single ticket implementation

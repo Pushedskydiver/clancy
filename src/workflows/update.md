@@ -11,7 +11,7 @@ Update Clancy itself to the latest version via npx.
 Read current version from the installed package (check `~/.claude/commands/clancy/` or `./.claude/commands/clancy/` for a `VERSION` file, or from npm).
 
 ```bash
-npm view clancy version 2>/dev/null || echo "unknown"
+npm view chief-clancy version 2>/dev/null || echo "unknown"
 ```
 
 ---
@@ -24,7 +24,7 @@ Updating Clancy...
 
 Run:
 ```bash
-npx clancy@latest
+npx chief-clancy@latest
 ```
 
 This re-runs the installer, which copies the latest command files into the correct `.claude/commands/clancy/` directory (global or local, matching the existing install location).
@@ -48,7 +48,7 @@ Updated Clancy from v{old} to v{new}.
 What's new:
 {relevant CHANGELOG entries}
 
-View full changelog: github.com/your-username/clancy/blob/main/CHANGELOG.md
+View full changelog: github.com/Pushedskydiver/clancy/blob/main/CHANGELOG.md
 ```
 
 If version is already latest:

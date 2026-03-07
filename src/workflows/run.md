@@ -2,7 +2,7 @@
 
 Before doing anything else, check for updates:
 
-1. Run: `npm show clancy version`
+1. Run: `npm show chief-clancy version`
 2. Read the installed version from the Clancy `package.json`
 3. If a newer version exists, print: `ℹ Clancy v{current} → v{latest} available. Run /clancy:update to upgrade.` then continue normally.
 4. If already on latest, continue silently.

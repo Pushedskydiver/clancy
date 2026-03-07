@@ -60,7 +60,7 @@ If `.clancy/` does not exist, skip this step entirely.
 ## Step 4 — Final message
 
 ```
-Clancy uninstalled. To reinstall: npx clancy
+Clancy uninstalled. To reinstall: npx chief-clancy
 ```
 
 ---

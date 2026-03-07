@@ -6,7 +6,7 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 
 ## v0.1.0 — Foundation (current)
 
-- `npx clancy` installer
+- `npx chief-clancy` installer
 - Jira, GitHub Issues, Linear board support
 - `/clancy:init`, `/clancy:run`, `/clancy:once`, `/clancy:status`, `/clancy:review`, `/clancy:logs`
 - `/clancy:map-codebase` with 5 parallel specialist agents (10 docs)

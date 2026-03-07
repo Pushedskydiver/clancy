@@ -24,7 +24,7 @@ assignees: ''
 
 - OS: <!-- macOS 14, Ubuntu 22.04, etc. -->
 - Node version: <!-- node --version -->
-- Clancy version: <!-- npx clancy --version or check package.json -->
+- Clancy version: <!-- npx chief-clancy --version or check package.json -->
 - Claude CLI version: <!-- claude --version -->
 - Board type: <!-- Jira / GitHub Issues / Linear -->
 - Install type: <!-- global (~/.claude) or local (./.claude) -->
