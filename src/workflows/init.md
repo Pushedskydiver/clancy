@@ -15,23 +15,20 @@ Before asking any questions, silently check:
 - Does `CLAUDE.md` already exist? Flag for merge — never overwrite
 - Does `.clancy/` already exist? Warn and offer re-init or abort
 
-If `.clancy/` exists:
-```
+If `.clancy/` exists, output:
+
 It looks like Clancy is already set up in this project.
 
 [1] Re-run init (update config, re-scaffold)
 [2] Abort (keep existing setup)
-```
 
 ---
 
 ## Step 2 — Welcome message
 
-Output these three paragraphs, each separated by a blank line:
+Output:
 
-Clancy is an autonomous coding agent that pulls tickets from your Kanban board, implements them, commits, and squash-merges — one ticket per run, fresh context every time.
-
-Named after Chief Clancy Wiggum (Ralph's dad, The Simpsons), because Clancy equips Ralph before sending him to work. Built on the Ralph technique coined by Geoffrey Huntley (ghuntley.com/ralph/) — a bash loop that solves context rot through simplicity. Clancy extends that foundation with board integration, structured codebase docs, and a git workflow built for team development.
+Clancy pulls tickets from your Kanban board, implements them, commits, and squash-merges — one ticket per run, fresh context every time.
 
 Let's get you set up.
 
@@ -41,31 +38,28 @@ Let's get you set up.
 
 ### Q1: Board selection
 
-```
+Output:
+
 Which Kanban board are you using?
 
 [1] Jira
 [2] GitHub Issues
 [3] Linear
 [4] My board isn't listed
-```
 
-If the user selects [4], show the dead-end message and stop:
+If the user selects [4], output the dead-end message and stop:
 
-```
 Clancy currently supports Jira, GitHub Issues, and Linear out of the box.
 
 Your board isn't supported yet — but you can add it:
   · Open an issue:   github.com/Pushedskydiver/clancy/issues
-  · Contribute one:  see CONTRIBUTING.md — adding a board is just a script
-                     template + a boards.json entry
+  · Contribute one:  see CONTRIBUTING.md — adding a board is just a script template + a boards.json entry
 
 In the meantime, you can still use Clancy manually:
   · Run /clancy:map-codebase to scan and document your codebase
-  · Copy src/templates/scripts/clancy-once.sh as a starting point
+  · Use the clancy-once.sh template from the GitHub repo as a starting point
   · Implement your board's API fetch, store credentials in .clancy/.env
   · Point clancy-afk.sh at your custom script via CLANCY_ONCE_SCRIPT in .clancy/.env
-```
 
 Do not scaffold anything after this message. Stop completely.
 
@@ -96,13 +90,13 @@ Ask each question individually and wait for an answer before moving to the next.
 
 ### Q3 (Jira only): Status name
 
-```
+Output:
+
 What status name means "ready to be picked up"?
 Common values: To Do, Selected for Development, Ready, Open
 
 [1] To Do (default)
 [2] Enter a different value
-```
 
 Store as `CLANCY_JQL_STATUS` in `.clancy/.env`.
 
@@ -110,11 +104,7 @@ Store as `CLANCY_JQL_STATUS` in `.clancy/.env`.
 
 ### Q3b (Jira only): Sprints
 
-```
-Does your Jira project use sprints?
-(Sprints require Jira Software — not available on all plans)
-[y/N]:
-```
+Output: `Does your Jira project use sprints? (Requires Jira Software — not available on all plans) [y/N]:`
 
 If yes: add `CLANCY_JQL_SPRINT=true` to `.clancy/.env`.
 If no: omit the sprint clause from JQL entirely.
@@ -123,26 +113,14 @@ If no: omit the sprint clause from JQL entirely.
 
 ### Q4: Base branch
 
-```
-What is your base branch?
-(The main integration branch Clancy branches from when a ticket has no parent epic)
-Common values: main, develop, master
+Output:
+
+What is your base branch? (Clancy branches from this when a ticket has no parent epic)
 
 [1] main (default)
 [2] Enter a different value
-```
 
 Store as `CLANCY_BASE_BRANCH` in `.clancy/.env`.
-
----
-
-### Q5: Confirm
-
-```
-Shall we set Clancy up now? [Y/n]:
-```
-
-If no: exit cleanly with "Run /clancy:init when you're ready."
 
 ---
 
@@ -167,20 +145,23 @@ Create `.clancy/` directory and the following:
 
 ## Step 5 — Optional enhancements
 
-```
-Would you like to configure optional enhancements? [y/N]
-You can always set these up later by editing .clancy/.env
-```
+Output:
 
-If yes, walk through each in order. Type `skip` to skip any individual item.
+Clancy is set up. A few optional enhancements are available — take 2 minutes each or skip for now. You can always configure them later by editing `.clancy/.env`.
+
+Would you like to set up optional enhancements now? [y/N]
+
+If no: skip to Step 6.
+
+If yes, walk through each in order. After each enhancement (whether configured or skipped), ask before starting the next one: `Set up [enhancement name]? [y/N]`
 
 ### Enhancement 1: Figma MCP
 
-```
-Fetch design specs from Figma when a ticket has a Figma URL in its description.
+Output: `Fetch design context from Figma when tickets include a Figma URL. Set up Figma MCP? [y/N]`
 
-Figma API key (type your key, or type "skip" to skip):
-```
+If no: skip to Enhancement 2.
+
+If yes: `Figma API key (from figma.com/settings → Personal access tokens):`
 
 If a key is entered:
 1. Verify the key by calling the Figma `whoami` API immediately
@@ -225,9 +206,11 @@ Write `FIGMA_API_KEY` to `.clancy/.env`. Add usage note to CLAUDE.md Clancy sect
 
 ### Enhancement 2: Playwright visual checks
 
-```
-Run a visual check after implementing UI tickets using Playwright MCP.
-```
+Output: `Screenshot and verify UI after implementing tickets. Set up Playwright visual checks? [y/N]`
+
+If no: skip to Enhancement 3.
+
+If yes, continue:
 
 **Step 1: Storybook detection**
 
@@ -315,11 +298,11 @@ Create `.clancy/docs/PLAYWRIGHT.md` — see PLAYWRIGHT.md template in scaffold.m
 
 ### Enhancement 3: Slack / Teams notifications
 
-```
-Post to a webhook when a ticket completes or Clancy hits an error.
+Output: `Post to a channel when a ticket completes or Clancy hits an error. Set up notifications? [y/N]`
 
-Paste your webhook URL (Slack or Teams), or type "skip" to skip:
-```
+If no: skip to Enhancement 4.
+
+If yes: `Paste your Slack or Teams webhook URL:`
 
 Auto-detect platform from URL:
 - `https://hooks.slack.com/` → Slack → sends `{"text": "..."}` payload
@@ -338,12 +321,7 @@ Write `CLANCY_NOTIFY_WEBHOOK=<url>` to `.clancy/.env`.
 
 ### Enhancement 4: Max iterations
 
-```
-How many tickets should /clancy:run process per session?
-
-[1] 20 (default)
-[2] Enter a different value
-```
+Output: `How many tickets should /clancy:run process per session? (default: 20) [enter to accept or type a number]:`
 
 Write `MAX_ITERATIONS=<value>` to `.clancy/.env`.
 
@@ -351,28 +329,26 @@ Write `MAX_ITERATIONS=<value>` to `.clancy/.env`.
 
 ## Step 6 — Offer map-codebase
 
-```
-Clancy is set up. Shall we scan your codebase now
-and populate .clancy/docs/? This takes ~2 minutes. [Y/n]:
-```
+Output:
+
+One last step — Clancy can scan your codebase now and populate `.clancy/docs/` with structured context it reads before every ticket. This takes about 2 minutes.
+
+Scan codebase now? [Y/n]
 
 If yes: run the map-codebase workflow.
-If no: "Run /clancy:map-codebase when you're ready."
+If no: output "Run /clancy:map-codebase when you're ready." then continue to final output.
 
 ---
 
 ## Final output
 
-```
+Output:
+
 Clancy is ready.
 
-Scripts:   .clancy/clancy-once.sh
-           .clancy/clancy-afk.sh
-Docs:      .clancy/docs/ (10 files)
-Config:    .clancy/.env
-CLAUDE.md: updated
+- Scripts: `.clancy/clancy-once.sh`, `.clancy/clancy-afk.sh`
+- Docs: `.clancy/docs/` (10 files)
+- Config: `.clancy/.env`
+- CLAUDE.md: updated
 
-Next steps:
-  Run /clancy:once to pick up your first ticket
-  Run /clancy:run to process the full queue
-```
+Run `/clancy:once` to pick up your first ticket, or `/clancy:run` to process the full queue.
