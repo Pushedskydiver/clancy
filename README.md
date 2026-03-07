@@ -46,6 +46,8 @@ You'll be asked: global install (`~/.claude`) or local (`./.claude`). Either wor
 - `jq` installed (`brew install jq` or `apt install jq`)
 - `curl` installed (comes with macOS/most Linux)
 
+> **Heads up:** Clancy runs Claude with `--dangerously-skip-permissions` so it can work unattended without prompting for approval on every file change, git command, and shell script. Only run Clancy on codebases you own and trust. Review the scripts in `.clancy/` before your first run if you want to see exactly what it does.
+
 ---
 
 ## Getting started
