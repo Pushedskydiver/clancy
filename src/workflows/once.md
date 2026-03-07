@@ -32,12 +32,10 @@ Pick up exactly one ticket from the Kanban board, implement it, commit, squash-m
    ```
    Stop.
 
-3. Detect which `clancy-once.sh` variant to run:
-   - If `JIRA_BASE_URL` is set → `.clancy/clancy-once.sh`
-   - If `GITHUB_TOKEN` is set → `.clancy/clancy-once-github.sh` (if present) or `.clancy/clancy-once.sh`
-   - If `LINEAR_API_KEY` is set → `.clancy/clancy-once-linear.sh` (if present) or `.clancy/clancy-once.sh`
+3. The script to run is always `.clancy/clancy-once.sh` regardless of board.
+   `/clancy:init` copies the correct board variant as `clancy-once.sh` during setup.
 
-4. Check the detected script exists. If not:
+4. Check `.clancy/clancy-once.sh` exists. If not:
    ```
    .clancy/clancy-once.sh not found. Run /clancy:init to scaffold scripts.
    ```
