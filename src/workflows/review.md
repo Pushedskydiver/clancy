@@ -23,7 +23,17 @@ Detect board from `.clancy/.env` and fetch with `maxResults=1`. The query must m
 
 Full JQL: `project=$JIRA_PROJECT_KEY [AND sprint in openSprints()] [AND labels = "$CLANCY_LABEL"] AND assignee=currentUser() AND status="$CLANCY_JQL_STATUS" ORDER BY priority ASC`
 
-Request fields: `summary`, `description`, `issuelinks`, `parent`, `customfield_10014`
+Use the POST `/rest/api/3/search/jql` endpoint (the old GET `/rest/api/3/search` was removed Aug 2025):
+
+```bash
+RESPONSE=$(curl -s \
+  -u "$JIRA_USER:$JIRA_API_TOKEN" \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  "$JIRA_BASE_URL/rest/api/3/search/jql" \
+  -d '{"jql": "<jql as above>", "maxResults": 1, "fields": ["summary", "description", "issuelinks", "parent", "customfield_10014"]}')
+```
 
 **GitHub Issues:** `GET /repos/$GITHUB_REPO/issues?state=open&assignee=@me&labels=clancy&per_page=1` — filter out PRs (entries with `pull_request` key)
 
