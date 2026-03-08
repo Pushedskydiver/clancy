@@ -185,8 +185,10 @@ Playwright visual checks — current: {enabled / off}
 [3] Cancel
 ```
 
-If enabling and `PLAYWRIGHT_DEV_COMMAND` is not already set: walk through the Playwright setup questions from the init workflow (dev server command, port, Storybook detection, startup wait).
-If disabling: set `PLAYWRIGHT_ENABLED=false` in `.clancy/.env`.
+If [1] Enable selected and `PLAYWRIGHT_ENABLED` is already `true`: show `Playwright is already enabled. [1] Reconfigure [2] Cancel`. If Reconfigure, walk through the setup questions again. If Cancel, loop back.
+If [1] Enable selected and `PLAYWRIGHT_DEV_COMMAND` is not set: walk through the Playwright setup questions from the init workflow (dev server command, port, Storybook detection, startup wait).
+If [1] Enable selected and `PLAYWRIGHT_DEV_COMMAND` is already set: just set `PLAYWRIGHT_ENABLED=true`.
+If [2] Disable: set `PLAYWRIGHT_ENABLED=false` in `.clancy/.env`.
 
 ---
 
@@ -284,7 +286,7 @@ If no: print `Cancelled. No changes made.` and loop back to the menu.
    - Linear: `LINEAR_API_KEY`, `LINEAR_TEAM_ID`
 2. Write the new board credentials to `.clancy/.env`
 3. If switching to Jira: also ask the status filter question (same as init Q3) and write `CLANCY_JQL_STATUS` to `.clancy/.env`
-4. Replace `.clancy/clancy-once.sh` with the correct board variant from the installed commands directory
+4. Write the correct `clancy-once.sh` variant for the new board to `.clancy/clancy-once.sh` — same script content as init Step 4 uses (Jira → `clancy-once.sh`, GitHub → `clancy-once-github.sh`, Linear → `clancy-once-linear.sh`). Make it executable: `chmod +x .clancy/clancy-once.sh`
 
 Print:
 

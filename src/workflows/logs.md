@@ -60,6 +60,8 @@ By epic:
   (other)                           {bar}  {count} tickets
 
 Full log: .clancy/progress.txt
+
+Reviews run: {N}
 ```
 
 ### Display rules

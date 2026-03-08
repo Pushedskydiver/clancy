@@ -145,9 +145,11 @@ Create `.clancy/` directory and the following:
    - GIT.md, DESIGN-SYSTEM.md, ACCESSIBILITY.md, DEFINITION-OF-DONE.md, CONCERNS.md
 5. Copy the correct `.env.example` variant to `.clancy/.env.example`
 6. Write collected credentials to `.clancy/.env` (if the user provided them)
-7. Handle `CLAUDE.md`:
-   - If no CLAUDE.md: copy `src/templates/CLAUDE.md` as `CLAUDE.md`
-   - If CLAUDE.md exists: append the Clancy section (between `<!-- clancy:start -->` and `<!-- clancy:end -->` delimiters) to the end — never overwrite
+7. Handle `CLAUDE.md` — follow the merge logic in scaffold.md exactly:
+   - If no CLAUDE.md: write the full template as `CLAUDE.md`
+   - If CLAUDE.md exists without `<!-- clancy:start -->`: append the Clancy section to the end
+   - If CLAUDE.md exists with `<!-- clancy:start -->`: replace only the content between the markers
+   - Never overwrite the entire file
 8. Check `.gitignore` — if `.clancy/.env` is not listed, append it
 
 ---
