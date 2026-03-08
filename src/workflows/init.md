@@ -167,6 +167,19 @@ Create `.clancy/` directory and the following:
 
 ---
 
+## Step 4b — Commit scaffold
+
+After scaffolding, commit everything created (excluding `.clancy/.env` which contains credentials):
+
+```bash
+git add .clancy/clancy-once.sh .clancy/clancy-afk.sh .clancy/.env.example .clancy/docs/ CLAUDE.md .gitignore
+git commit -m "chore(clancy): initialise — scaffold scripts, docs templates, and config"
+```
+
+If `CLAUDE.md` was not modified (it already existed and was not changed), omit it from the `git add`. If `.gitignore` was not modified, omit it too. Only stage files that actually changed.
+
+---
+
 ## Step 5 — Optional enhancements
 
 Output:
