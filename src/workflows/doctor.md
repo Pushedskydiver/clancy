@@ -32,7 +32,6 @@ Test each required binary:
 
 | Binary | Check | Fix hint |
 |---|---|---|
-| `claude` | `command -v claude` | `https://claude.ai/code` |
 | `jq` | `command -v jq` | `brew install jq` / `apt install jq` |
 | `curl` | `command -v curl` | Install curl for your OS |
 | `git` | `command -v git` | Install git for your OS |
