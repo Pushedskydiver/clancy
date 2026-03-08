@@ -87,6 +87,16 @@ while [ "$i" -lt "$MAX_ITERATIONS" ]; do
     exit 0
   fi
 
+  # Stop if Claude skipped the ticket (not implementable from the codebase).
+  # Re-running would just fetch and skip the same ticket again — stop and let
+  # the user update the ticket or remove it from the queue before continuing.
+  if echo "$OUTPUT" | grep -q "Ticket skipped"; then
+    echo ""
+    echo "⚠ Clancy stopped — ticket was skipped (not implementable from the codebase)."
+    echo "  Update the ticket to focus on codebase work, then re-run."
+    exit 0
+  fi
+
   # Stop if a preflight check failed (lines starting with ✗)
   if echo "$OUTPUT" | grep -qE "^✗ "; then
     echo ""

@@ -16,6 +16,26 @@ Before every run, read all docs in `.clancy/docs/`:
 - DEFINITION-OF-DONE.md — checklist before marking a ticket complete
 - CONCERNS.md — known risks, tech debt, things to avoid
 
+### Executability check
+
+Before any git operation, branch creation, or code change — assess whether this ticket can be implemented entirely as a code change committed to this repo.
+
+**Skip the ticket** if it primarily requires any of the following — Clancy cannot do these:
+- **External system admin:** work in Google Analytics, Salesforce, HubSpot, the AWS console, app store dashboards, or any external platform not accessible through code
+- **Human process steps:** getting sign-off or approval, sending emails to customers, coordinating with people, scheduling meetings, making announcements to users
+- **Non-repo production ops:** deploying to production, rotating secrets in prod, scaling infrastructure — unless the task is purely about editing CI/CD config files that live in this repo
+- **Non-code deliverables:** writing runbooks, updating Confluence or wikis, creating presentations, documenting in external tools
+
+When in doubt: "Is the primary deliverable a code change committed to this repo?" — if yes, implement it; if no, skip it.
+
+**If skipping, do all four of these in order:**
+1. Output this exact line: `⚠ Skipping [TICKET-KEY]: {one-line reason}`
+2. Output this exact line: `Ticket skipped — update it to be codebase-only work, then re-run.`
+3. Append to `.clancy/progress.txt`: `YYYY-MM-DD HH:MM | TICKET-KEY | SKIPPED | {reason}`
+4. Stop. No branches, no file changes, no git operations.
+
+**If the ticket is codebase work**, proceed to implementation normally.
+
 ### Git workflow
 - Read GIT.md before every run — follow its conventions exactly
 - Default (if GIT.md is silent): one feature branch per ticket `feature/{ticket-key-lowercase}`, squash merge into target branch, conventional commits `feat(TICKET-123): summary`

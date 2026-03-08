@@ -196,7 +196,18 @@ Epic: $EPIC_INFO
 Description:
 $DESCRIPTION
 
-Before starting:
+Step 0 — Executability check (do this before any git or file operation):
+Read the issue title and description above. Can this issue be implemented entirely
+as a code change committed to this repo? Consult the 'Executability check' section of
+CLAUDE.md for the full list of skip conditions.
+
+If you must SKIP this issue:
+1. Output: ⚠ Skipping [$IDENTIFIER]: {one-line reason}
+2. Output: Ticket skipped — update it to be codebase-only work, then re-run.
+3. Append to .clancy/progress.txt: YYYY-MM-DD HH:MM | $IDENTIFIER | SKIPPED | {reason}
+4. Stop — no branches, no file changes, no git operations.
+
+If the issue IS implementable, continue:
 1. Read ALL docs in .clancy/docs/ — especially GIT.md for branching and commit conventions
 2. Follow the conventions in GIT.md exactly
 3. Implement the issue fully
