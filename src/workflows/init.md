@@ -93,7 +93,7 @@ Add this label to any issue you want Clancy to work on.
 2. `What's your Linear team ID? (find it at linear.app/settings/teams — click your team, copy the ID from the URL)`
 3. `What label should Clancy filter by? Create a "clancy" label in your Linear team and apply it to issues you want Clancy to implement. [clancy]`
 
-If a label is entered: store as `CLANCY_LABEL` in `.clancy/.env`.
+If a label is entered: store as `CLANCY_LABEL` in `.clancy/.env`. Always wrap the value in double quotes (e.g. `CLANCY_LABEL="clancy"`).
 If enter is pressed with no value: skip — omit the label clause entirely (Clancy will pick up all unstarted assigned issues).
 
 ---
@@ -108,7 +108,7 @@ Common values: To Do, Selected for Development, Ready, Open
 [1] To Do (default)
 [2] Enter a different value
 
-Store as `CLANCY_JQL_STATUS` in `.clancy/.env`.
+Store as `CLANCY_JQL_STATUS` in `.clancy/.env`. Always wrap the value in double quotes — status names often contain spaces (e.g. `CLANCY_JQL_STATUS="Selected for Development"`) and unquoted values with spaces cause bash parse errors when the file is sourced.
 
 ---
 
@@ -125,7 +125,7 @@ If no: omit the sprint clause from JQL entirely.
 
 Output: `What label should Clancy filter by? Create a "clancy" label in your Jira project and apply it to tickets you want Clancy to implement. [clancy]`
 
-If a label is entered: store as `CLANCY_LABEL` in `.clancy/.env`.
+If a label is entered: store as `CLANCY_LABEL` in `.clancy/.env`. Always wrap the value in double quotes (e.g. `CLANCY_LABEL="clancy"`).
 If enter is pressed with no value: skip — omit the label clause entirely (Clancy will pick up all assigned tickets in the queue).
 
 ---
@@ -306,13 +306,13 @@ How many seconds should Clancy wait for a server to be ready?
 [2] Enter a different value
 ```
 
-Write to `.clancy/.env`:
+Write to `.clancy/.env`. Wrap command values in double quotes — they often contain spaces:
 ```
 PLAYWRIGHT_ENABLED=true
-PLAYWRIGHT_DEV_COMMAND=<value>
+PLAYWRIGHT_DEV_COMMAND="<value>"
 PLAYWRIGHT_DEV_PORT=<value>
-PLAYWRIGHT_STORYBOOK_COMMAND=<value>   # only if Storybook confirmed
-PLAYWRIGHT_STORYBOOK_PORT=<value>      # only if Storybook confirmed
+PLAYWRIGHT_STORYBOOK_COMMAND="<value>"   # only if Storybook confirmed
+PLAYWRIGHT_STORYBOOK_PORT=<value>        # only if Storybook confirmed
 PLAYWRIGHT_STARTUP_WAIT=<value>
 ```
 
