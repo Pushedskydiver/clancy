@@ -51,11 +51,16 @@ RESPONSE=$(curl -s \
 ```
 
 **Linear:**
+
+Build the filter — `CLANCY_LABEL` is optional:
+- Base filter: `state: { type: { eq: "unstarted" } }, team: { id: { eq: "$LINEAR_TEAM_ID" } }`
+- If `CLANCY_LABEL` is set: add `labels: { name: { eq: "$CLANCY_LABEL" } }` to the filter
+
 ```graphql
 query {
   viewer {
     assignedIssues(
-      filter: { state: { type: { eq: "unstarted" } }, team: { id: { eq: "$LINEAR_TEAM_ID" } } }
+      filter: { state: { type: { eq: "unstarted" } }, team: { id: { eq: "$LINEAR_TEAM_ID" } } [, labels: { name: { eq: "$CLANCY_LABEL" } }] }
       first: 3
       orderBy: priority
     ) {

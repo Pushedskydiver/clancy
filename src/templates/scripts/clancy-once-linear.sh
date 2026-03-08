@@ -102,6 +102,7 @@ echo "✓ Preflight passed. Starting Clancy..."
 #       filter: {
 #         state: { type: { eq: "unstarted" } }   ← fixed enum, works regardless of column name
 #         team: { id: { eq: "$LINEAR_TEAM_ID" } }
+#         labels: { name: { eq: "$CLANCY_LABEL" } }  ← only if CLANCY_LABEL is set
 #       }
 #       first: 1
 #       orderBy: priority
@@ -109,10 +110,19 @@ echo "✓ Preflight passed. Starting Clancy..."
 #       nodes { id identifier title description parent { identifier title } }
 #     }
 #   }
+
+# Optional label filter — set CLANCY_LABEL in .env to only pick up issues with that label.
+# Recommended: create a "clancy" label in Linear and apply it to issues suitable for autonomous implementation.
+if [ -n "${CLANCY_LABEL:-}" ]; then
+  LABEL_CLAUSE=" labels: { name: { eq: \\\"$CLANCY_LABEL\\\" } }"
+else
+  LABEL_CLAUSE=""
+fi
+
 RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
   -H "Content-Type: application/json" \
   -H "Authorization: $LINEAR_API_KEY" \
-  -d "{\"query\": \"{ viewer { assignedIssues(filter: { state: { type: { eq: \\\"unstarted\\\" } } team: { id: { eq: \\\"$LINEAR_TEAM_ID\\\" } } } first: 1 orderBy: priority) { nodes { id identifier title description parent { identifier title } } } } } }\"}")
+  -d "{\"query\": \"{ viewer { assignedIssues(filter: { state: { type: { eq: \\\"unstarted\\\" } } team: { id: { eq: \\\"$LINEAR_TEAM_ID\\\" } }$LABEL_CLAUSE } first: 1 orderBy: priority) { nodes { id identifier title description parent { identifier title } } } } } }\"}")
 
 # Check for API errors before parsing (rate limit, permission error, etc.)
 if ! echo "$RESPONSE" | jq -e '.data.viewer.assignedIssues' >/dev/null 2>&1; then

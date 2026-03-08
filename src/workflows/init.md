@@ -91,6 +91,10 @@ Add this label to any issue you want Clancy to work on.
 
 1. `Paste your Linear API key: (create one at linear.app/settings/api)`
 2. `What's your Linear team ID? (find it at linear.app/settings/teams — click your team, copy the ID from the URL)`
+3. `What label should Clancy filter by? Create a "clancy" label in your Linear team and apply it to issues you want Clancy to implement. [clancy]`
+
+If a label is entered: store as `CLANCY_LABEL` in `.clancy/.env`.
+If enter is pressed with no value: skip — omit the label clause entirely (Clancy will pick up all unstarted assigned issues).
 
 ---
 
@@ -114,6 +118,15 @@ Output: `Does your Jira project use sprints? (Requires Jira Software — not ava
 
 If yes: add `CLANCY_JQL_SPRINT=true` to `.clancy/.env`.
 If no: omit the sprint clause from JQL entirely.
+
+---
+
+### Q3c (Jira only): Label filter
+
+Output: `What label should Clancy filter by? Create a "clancy" label in your Jira project and apply it to tickets you want Clancy to implement. [clancy]`
+
+If a label is entered: store as `CLANCY_LABEL` in `.clancy/.env`.
+If enter is pressed with no value: skip — omit the label clause entirely (Clancy will pick up all assigned tickets in the queue).
 
 ---
 

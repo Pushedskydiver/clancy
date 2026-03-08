@@ -27,7 +27,7 @@ Request fields: `summary`, `description`, `issuelinks`, `parent`, `customfield_1
 
 **GitHub Issues:** `GET /repos/$GITHUB_REPO/issues?state=open&assignee=@me&labels=clancy&per_page=1` — filter out PRs (entries with `pull_request` key)
 
-**Linear:** GraphQL `viewer.assignedIssues` with `filter: { state: { type: { eq: "unstarted" } }, team: { id: { eq: "$LINEAR_TEAM_ID" } } }`, `first: 1`, `orderBy: priority`
+**Linear:** GraphQL `viewer.assignedIssues` with `filter: { state: { type: { eq: "unstarted" } }, team: { id: { eq: "$LINEAR_TEAM_ID" } }[, labels: { name: { eq: "$CLANCY_LABEL" } }] }` (label clause only if `CLANCY_LABEL` is set), `first: 1`, `orderBy: priority`
 
 Fetch full ticket content: summary, description (full text), acceptance criteria (if present), epic/parent info, blockers/issue links.
 

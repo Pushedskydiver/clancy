@@ -47,6 +47,10 @@ Jira
 [5] Sprint filter     {on if CLANCY_JQL_SPRINT set, else off}
 [6] Label filter      {CLANCY_LABEL if set, else off — only pick up tickets with this label}
 
+{If Linear:}
+Linear
+[4] Label filter      {CLANCY_LABEL if set, else off — only pick up issues with this label}
+
 Optional enhancements
 [{N}] Figma MCP       {enabled if FIGMA_API_KEY set, else not set}
 [{N}] Playwright      {enabled if PLAYWRIGHT_ENABLED=true, else off}
@@ -58,7 +62,7 @@ Optional enhancements
 Which setting would you like to change?
 ```
 
-Number each option sequentially. If Jira is not configured, skip [4] and [5] and renumber accordingly.
+Number each option sequentially. Show only the board-specific section that matches the configured board. If Jira: show [4] status, [5] sprint, [6] label. If Linear: show [4] label. If GitHub: no board-specific options.
 
 ---
 
@@ -156,6 +160,23 @@ where some tickets are not suitable for autonomous implementation.
 ```
 
 If [1]: prompt `What label should Clancy filter by? (must already exist in Jira)` then write `CLANCY_LABEL=<value>` to `.clancy/.env`.
+If [2]: remove `CLANCY_LABEL` from `.clancy/.env`.
+
+---
+
+### [4] Linear label filter (Linear only)
+
+```
+Linear label filter — current: {label name or "off"}
+Only pick up issues with this label. Useful for mixed backlogs
+where some issues are not suitable for autonomous implementation.
+
+[1] Set label name
+[2] Off (pick up all unstarted assigned issues regardless of label)
+[3] Cancel
+```
+
+If [1]: prompt `What label should Clancy filter by? (must already exist in your Linear team)` then write `CLANCY_LABEL=<value>` to `.clancy/.env`.
 If [2]: remove `CLANCY_LABEL` from `.clancy/.env`.
 
 ---
