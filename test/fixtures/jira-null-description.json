@@ -1,0 +1,15 @@
+{
+  "issues": [
+    {
+      "key": "PROJ-100",
+      "fields": {
+        "summary": "Simple task with no description",
+        "description": null,
+        "issuelinks": [],
+        "parent": null,
+        "customfield_10014": null
+      }
+    }
+  ],
+  "isLast": true
+}

@@ -101,6 +101,13 @@ RESPONSE=$(curl -s \
   -H "X-GitHub-Api-Version: 2022-11-28" \
   "https://api.github.com/repos/$GITHUB_REPO/issues?state=open&assignee=@me&labels=clancy&per_page=3")
 
+# Verify response is an array before parsing (guards against error objects on rate limit / transient failure)
+if ! echo "$RESPONSE" | jq -e 'type == "array"' >/dev/null 2>&1; then
+  ERR_MSG=$(echo "$RESPONSE" | jq -r '.message // "Unexpected response"' 2>/dev/null || echo "Unexpected response")
+  echo "✗ GitHub API error: $ERR_MSG. Check GITHUB_TOKEN in .clancy/.env."
+  exit 0
+fi
+
 # Filter out PRs and take first real issue
 ISSUE=$(echo "$RESPONSE" | jq 'map(select(has("pull_request") | not)) | .[0]')
 
@@ -172,14 +179,14 @@ fi
 # Delete ticket branch locally
 git branch -d "$TICKET_BRANCH"
 
-# Close the issue
-curl -s -X PATCH \
+# Close the issue — warn but don't fail if this doesn't go through
+CLOSE_HTTP=$(curl -s -o /dev/null -w "%{http_code}" -X PATCH \
   -H "Authorization: Bearer $GITHUB_TOKEN" \
   -H "X-GitHub-Api-Version: 2022-11-28" \
   -H "Content-Type: application/json" \
   "https://api.github.com/repos/$GITHUB_REPO/issues/${ISSUE_NUMBER}" \
-  -d '{"state": "closed"}' \
-  >/dev/null
+  -d '{"state": "closed"}')
+[ "$CLOSE_HTTP" = "200" ] || echo "⚠ Could not close issue #${ISSUE_NUMBER} (HTTP $CLOSE_HTTP). Close it manually on GitHub."
 
 # Log progress
 echo "$(date '+%Y-%m-%d %H:%M') | #${ISSUE_NUMBER} | $TITLE | DONE" >> .clancy/progress.txt

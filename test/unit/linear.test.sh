@@ -73,6 +73,17 @@ else
   pass "viewer.id not present in auth failure"
 fi
 
+# ─── Null description ─────────────────────────────────────────────────────────
+echo ""
+echo "null description:"
+FIXTURE="$FIXTURES_DIR/linear-null-description.json"
+
+DESCRIPTION=$(jq -r '.data.viewer.assignedIssues.nodes[0].description // "No description"' "$FIXTURE")
+assert_eq "null description defaults to No description" "No description" "$DESCRIPTION"
+
+IDENTIFIER=$(jq -r '.data.viewer.assignedIssues.nodes[0].identifier' "$FIXTURE")
+assert_eq "identifier still parsed with null description" "ENG-50" "$IDENTIFIER"
+
 # ─── No parent (no epic) ──────────────────────────────────────────────────────
 echo ""
 echo "no parent (epic is none):"

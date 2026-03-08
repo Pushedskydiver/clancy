@@ -114,6 +114,13 @@ RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
   -H "Authorization: $LINEAR_API_KEY" \
   -d "{\"query\": \"{ viewer { assignedIssues(filter: { state: { type: { eq: \\\"unstarted\\\" } } team: { id: { eq: \\\"$LINEAR_TEAM_ID\\\" } } } first: 1 orderBy: priority) { nodes { id identifier title description parent { identifier title } } } } } }\"}")
 
+# Check for API errors before parsing (rate limit, permission error, etc.)
+if ! echo "$RESPONSE" | jq -e '.data.viewer.assignedIssues' >/dev/null 2>&1; then
+  ERR_MSG=$(echo "$RESPONSE" | jq -r '.errors[0].message // "Unexpected response"' 2>/dev/null || echo "Unexpected response")
+  echo "✗ Linear API error: $ERR_MSG. Check LINEAR_API_KEY in .clancy/.env."
+  exit 0
+fi
+
 NODE_COUNT=$(echo "$RESPONSE" | jq '.data.viewer.assignedIssues.nodes | length')
 if [ "$NODE_COUNT" -eq 0 ]; then
   echo "No issues found. All done!"

@@ -1,0 +1,11 @@
+[
+  {
+    "number": 99,
+    "title": "Fix critical bug",
+    "body": null,
+    "state": "open",
+    "milestone": null,
+    "labels": [{ "name": "clancy" }],
+    "assignee": { "login": "octocat" }
+  }
+]

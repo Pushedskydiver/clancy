@@ -28,6 +28,7 @@ integration, structured codebase docs, and a git workflow built for team develop
 | `/clancy:settings` | View and change configuration — model, iterations, board, and more |
 | `/clancy:doctor` | Diagnose your setup — test every integration and report what's broken |
 | `/clancy:update` | Update Clancy to latest version via npx |
+| `/clancy:uninstall` | Remove Clancy commands — optionally remove `.clancy/` too |
 | `/clancy:help` | This screen |
 
 ### How it works

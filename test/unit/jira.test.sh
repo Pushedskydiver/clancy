@@ -104,6 +104,52 @@ assert_eq "no issues in auth failure response" "0" "$ISSUE_COUNT"
 HAS_ERRORS=$(jq 'has("errorMessages")' "$FIXTURE")
 assert_eq "errorMessages field present" "true" "$HAS_ERRORS"
 
+# ─── Null description ─────────────────────────────────────────────────────────
+echo ""
+echo "null description:"
+FIXTURE="$FIXTURES_DIR/jira-null-description.json"
+
+DESCRIPTION=$(jq -r '
+  .issues[0].fields.description
+  | .. | strings
+  | select(length > 0)
+  | . + "\n"
+' "$FIXTURE" 2>/dev/null || echo "No description")
+if [ -z "$DESCRIPTION" ]; then
+  DESCRIPTION="No description"
+fi
+assert_eq "null description yields fallback" "No description" "$DESCRIPTION"
+
+# ─── Multiple blockers ────────────────────────────────────────────────────────
+echo ""
+echo "multiple blockers:"
+FIXTURE="$FIXTURES_DIR/jira-multiple-blockers.json"
+
+BLOCKERS=$(jq -r '
+  [.issues[0].fields.issuelinks[]?
+    | select(.type.name == "Blocks" and .inwardIssue?)
+    | .inwardIssue.key]
+  | if length > 0 then "Blocked by: " + join(", ") else "None" end
+' "$FIXTURE" 2>/dev/null)
+assert_eq "multiple blockers joined" "Blocked by: PROJ-200, PROJ-201" "$BLOCKERS"
+
+NON_BLOCK_COUNT=$(jq '[.issues[0].fields.issuelinks[]? | select(.type.name == "relates to")] | length' "$FIXTURE")
+assert_eq "non-blocking links not included in blockers" "1" "$NON_BLOCK_COUNT"
+
+EPIC=$(jq -r '.issues[0].fields.parent.key // .issues[0].fields.customfield_10014 // "none"' "$FIXTURE")
+assert_eq "epic from parent.key in multi-blocker fixture" "PROJ-5" "$EPIC"
+
+# ─── Rate limit ───────────────────────────────────────────────────────────────
+echo ""
+echo "rate limit response:"
+FIXTURE="$FIXTURES_DIR/jira-rate-limit.json"
+
+ISSUE_COUNT=$(jq '.issues | length // 0' "$FIXTURE")
+assert_eq "rate limit has no issues" "0" "$ISSUE_COUNT"
+
+HAS_MESSAGE=$(jq 'has("message")' "$FIXTURE")
+assert_eq "rate limit has message field" "true" "$HAS_MESSAGE"
+
 # ─── Summary ──────────────────────────────────────────────────────────────────
 echo ""
 echo "──────────────────"

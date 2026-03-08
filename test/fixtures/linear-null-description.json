@@ -1,0 +1,20 @@
+{
+  "data": {
+    "viewer": {
+      "assignedIssues": {
+        "nodes": [
+          {
+            "id": "xyz789",
+            "identifier": "ENG-50",
+            "title": "Quick fix",
+            "description": null,
+            "parent": {
+              "identifier": "ENG-15",
+              "title": "Q1 Roadmap"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

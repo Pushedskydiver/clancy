@@ -74,6 +74,18 @@ assert_eq "message field present" "true" "$HAS_MESSAGE"
 ERROR_MSG=$(jq -r '.message' "$FIXTURE")
 assert_eq "error message is Bad credentials" "Bad credentials" "$ERROR_MSG"
 
+# ─── Null body ────────────────────────────────────────────────────────────────
+echo ""
+echo "null body:"
+FIXTURE="$FIXTURES_DIR/github-null-body.json"
+
+ISSUE=$(jq 'map(select(has("pull_request") | not)) | .[0]' "$FIXTURE")
+BODY=$(echo "$ISSUE" | jq -r '.body // "No description"')
+assert_eq "null body defaults to No description" "No description" "$BODY"
+
+MILESTONE=$(echo "$ISSUE" | jq -r '.milestone.title // "none"')
+assert_eq "null milestone defaults to none" "none" "$MILESTONE"
+
 # ─── Branch naming ────────────────────────────────────────────────────────────
 echo ""
 echo "branch naming:"

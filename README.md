@@ -93,6 +93,7 @@ You'll be asked: global install (`~/.claude`) or local (`./.claude`). Either wor
 - [Claude Code](https://claude.ai/code) CLI installed
 - `jq` installed (`brew install jq` or `apt install jq`)
 - `curl` installed (comes with macOS/most Linux)
+- `git` installed (comes with most development environments)
 
 > **Heads up:** Clancy runs Claude with `--dangerously-skip-permissions` so it can work unattended without prompting for approval on every file change, git command, and shell script. Only run Clancy on codebases you own and trust. Review the scripts in `.clancy/` before your first run if you want to see exactly what it does.
 
@@ -135,6 +136,7 @@ npx chief-clancy
 | `/clancy:settings`     | View and change configuration — model, iterations, board, and more      |
 | `/clancy:doctor`       | Diagnose your setup — test every integration, report what's broken       |
 | `/clancy:update`       | Update Clancy to latest version                                          |
+| `/clancy:uninstall`    | Remove Clancy commands — optionally remove `.clancy/` too               |
 | `/clancy:help`         | Command reference                                                        |
 
 ---
