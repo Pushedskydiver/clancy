@@ -317,7 +317,7 @@ Write `CLANCY_NOTIFY_WEBHOOK=<url>` to `.clancy/.env`.
 
 ### Enhancement 4: Max iterations
 
-Output: `How many tickets should /clancy:run process per session? (default: 5) [enter to accept or type a number]:`
+Output: `How many tickets should /clancy:run process per session? [5]`
 
 Write `MAX_ITERATIONS=<value>` to `.clancy/.env`.
 
