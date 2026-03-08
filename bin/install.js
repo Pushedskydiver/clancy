@@ -9,11 +9,17 @@ const PKG = require('../package.json');
 const COMMANDS_SRC = path.join(__dirname, '..', 'src', 'commands');
 const WORKFLOWS_SRC = path.join(__dirname, '..', 'src', 'workflows');
 
-const GLOBAL_DEST = path.join(process.env.HOME || process.env.USERPROFILE, '.claude', 'commands', 'clancy');
+const homeDir = process.env.HOME || process.env.USERPROFILE;
+if (!homeDir) {
+  process.stderr.write('\x1b[31m\n  Error: HOME or USERPROFILE environment variable is not set.\x1b[0m\n');
+  process.exit(1);
+}
+
+const GLOBAL_DEST = path.join(homeDir, '.claude', 'commands', 'clancy');
 const LOCAL_DEST = path.join(process.cwd(), '.claude', 'commands', 'clancy');
 
 // Workflows live outside commands/ so Claude Code doesn't expose them as slash commands
-const GLOBAL_WORKFLOWS_DEST = path.join(process.env.HOME || process.env.USERPROFILE, '.claude', 'clancy', 'workflows');
+const GLOBAL_WORKFLOWS_DEST = path.join(homeDir, '.claude', 'clancy', 'workflows');
 const LOCAL_WORKFLOWS_DEST = path.join(process.cwd(), '.claude', 'clancy', 'workflows');
 
 // ANSI helpers
@@ -25,6 +31,8 @@ const green  = s => `\x1b[32m${s}\x1b[0m`;
 const red    = s => `\x1b[31m${s}\x1b[0m`;
 
 const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+// Ensure readline is always closed — process.exit() doesn't trigger finally blocks
+process.on('exit', () => rl.close());
 
 function ask(label) {
   return new Promise(resolve => rl.question(label, resolve));
@@ -41,6 +49,13 @@ async function choose(question, options, defaultChoice = 1) {
 }
 
 function copyDir(src, dest) {
+  // Use lstatSync (not statSync) to detect symlinks — statSync follows them and misreports
+  if (fs.existsSync(dest)) {
+    const stat = fs.lstatSync(dest);
+    if (stat.isSymbolicLink()) {
+      throw new Error(`${dest} is a symlink. Remove it first before installing.`);
+    }
+  }
   fs.mkdirSync(dest, { recursive: true });
   for (const entry of fs.readdirSync(src, { withFileTypes: true })) {
     const s = path.join(src, entry.name);
@@ -82,11 +97,25 @@ async function main() {
     process.exit(1);
   }
 
+  // Validate source directories — guards against corrupted npm package
+  if (!fs.existsSync(COMMANDS_SRC)) {
+    console.error(red(`\n  Error: Source not found: ${COMMANDS_SRC}`));
+    console.error(red('  The npm package may be corrupted. Try: npm cache clean --force'));
+    rl.close();
+    process.exit(1);
+  }
+  if (!fs.existsSync(WORKFLOWS_SRC)) {
+    console.error(red(`\n  Error: Source not found: ${WORKFLOWS_SRC}`));
+    console.error(red('  The npm package may be corrupted. Try: npm cache clean --force'));
+    rl.close();
+    process.exit(1);
+  }
+
   console.log('');
   console.log(dim(`  Installing to: ${dest}`));
 
   try {
-    if (fs.existsSync(dest)) {
+    if (fs.existsSync(dest) || fs.existsSync(workflowsDest)) {
       console.log('');
       const overwrite = await ask(blue(`  Commands already exist at ${dest}. Overwrite? [y/N] `));
       if (!overwrite.trim().toLowerCase().startsWith('y')) {

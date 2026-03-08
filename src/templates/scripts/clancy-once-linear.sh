@@ -111,18 +111,34 @@ echo "✓ Preflight passed. Starting Clancy..."
 #     }
 #   }
 
-# Optional label filter — set CLANCY_LABEL in .env to only pick up issues with that label.
-# Recommended: create a "clancy" label in Linear and apply it to issues suitable for autonomous implementation.
+# Validate user-controlled values to prevent GraphQL injection.
+# Values are passed via GraphQL variables (JSON-encoded by jq) rather than string-interpolated.
+if ! echo "$LINEAR_TEAM_ID" | grep -qE '^[a-zA-Z0-9_-]+$'; then
+  echo "✗ LINEAR_TEAM_ID contains invalid characters. Check .clancy/.env."
+  exit 0
+fi
+if [ -n "${CLANCY_LABEL:-}" ] && ! echo "$CLANCY_LABEL" | grep -qE '^[a-zA-Z0-9 _-]+$'; then
+  echo "✗ CLANCY_LABEL contains invalid characters. Use only letters, numbers, spaces, hyphens, and underscores."
+  exit 0
+fi
+
+# Build request using GraphQL variables — values are JSON-encoded by jq, never interpolated into the query string.
+# The label filter clause is only added to the query when CLANCY_LABEL is set, since passing null would match nothing.
 if [ -n "${CLANCY_LABEL:-}" ]; then
-  LABEL_CLAUSE=" labels: { name: { eq: \\\"$CLANCY_LABEL\\\" } }"
+  REQUEST_BODY=$(jq -n \
+    --arg teamId "$LINEAR_TEAM_ID" \
+    --arg label "$CLANCY_LABEL" \
+    '{"query": "query($teamId: String!, $label: String) { viewer { assignedIssues(filter: { state: { type: { eq: \"unstarted\" } } team: { id: { eq: $teamId } } labels: { name: { eq: $label } } } first: 1 orderBy: priority) { nodes { id identifier title description parent { identifier title } } } } }", "variables": {"teamId": $teamId, "label": $label}}')
 else
-  LABEL_CLAUSE=""
+  REQUEST_BODY=$(jq -n \
+    --arg teamId "$LINEAR_TEAM_ID" \
+    '{"query": "query($teamId: String!) { viewer { assignedIssues(filter: { state: { type: { eq: \"unstarted\" } } team: { id: { eq: $teamId } } } first: 1 orderBy: priority) { nodes { id identifier title description parent { identifier title } } } } }", "variables": {"teamId": $teamId}}')
 fi
 
 RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
   -H "Content-Type: application/json" \
   -H "Authorization: $LINEAR_API_KEY" \
-  -d "{\"query\": \"{ viewer { assignedIssues(filter: { state: { type: { eq: \\\"unstarted\\\" } } team: { id: { eq: \\\"$LINEAR_TEAM_ID\\\" } }$LABEL_CLAUSE } first: 1 orderBy: priority) { nodes { id identifier title description parent { identifier title } } } } } }\"}")
+  -d "$REQUEST_BODY")
 
 # Check for API errors before parsing (rate limit, permission error, etc.)
 if ! echo "$RESPONSE" | jq -e '.data.viewer.assignedIssues' >/dev/null 2>&1; then
@@ -209,3 +225,17 @@ git branch -d "$TICKET_BRANCH"
 echo "$(date '+%Y-%m-%d %H:%M') | $IDENTIFIER | $TITLE | DONE" >> .clancy/progress.txt
 
 echo "✓ $IDENTIFIER complete."
+
+# Send completion notification if webhook is configured
+if [ -n "${CLANCY_NOTIFY_WEBHOOK:-}" ]; then
+  NOTIFY_MSG="✓ Clancy completed [$IDENTIFIER] $TITLE"
+  if echo "$CLANCY_NOTIFY_WEBHOOK" | grep -q "hooks.slack.com"; then
+    curl -s -X POST "$CLANCY_NOTIFY_WEBHOOK" \
+      -H "Content-Type: application/json" \
+      -d "$(jq -n --arg text "$NOTIFY_MSG" '{"text": $text}')" >/dev/null 2>&1 || true
+  else
+    curl -s -X POST "$CLANCY_NOTIFY_WEBHOOK" \
+      -H "Content-Type: application/json" \
+      -d "$(jq -n --arg text "$NOTIFY_MSG" '{"type":"message","attachments":[{"contentType":"application/vnd.microsoft.card.adaptive","content":{"type":"AdaptiveCard","body":[{"type":"TextBlock","text":$text}]}}]}')" >/dev/null 2>&1 || true
+  fi
+fi

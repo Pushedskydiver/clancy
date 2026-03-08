@@ -66,6 +66,12 @@ fi
 [ -n "${GITHUB_TOKEN:-}"  ] || { echo "✗ GITHUB_TOKEN is not set in .clancy/.env";  exit 0; }
 [ -n "${GITHUB_REPO:-}"   ] || { echo "✗ GITHUB_REPO is not set in .clancy/.env";   exit 0; }
 
+# Validate GITHUB_REPO format — must be owner/repo with safe characters only
+if ! echo "$GITHUB_REPO" | grep -qE '^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$'; then
+  echo "✗ GITHUB_REPO format is invalid. Expected owner/repo (e.g. acme/my-app). Check GITHUB_REPO in .clancy/.env."
+  exit 0
+fi
+
 PING=$(curl -s -o /dev/null -w "%{http_code}" \
   -H "Authorization: Bearer $GITHUB_TOKEN" \
   -H "X-GitHub-Api-Version: 2022-11-28" \
@@ -192,3 +198,17 @@ CLOSE_HTTP=$(curl -s -o /dev/null -w "%{http_code}" -X PATCH \
 echo "$(date '+%Y-%m-%d %H:%M') | #${ISSUE_NUMBER} | $TITLE | DONE" >> .clancy/progress.txt
 
 echo "✓ #${ISSUE_NUMBER} complete."
+
+# Send completion notification if webhook is configured
+if [ -n "${CLANCY_NOTIFY_WEBHOOK:-}" ]; then
+  NOTIFY_MSG="✓ Clancy completed [#${ISSUE_NUMBER}] $TITLE"
+  if echo "$CLANCY_NOTIFY_WEBHOOK" | grep -q "hooks.slack.com"; then
+    curl -s -X POST "$CLANCY_NOTIFY_WEBHOOK" \
+      -H "Content-Type: application/json" \
+      -d "$(jq -n --arg text "$NOTIFY_MSG" '{"text": $text}')" >/dev/null 2>&1 || true
+  else
+    curl -s -X POST "$CLANCY_NOTIFY_WEBHOOK" \
+      -H "Content-Type: application/json" \
+      -d "$(jq -n --arg text "$NOTIFY_MSG" '{"type":"message","attachments":[{"contentType":"application/vnd.microsoft.card.adaptive","content":{"type":"AdaptiveCard","body":[{"type":"TextBlock","text":$text}]}}]}')" >/dev/null 2>&1 || true
+  fi
+fi

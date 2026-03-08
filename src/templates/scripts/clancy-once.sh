@@ -95,6 +95,17 @@ echo "✓ Preflight passed. Starting Clancy..."
 
 # ─── FETCH TICKET ──────────────────────────────────────────────────────────────
 
+# Validate user-controlled values to prevent JQL injection.
+# JQL does not support parameterised queries, so we restrict to safe characters.
+if [ -n "${CLANCY_LABEL:-}" ] && ! echo "$CLANCY_LABEL" | grep -qE '^[a-zA-Z0-9 _-]+$'; then
+  echo "✗ CLANCY_LABEL contains invalid characters. Use only letters, numbers, spaces, hyphens, and underscores."
+  exit 0
+fi
+if ! echo "${CLANCY_JQL_STATUS:-To Do}" | grep -qE '^[a-zA-Z0-9 _-]+$'; then
+  echo "✗ CLANCY_JQL_STATUS contains invalid characters. Use only letters, numbers, spaces, hyphens, and underscores."
+  exit 0
+fi
+
 # Build JQL — sprint filter is optional (requires Jira Software license).
 # Uses the /rest/api/3/search/jql POST endpoint — the old GET /search was removed Aug 2025.
 # maxResults:1 is intentional — pick one ticket per run, never paginate.
@@ -217,3 +228,17 @@ git branch -d "$TICKET_BRANCH"
 echo "$(date '+%Y-%m-%d %H:%M') | $TICKET_KEY | $SUMMARY | DONE" >> .clancy/progress.txt
 
 echo "✓ $TICKET_KEY complete."
+
+# Send completion notification if webhook is configured
+if [ -n "${CLANCY_NOTIFY_WEBHOOK:-}" ]; then
+  NOTIFY_MSG="✓ Clancy completed [$TICKET_KEY] $SUMMARY"
+  if echo "$CLANCY_NOTIFY_WEBHOOK" | grep -q "hooks.slack.com"; then
+    curl -s -X POST "$CLANCY_NOTIFY_WEBHOOK" \
+      -H "Content-Type: application/json" \
+      -d "$(jq -n --arg text "$NOTIFY_MSG" '{"text": $text}')" >/dev/null 2>&1 || true
+  else
+    curl -s -X POST "$CLANCY_NOTIFY_WEBHOOK" \
+      -H "Content-Type: application/json" \
+      -d "$(jq -n --arg text "$NOTIFY_MSG" '{"type":"message","attachments":[{"contentType":"application/vnd.microsoft.card.adaptive","content":{"type":"AdaptiveCard","body":[{"type":"TextBlock","text":$text}]}}]}')" >/dev/null 2>&1 || true
+  fi
+fi
