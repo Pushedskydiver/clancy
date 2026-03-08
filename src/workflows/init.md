@@ -71,15 +71,15 @@ Ask each question individually and wait for an answer before moving to the next.
 
 **Jira** — ask in this order:
 
-1. `Jira base URL (e.g. https://your-org.atlassian.net):`
-2. `Jira project key (e.g. PROJ):`
-3. `Jira email (your Atlassian account email):`
-4. `Jira API token (from id.atlassian.com/manage-profile/security/api-tokens):`
+1. `What's your Jira base URL? (e.g. https://your-org.atlassian.net)`
+2. `What's your Jira project key? (e.g. PROJ)`
+3. `What email address do you use to log in to Atlassian?`
+4. `Paste your Jira API token: (create one at id.atlassian.com/manage-profile/security/api-tokens)`
 
 **GitHub Issues** — ask in this order:
 
-1. `GitHub repo (owner/name, e.g. acme/my-app):`
-2. `GitHub personal access token (needs repo scope):`
+1. `What's your GitHub repo? (owner/name, e.g. acme/my-app)`
+2. `Paste your GitHub personal access token: (needs repo scope)`
 
 After collecting GitHub credentials, show:
 ```
@@ -89,8 +89,8 @@ Add this label to any issue you want Clancy to work on.
 
 **Linear** — ask in this order:
 
-1. `Linear API key (from linear.app/settings/api):`
-2. `Linear team ID (from linear.app/settings/teams — click your team, copy the ID from the URL):`
+1. `Paste your Linear API key: (create one at linear.app/settings/api)`
+2. `What's your Linear team ID? (find it at linear.app/settings/teams — click your team, copy the ID from the URL)`
 
 ---
 
@@ -170,7 +170,7 @@ Output: `Fetch design context from Figma when tickets include a Figma URL. Set u
 
 If no: skip to Enhancement 2.
 
-If yes: `Figma API key (from figma.com/settings → Personal access tokens):`
+If yes: `Paste your Figma API key: (create one at figma.com/settings → Personal access tokens)`
 
 If a key is entered:
 1. Verify the key by calling `GET https://api.figma.com/v1/me` with `X-Figma-Token: {key}`
@@ -233,7 +233,7 @@ What UI work requires the full dev server instead of Storybook?
 **Step 4: Dev server command**
 Auto-detect from `package.json` scripts (priority: `dev`, `start`, `serve`).
 ```
-Dev server start command:
+What command starts your dev server?
   Detected: {value}
 
 [1] Yes, use this
@@ -243,7 +243,7 @@ Dev server start command:
 **Step 5: Dev server port**
 Auto-detect from `vite.config.*`, `next.config.*`, or common defaults (5173, 3000, 8080).
 ```
-Dev server port:
+What port does your dev server run on?
   Detected: {value}
 
 [1] Yes, use this
@@ -253,7 +253,7 @@ Dev server port:
 **Step 6: (If Storybook confirmed) Storybook command**
 Auto-detect from `package.json` scripts (`storybook`, `storybook:dev`).
 ```
-Storybook start command:
+What command starts Storybook?
   Detected: {value}
 
 [1] Yes, use this
@@ -263,7 +263,7 @@ Storybook start command:
 **Step 7: (If Storybook confirmed) Storybook port**
 Auto-detect from `.storybook/main.js|ts` or default to 6006.
 ```
-Storybook port:
+What port does Storybook run on?
   Detected: {value}
 
 [1] Yes, use this

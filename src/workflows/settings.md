@@ -155,7 +155,7 @@ where some tickets are not suitable for autonomous implementation.
 [3] Cancel
 ```
 
-If [1]: prompt `Label name (must already exist in Jira):` then write `CLANCY_LABEL=<value>` to `.clancy/.env`.
+If [1]: prompt `What label should Clancy filter by? (must already exist in Jira)` then write `CLANCY_LABEL=<value>` to `.clancy/.env`.
 If [2]: remove `CLANCY_LABEL` from `.clancy/.env`.
 
 ---
@@ -170,7 +170,7 @@ Figma MCP — current: {enabled / not set}
 [3] Cancel
 ```
 
-If [1]: prompt `Figma API key (from figma.com/settings → Personal access tokens):` then verify with the Figma `whoami` API before saving. If verification fails, tell the user and offer retry or skip — never save an unverified key.
+If [1]: prompt `Paste your Figma API key: (create one at figma.com/settings → Personal access tokens)` then verify with the Figma `whoami` API before saving. If verification fails, tell the user and offer retry or skip — never save an unverified key.
 If [2]: remove `FIGMA_API_KEY` from `.clancy/.env`.
 
 ---
@@ -224,14 +224,14 @@ Only show the two boards that are not currently active. If the user picks Cancel
 Ask each credential question individually and wait for an answer, exactly as in the init workflow Q2:
 
 Jira — ask in this order:
-1. `Jira base URL (e.g. https://your-org.atlassian.net):`
-2. `Jira project key (e.g. PROJ):`
-3. `Jira email (your Atlassian account email):`
-4. `Jira API token (from id.atlassian.com/manage-profile/security/api-tokens):`
+1. `What's your Jira base URL? (e.g. https://your-org.atlassian.net)`
+2. `What's your Jira project key? (e.g. PROJ)`
+3. `What email address do you use to log in to Atlassian?`
+4. `Paste your Jira API token: (create one at id.atlassian.com/manage-profile/security/api-tokens)`
 
 GitHub Issues — ask in this order:
-1. `GitHub repo (owner/name, e.g. acme/my-app):`
-2. `GitHub personal access token (needs repo scope):`
+1. `What's your GitHub repo? (owner/name, e.g. acme/my-app)`
+2. `Paste your GitHub personal access token: (needs repo scope)`
 
 After collecting GitHub credentials, remind the user:
 ```
@@ -240,8 +240,8 @@ Add this label to any issue you want Clancy to work on.
 ```
 
 Linear — ask in this order:
-1. `Linear API key (from linear.app/settings/api):`
-2. `Linear team ID (from linear.app/settings/teams — click your team, copy the ID from the URL):`
+1. `Paste your Linear API key: (create one at linear.app/settings/api)`
+2. `What's your Linear team ID? (find it at linear.app/settings/teams — click your team, copy the ID from the URL)`
 
 **Step 2: Verify credentials**
 

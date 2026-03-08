@@ -100,10 +100,10 @@ Source `.clancy/.env` and detect which board is configured:
 Clancy doctor — {N} checks passed, {N} warnings, {N} failures
 
 ✓ Clancy v0.1.0 installed (global)
-✓ claude, jq, curl, git — all present
+✓ jq, curl, git — all present
 ✓ .clancy/ set up — 10 docs present
 ✓ Jira connected — PROJ reachable
-⚠ Figma — Starter plan (6 calls/month, ~2 tickets)
+✓ Figma connected — alex@example.com (check plan at figma.com/settings)
 ✗ PLAYWRIGHT_STORYBOOK_PORT — not set in .clancy/.env
 
 Fix the ✗ items, then run /clancy:once to verify end-to-end.
