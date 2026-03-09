@@ -6,7 +6,7 @@ Three Claude Code workflow tools — different philosophies, different sweet spo
 |---|---|---|---|
 | **Purpose** | Autonomous ticket implementation | Structured project phases | In-session efficiency |
 | **Board integration** | Jira, GitHub Issues, Linear | None | None |
-| **Runtime support** | Claude Code | Claude Code, OpenCode, Gemini, Codex | Claude Code |
+| **Runtime support** | Claude Code | Claude Code, OpenCode, Gemini CLI, Codex | Claude Code |
 | **Automation level** | Fully autonomous (AFK loop) | Semi-autonomous (approve roadmap, then walk away) | Human-driven |
 | **Context loading** | All docs on every ticket | Fresh subagent per phase, main session stays lean | In-session by default, subagents for bounded research only |
 | **Token usage** | Heavy (fresh session per ticket) | Moderate (subagents per phase, main session ~30-40%) | Lean (avoids subagent cold-starts) |
@@ -32,17 +32,17 @@ Clancy is the wrong tool if:
 
 ## When to use GSD
 
-You're working on a larger project and want structured phases — research, plan, build, review — with a human sign-off on the roadmap before the work begins. Once you've approved the plan, GSD can run autonomously through execution (it has a YOLO mode for hands-off runs).
+You're working on a larger project and want structured phases — discuss, plan, build, verify — with a human sign-off at each phase before the work begins. Once you've approved a phase plan, GSD runs execution autonomously in parallel waves using fresh context windows per wave.
 
-GSD spawns fresh subagents per phase so each gets a clean 200k context window for implementation, while your main session stays lean. It also supports multiple AI runtimes beyond Claude Code (OpenCode, Gemini, Codex), which makes it a better fit if your team doesn't standardise on Claude.
+GSD spawns fresh subagents per phase so each gets a clean context window for implementation, while your main session stays lean. It also supports multiple AI runtimes beyond Claude Code (OpenCode, Gemini CLI, Codex), which makes it a better fit if your team doesn't standardise on Claude.
 
 ---
 
 ## When to use PAUL
 
-You care primarily about efficiency within a Claude Code session. PAUL stays in-session by default — avoiding subagent cold-starts (~2-3k tokens each) — and reserves parallel agents only for bounded research tasks where the parallelisation is genuinely worth it.
+PAUL (Plan-Apply-Unify Loop) is for developers who care primarily about quality and efficiency within a Claude Code session. It enforces a strict three-phase cycle: plan with BDD acceptance criteria (Given/When/Then), apply sequentially with verification steps, then unify to reconcile what was planned vs. what was built.
 
-PAUL also adds explicit quality gates (acceptance criteria in Given/When/Then format), structured handoff files for zero-context resumption, and hard scope boundaries. It's not a board tool or a project phase tool — it's a set of conventions for working more carefully and efficiently inside a single session.
+PAUL stays in-session by default and reserves parallel agents only for bounded research tasks. Structured state files (STATE.md, decision logs) enable zero-context resumption across sessions. It's not a board tool or a project phase tool — it's a set of conventions for working more carefully and deliberately inside a single session.
 
 ---
 
