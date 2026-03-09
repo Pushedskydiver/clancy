@@ -8,6 +8,7 @@ set -euo pipefail
   echo "✗ .env not found. Run from a configured project root."
   exit 1
 }
+# shellcheck source=/dev/null
 source .env
 
 PASS=0

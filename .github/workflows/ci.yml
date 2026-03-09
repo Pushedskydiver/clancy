@@ -1,0 +1,39 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  shellcheck:
+    name: Shellcheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck
+        run: sudo apt-get install -y shellcheck
+
+      - name: Lint shell scripts
+        run: |
+          shellcheck \
+            src/templates/scripts/clancy-once.sh \
+            src/templates/scripts/clancy-once-github.sh \
+            src/templates/scripts/clancy-once-linear.sh \
+            src/templates/scripts/clancy-afk.sh \
+            test/unit/jira.test.sh \
+            test/unit/github.test.sh \
+            test/unit/linear.test.sh \
+            test/unit/scaffold.test.sh \
+            test/smoke/smoke.sh
+
+  unit-tests:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run unit tests
+        run: npm test
