@@ -208,7 +208,8 @@ If you must SKIP this issue:
 4. Stop — no branches, no file changes, no git operations.
 
 If the issue IS implementable, continue:
-1. Read ALL docs in .clancy/docs/ — especially GIT.md for branching and commit conventions
+1. Read core docs in .clancy/docs/: STACK.md, ARCHITECTURE.md, CONVENTIONS.md, GIT.md, DEFINITION-OF-DONE.md, CONCERNS.md
+   Also read if relevant to this ticket: INTEGRATIONS.md (external APIs/services/auth), TESTING.md (tests/specs/coverage), DESIGN-SYSTEM.md (UI/components/styles), ACCESSIBILITY.md (accessibility/ARIA/WCAG)
 2. Follow the conventions in GIT.md exactly
 3. Implement the issue fully
 4. Commit your work following the conventions in GIT.md
