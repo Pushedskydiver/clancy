@@ -6,8 +6,6 @@ Autonomous, board-driven development for Claude Code.
 
 Named after Chief Clancy Wiggum (Ralph's dad, The Simpsons) — because Clancy equips and deploys Ralph before sending him to work. Built on the [Ralph technique](https://ghuntley.com/ralph/) coined by Geoffrey Huntley. Clancy extends that foundation with Kanban board integration, structured codebase docs, and a git workflow built for team development.
 
-> **Work in progress** — Clancy is not yet published to npm. This repo is public for feedback and early eyes only. Watch for a release.
-
 ---
 
 ## What it does
@@ -187,10 +185,10 @@ When a ticket description contains a Figma URL, Clancy fetches design specs auto
 
 ```
 PLAYWRIGHT_ENABLED=true
-PLAYWRIGHT_DEV_COMMAND=yarn dev
+PLAYWRIGHT_DEV_COMMAND="yarn dev"
 PLAYWRIGHT_DEV_PORT=5173
-PLAYWRIGHT_STORYBOOK_COMMAND=yarn storybook  # if applicable
-PLAYWRIGHT_STORYBOOK_PORT=6006               # if applicable
+PLAYWRIGHT_STORYBOOK_COMMAND="yarn storybook"  # if applicable
+PLAYWRIGHT_STORYBOOK_PORT=6006                 # if applicable
 PLAYWRIGHT_STARTUP_WAIT=15
 ```
 
