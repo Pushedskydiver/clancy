@@ -29,6 +29,7 @@
   "main": "bin/install.js",
   "files": [
     "bin/",
+    "hooks/",
     "src/",
     "registry/"
   ],

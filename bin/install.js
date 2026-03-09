@@ -8,6 +8,7 @@ const readline = require('readline');
 const PKG = require('../package.json');
 const COMMANDS_SRC = path.join(__dirname, '..', 'src', 'commands');
 const WORKFLOWS_SRC = path.join(__dirname, '..', 'src', 'workflows');
+const HOOKS_SRC = path.join(__dirname, '..', 'hooks');
 
 const homeDir = process.env.HOME || process.env.USERPROFILE;
 if (!homeDir) {
@@ -258,6 +259,41 @@ async function main() {
       manifestPath.replace('manifest.json', 'workflows-manifest.json'),
       JSON.stringify(buildManifest(workflowsDest), null, 2)
     );
+
+    // Install hooks and register SessionStart hook in Claude settings.json
+    const claudeConfigDir = dest === GLOBAL_DEST
+      ? path.join(homeDir, '.claude')
+      : path.join(process.cwd(), '.claude');
+    const hooksInstallDir = path.join(claudeConfigDir, 'hooks');
+    const settingsFile = path.join(claudeConfigDir, 'settings.json');
+    const hookScriptSrc = path.join(HOOKS_SRC, 'clancy-check-update.js');
+    const hookScriptDest = path.join(hooksInstallDir, 'clancy-check-update.js');
+
+    try {
+      fs.mkdirSync(hooksInstallDir, { recursive: true });
+      fs.copyFileSync(hookScriptSrc, hookScriptDest);
+
+      // Merge SessionStart hook into settings.json without clobbering existing config
+      let settings = {};
+      if (fs.existsSync(settingsFile)) {
+        try { settings = JSON.parse(fs.readFileSync(settingsFile, 'utf8')); } catch {}
+      }
+      if (!settings.hooks) settings.hooks = {};
+      if (!settings.hooks.SessionStart) settings.hooks.SessionStart = [];
+
+      const hookCommand = `node ${hookScriptDest}`;
+      const alreadyRegistered = settings.hooks.SessionStart.some(
+        h => h.hooks && h.hooks.some(hh => hh.command === hookCommand)
+      );
+      if (!alreadyRegistered) {
+        settings.hooks.SessionStart.push({
+          hooks: [{ type: 'command', command: hookCommand }],
+        });
+      }
+      fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2) + '\n');
+    } catch {
+      // Hook registration is best-effort — don't fail the install over it
+    }
 
     console.log('');
     console.log(green('  ✓ Clancy installed successfully.'));
