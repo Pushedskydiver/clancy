@@ -210,9 +210,19 @@ If `CLAUDE.md` was not modified (it already existed and was not changed), omit i
 
 Output:
 
-Clancy is set up. A few optional enhancements are available — take 2 minutes each or skip for now. You can always configure them later by editing `.clancy/.env`.
+```
+Clancy is set up. A few optional enhancements are available:
 
-Would you like to set up optional enhancements now? [y/N]
+  1. Figma MCP        — fetch design specs when tickets include a Figma URL
+  2. Playwright       — screenshot and verify UI after implementing tickets
+  3. Notifications    — post to Slack or Teams when a ticket completes or errors
+  4. Max iterations   — set how many tickets /clancy:run processes per session
+
+Each takes about 2 minutes to configure, or skip any for now.
+You can always add them later by editing .clancy/.env.
+
+Set up optional enhancements? [y/N]
+```
 
 If no: skip to Step 6.
 
