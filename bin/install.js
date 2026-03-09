@@ -260,36 +260,55 @@ async function main() {
       JSON.stringify(buildManifest(workflowsDest), null, 2)
     );
 
-    // Install hooks and register SessionStart hook in Claude settings.json
+    // Install hooks and register them in Claude settings.json
     const claudeConfigDir = dest === GLOBAL_DEST
       ? path.join(homeDir, '.claude')
       : path.join(process.cwd(), '.claude');
     const hooksInstallDir = path.join(claudeConfigDir, 'hooks');
     const settingsFile = path.join(claudeConfigDir, 'settings.json');
-    const hookScriptSrc = path.join(HOOKS_SRC, 'clancy-check-update.js');
-    const hookScriptDest = path.join(hooksInstallDir, 'clancy-check-update.js');
+
+    const hookFiles = [
+      'clancy-check-update.js',
+      'clancy-statusline.js',
+      'clancy-context-monitor.js',
+    ];
 
     try {
       fs.mkdirSync(hooksInstallDir, { recursive: true });
-      fs.copyFileSync(hookScriptSrc, hookScriptDest);
+      for (const f of hookFiles) {
+        fs.copyFileSync(path.join(HOOKS_SRC, f), path.join(hooksInstallDir, f));
+      }
 
-      // Merge SessionStart hook into settings.json without clobbering existing config
+      // Merge hooks into settings.json without clobbering existing config
       let settings = {};
       if (fs.existsSync(settingsFile)) {
         try { settings = JSON.parse(fs.readFileSync(settingsFile, 'utf8')); } catch {}
       }
       if (!settings.hooks) settings.hooks = {};
-      if (!settings.hooks.SessionStart) settings.hooks.SessionStart = [];
 
-      const hookCommand = `node ${hookScriptDest}`;
-      const alreadyRegistered = settings.hooks.SessionStart.some(
-        h => h.hooks && h.hooks.some(hh => hh.command === hookCommand)
-      );
-      if (!alreadyRegistered) {
-        settings.hooks.SessionStart.push({
-          hooks: [{ type: 'command', command: hookCommand }],
-        });
+      // Helper: add a hook command to an event array if not already present
+      function registerHook(event, command) {
+        if (!settings.hooks[event]) settings.hooks[event] = [];
+        const already = settings.hooks[event].some(
+          h => h.hooks && h.hooks.some(hh => hh.command === command)
+        );
+        if (!already) {
+          settings.hooks[event].push({ hooks: [{ type: 'command', command }] });
+        }
       }
+
+      const updateScript    = path.join(hooksInstallDir, 'clancy-check-update.js');
+      const statuslineScript = path.join(hooksInstallDir, 'clancy-statusline.js');
+      const monitorScript   = path.join(hooksInstallDir, 'clancy-context-monitor.js');
+
+      registerHook('SessionStart', `node ${updateScript}`);
+      registerHook('PostToolUse',  `node ${monitorScript}`);
+
+      // Statusline: registered as top-level key, not inside hooks
+      if (!settings.statusline) {
+        settings.statusline = `node ${statuslineScript}`;
+      }
+
       fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2) + '\n');
     } catch {
       // Hook registration is best-effort — don't fail the install over it
