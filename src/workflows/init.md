@@ -176,13 +176,13 @@ Store the detected (or confirmed) value as `CLANCY_BASE_BRANCH` in `.clancy/.env
 
 Create `.clancy/` directory and the following:
 
-1. Copy the correct `clancy-once.sh` variant for the chosen board to `.clancy/clancy-once.sh`
-2. Copy `clancy-afk.sh` to `.clancy/clancy-afk.sh`
+1. Write the correct `clancy-once.sh` for the chosen board to `.clancy/clancy-once.sh` — use the exact script content from scaffold.md, do not generate or modify it
+2. Write `clancy-afk.sh` to `.clancy/clancy-afk.sh` — use the exact script content from scaffold.md, do not generate or modify it
 3. Make both scripts executable: `chmod +x .clancy/*.sh`
 4. Create `.clancy/docs/` with 10 empty template files (UPPERCASE.md with section headings only):
    - STACK.md, INTEGRATIONS.md, ARCHITECTURE.md, CONVENTIONS.md, TESTING.md
    - GIT.md, DESIGN-SYSTEM.md, ACCESSIBILITY.md, DEFINITION-OF-DONE.md, CONCERNS.md
-5. Copy the correct `.env.example` variant to `.clancy/.env.example`
+5. Write the correct `.env.example` for the chosen board to `.clancy/.env.example` — use the exact content from scaffold.md
 6. Write collected credentials to `.clancy/.env` (if the user provided them)
 7. Handle `CLAUDE.md` — follow the merge logic in scaffold.md exactly:
    - If no CLAUDE.md: write the full template as `CLAUDE.md`

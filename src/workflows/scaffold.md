@@ -287,3 +287,829 @@ node_modules/
 # OS
 .DS_Store
 ```
+
+---
+
+## Shell scripts
+
+Write these scripts exactly as shown — do not generate, summarise, or modify the content. Write the file contents byte-for-byte.
+
+### `.clancy/clancy-once.sh` — Jira
+
+Write this file when the chosen board is **Jira**:
+
+```bash
+#!/usr/bin/env bash
+# Strict mode: exit on error (-e), undefined variables (-u), pipe failures (-o pipefail).
+# This means any command that fails will stop the script immediately rather than silently continuing.
+set -euo pipefail
+
+# ─── WHAT THIS SCRIPT DOES ─────────────────────────────────────────────────────
+#
+# Board: Jira
+#
+# 1. Preflight — checks all required tools, credentials, and board reachability
+# 2. Fetch    — pulls the next assigned "To Do" ticket from Jira (maxResults: 1)
+# 3. Branch   — creates a feature branch from the ticket's epic branch (or base branch)
+# 4. Implement — passes the ticket to Claude Code, which reads .clancy/docs/ and implements it
+# 5. Merge    — squash-merges the feature branch back into the target branch
+# 6. Log      — appends a completion entry to .clancy/progress.txt
+#
+# This script is run once per ticket. The loop is handled by clancy-afk.sh.
+#
+# NOTE: Failures use exit 0, not exit 1. This is intentional — clancy-afk.sh
+# detects stop conditions by reading script output rather than exit codes, so a
+# non-zero exit would be treated as an unexpected crash rather than a clean stop.
+#
+# ───────────────────────────────────────────────────────────────────────────────
+
+# ─── PREFLIGHT ─────────────────────────────────────────────────────────────────
+
+command -v claude >/dev/null 2>&1 || {
+  echo "✗ claude CLI not found."
+  echo "  Install it: https://claude.ai/code"
+  exit 0
+}
+command -v jq >/dev/null 2>&1 || {
+  echo "✗ jq not found."
+  echo "  Install: brew install jq  (mac) | apt install jq  (linux)"
+  exit 0
+}
+command -v curl >/dev/null 2>&1 || {
+  echo "✗ curl not found. Install curl for your OS."
+  exit 0
+}
+
+[ -f .clancy/.env ] || {
+  echo "✗ .clancy/.env not found."
+  echo "  Copy .clancy/.env.example to .clancy/.env and fill in your credentials."
+  echo "  Then run: /clancy:init"
+  exit 0
+}
+# shellcheck source=/dev/null
+source .clancy/.env
+
+git rev-parse --git-dir >/dev/null 2>&1 || {
+  echo "✗ Not a git repository."
+  echo "  Clancy must be run from the root of a git project."
+  exit 0
+}
+
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo "⚠ Working directory has uncommitted changes."
+  echo "  Consider stashing or committing first to avoid confusion."
+fi
+
+[ -n "${JIRA_BASE_URL:-}"    ] || { echo "✗ JIRA_BASE_URL is not set in .clancy/.env";    exit 0; }
+[ -n "${JIRA_USER:-}"        ] || { echo "✗ JIRA_USER is not set in .clancy/.env";        exit 0; }
+[ -n "${JIRA_API_TOKEN:-}"   ] || { echo "✗ JIRA_API_TOKEN is not set in .clancy/.env";   exit 0; }
+[ -n "${JIRA_PROJECT_KEY:-}" ] || { echo "✗ JIRA_PROJECT_KEY is not set in .clancy/.env"; exit 0; }
+if ! echo "$JIRA_PROJECT_KEY" | grep -qE '^[A-Z][A-Z0-9]+$'; then
+  echo "✗ JIRA_PROJECT_KEY format is invalid. Expected uppercase letters and numbers only (e.g. PROJ, ENG2). Check JIRA_PROJECT_KEY in .clancy/.env."
+  exit 0
+fi
+
+PING=$(curl -s -o /dev/null -w "%{http_code}" \
+  -u "$JIRA_USER:$JIRA_API_TOKEN" \
+  "$JIRA_BASE_URL/rest/api/3/project/$JIRA_PROJECT_KEY")
+
+case "$PING" in
+  200) ;;
+  401) echo "✗ Jira authentication failed. Check JIRA_USER and JIRA_API_TOKEN in .clancy/.env."; exit 0 ;;
+  403) echo "✗ Jira access denied. Your token may lack Browse Projects permission."; exit 0 ;;
+  404) echo "✗ Jira project '$JIRA_PROJECT_KEY' not found. Check JIRA_PROJECT_KEY in .clancy/.env."; exit 0 ;;
+  000) echo "✗ Could not reach Jira at $JIRA_BASE_URL. Check JIRA_BASE_URL and your network."; exit 0 ;;
+  *)   echo "✗ Jira returned unexpected status $PING. Check your config."; exit 0 ;;
+esac
+
+if [ "${PLAYWRIGHT_ENABLED:-}" = "true" ]; then
+  if lsof -ti:"${PLAYWRIGHT_DEV_PORT:-5173}" >/dev/null 2>&1; then
+    echo "⚠ Port ${PLAYWRIGHT_DEV_PORT:-5173} is already in use."
+    echo "  Clancy will attempt to start the dev server on this port."
+    echo "  If visual checks fail, stop whatever is using the port first."
+  fi
+fi
+
+echo "✓ Preflight passed. Starting Clancy..."
+
+# ─── END PREFLIGHT ─────────────────────────────────────────────────────────────
+
+# ─── FETCH TICKET ──────────────────────────────────────────────────────────────
+
+# Validate user-controlled values to prevent JQL injection.
+# JQL does not support parameterised queries, so we restrict to safe characters.
+if [ -n "${CLANCY_LABEL:-}" ] && ! echo "$CLANCY_LABEL" | grep -qE '^[a-zA-Z0-9 _-]+$'; then
+  echo "✗ CLANCY_LABEL contains invalid characters. Use only letters, numbers, spaces, hyphens, and underscores."
+  exit 0
+fi
+if ! echo "${CLANCY_JQL_STATUS:-To Do}" | grep -qE '^[a-zA-Z0-9 _-]+$'; then
+  echo "✗ CLANCY_JQL_STATUS contains invalid characters. Use only letters, numbers, spaces, hyphens, and underscores."
+  exit 0
+fi
+
+# Build JQL — sprint filter is optional (requires Jira Software license).
+# Uses the /rest/api/3/search/jql POST endpoint — the old GET /search was removed Aug 2025.
+# maxResults:1 is intentional — pick one ticket per run, never paginate.
+if [ -n "${CLANCY_JQL_SPRINT:-}" ]; then
+  SPRINT_CLAUSE="AND sprint in openSprints()"
+else
+  SPRINT_CLAUSE=""
+fi
+
+# Optional label filter — set CLANCY_LABEL in .env to only pick up tickets with that label.
+if [ -n "${CLANCY_LABEL:-}" ]; then
+  LABEL_CLAUSE="AND labels = \"$CLANCY_LABEL\""
+else
+  LABEL_CLAUSE=""
+fi
+
+RESPONSE=$(curl -s \
+  -u "$JIRA_USER:$JIRA_API_TOKEN" \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json" \
+  "$JIRA_BASE_URL/rest/api/3/search/jql" \
+  -d "{
+    \"jql\": \"project=$JIRA_PROJECT_KEY $SPRINT_CLAUSE $LABEL_CLAUSE AND assignee=currentUser() AND status=\\\"${CLANCY_JQL_STATUS:-To Do}\\\" ORDER BY priority ASC\",
+    \"maxResults\": 1,
+    \"fields\": [\"summary\", \"description\", \"issuelinks\", \"parent\", \"customfield_10014\"]
+  }")
+
+# New endpoint returns { "issues": [...], "isLast": bool } — no .total field
+ISSUE_COUNT=$(echo "$RESPONSE" | jq '.issues | length')
+if [ "$ISSUE_COUNT" -eq 0 ]; then
+  echo "No tickets found. All done!"
+  exit 0
+fi
+
+TICKET_KEY=$(echo "$RESPONSE" | jq -r '.issues[0].key')
+SUMMARY=$(echo "$RESPONSE" | jq -r '.issues[0].fields.summary')
+
+# Extract description via recursive ADF walk
+DESCRIPTION=$(echo "$RESPONSE" | jq -r '
+  .issues[0].fields.description
+  | .. | strings
+  | select(length > 0)
+  | . + "\n"
+' 2>/dev/null || echo "No description")
+
+# Extract epic — try parent first (next-gen), fall back to customfield_10014 (classic)
+EPIC_INFO=$(echo "$RESPONSE" | jq -r '
+  .issues[0].fields.parent.key // .issues[0].fields.customfield_10014 // "none"
+')
+
+# Extract blocking issue links
+BLOCKERS=$(echo "$RESPONSE" | jq -r '
+  [.issues[0].fields.issuelinks[]?
+    | select(.type.name == "Blocks" and .inwardIssue?)
+    | .inwardIssue.key]
+  | if length > 0 then "Blocked by: " + join(", ") else "None" end
+' 2>/dev/null || echo "None")
+
+BASE_BRANCH="${CLANCY_BASE_BRANCH:-main}"
+TICKET_BRANCH="feature/$(echo "$TICKET_KEY" | tr '[:upper:]' '[:lower:]')"
+
+if [ "$EPIC_INFO" != "none" ]; then
+  TARGET_BRANCH="epic/$(echo "$EPIC_INFO" | tr '[:upper:]' '[:lower:]')"
+  git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" \
+    || git checkout -b "$TARGET_BRANCH" "$BASE_BRANCH"
+else
+  TARGET_BRANCH="$BASE_BRANCH"
+fi
+
+# ─── IMPLEMENT ─────────────────────────────────────────────────────────────────
+
+echo "Picking up: [$TICKET_KEY] $SUMMARY"
+echo "Epic: $EPIC_INFO | Target branch: $TARGET_BRANCH | Blockers: $BLOCKERS"
+
+git checkout "$TARGET_BRANCH"
+git checkout -B "$TICKET_BRANCH"
+
+PROMPT="You are implementing Jira ticket $TICKET_KEY.
+
+Summary: $SUMMARY
+Epic: $EPIC_INFO
+Blockers: $BLOCKERS
+
+Description:
+$DESCRIPTION
+
+Step 0 — Executability check (do this before any git or file operation):
+Read the ticket summary and description above. Can this ticket be implemented entirely
+as a code change committed to this repo? Consult the 'Executability check' section of
+CLAUDE.md for the full list of skip conditions.
+
+If you must SKIP this ticket:
+1. Output: ⚠ Skipping [$TICKET_KEY]: {one-line reason}
+2. Output: Ticket skipped — update it to be codebase-only work, then re-run.
+3. Append to .clancy/progress.txt: YYYY-MM-DD HH:MM | $TICKET_KEY | SKIPPED | {reason}
+4. Stop — no branches, no file changes, no git operations.
+
+If the ticket IS implementable, continue:
+1. Read ALL docs in .clancy/docs/ — especially GIT.md for branching and commit conventions
+2. Follow the conventions in GIT.md exactly
+3. Implement the ticket fully
+4. Commit your work following the conventions in GIT.md
+5. When done, confirm you are finished."
+
+CLAUDE_ARGS=(--dangerously-skip-permissions)
+[ -n "${CLANCY_MODEL:-}" ] && CLAUDE_ARGS+=(--model "$CLANCY_MODEL")
+echo "$PROMPT" | claude "${CLAUDE_ARGS[@]}"
+
+# ─── MERGE & LOG ───────────────────────────────────────────────────────────────
+
+git checkout "$TARGET_BRANCH"
+git merge --squash "$TICKET_BRANCH"
+if git diff --cached --quiet; then
+  echo "⚠ No changes staged after squash merge. Claude may not have committed any work."
+else
+  git commit -m "feat($TICKET_KEY): $SUMMARY"
+fi
+
+git branch -d "$TICKET_BRANCH"
+
+echo "$(date '+%Y-%m-%d %H:%M') | $TICKET_KEY | $SUMMARY | DONE" >> .clancy/progress.txt
+
+echo "✓ $TICKET_KEY complete."
+
+if [ -n "${CLANCY_NOTIFY_WEBHOOK:-}" ]; then
+  NOTIFY_MSG="✓ Clancy completed [$TICKET_KEY] $SUMMARY"
+  if echo "$CLANCY_NOTIFY_WEBHOOK" | grep -q "hooks.slack.com"; then
+    curl -s -X POST "$CLANCY_NOTIFY_WEBHOOK" \
+      -H "Content-Type: application/json" \
+      -d "$(jq -n --arg text "$NOTIFY_MSG" '{"text": $text}')" >/dev/null 2>&1 || true
+  else
+    curl -s -X POST "$CLANCY_NOTIFY_WEBHOOK" \
+      -H "Content-Type: application/json" \
+      -d "$(jq -n --arg text "$NOTIFY_MSG" '{"type":"message","attachments":[{"contentType":"application/vnd.microsoft.card.adaptive","content":{"type":"AdaptiveCard","body":[{"type":"TextBlock","text":$text}]}}]}')" >/dev/null 2>&1 || true
+  fi
+fi
+```
+
+---
+
+### `.clancy/clancy-once.sh` — GitHub Issues
+
+Write this file when the chosen board is **GitHub Issues**:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ─── WHAT THIS SCRIPT DOES ─────────────────────────────────────────────────────
+# Board: GitHub Issues
+# 1. Preflight  — checks all required tools, credentials, and repo reachability
+# 2. Fetch      — pulls the next open issue with the 'clancy' label assigned to you
+# 3. Branch     — creates a feature branch from the issue's milestone branch (or base branch)
+# 4. Implement  — passes the issue to Claude Code, which reads .clancy/docs/ and implements it
+# 5. Merge      — squash-merges the feature branch back into the target branch
+# 6. Close      — marks the GitHub issue as closed via the API
+# 7. Log        — appends a completion entry to .clancy/progress.txt
+#
+# NOTE: GitHub's /issues endpoint returns pull requests too. This script filters
+# them out by checking for the presence of the 'pull_request' key in each result.
+# NOTE: Failures use exit 0, not exit 1.
+# ───────────────────────────────────────────────────────────────────────────────
+
+command -v claude >/dev/null 2>&1 || { echo "✗ claude CLI not found. Install it: https://claude.ai/code"; exit 0; }
+command -v jq >/dev/null 2>&1 || { echo "✗ jq not found. Install: brew install jq  (mac) | apt install jq  (linux)"; exit 0; }
+command -v curl >/dev/null 2>&1 || { echo "✗ curl not found. Install curl for your OS."; exit 0; }
+
+[ -f .clancy/.env ] || { echo "✗ .clancy/.env not found. Run /clancy:init"; exit 0; }
+# shellcheck source=/dev/null
+source .clancy/.env
+
+git rev-parse --git-dir >/dev/null 2>&1 || { echo "✗ Not a git repository."; exit 0; }
+
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo "⚠ Working directory has uncommitted changes."
+  echo "  Consider stashing or committing first to avoid confusion."
+fi
+
+[ -n "${GITHUB_TOKEN:-}"  ] || { echo "✗ GITHUB_TOKEN is not set in .clancy/.env";  exit 0; }
+[ -n "${GITHUB_REPO:-}"   ] || { echo "✗ GITHUB_REPO is not set in .clancy/.env";   exit 0; }
+
+if ! echo "$GITHUB_REPO" | grep -qE '^[a-zA-Z0-9_.-]+/[a-zA-Z0-9_.-]+$'; then
+  echo "✗ GITHUB_REPO format is invalid. Expected owner/repo (e.g. acme/my-app)."
+  exit 0
+fi
+
+PING=$(curl -s -o /dev/null -w "%{http_code}" \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  "https://api.github.com/repos/$GITHUB_REPO")
+
+case "$PING" in
+  200) ;;
+  401) echo "✗ GitHub authentication failed. Check GITHUB_TOKEN in .clancy/.env."; exit 0 ;;
+  403) echo "✗ GitHub access denied. Your token may lack the repo scope."; exit 0 ;;
+  404) echo "✗ GitHub repo '$GITHUB_REPO' not found. Check GITHUB_REPO in .clancy/.env."; exit 0 ;;
+  000) echo "✗ Could not reach GitHub. Check your network."; exit 0 ;;
+  *)   echo "✗ GitHub returned unexpected status $PING. Check your config."; exit 0 ;;
+esac
+
+if [ "${PLAYWRIGHT_ENABLED:-}" = "true" ]; then
+  if lsof -ti:"${PLAYWRIGHT_DEV_PORT:-5173}" >/dev/null 2>&1; then
+    echo "⚠ Port ${PLAYWRIGHT_DEV_PORT:-5173} is already in use."
+  fi
+fi
+
+echo "✓ Preflight passed. Starting Clancy..."
+
+RESPONSE=$(curl -s \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  "https://api.github.com/repos/$GITHUB_REPO/issues?state=open&assignee=@me&labels=clancy&per_page=3")
+
+if ! echo "$RESPONSE" | jq -e 'type == "array"' >/dev/null 2>&1; then
+  ERR_MSG=$(echo "$RESPONSE" | jq -r '.message // "Unexpected response"' 2>/dev/null || echo "Unexpected response")
+  echo "✗ GitHub API error: $ERR_MSG. Check GITHUB_TOKEN in .clancy/.env."
+  exit 0
+fi
+
+ISSUE=$(echo "$RESPONSE" | jq 'map(select(has("pull_request") | not)) | .[0]')
+
+if [ "$(echo "$ISSUE" | jq 'type')" = '"null"' ] || [ -z "$(echo "$ISSUE" | jq -r '.number // empty')" ]; then
+  echo "No issues found. All done!"
+  exit 0
+fi
+
+ISSUE_NUMBER=$(echo "$ISSUE" | jq -r '.number')
+TITLE=$(echo "$ISSUE" | jq -r '.title')
+BODY=$(echo "$ISSUE" | jq -r '.body // "No description"')
+MILESTONE=$(echo "$ISSUE" | jq -r '.milestone.title // "none"')
+
+BASE_BRANCH="${CLANCY_BASE_BRANCH:-main}"
+TICKET_BRANCH="feature/issue-${ISSUE_NUMBER}"
+
+if [ "$MILESTONE" != "none" ]; then
+  MILESTONE_SLUG=$(echo "$MILESTONE" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd '[:alnum:]-')
+  TARGET_BRANCH="milestone/${MILESTONE_SLUG}"
+  git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" \
+    || git checkout -b "$TARGET_BRANCH" "$BASE_BRANCH"
+else
+  TARGET_BRANCH="$BASE_BRANCH"
+fi
+
+echo "Picking up: [#${ISSUE_NUMBER}] $TITLE"
+echo "Milestone: $MILESTONE | Target branch: $TARGET_BRANCH"
+
+git checkout "$TARGET_BRANCH"
+git checkout -B "$TICKET_BRANCH"
+
+PROMPT="You are implementing GitHub Issue #${ISSUE_NUMBER}.
+
+Title: $TITLE
+Milestone: $MILESTONE
+
+Description:
+$BODY
+
+Step 0 — Executability check (do this before any git or file operation):
+Read the issue title and description above. Can this issue be implemented entirely
+as a code change committed to this repo? Consult the 'Executability check' section of
+CLAUDE.md for the full list of skip conditions.
+
+If you must SKIP this issue:
+1. Output: ⚠ Skipping [#${ISSUE_NUMBER}]: {one-line reason}
+2. Output: Ticket skipped — update it to be codebase-only work, then re-run.
+3. Append to .clancy/progress.txt: YYYY-MM-DD HH:MM | #${ISSUE_NUMBER} | SKIPPED | {reason}
+4. Stop — no branches, no file changes, no git operations.
+
+If the issue IS implementable, continue:
+1. Read ALL docs in .clancy/docs/ — especially GIT.md for branching and commit conventions
+2. Follow the conventions in GIT.md exactly
+3. Implement the issue fully
+4. Commit your work following the conventions in GIT.md
+5. When done, confirm you are finished."
+
+CLAUDE_ARGS=(--dangerously-skip-permissions)
+[ -n "${CLANCY_MODEL:-}" ] && CLAUDE_ARGS+=(--model "$CLANCY_MODEL")
+echo "$PROMPT" | claude "${CLAUDE_ARGS[@]}"
+
+git checkout "$TARGET_BRANCH"
+git merge --squash "$TICKET_BRANCH"
+if git diff --cached --quiet; then
+  echo "⚠ No changes staged after squash merge. Claude may not have committed any work."
+else
+  git commit -m "feat(#${ISSUE_NUMBER}): $TITLE"
+fi
+
+git branch -d "$TICKET_BRANCH"
+
+CLOSE_HTTP=$(curl -s -o /dev/null -w "%{http_code}" -X PATCH \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  -H "Content-Type: application/json" \
+  "https://api.github.com/repos/$GITHUB_REPO/issues/${ISSUE_NUMBER}" \
+  -d '{"state": "closed"}')
+[ "$CLOSE_HTTP" = "200" ] || echo "⚠ Could not close issue #${ISSUE_NUMBER} (HTTP $CLOSE_HTTP). Close it manually on GitHub."
+
+echo "$(date '+%Y-%m-%d %H:%M') | #${ISSUE_NUMBER} | $TITLE | DONE" >> .clancy/progress.txt
+
+echo "✓ #${ISSUE_NUMBER} complete."
+
+if [ -n "${CLANCY_NOTIFY_WEBHOOK:-}" ]; then
+  NOTIFY_MSG="✓ Clancy completed [#${ISSUE_NUMBER}] $TITLE"
+  if echo "$CLANCY_NOTIFY_WEBHOOK" | grep -q "hooks.slack.com"; then
+    curl -s -X POST "$CLANCY_NOTIFY_WEBHOOK" \
+      -H "Content-Type: application/json" \
+      -d "$(jq -n --arg text "$NOTIFY_MSG" '{"text": $text}')" >/dev/null 2>&1 || true
+  else
+    curl -s -X POST "$CLANCY_NOTIFY_WEBHOOK" \
+      -H "Content-Type: application/json" \
+      -d "$(jq -n --arg text "$NOTIFY_MSG" '{"type":"message","attachments":[{"contentType":"application/vnd.microsoft.card.adaptive","content":{"type":"AdaptiveCard","body":[{"type":"TextBlock","text":$text}]}}]}')" >/dev/null 2>&1 || true
+  fi
+fi
+```
+
+---
+
+### `.clancy/clancy-once.sh` — Linear
+
+Write this file when the chosen board is **Linear**:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ─── WHAT THIS SCRIPT DOES ─────────────────────────────────────────────────────
+# Board: Linear
+# 1. Preflight  — checks all required tools, credentials, and API reachability
+# 2. Fetch      — pulls the next unstarted issue assigned to you via GraphQL
+# 3. Branch     — creates a feature branch from the issue's parent branch (or base branch)
+# 4. Implement  — passes the issue to Claude Code, which reads .clancy/docs/ and implements it
+# 5. Merge      — squash-merges the feature branch back into the target branch
+# 6. Log        — appends a completion entry to .clancy/progress.txt
+#
+# NOTE: Linear personal API keys do NOT use a "Bearer" prefix in the Authorization
+# header. OAuth access tokens do. This is correct per Linear's documentation.
+# NOTE: state.type "unstarted" is a fixed enum value.
+# NOTE: Failures use exit 0, not exit 1.
+# ───────────────────────────────────────────────────────────────────────────────
+
+command -v claude >/dev/null 2>&1 || { echo "✗ claude CLI not found. Install it: https://claude.ai/code"; exit 0; }
+command -v jq >/dev/null 2>&1 || { echo "✗ jq not found. Install: brew install jq  (mac) | apt install jq  (linux)"; exit 0; }
+command -v curl >/dev/null 2>&1 || { echo "✗ curl not found. Install curl for your OS."; exit 0; }
+
+[ -f .clancy/.env ] || { echo "✗ .clancy/.env not found. Run /clancy:init"; exit 0; }
+# shellcheck source=/dev/null
+source .clancy/.env
+
+git rev-parse --git-dir >/dev/null 2>&1 || { echo "✗ Not a git repository."; exit 0; }
+
+if ! git diff --quiet || ! git diff --cached --quiet; then
+  echo "⚠ Working directory has uncommitted changes."
+  echo "  Consider stashing or committing first to avoid confusion."
+fi
+
+[ -n "${LINEAR_API_KEY:-}"  ] || { echo "✗ LINEAR_API_KEY is not set in .clancy/.env";  exit 0; }
+[ -n "${LINEAR_TEAM_ID:-}"  ] || { echo "✗ LINEAR_TEAM_ID is not set in .clancy/.env";  exit 0; }
+
+# Linear ping — verify API key with a minimal query
+# Note: personal API keys do NOT use a "Bearer" prefix — this is correct per Linear docs.
+PING_BODY=$(curl -s -X POST https://api.linear.app/graphql \
+  -H "Content-Type: application/json" \
+  -H "Authorization: $LINEAR_API_KEY" \
+  -d '{"query": "{ viewer { id } }"}')
+
+echo "$PING_BODY" | jq -e '.data.viewer.id' >/dev/null 2>&1 || {
+  echo "✗ Linear authentication failed. Check LINEAR_API_KEY in .clancy/.env."; exit 0
+}
+
+if [ "${PLAYWRIGHT_ENABLED:-}" = "true" ]; then
+  if lsof -ti:"${PLAYWRIGHT_DEV_PORT:-5173}" >/dev/null 2>&1; then
+    echo "⚠ Port ${PLAYWRIGHT_DEV_PORT:-5173} is already in use."
+  fi
+fi
+
+echo "✓ Preflight passed. Starting Clancy..."
+
+if ! echo "$LINEAR_TEAM_ID" | grep -qE '^[a-zA-Z0-9_-]+$'; then
+  echo "✗ LINEAR_TEAM_ID contains invalid characters. Check .clancy/.env."
+  exit 0
+fi
+if [ -n "${CLANCY_LABEL:-}" ] && ! echo "$CLANCY_LABEL" | grep -qE '^[a-zA-Z0-9 _-]+$'; then
+  echo "✗ CLANCY_LABEL contains invalid characters."
+  exit 0
+fi
+
+if [ -n "${CLANCY_LABEL:-}" ]; then
+  REQUEST_BODY=$(jq -n \
+    --arg teamId "$LINEAR_TEAM_ID" \
+    --arg label "$CLANCY_LABEL" \
+    '{"query": "query($teamId: String!, $label: String) { viewer { assignedIssues(filter: { state: { type: { eq: \"unstarted\" } } team: { id: { eq: $teamId } } labels: { name: { eq: $label } } } first: 1 orderBy: priority) { nodes { id identifier title description parent { identifier title } } } } }", "variables": {"teamId": $teamId, "label": $label}}')
+else
+  REQUEST_BODY=$(jq -n \
+    --arg teamId "$LINEAR_TEAM_ID" \
+    '{"query": "query($teamId: String!) { viewer { assignedIssues(filter: { state: { type: { eq: \"unstarted\" } } team: { id: { eq: $teamId } } } first: 1 orderBy: priority) { nodes { id identifier title description parent { identifier title } } } } }", "variables": {"teamId": $teamId}}')
+fi
+
+RESPONSE=$(curl -s -X POST https://api.linear.app/graphql \
+  -H "Content-Type: application/json" \
+  -H "Authorization: $LINEAR_API_KEY" \
+  -d "$REQUEST_BODY")
+
+if ! echo "$RESPONSE" | jq -e '.data.viewer.assignedIssues' >/dev/null 2>&1; then
+  ERR_MSG=$(echo "$RESPONSE" | jq -r '.errors[0].message // "Unexpected response"' 2>/dev/null || echo "Unexpected response")
+  echo "✗ Linear API error: $ERR_MSG. Check LINEAR_API_KEY in .clancy/.env."
+  exit 0
+fi
+
+NODE_COUNT=$(echo "$RESPONSE" | jq '.data.viewer.assignedIssues.nodes | length')
+if [ "$NODE_COUNT" -eq 0 ]; then
+  echo "No issues found. All done!"
+  exit 0
+fi
+
+IDENTIFIER=$(echo "$RESPONSE" | jq -r '.data.viewer.assignedIssues.nodes[0].identifier')
+TITLE=$(echo "$RESPONSE" | jq -r '.data.viewer.assignedIssues.nodes[0].title')
+DESCRIPTION=$(echo "$RESPONSE" | jq -r '.data.viewer.assignedIssues.nodes[0].description // "No description"')
+PARENT_ID=$(echo "$RESPONSE" | jq -r '.data.viewer.assignedIssues.nodes[0].parent.identifier // "none"')
+PARENT_TITLE=$(echo "$RESPONSE" | jq -r '.data.viewer.assignedIssues.nodes[0].parent.title // ""')
+
+EPIC_INFO="${PARENT_ID}"
+if [ -n "$PARENT_TITLE" ] && [ "$PARENT_TITLE" != "null" ]; then
+  EPIC_INFO="${PARENT_ID} — ${PARENT_TITLE}"
+fi
+
+BASE_BRANCH="${CLANCY_BASE_BRANCH:-main}"
+TICKET_BRANCH="feature/$(echo "$IDENTIFIER" | tr '[:upper:]' '[:lower:]')"
+
+if [ "$PARENT_ID" != "none" ]; then
+  TARGET_BRANCH="epic/$(echo "$PARENT_ID" | tr '[:upper:]' '[:lower:]')"
+  git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" \
+    || git checkout -b "$TARGET_BRANCH" "$BASE_BRANCH"
+else
+  TARGET_BRANCH="$BASE_BRANCH"
+fi
+
+echo "Picking up: [$IDENTIFIER] $TITLE"
+echo "Epic: $EPIC_INFO | Target branch: $TARGET_BRANCH"
+
+git checkout "$TARGET_BRANCH"
+git checkout -B "$TICKET_BRANCH"
+
+PROMPT="You are implementing Linear issue $IDENTIFIER.
+
+Title: $TITLE
+Epic: $EPIC_INFO
+
+Description:
+$DESCRIPTION
+
+Step 0 — Executability check (do this before any git or file operation):
+Read the issue title and description above. Can this issue be implemented entirely
+as a code change committed to this repo? Consult the 'Executability check' section of
+CLAUDE.md for the full list of skip conditions.
+
+If you must SKIP this issue:
+1. Output: ⚠ Skipping [$IDENTIFIER]: {one-line reason}
+2. Output: Ticket skipped — update it to be codebase-only work, then re-run.
+3. Append to .clancy/progress.txt: YYYY-MM-DD HH:MM | $IDENTIFIER | SKIPPED | {reason}
+4. Stop — no branches, no file changes, no git operations.
+
+If the issue IS implementable, continue:
+1. Read ALL docs in .clancy/docs/ — especially GIT.md for branching and commit conventions
+2. Follow the conventions in GIT.md exactly
+3. Implement the issue fully
+4. Commit your work following the conventions in GIT.md
+5. When done, confirm you are finished."
+
+CLAUDE_ARGS=(--dangerously-skip-permissions)
+[ -n "${CLANCY_MODEL:-}" ] && CLAUDE_ARGS+=(--model "$CLANCY_MODEL")
+echo "$PROMPT" | claude "${CLAUDE_ARGS[@]}"
+
+git checkout "$TARGET_BRANCH"
+git merge --squash "$TICKET_BRANCH"
+if git diff --cached --quiet; then
+  echo "⚠ No changes staged after squash merge. Claude may not have committed any work."
+else
+  git commit -m "feat($IDENTIFIER): $TITLE"
+fi
+
+git branch -d "$TICKET_BRANCH"
+
+echo "$(date '+%Y-%m-%d %H:%M') | $IDENTIFIER | $TITLE | DONE" >> .clancy/progress.txt
+
+echo "✓ $IDENTIFIER complete."
+
+if [ -n "${CLANCY_NOTIFY_WEBHOOK:-}" ]; then
+  NOTIFY_MSG="✓ Clancy completed [$IDENTIFIER] $TITLE"
+  if echo "$CLANCY_NOTIFY_WEBHOOK" | grep -q "hooks.slack.com"; then
+    curl -s -X POST "$CLANCY_NOTIFY_WEBHOOK" \
+      -H "Content-Type: application/json" \
+      -d "$(jq -n --arg text "$NOTIFY_MSG" '{"text": $text}')" >/dev/null 2>&1 || true
+  else
+    curl -s -X POST "$CLANCY_NOTIFY_WEBHOOK" \
+      -H "Content-Type: application/json" \
+      -d "$(jq -n --arg text "$NOTIFY_MSG" '{"type":"message","attachments":[{"contentType":"application/vnd.microsoft.card.adaptive","content":{"type":"AdaptiveCard","body":[{"type":"TextBlock","text":$text}]}}]}')" >/dev/null 2>&1 || true
+  fi
+fi
+```
+
+---
+
+### `.clancy/clancy-afk.sh` — all boards
+
+Write this file regardless of board choice:
+
+```bash
+#!/usr/bin/env bash
+set -euo pipefail
+
+# ─── WHAT THIS SCRIPT DOES ─────────────────────────────────────────────────────
+# Loop runner for Clancy. Calls clancy-once.sh repeatedly until:
+#   - No more tickets are found ("No tickets found", "All done", etc.)
+#   - A preflight check fails (output line starting with ✗)
+#   - MAX_ITERATIONS is reached
+#   - The user presses Ctrl+C
+# ───────────────────────────────────────────────────────────────────────────────
+
+command -v claude >/dev/null 2>&1 || { echo "✗ claude CLI not found. Install it: https://claude.ai/code"; exit 0; }
+command -v jq >/dev/null 2>&1 || { echo "✗ jq not found. Install: brew install jq  (mac) | apt install jq  (linux)"; exit 0; }
+command -v curl >/dev/null 2>&1 || { echo "✗ curl not found. Install curl for your OS."; exit 0; }
+
+[ -f .clancy/.env ] || { echo "✗ .clancy/.env not found. Run /clancy:init"; exit 0; }
+# shellcheck source=/dev/null
+source .clancy/.env
+
+git rev-parse --git-dir >/dev/null 2>&1 || { echo "✗ Not a git repository."; exit 0; }
+
+MAX_ITERATIONS=${MAX_ITERATIONS:-5}
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ONCE_SCRIPT="$SCRIPT_DIR/clancy-once.sh"
+
+if [ ! -f "$ONCE_SCRIPT" ]; then
+  echo "✗ Script not found: $ONCE_SCRIPT"
+  echo "  Run /clancy:init to scaffold scripts."
+  exit 0
+fi
+
+echo "Starting Clancy — will process up to $MAX_ITERATIONS ticket(s). Ctrl+C to stop early."
+echo ""
+
+i=0
+while [ "$i" -lt "$MAX_ITERATIONS" ]; do
+  i=$((i + 1))
+  echo ""
+  echo "=== Iteration $i of $MAX_ITERATIONS ==="
+
+  TMPFILE=$(mktemp)
+  bash "$ONCE_SCRIPT" 2>&1 | tee "$TMPFILE"
+  OUTPUT=$(cat "$TMPFILE")
+  rm -f "$TMPFILE"
+
+  if echo "$OUTPUT" | grep -qE "No tickets found|No issues found|All done"; then
+    echo ""
+    echo "✓ Clancy finished — no more tickets."
+    exit 0
+  fi
+
+  if echo "$OUTPUT" | grep -q "Ticket skipped"; then
+    echo ""
+    echo "⚠ Clancy stopped — ticket was skipped (not implementable from the codebase)."
+    echo "  Update the ticket to focus on codebase work, then re-run."
+    exit 0
+  fi
+
+  if echo "$OUTPUT" | grep -qE "^✗ "; then
+    echo ""
+    echo "✗ Clancy stopped — preflight check failed. See output above."
+    exit 0
+  fi
+
+  sleep 2
+done
+
+echo ""
+echo "Reached max iterations ($MAX_ITERATIONS). Run clancy-afk.sh again to continue."
+```
+
+---
+
+## .env.example files
+
+Write the correct `.env.example` for the chosen board to `.clancy/.env.example`.
+
+### Jira
+
+```
+# Clancy — Jira configuration
+# Copy this file to .env and fill in your values.
+# Never commit .env to version control.
+
+# ─── Jira ─────────────────────────────────────────────────────────────────────
+JIRA_BASE_URL=https://your-org.atlassian.net
+JIRA_USER=your-email@example.com
+JIRA_API_TOKEN=your-api-token-from-id.atlassian.com
+JIRA_PROJECT_KEY=PROJ
+
+# Status name for "ready to be picked up" (default: To Do)
+CLANCY_JQL_STATUS="To Do"
+
+# Set to any non-empty value to filter by open sprints (requires Jira Software)
+# CLANCY_JQL_SPRINT=true
+
+# Optional: only pick up tickets with this label.
+# CLANCY_LABEL="clancy"
+
+# ─── Git ──────────────────────────────────────────────────────────────────────
+CLANCY_BASE_BRANCH=main
+
+# ─── Loop ─────────────────────────────────────────────────────────────────────
+MAX_ITERATIONS=5
+
+# ─── Model ────────────────────────────────────────────────────────────────────
+# CLANCY_MODEL=claude-sonnet-4-6
+
+# ─── Optional: Figma MCP ──────────────────────────────────────────────────────
+# FIGMA_API_KEY=your-figma-api-key
+
+# ─── Optional: Playwright visual checks ───────────────────────────────────────
+# PLAYWRIGHT_ENABLED=true
+# PLAYWRIGHT_DEV_COMMAND="yarn dev"
+# PLAYWRIGHT_DEV_PORT=5173
+# PLAYWRIGHT_STORYBOOK_COMMAND="yarn storybook"
+# PLAYWRIGHT_STORYBOOK_PORT=6006
+# PLAYWRIGHT_STARTUP_WAIT=15
+
+# ─── Optional: Notifications ──────────────────────────────────────────────────
+# CLANCY_NOTIFY_WEBHOOK=https://hooks.slack.com/services/your/webhook/url
+```
+
+### GitHub Issues
+
+```
+# Clancy — GitHub Issues configuration
+# Copy this file to .env and fill in your values.
+# Never commit .env to version control.
+
+# ─── GitHub Issues ────────────────────────────────────────────────────────────
+GITHUB_TOKEN=ghp_your-personal-access-token
+GITHUB_REPO=owner/repo-name
+
+# Optional: only pick up issues with this label (in addition to 'clancy').
+# CLANCY_LABEL=clancy
+
+# ─── Git ──────────────────────────────────────────────────────────────────────
+CLANCY_BASE_BRANCH=main
+
+# ─── Loop ─────────────────────────────────────────────────────────────────────
+MAX_ITERATIONS=20
+
+# ─── Model ────────────────────────────────────────────────────────────────────
+# CLANCY_MODEL=claude-sonnet-4-6
+
+# ─── Optional: Figma MCP ──────────────────────────────────────────────────────
+# FIGMA_API_KEY=your-figma-api-key
+
+# ─── Optional: Playwright visual checks ───────────────────────────────────────
+# PLAYWRIGHT_ENABLED=true
+# PLAYWRIGHT_DEV_COMMAND="yarn dev"
+# PLAYWRIGHT_DEV_PORT=5173
+# PLAYWRIGHT_STORYBOOK_COMMAND="yarn storybook"
+# PLAYWRIGHT_STORYBOOK_PORT=6006
+# PLAYWRIGHT_STARTUP_WAIT=15
+
+# ─── Optional: Notifications ──────────────────────────────────────────────────
+# CLANCY_NOTIFY_WEBHOOK=https://hooks.slack.com/services/your/webhook/url
+```
+
+### Linear
+
+```
+# Clancy — Linear configuration
+# Copy this file to .env and fill in your values.
+# Never commit .env to version control.
+
+# ─── Linear ───────────────────────────────────────────────────────────────────
+LINEAR_API_KEY=lin_api_your-personal-api-key
+LINEAR_TEAM_ID=your-team-uuid
+
+# Optional: only pick up issues with this label.
+# CLANCY_LABEL=clancy
+
+# ─── Git ──────────────────────────────────────────────────────────────────────
+CLANCY_BASE_BRANCH=main
+
+# ─── Loop ─────────────────────────────────────────────────────────────────────
+MAX_ITERATIONS=20
+
+# ─── Model ────────────────────────────────────────────────────────────────────
+# CLANCY_MODEL=claude-sonnet-4-6
+
+# ─── Optional: Figma MCP ──────────────────────────────────────────────────────
+# FIGMA_API_KEY=your-figma-api-key
+
+# ─── Optional: Playwright visual checks ───────────────────────────────────────
+# PLAYWRIGHT_ENABLED=true
+# PLAYWRIGHT_DEV_COMMAND="yarn dev"
+# PLAYWRIGHT_DEV_PORT=5173
+# PLAYWRIGHT_STORYBOOK_COMMAND="yarn storybook"
+# PLAYWRIGHT_STORYBOOK_PORT=6006
+# PLAYWRIGHT_STARTUP_WAIT=15
+
+# ─── Optional: Notifications ──────────────────────────────────────────────────
+# CLANCY_NOTIFY_WEBHOOK=https://hooks.slack.com/services/your/webhook/url
+```
