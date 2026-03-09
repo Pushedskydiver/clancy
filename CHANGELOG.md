@@ -53,6 +53,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - Full `.clancy/` scaffold: shell scripts, 10 doc templates, `.env`, `.env.example`
 - CLAUDE.md merge strategy — appends Clancy section between delimiters, never overwrites existing content
 - Pre-implementation executability check — Clancy self-assesses each ticket before executing; skips and logs tickets that aren't implementable in the current codebase
+- Prerequisite check in `/clancy:init` — verifies `jq`, `curl`, and `git` are installed before proceeding; lists missing binaries with install hints and stops
 - Preflight checks in all scripts: binary check, `.env` validation, git repo check, board reachability ping
 - Board registry (`registry/boards.json`) for community-contributed board integrations
 
