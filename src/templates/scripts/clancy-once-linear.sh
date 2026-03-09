@@ -153,6 +153,7 @@ if [ "$NODE_COUNT" -eq 0 ]; then
   exit 0
 fi
 
+ISSUE_ID=$(echo "$RESPONSE" | jq -r '.data.viewer.assignedIssues.nodes[0].id')
 IDENTIFIER=$(echo "$RESPONSE" | jq -r '.data.viewer.assignedIssues.nodes[0].identifier')
 TITLE=$(echo "$RESPONSE" | jq -r '.data.viewer.assignedIssues.nodes[0].title')
 DESCRIPTION=$(echo "$RESPONSE" | jq -r '.data.viewer.assignedIssues.nodes[0].description // "No description"')
@@ -187,6 +188,26 @@ git checkout "$TARGET_BRANCH"
 # -B creates the branch if it doesn't exist, or resets it to HEAD if it does.
 # This handles retries cleanly without failing on an already-existing branch.
 git checkout -B "$TICKET_BRANCH"
+
+# Transition issue to In Progress (best-effort — never fails the run).
+# Queries team workflow states by type "started", picks the first match.
+if [ -n "${CLANCY_STATUS_IN_PROGRESS:-}" ]; then
+  STATE_RESP=$(curl -s -X POST https://api.linear.app/graphql \
+    -H "Content-Type: application/json" \
+    -H "Authorization: $LINEAR_API_KEY" \
+    -d "$(jq -n --arg teamId "$LINEAR_TEAM_ID" --arg name "$CLANCY_STATUS_IN_PROGRESS" \
+      '{"query": "query($teamId: String!, $name: String!) { workflowStates(filter: { team: { id: { eq: $teamId } } name: { eq: $name } }) { nodes { id } } }", "variables": {"teamId": $teamId, "name": $name}}')")
+  IN_PROGRESS_STATE_ID=$(echo "$STATE_RESP" | jq -r '.data.workflowStates.nodes[0].id // empty')
+  if [ -n "$IN_PROGRESS_STATE_ID" ]; then
+    curl -s -X POST https://api.linear.app/graphql \
+      -H "Content-Type: application/json" \
+      -H "Authorization: $LINEAR_API_KEY" \
+      -d "$(jq -n --arg issueId "$ISSUE_ID" --arg stateId "$IN_PROGRESS_STATE_ID" \
+        '{"query": "mutation($issueId: String!, $stateId: String!) { issueUpdate(id: $issueId, input: { stateId: $stateId }) { success } }", "variables": {"issueId": $issueId, "stateId": $stateId}}')" \
+      >/dev/null 2>&1 || true
+    echo "  → Transitioned to $CLANCY_STATUS_IN_PROGRESS"
+  fi
+fi
 
 PROMPT="You are implementing Linear issue $IDENTIFIER.
 
@@ -232,6 +253,25 @@ fi
 
 # Delete ticket branch locally
 git branch -d "$TICKET_BRANCH"
+
+# Transition issue to Done (best-effort — never fails the run).
+if [ -n "${CLANCY_STATUS_DONE:-}" ]; then
+  STATE_RESP=$(curl -s -X POST https://api.linear.app/graphql \
+    -H "Content-Type: application/json" \
+    -H "Authorization: $LINEAR_API_KEY" \
+    -d "$(jq -n --arg teamId "$LINEAR_TEAM_ID" --arg name "$CLANCY_STATUS_DONE" \
+      '{"query": "query($teamId: String!, $name: String!) { workflowStates(filter: { team: { id: { eq: $teamId } } name: { eq: $name } }) { nodes { id } } }", "variables": {"teamId": $teamId, "name": $name}}')")
+  DONE_STATE_ID=$(echo "$STATE_RESP" | jq -r '.data.workflowStates.nodes[0].id // empty')
+  if [ -n "$DONE_STATE_ID" ]; then
+    curl -s -X POST https://api.linear.app/graphql \
+      -H "Content-Type: application/json" \
+      -H "Authorization: $LINEAR_API_KEY" \
+      -d "$(jq -n --arg issueId "$ISSUE_ID" --arg stateId "$DONE_STATE_ID" \
+        '{"query": "mutation($issueId: String!, $stateId: String!) { issueUpdate(id: $issueId, input: { stateId: $stateId }) { success } }", "variables": {"issueId": $issueId, "stateId": $stateId}}')" \
+      >/dev/null 2>&1 || true
+    echo "  → Transitioned to $CLANCY_STATUS_DONE"
+  fi
+fi
 
 # Log progress
 echo "$(date '+%Y-%m-%d %H:%M') | $IDENTIFIER | $TITLE | DONE" >> .clancy/progress.txt

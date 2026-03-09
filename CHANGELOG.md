@@ -7,6 +7,30 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.2.0] — 2026-03-09
+
+### ✨ New features
+
+- **Shellcheck CI** — `.github/workflows/ci.yml` lints all nine shell scripts on every push and PR to `main`, then runs the full unit test suite.
+- **Auto update check** — `hooks/clancy-check-update.js` fires on session start, spawns a background process to check npm for a newer `chief-clancy` version, and writes the result to `~/.claude/cache/clancy-update-check.json`. The CLAUDE.md template reads this file and surfaces an upgrade notice at the top of every session.
+- **Context window monitor** — `hooks/clancy-statusline.js` tracks context usage and writes a bridge file; `hooks/clancy-context-monitor.js` reads it after each tool call and injects warnings (WARNING ≤ 35%, CRITICAL ≤ 25%) with debouncing (5 tool calls between warnings, severity escalation bypasses debounce). The statusline also shows a colour-coded progress bar.
+- **Targeted doc loading** — Claude now reads six core docs on every run (STACK, ARCHITECTURE, CONVENTIONS, GIT, DEFINITION-OF-DONE, CONCERNS) and loads the four supplementary docs (INTEGRATIONS, TESTING, DESIGN-SYSTEM, ACCESSIBILITY) only when relevant to the ticket.
+- **Status transitions** — Jira and Linear issues now move through the board automatically. Set `CLANCY_STATUS_IN_PROGRESS` and `CLANCY_STATUS_DONE` in `.env` to the exact column name; Clancy transitions on pickup and on completion. Best-effort — never fails the run. Configurable via `/clancy:settings`.
+- **`/clancy:dry-run` command** — dedicated slash command in the Claude Code dropdown. Previews which ticket would be picked up next (including epic, target branch, and feature branch) without making any git changes or calling Claude. Runs full preflight to catch config issues early. Works on all three boards.
+- **Credential guard** — `hooks/clancy-credential-guard.js` is a PreToolUse hook that scans Write, Edit, and MultiEdit operations for credential patterns (API keys, tokens, passwords, private keys, connection strings) and blocks the operation if a match is found. Allowed paths (`.clancy/.env`, `.env.example`, etc.) are exempt. Best-effort — never blocks on error.
+
+### 🐛 Bug fixes
+
+- **`/clancy:uninstall` left orphaned hooks** — the uninstall workflow only removed command and workflow directories. The three hook files, their `settings.json` registrations (SessionStart, PostToolUse, statusline), and the update check cache were all left behind. All are now cleaned up on uninstall.
+- **Statusline never displayed** — the installer wrote `statusline` (lowercase, plain string) to `settings.json` but Claude Code requires `statusLine` (camelCase, `{type, command}` object). The statusline was silently ignored on every install. Fixed the key name and value format in the installer.
+- **Hooks fail on ESM projects** — projects with `"type": "module"` in their `package.json` caused Node to treat hook files as ES modules, breaking `require()` with a `ReferenceError`. The installer now writes a `{"type":"commonjs"}` package.json into the hooks directory so the hooks always run as CommonJS regardless of the host project's module type.
+
+### ✅ Tests
+
+- **More test fixtures** — added edge-case coverage identified post-release: Linear `ISSUE_ID` extraction, Linear `CLANCY_LABEL` request body (with and without label), GitHub all-PRs response returning zero real issues. Total: 55 passing (up from 34).
+
+---
+
 ## [0.1.7] — 2026-03-11
 
 ### 📝 Documentation

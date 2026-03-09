@@ -495,6 +495,25 @@ git checkout "$TARGET_BRANCH"
 # This handles retries cleanly without failing on an already-existing branch.
 git checkout -B "$TICKET_BRANCH"
 
+# Transition ticket to In Progress (best-effort — never fails the run)
+if [ -n "${CLANCY_STATUS_IN_PROGRESS:-}" ]; then
+  TRANSITIONS=$(curl -s \
+    -u "$JIRA_USER:$JIRA_API_TOKEN" \
+    -H "Accept: application/json" \
+    "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY/transitions")
+  IN_PROGRESS_ID=$(echo "$TRANSITIONS" | jq -r \
+    --arg name "$CLANCY_STATUS_IN_PROGRESS" \
+    '.transitions[] | select(.name == $name) | .id' | head -1)
+  if [ -n "$IN_PROGRESS_ID" ]; then
+    curl -s -X POST \
+      -u "$JIRA_USER:$JIRA_API_TOKEN" \
+      -H "Content-Type: application/json" \
+      "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY/transitions" \
+      -d "{\"transition\":{\"id\":\"$IN_PROGRESS_ID\"}}" >/dev/null 2>&1 || true
+    echo "  → Transitioned to $CLANCY_STATUS_IN_PROGRESS"
+  fi
+fi
+
 PROMPT="You are implementing Jira ticket $TICKET_KEY.
 
 Summary: $SUMMARY
@@ -540,6 +559,25 @@ fi
 
 # Delete ticket branch locally (never push deletes)
 git branch -d "$TICKET_BRANCH"
+
+# Transition ticket to Done (best-effort — never fails the run)
+if [ -n "${CLANCY_STATUS_DONE:-}" ]; then
+  TRANSITIONS=$(curl -s \
+    -u "$JIRA_USER:$JIRA_API_TOKEN" \
+    -H "Accept: application/json" \
+    "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY/transitions")
+  DONE_ID=$(echo "$TRANSITIONS" | jq -r \
+    --arg name "$CLANCY_STATUS_DONE" \
+    '.transitions[] | select(.name == $name) | .id' | head -1)
+  if [ -n "$DONE_ID" ]; then
+    curl -s -X POST \
+      -u "$JIRA_USER:$JIRA_API_TOKEN" \
+      -H "Content-Type: application/json" \
+      "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY/transitions" \
+      -d "{\"transition\":{\"id\":\"$DONE_ID\"}}" >/dev/null 2>&1 || true
+    echo "  → Transitioned to $CLANCY_STATUS_DONE"
+  fi
+fi
 
 # Log progress
 echo "$(date '+%Y-%m-%d %H:%M') | $TICKET_KEY | $SUMMARY | DONE" >> .clancy/progress.txt
@@ -958,6 +996,7 @@ if [ "$NODE_COUNT" -eq 0 ]; then
   exit 0
 fi
 
+ISSUE_ID=$(echo "$RESPONSE" | jq -r '.data.viewer.assignedIssues.nodes[0].id')
 IDENTIFIER=$(echo "$RESPONSE" | jq -r '.data.viewer.assignedIssues.nodes[0].identifier')
 TITLE=$(echo "$RESPONSE" | jq -r '.data.viewer.assignedIssues.nodes[0].title')
 DESCRIPTION=$(echo "$RESPONSE" | jq -r '.data.viewer.assignedIssues.nodes[0].description // "No description"')
@@ -992,6 +1031,26 @@ git checkout "$TARGET_BRANCH"
 # -B creates the branch if it doesn't exist, or resets it to HEAD if it does.
 # This handles retries cleanly without failing on an already-existing branch.
 git checkout -B "$TICKET_BRANCH"
+
+# Transition issue to In Progress (best-effort — never fails the run).
+# Queries team workflow states by type "started", picks the first match.
+if [ -n "${CLANCY_STATUS_IN_PROGRESS:-}" ]; then
+  STATE_RESP=$(curl -s -X POST https://api.linear.app/graphql \
+    -H "Content-Type: application/json" \
+    -H "Authorization: $LINEAR_API_KEY" \
+    -d "$(jq -n --arg teamId "$LINEAR_TEAM_ID" --arg name "$CLANCY_STATUS_IN_PROGRESS" \
+      '{"query": "query($teamId: String!, $name: String!) { workflowStates(filter: { team: { id: { eq: $teamId } } name: { eq: $name } }) { nodes { id } } }", "variables": {"teamId": $teamId, "name": $name}}')")
+  IN_PROGRESS_STATE_ID=$(echo "$STATE_RESP" | jq -r '.data.workflowStates.nodes[0].id // empty')
+  if [ -n "$IN_PROGRESS_STATE_ID" ]; then
+    curl -s -X POST https://api.linear.app/graphql \
+      -H "Content-Type: application/json" \
+      -H "Authorization: $LINEAR_API_KEY" \
+      -d "$(jq -n --arg issueId "$ISSUE_ID" --arg stateId "$IN_PROGRESS_STATE_ID" \
+        '{"query": "mutation($issueId: String!, $stateId: String!) { issueUpdate(id: $issueId, input: { stateId: $stateId }) { success } }", "variables": {"issueId": $issueId, "stateId": $stateId}}')" \
+      >/dev/null 2>&1 || true
+    echo "  → Transitioned to $CLANCY_STATUS_IN_PROGRESS"
+  fi
+fi
 
 PROMPT="You are implementing Linear issue $IDENTIFIER.
 
@@ -1037,6 +1096,25 @@ fi
 
 # Delete ticket branch locally
 git branch -d "$TICKET_BRANCH"
+
+# Transition issue to Done (best-effort — never fails the run).
+if [ -n "${CLANCY_STATUS_DONE:-}" ]; then
+  STATE_RESP=$(curl -s -X POST https://api.linear.app/graphql \
+    -H "Content-Type: application/json" \
+    -H "Authorization: $LINEAR_API_KEY" \
+    -d "$(jq -n --arg teamId "$LINEAR_TEAM_ID" --arg name "$CLANCY_STATUS_DONE" \
+      '{"query": "query($teamId: String!, $name: String!) { workflowStates(filter: { team: { id: { eq: $teamId } } name: { eq: $name } }) { nodes { id } } }", "variables": {"teamId": $teamId, "name": $name}}')")
+  DONE_STATE_ID=$(echo "$STATE_RESP" | jq -r '.data.workflowStates.nodes[0].id // empty')
+  if [ -n "$DONE_STATE_ID" ]; then
+    curl -s -X POST https://api.linear.app/graphql \
+      -H "Content-Type: application/json" \
+      -H "Authorization: $LINEAR_API_KEY" \
+      -d "$(jq -n --arg issueId "$ISSUE_ID" --arg stateId "$DONE_STATE_ID" \
+        '{"query": "mutation($issueId: String!, $stateId: String!) { issueUpdate(id: $issueId, input: { stateId: $stateId }) { success } }", "variables": {"issueId": $issueId, "stateId": $stateId}}')" \
+      >/dev/null 2>&1 || true
+    echo "  → Transitioned to $CLANCY_STATUS_DONE"
+  fi
+fi
 
 # Log progress
 echo "$(date '+%Y-%m-%d %H:%M') | $IDENTIFIER | $TITLE | DONE" >> .clancy/progress.txt
@@ -1237,6 +1315,12 @@ MAX_ITERATIONS=5
 # PLAYWRIGHT_STORYBOOK_PORT=6006
 # PLAYWRIGHT_STARTUP_WAIT=15
 
+# ─── Optional: Status transitions ────────────────────────────────────────────
+# Move tickets automatically when Clancy picks up or completes them.
+# Set to the exact status name shown in your Jira board column header.
+# CLANCY_STATUS_IN_PROGRESS="In Progress"
+# CLANCY_STATUS_DONE="Done"
+
 # ─── Optional: Notifications ──────────────────────────────────────────────────
 # Webhook URL for Slack or Teams notifications on ticket completion
 # CLANCY_NOTIFY_WEBHOOK=https://hooks.slack.com/services/your/webhook/url
@@ -1332,6 +1416,12 @@ MAX_ITERATIONS=20
 # PLAYWRIGHT_STORYBOOK_COMMAND="yarn storybook"
 # PLAYWRIGHT_STORYBOOK_PORT=6006
 # PLAYWRIGHT_STARTUP_WAIT=15
+
+# ─── Optional: Status transitions ────────────────────────────────────────────
+# Move issues automatically when Clancy picks up or completes them.
+# Set to the exact workflow state name shown in your Linear board column header.
+# CLANCY_STATUS_IN_PROGRESS="In Progress"
+# CLANCY_STATUS_DONE="Done"
 
 # ─── Optional: Notifications ──────────────────────────────────────────────────
 # Webhook URL for Slack or Teams notifications on ticket completion

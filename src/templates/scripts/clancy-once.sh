@@ -194,6 +194,25 @@ git checkout "$TARGET_BRANCH"
 # This handles retries cleanly without failing on an already-existing branch.
 git checkout -B "$TICKET_BRANCH"
 
+# Transition ticket to In Progress (best-effort — never fails the run)
+if [ -n "${CLANCY_STATUS_IN_PROGRESS:-}" ]; then
+  TRANSITIONS=$(curl -s \
+    -u "$JIRA_USER:$JIRA_API_TOKEN" \
+    -H "Accept: application/json" \
+    "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY/transitions")
+  IN_PROGRESS_ID=$(echo "$TRANSITIONS" | jq -r \
+    --arg name "$CLANCY_STATUS_IN_PROGRESS" \
+    '.transitions[] | select(.name == $name) | .id' | head -1)
+  if [ -n "$IN_PROGRESS_ID" ]; then
+    curl -s -X POST \
+      -u "$JIRA_USER:$JIRA_API_TOKEN" \
+      -H "Content-Type: application/json" \
+      "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY/transitions" \
+      -d "{\"transition\":{\"id\":\"$IN_PROGRESS_ID\"}}" >/dev/null 2>&1 || true
+    echo "  → Transitioned to $CLANCY_STATUS_IN_PROGRESS"
+  fi
+fi
+
 PROMPT="You are implementing Jira ticket $TICKET_KEY.
 
 Summary: $SUMMARY
@@ -239,6 +258,25 @@ fi
 
 # Delete ticket branch locally (never push deletes)
 git branch -d "$TICKET_BRANCH"
+
+# Transition ticket to Done (best-effort — never fails the run)
+if [ -n "${CLANCY_STATUS_DONE:-}" ]; then
+  TRANSITIONS=$(curl -s \
+    -u "$JIRA_USER:$JIRA_API_TOKEN" \
+    -H "Accept: application/json" \
+    "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY/transitions")
+  DONE_ID=$(echo "$TRANSITIONS" | jq -r \
+    --arg name "$CLANCY_STATUS_DONE" \
+    '.transitions[] | select(.name == $name) | .id' | head -1)
+  if [ -n "$DONE_ID" ]; then
+    curl -s -X POST \
+      -u "$JIRA_USER:$JIRA_API_TOKEN" \
+      -H "Content-Type: application/json" \
+      "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY/transitions" \
+      -d "{\"transition\":{\"id\":\"$DONE_ID\"}}" >/dev/null 2>&1 || true
+    echo "  → Transitioned to $CLANCY_STATUS_DONE"
+  fi
+fi
 
 # Log progress
 echo "$(date '+%Y-%m-%d %H:%M') | $TICKET_KEY | $SUMMARY | DONE" >> .clancy/progress.txt
