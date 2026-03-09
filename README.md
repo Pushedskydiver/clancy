@@ -105,7 +105,48 @@ You'll be asked: global install (`~/.claude`) or local (`./.claude`). Either wor
 - `curl` installed (comes with macOS/most Linux)
 - `git` installed (comes with most development environments)
 
-> **Heads up:** Clancy runs Claude with `--dangerously-skip-permissions` so it can work unattended without prompting for approval on every file change, git command, and shell script. Only run Clancy on codebases you own and trust. Review the scripts in `.clancy/` before your first run if you want to see exactly what it does.
+### Permissions
+
+Clancy is designed to run Claude with `--dangerously-skip-permissions`:
+
+```bash
+claude --dangerously-skip-permissions
+```
+
+> [!TIP]
+> This is how Clancy is intended to be used — stopping to approve `git commit` and `curl` 50 times defeats the purpose. Only use it on codebases you own and trust.
+
+**Alternative — granular permissions:** if you'd rather not use that flag, add this to `.claude/settings.json` in your project (or `~/.claude/settings.json` globally):
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(bash:*)",
+      "Bash(curl:*)",
+      "Bash(jq:*)",
+      "Bash(chmod:*)",
+      "Bash(npm:*)",
+      "Bash(mkdir:*)",
+      "Bash(cat:*)",
+      "Bash(cp:*)",
+      "Bash(echo:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(wc:*)",
+      "Bash(sort:*)",
+      "Bash(tr:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(lsof:*)",
+      "Bash(command:*)"
+    ]
+  }
+}
+```
+
+This covers everything Clancy's commands and shell scripts need to run.
 
 ---
 
