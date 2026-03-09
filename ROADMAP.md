@@ -35,6 +35,8 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 - Targeted doc loading — load only relevant `.clancy/docs/` files per ticket rather than all 10 every run (token optimisation)
 - Shellcheck CI for all shell scripts
 - More test fixtures (edge cases discovered post-release)
+- Auto update check via `SessionStart` hook — background npm version check at session start, surfaces notification when a newer version of `chief-clancy` is available (same pattern as GSD's `gsd-check-update.js`)
+- Context window monitor via `PostToolUse` hook — warns Claude when context is running low (≤35% remaining: wrap up analysis, ≤25%: commit current work and log progress to `.clancy/progress.txt`); most valuable during `/clancy:map-codebase` and large ticket implementations. Hook infrastructure shared with the update check.
 
 ---
 
