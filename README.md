@@ -2,7 +2,7 @@
 
 **Autonomous, board-driven development for Claude Code.**
 
-[![npm](https://img.shields.io/npm/v/chief-clancy?color=cb3837)](https://www.npmjs.com/package/chief-clancy) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE) [![Tests](https://img.shields.io/badge/tests-51%20passing-brightgreen)](./test/) [![GitHub Stars](https://img.shields.io/github/stars/Pushedskydiver/clancy?style=flat)](https://github.com/Pushedskydiver/clancy/stargazers)
+[![npm](https://img.shields.io/npm/v/chief-clancy?color=cb3837)](https://www.npmjs.com/package/chief-clancy) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE) [![Tests](https://img.shields.io/badge/tests-55%20passing-brightgreen)](./test/) [![GitHub Stars](https://img.shields.io/github/stars/Pushedskydiver/clancy?style=flat)](https://github.com/Pushedskydiver/clancy/stargazers)
 
 ```bash
 npx chief-clancy
@@ -146,7 +146,7 @@ npx chief-clancy
 | `/clancy:init`         | Wizard — choose board, collect config, scaffold everything               |
 | `/clancy:run`          | Loop mode — processes tickets until queue is empty or MAX_ITERATIONS hit |
 | `/clancy:run 20`       | Same, override MAX_ITERATIONS to 20 for this session                     |
-| `/clancy:once`         | Pick up one ticket and stop                                              |
+| `/clancy:once`         | Pick up one ticket and stop (`--dry-run` to preview without changes)     |
 | `/clancy:status`       | Show next tickets without running — read-only                            |
 | `/clancy:review`       | Score next ticket (0–100%) with actionable recommendations               |
 | `/clancy:logs`         | Format and display `.clancy/progress.txt`                                |
@@ -214,6 +214,15 @@ PLAYWRIGHT_STARTUP_WAIT=15
 ```
 
 After implementing a UI ticket, Clancy starts the dev server or Storybook, screenshots, assesses visually, checks the console, and fixes anything wrong before committing.
+
+### Status transitions
+
+```
+CLANCY_STATUS_IN_PROGRESS="In Progress"
+CLANCY_STATUS_DONE="Done"
+```
+
+Clancy automatically moves tickets through your board when it picks up and completes them. Set these to the exact column name shown in your Jira or Linear board. Best-effort — a failed transition never stops the run. Configurable via `/clancy:settings`.
 
 ### Notifications
 
