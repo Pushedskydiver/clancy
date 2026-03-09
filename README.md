@@ -1,10 +1,22 @@
 # Clancy
 
+**Autonomous, board-driven development for Claude Code.**
+
+[![npm](https://img.shields.io/npm/v/chief-clancy?color=cb3837)](https://www.npmjs.com/package/chief-clancy) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE) [![Tests](https://img.shields.io/badge/tests-34%20passing-brightgreen)](./test/) [![GitHub Stars](https://img.shields.io/github/stars/Pushedskydiver/clancy?style=flat)](https://github.com/Pushedskydiver/clancy/stargazers)
+
+```bash
+npx chief-clancy
+```
+
+Works on Mac and Linux.
+
+[What it does](#what-it-does) · [Install](#install) · [Commands](#commands) · [Supported boards](#supported-boards) · [Comparison](./COMPARISON.md) · [Roadmap](./ROADMAP.md) · [Contributing](./CONTRIBUTING.md)
+
+---
+
 ![Clancy terminal preview](assets/terminal-preview.svg)
 
-Autonomous, board-driven development for Claude Code.
-
-Named after Chief Clancy Wiggum (Ralph's dad, The Simpsons) — because Clancy equips and deploys Ralph before sending him to work. Built on the [Ralph technique](https://ghuntley.com/ralph/) coined by Geoffrey Huntley. Clancy extends that foundation with Kanban board integration, structured codebase docs, and a git workflow built for team development.
+Named after Chief Clancy Wiggum (The Simpsons) — built on the [Ralph technique](https://ghuntley.com/ralph/) by Geoffrey Huntley. [See lineage →](#lineage)
 
 ---
 
