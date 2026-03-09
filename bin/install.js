@@ -128,6 +128,24 @@ async function main() {
     copyDir(COMMANDS_SRC, dest);
     copyDir(WORKFLOWS_SRC, workflowsDest);
 
+    // For global installs, @-file references in command files resolve relative to the
+    // project root — not ~/.claude/ — so the workflow files won't be found at runtime.
+    // Fix: inline the workflow content directly into the installed command files.
+    if (dest === GLOBAL_DEST) {
+      const WORKFLOW_REF = /^@\.claude\/clancy\/workflows\/(.+\.md)$/m;
+      for (const file of fs.readdirSync(dest)) {
+        if (!file.endsWith('.md')) continue;
+        const cmdPath = path.join(dest, file);
+        const content = fs.readFileSync(cmdPath, 'utf8');
+        const match = content.match(WORKFLOW_REF);
+        if (!match) continue;
+        const workflowFile = path.join(workflowsDest, match[1]);
+        if (!fs.existsSync(workflowFile)) continue;
+        const workflowContent = fs.readFileSync(workflowFile, 'utf8');
+        fs.writeFileSync(cmdPath, content.replace(match[0], workflowContent));
+      }
+    }
+
     // Write VERSION file so /clancy:doctor and /clancy:update can read the installed version
     fs.writeFileSync(path.join(dest, 'VERSION'), PKG.version);
 
