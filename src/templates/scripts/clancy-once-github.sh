@@ -10,6 +10,7 @@ for arg in "$@"; do
     --dry-run) DRY_RUN=true ;;
   esac
 done
+readonly DRY_RUN
 
 # ─── WHAT THIS SCRIPT DOES ─────────────────────────────────────────────────────
 #
@@ -144,8 +145,6 @@ TICKET_BRANCH="feature/issue-${ISSUE_NUMBER}"
 if [ "$MILESTONE" != "none" ]; then
   MILESTONE_SLUG=$(echo "$MILESTONE" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd '[:alnum:]-')
   TARGET_BRANCH="milestone/${MILESTONE_SLUG}"
-  git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" \
-    || git checkout -b "$TARGET_BRANCH" "$BASE_BRANCH"
 else
   TARGET_BRANCH="$BASE_BRANCH"
 fi
@@ -169,6 +168,8 @@ fi
 echo "Picking up: [#${ISSUE_NUMBER}] $TITLE"
 echo "Milestone: $MILESTONE | Target branch: $TARGET_BRANCH"
 
+git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" \
+  || git checkout -b "$TARGET_BRANCH" "$BASE_BRANCH"
 git checkout "$TARGET_BRANCH"
 # -B creates the branch if it doesn't exist, or resets it to HEAD if it does.
 # This handles retries cleanly without failing on an already-existing branch.

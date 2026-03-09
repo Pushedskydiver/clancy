@@ -10,6 +10,7 @@ for arg in "$@"; do
     --dry-run) DRY_RUN=true ;;
   esac
 done
+readonly DRY_RUN
 
 # ─── WHAT THIS SCRIPT DOES ─────────────────────────────────────────────────────
 #
@@ -186,8 +187,6 @@ TICKET_BRANCH="feature/$(echo "$TICKET_KEY" | tr '[:upper:]' '[:lower:]')"
 # BASE_BRANCH if it doesn't exist yet). Otherwise branch from BASE_BRANCH directly.
 if [ "$EPIC_INFO" != "none" ]; then
   TARGET_BRANCH="epic/$(echo "$EPIC_INFO" | tr '[:upper:]' '[:lower:]')"
-  git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" \
-    || git checkout -b "$TARGET_BRANCH" "$BASE_BRANCH"
 else
   TARGET_BRANCH="$BASE_BRANCH"
 fi
@@ -212,6 +211,8 @@ fi
 echo "Picking up: [$TICKET_KEY] $SUMMARY"
 echo "Epic: $EPIC_INFO | Target branch: $TARGET_BRANCH | Blockers: $BLOCKERS"
 
+git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" \
+  || git checkout -b "$TARGET_BRANCH" "$BASE_BRANCH"
 git checkout "$TARGET_BRANCH"
 # -B creates the branch if it doesn't exist, or resets it to HEAD if it does.
 # This handles retries cleanly without failing on an already-existing branch.
@@ -231,7 +232,7 @@ if [ -n "${CLANCY_STATUS_IN_PROGRESS:-}" ]; then
       -u "$JIRA_USER:$JIRA_API_TOKEN" \
       -H "Content-Type: application/json" \
       "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY/transitions" \
-      -d "{\"transition\":{\"id\":\"$IN_PROGRESS_ID\"}}" >/dev/null 2>&1 || true
+      -d "$(jq -n --arg id "$IN_PROGRESS_ID" '{"transition":{"id":$id}}')" >/dev/null 2>&1 || true
     echo "  → Transitioned to $CLANCY_STATUS_IN_PROGRESS"
   fi
 fi
@@ -296,7 +297,7 @@ if [ -n "${CLANCY_STATUS_DONE:-}" ]; then
       -u "$JIRA_USER:$JIRA_API_TOKEN" \
       -H "Content-Type: application/json" \
       "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY/transitions" \
-      -d "{\"transition\":{\"id\":\"$DONE_ID\"}}" >/dev/null 2>&1 || true
+      -d "$(jq -n --arg id "$DONE_ID" '{"transition":{"id":$id}}')" >/dev/null 2>&1 || true
     echo "  → Transitioned to $CLANCY_STATUS_DONE"
   fi
 fi

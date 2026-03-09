@@ -10,6 +10,7 @@ for arg in "$@"; do
     --dry-run) DRY_RUN=true ;;
   esac
 done
+readonly DRY_RUN
 
 # ─── WHAT THIS SCRIPT DOES ─────────────────────────────────────────────────────
 #
@@ -181,8 +182,6 @@ TICKET_BRANCH="feature/$(echo "$IDENTIFIER" | tr '[:upper:]' '[:lower:]')"
 # BASE_BRANCH if it doesn't exist yet). Otherwise branch from BASE_BRANCH directly.
 if [ "$PARENT_ID" != "none" ]; then
   TARGET_BRANCH="epic/$(echo "$PARENT_ID" | tr '[:upper:]' '[:lower:]')"
-  git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" \
-    || git checkout -b "$TARGET_BRANCH" "$BASE_BRANCH"
 else
   TARGET_BRANCH="$BASE_BRANCH"
 fi
@@ -206,6 +205,8 @@ fi
 echo "Picking up: [$IDENTIFIER] $TITLE"
 echo "Epic: $EPIC_INFO | Target branch: $TARGET_BRANCH"
 
+git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" \
+  || git checkout -b "$TARGET_BRANCH" "$BASE_BRANCH"
 git checkout "$TARGET_BRANCH"
 # -B creates the branch if it doesn't exist, or resets it to HEAD if it does.
 # This handles retries cleanly without failing on an already-existing branch.
@@ -228,6 +229,8 @@ if [ -n "${CLANCY_STATUS_IN_PROGRESS:-}" ]; then
         '{"query": "mutation($issueId: String!, $stateId: String!) { issueUpdate(id: $issueId, input: { stateId: $stateId }) { success } }", "variables": {"issueId": $issueId, "stateId": $stateId}}')" \
       >/dev/null 2>&1 || true
     echo "  → Transitioned to $CLANCY_STATUS_IN_PROGRESS"
+  else
+    echo "  ⚠ Workflow state '$CLANCY_STATUS_IN_PROGRESS' not found — check CLANCY_STATUS_IN_PROGRESS in .clancy/.env."
   fi
 fi
 
@@ -292,6 +295,8 @@ if [ -n "${CLANCY_STATUS_DONE:-}" ]; then
         '{"query": "mutation($issueId: String!, $stateId: String!) { issueUpdate(id: $issueId, input: { stateId: $stateId }) { success } }", "variables": {"issueId": $issueId, "stateId": $stateId}}')" \
       >/dev/null 2>&1 || true
     echo "  → Transitioned to $CLANCY_STATUS_DONE"
+  else
+    echo "  ⚠ Workflow state '$CLANCY_STATUS_DONE' not found — check CLANCY_STATUS_DONE in .clancy/.env."
   fi
 fi
 
