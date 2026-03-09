@@ -33,8 +33,8 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 ### 📋 Board support
 
 - **Jira** — POST `/rest/api/3/search/jql` endpoint, ADF description parsing, sprint filter, optional label filter (`CLANCY_LABEL`), classic and next-gen epic detection
-- **GitHub Issues** — PR filtering, milestone as epic context, `clancy` label required for pickup, auto-close on complete
-- **Linear** — `viewer.assignedIssues` query, `state.type: unstarted` filter, personal API key auth (no Bearer prefix)
+- **GitHub Issues** — PR filtering, milestone as epic context, `clancy` label required for pickup, optional `CLANCY_LABEL` filter, auto-close on complete
+- **Linear** — `viewer.assignedIssues` query, `state.type: unstarted` filter, personal API key auth (no Bearer prefix), optional `CLANCY_LABEL` filter
 
 ### 🌿 Git workflow
 
@@ -45,13 +45,14 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 ### 🔌 Optional integrations
 
 - **Figma MCP** — three-tier design context fetch (MCP → REST image export → ticket attachment); key verified on setup with retry/skip on failure
-- **Playwright** — visual check after UI tickets; Storybook detection with configurable routing rules between dev server and Storybook
+- **Playwright** — visual check after UI tickets; Storybook detection with configurable routing rules between dev server and Storybook; Figma design compliance comparison when a design was fetched for the ticket
 - **Slack / Teams** — webhook notifications on ticket completion or error; auto-detected from URL format
 
 ### ⚙️ Configuration & setup
 
 - Full `.clancy/` scaffold: shell scripts, 10 doc templates, `.env`, `.env.example`
 - CLAUDE.md merge strategy — appends Clancy section between delimiters, never overwrites existing content
+- Pre-implementation executability check — Clancy self-assesses each ticket before executing; skips and logs tickets that aren't implementable in the current codebase
 - Preflight checks in all scripts: binary check, `.env` validation, git repo check, board reachability ping
 - Board registry (`registry/boards.json`) for community-contributed board integrations
 
