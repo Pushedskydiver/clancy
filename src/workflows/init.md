@@ -256,7 +256,11 @@ Write `FIGMA_API_KEY` to `.clancy/.env`. Add usage note to CLAUDE.md Clancy sect
 
 ### Enhancement 2: Playwright visual checks
 
-Output: `Screenshot and verify UI after implementing tickets. Set up Playwright visual checks? [y/N]`
+If Figma was configured in Enhancement 1, output:
+`Screenshot and verify UI after implementing tickets — and compare against the Figma design when one was fetched. Set up Playwright visual checks? [y/N]`
+
+Otherwise output:
+`Screenshot and verify UI after implementing tickets. Set up Playwright visual checks? [y/N]`
 
 If no: skip to Enhancement 3.
 
@@ -371,7 +375,12 @@ Write `CLANCY_NOTIFY_WEBHOOK=<url>` to `.clancy/.env`.
 
 ### Enhancement 4: Max iterations
 
-Output: `How many tickets should /clancy:run process per session? [5]`
+Output:
+
+```
+How many tickets should /clancy:run process before stopping? [5]
+(You can override this per-session with /clancy:run 20)
+```
 
 Write `MAX_ITERATIONS=<value>` to `.clancy/.env`.
 
