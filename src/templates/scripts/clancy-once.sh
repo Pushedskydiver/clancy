@@ -67,6 +67,10 @@ fi
 [ -n "${JIRA_USER:-}"        ] || { echo "✗ JIRA_USER is not set in .clancy/.env";        exit 0; }
 [ -n "${JIRA_API_TOKEN:-}"   ] || { echo "✗ JIRA_API_TOKEN is not set in .clancy/.env";   exit 0; }
 [ -n "${JIRA_PROJECT_KEY:-}" ] || { echo "✗ JIRA_PROJECT_KEY is not set in .clancy/.env"; exit 0; }
+if ! echo "$JIRA_PROJECT_KEY" | grep -qE '^[A-Z][A-Z0-9]+$'; then
+  echo "✗ JIRA_PROJECT_KEY format is invalid. Expected uppercase letters and numbers only (e.g. PROJ, ENG2). Check JIRA_PROJECT_KEY in .clancy/.env."
+  exit 0
+fi
 
 PING=$(curl -s -o /dev/null -w "%{http_code}" \
   -u "$JIRA_USER:$JIRA_API_TOKEN" \
