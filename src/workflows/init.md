@@ -24,6 +24,32 @@ It looks like Clancy is already set up in this project.
 
 ---
 
+## Step 1b — Prerequisite check
+
+Before proceeding, silently run `command -v` for each required binary:
+
+| Binary | Install hint |
+|---|---|
+| `jq` | `brew install jq` / `apt install jq` |
+| `curl` | pre-installed on macOS and most Linux |
+| `git` | `brew install git` / `apt install git` |
+
+If all are present: continue silently.
+
+If any are missing, output:
+
+```
+⚠ Missing prerequisites:
+
+  ✗ jq — brew install jq  (or apt install jq on Linux)
+
+Clancy's shell scripts require these binaries to run. Install them, then re-run /clancy:init.
+```
+
+List only the missing ones. Then stop — do not proceed with setup until prerequisites are satisfied.
+
+---
+
 ## Step 2 — Welcome message
 
 Output:
