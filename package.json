@@ -1,6 +1,6 @@
 {
   "name": "chief-clancy",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "description": "Autonomous, board-driven development for Claude Code — scaffolds docs, integrates Kanban boards, runs tickets in a loop.",
   "keywords": [
     "claude",
@@ -33,7 +33,7 @@
     "registry/"
   ],
   "scripts": {
-    "test": "bash test/unit/jira.test.sh && bash test/unit/github.test.sh && bash test/unit/linear.test.sh",
+    "test": "bash test/unit/jira.test.sh && bash test/unit/github.test.sh && bash test/unit/linear.test.sh && bash test/unit/scaffold.test.sh",
     "smoke": "bash test/smoke/smoke.sh"
   },
   "engines": {
