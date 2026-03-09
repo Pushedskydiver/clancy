@@ -63,6 +63,7 @@ Apply the decision rule against this ticket's description — route/page/screen/
 component/atom/molecule/organism/variant/story → Storybook, ambiguous → dev server default.
 Start the server using health check polling (not sleep). Navigate to the relevant route or story.
 Screenshot, assess visually, check console. Fix before committing if anything looks wrong.
+If a Figma design was fetched for this ticket, compare the screenshot directly against it — check layout, spacing, colours, typography, and component fidelity. Treat the Figma design as the source of truth.
 Kill by PID then sweep the port unconditionally — never leave a port open.
 Log result: YYYY-MM-DD HH:MM | TICKET-KEY | PLAYWRIGHT_PASS|FAIL | server-used
 <!-- clancy:end -->
