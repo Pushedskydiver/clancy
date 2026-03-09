@@ -50,6 +50,7 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 - Polished init wizard with auto-detection for common setups
 - Complete documentation site
 - npm package integrity checks
+- Native Windows support — Node.js-based runner replacing bash scripts, no WSL required
 
 ---
 

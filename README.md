@@ -8,7 +8,7 @@
 npx chief-clancy
 ```
 
-Works on Mac and Linux.
+Works on Mac and Linux. Windows requires [WSL](https://learn.microsoft.com/en-us/windows/wsl/install).
 
 [What it does](#what-it-does) · [Install](#install) · [Commands](#commands) · [Supported boards](#supported-boards) · [Comparison](./COMPARISON.md) · [Roadmap](./ROADMAP.md) · [Contributing](./CONTRIBUTING.md)
 
