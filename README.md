@@ -116,38 +116,6 @@ claude --dangerously-skip-permissions
 > [!TIP]
 > This is how Clancy is intended to be used — stopping to approve `git commit` and `curl` 50 times defeats the purpose. Only use it on codebases you own and trust.
 
-**Alternative — granular permissions:** if you'd rather not use that flag, add this to `.claude/settings.json` in your project (or `~/.claude/settings.json` globally):
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "Bash(git:*)",
-      "Bash(bash:*)",
-      "Bash(curl:*)",
-      "Bash(jq:*)",
-      "Bash(chmod:*)",
-      "Bash(npm:*)",
-      "Bash(mkdir:*)",
-      "Bash(cat:*)",
-      "Bash(cp:*)",
-      "Bash(echo:*)",
-      "Bash(ls:*)",
-      "Bash(grep:*)",
-      "Bash(wc:*)",
-      "Bash(sort:*)",
-      "Bash(tr:*)",
-      "Bash(head:*)",
-      "Bash(tail:*)",
-      "Bash(lsof:*)",
-      "Bash(command:*)"
-    ]
-  }
-}
-```
-
-This covers everything Clancy's commands and shell scripts need to run.
-
 ---
 
 ## Getting started
@@ -304,6 +272,36 @@ Clancy is what happens when you take that idea seriously for team development. S
 Clancy runs Claude with `--dangerously-skip-permissions`, which suppresses all permission prompts so it can work unattended. This means Claude has full read/write access to your file system and can execute shell commands without asking.
 
 **Only run Clancy on codebases you own and trust.** Review the scripts in `.clancy/` before your first run if you want to see exactly what executes.
+
+**Alternative — granular permissions:** if you run Claude Code without `--dangerously-skip-permissions` by default, you can pre-approve only the commands Clancy needs. Add this to `.claude/settings.json` in your project (or `~/.claude/settings.json` globally):
+
+```json
+{
+  "permissions": {
+    "allow": [
+      "Bash(git:*)",
+      "Bash(bash:*)",
+      "Bash(curl:*)",
+      "Bash(jq:*)",
+      "Bash(chmod:*)",
+      "Bash(npm:*)",
+      "Bash(mkdir:*)",
+      "Bash(cat:*)",
+      "Bash(cp:*)",
+      "Bash(echo:*)",
+      "Bash(ls:*)",
+      "Bash(grep:*)",
+      "Bash(wc:*)",
+      "Bash(sort:*)",
+      "Bash(tr:*)",
+      "Bash(head:*)",
+      "Bash(tail:*)",
+      "Bash(lsof:*)",
+      "Bash(command:*)"
+    ]
+  }
+}
+```
 
 ### Protect your credentials from Claude
 
