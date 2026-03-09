@@ -14,8 +14,10 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 - `/clancy:settings` — view and change config, switch boards without re-running init
 - `/clancy:doctor` — diagnose your setup, test every configured integration
 - `/clancy:uninstall`, `/clancy:update`, `/clancy:help`
+- `CLANCY_LABEL` filter for all three boards — limit pickup to labelled tickets in mixed backlogs
+- Pre-implementation executability check — Clancy self-assesses tickets before executing, skips non-codebase work
 - Figma MCP three-tier integration
-- Playwright visual checks with Storybook detection
+- Playwright visual checks with Storybook detection and Figma design compliance comparison
 - Slack/Teams webhook notifications
 - Board registry for community extensibility
 
@@ -25,7 +27,6 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 
 - Jira/Linear ticket status transition after completion — mark ticket done, prevent re-pickup in AFK loops
 - `--dry-run` flag for `clancy-once.sh` — shows what would be done without doing it
-- Linear label filter — `CLANCY_LABEL` support for Linear (GraphQL label filter), matching the Jira implementation shipped in v0.1.0
 - Targeted doc loading — load only relevant `.clancy/docs/` files per ticket rather than all 10 every run (token optimisation)
 - Shellcheck CI for all shell scripts
 - More test fixtures (edge cases discovered post-release)
