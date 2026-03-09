@@ -3,6 +3,14 @@
 # This means any command that fails will stop the script immediately rather than silently continuing.
 set -euo pipefail
 
+# Parse flags — must happen before preflight so --dry-run works without side effects.
+DRY_RUN=false
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN=true ;;
+  esac
+done
+
 # ─── WHAT THIS SCRIPT DOES ─────────────────────────────────────────────────────
 #
 # Board: GitHub Issues
@@ -140,6 +148,20 @@ if [ "$MILESTONE" != "none" ]; then
     || git checkout -b "$TARGET_BRANCH" "$BASE_BRANCH"
 else
   TARGET_BRANCH="$BASE_BRANCH"
+fi
+
+# ─── DRY RUN ───────────────────────────────────────────────────────────────────
+
+if [ "$DRY_RUN" = "true" ]; then
+  echo ""
+  echo "── Dry run ──────────────────────────────────────"
+  echo "  Issue:          [#${ISSUE_NUMBER}] $TITLE"
+  echo "  Milestone:      $MILESTONE"
+  echo "  Target branch:  $TARGET_BRANCH"
+  echo "  Feature branch: $TICKET_BRANCH"
+  echo "─────────────────────────────────────────────────"
+  echo "  No changes made. Remove --dry-run to run for real."
+  exit 0
 fi
 
 # ─── IMPLEMENT ─────────────────────────────────────────────────────────────────
