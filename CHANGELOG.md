@@ -7,6 +7,14 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.1.4] — 2026-03-10
+
+### 💄 Improvements
+
+- **Settings menu labels** — renamed `Status filter` to `Queue status` in the Jira settings menu to make it clear this controls which column Clancy pulls tickets *from*, distinct from the status transition settings.
+
+---
+
 ## [0.1.3] — 2026-03-09
 
 ### 🐛 Bug fixes

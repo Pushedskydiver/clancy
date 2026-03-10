@@ -43,7 +43,7 @@ General
 
 {If Jira:}
 Jira
-[4] Status filter     {CLANCY_JQL_STATUS:-To Do}
+[4] Queue status      {CLANCY_JQL_STATUS:-To Do}
 [5] Sprint filter     {on if CLANCY_JQL_SPRINT set, else off}
 [6] Label filter      {CLANCY_LABEL if set, else off — only pick up tickets with this label}
 
@@ -62,7 +62,7 @@ Optional enhancements
 Which setting would you like to change?
 ```
 
-Number each option sequentially. Show only the board-specific section that matches the configured board. If Jira: show [4] status, [5] sprint, [6] label. If Linear: show [4] label. If GitHub: no board-specific options.
+Number each option sequentially. Show only the board-specific section that matches the configured board. If Jira: show [4] queue status, [5] sprint, [6] label. If Linear: show [4] label. If GitHub: no board-specific options.
 
 ---
 
