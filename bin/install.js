@@ -328,6 +328,7 @@ async function main() {
       ['/clancy:map-codebase', 'Scan codebase with 5 parallel agents'],
       ['/clancy:run',          'Run Clancy in loop mode'],
       ['/clancy:once',         'Pick up one ticket and stop'],
+      ['/clancy:dry-run',      'Preview next ticket without making changes'],
       ['/clancy:status',       'Show next tickets without running'],
       ['/clancy:review',       'Score next ticket and get recommendations'],
       ['/clancy:logs',         'Display progress log'],

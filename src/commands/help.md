@@ -20,6 +20,7 @@ integration, structured codebase docs, and a git workflow built for team develop
 | `/clancy:run` | Run in loop mode until queue is empty or MAX_ITERATIONS hit |
 | `/clancy:run 20` | Same, but override MAX_ITERATIONS to 20 for this session |
 | `/clancy:once` | Pick up one ticket and stop — good for first runs and debugging |
+| `/clancy:dry-run` | Preview next ticket without making any changes |
 | `/clancy:status` | Show next tickets without running — read-only board check |
 | `/clancy:review` | Score next ticket (0–100%) with actionable recommendations |
 | `/clancy:logs` | Format and display .clancy/progress.txt |
@@ -35,7 +36,7 @@ integration, structured codebase docs, and a git workflow built for team develop
 
 1. Run `/clancy:init` to connect your Kanban board and scaffold .clancy/
 2. Run `/clancy:map-codebase` to generate codebase docs (or say yes during init)
-3. Run `/clancy:once` to watch your first ticket — then go AFK with `/clancy:run`
+3. Run `/clancy:dry-run` to preview the first ticket, then `/clancy:once` to run it — then go AFK with `/clancy:run`
 
 Clancy picks one ticket per loop, fresh context every iteration. No context rot.
 

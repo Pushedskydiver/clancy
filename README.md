@@ -130,10 +130,13 @@ npx chief-clancy
 # 3. Scan your codebase (or say yes during init)
 /clancy:map-codebase
 
-# 4. Watch your first ticket
+# 4. Preview the first ticket (no changes made)
+/clancy:dry-run
+
+# 5. Watch your first ticket
 /clancy:once
 
-# 5. Go AFK
+# 6. Go AFK
 /clancy:run
 ```
 
@@ -146,7 +149,8 @@ npx chief-clancy
 | `/clancy:init`         | Wizard — choose board, collect config, scaffold everything               |
 | `/clancy:run`          | Loop mode — processes tickets until queue is empty or MAX_ITERATIONS hit |
 | `/clancy:run 20`       | Same, override MAX_ITERATIONS to 20 for this session                     |
-| `/clancy:once`         | Pick up one ticket and stop (`--dry-run` to preview without changes)     |
+| `/clancy:once`         | Pick up one ticket and stop                                              |
+| `/clancy:dry-run`      | Preview next ticket without making changes — no git ops, no Claude call  |
 | `/clancy:status`       | Show next tickets without running — read-only                            |
 | `/clancy:review`       | Score next ticket (0–100%) with actionable recommendations               |
 | `/clancy:logs`         | Format and display `.clancy/progress.txt`                                |
