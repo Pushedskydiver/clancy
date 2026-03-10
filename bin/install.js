@@ -278,6 +278,12 @@ async function main() {
       for (const f of hookFiles) {
         fs.copyFileSync(path.join(HOOKS_SRC, f), path.join(hooksInstallDir, f));
       }
+      // Force CommonJS resolution for hook files — projects with "type":"module"
+      // in their package.json would otherwise treat .js files as ESM, breaking require().
+      fs.writeFileSync(
+        path.join(hooksInstallDir, 'package.json'),
+        JSON.stringify({ type: 'commonjs' }, null, 2) + '\n'
+      );
 
       // Merge hooks into settings.json without clobbering existing config
       let settings = {};
