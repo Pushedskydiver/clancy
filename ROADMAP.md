@@ -30,7 +30,7 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 ## v0.2.0 — Stability and DX
 
 - Jira/Linear ticket status transitions — move ticket to In Progress on pickup, Done on completion
-- `--dry-run` flag for `clancy-once.sh` — shows what would be done without doing it
+- `/clancy:dry-run` command — dedicated dropdown command to preview the next ticket without making any changes (no git ops, no Claude call)
 - Credential guard hook — PreToolUse hook that blocks writing API keys, tokens, and passwords to code files
 - Targeted doc loading — load only relevant `.clancy/docs/` files per ticket rather than all 10 every run (token optimisation)
 - Shellcheck CI for all shell scripts

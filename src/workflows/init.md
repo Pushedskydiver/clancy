@@ -420,4 +420,4 @@ Clancy is ready.
 - Config: `.clancy/.env`
 - CLAUDE.md: updated
 
-Run `/clancy:once` to pick up your first ticket, or `/clancy:run` to process the full queue.
+Run `/clancy:dry-run` to preview the first ticket without making changes, `/clancy:once` to pick it up, or `/clancy:run` to process the full queue.
