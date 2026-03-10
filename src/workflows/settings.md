@@ -46,14 +46,14 @@ Jira
 [4] Queue status      {CLANCY_JQL_STATUS:-To Do}
 [5] Sprint filter     {on if CLANCY_JQL_SPRINT set, else off}
 [6] Label filter      {CLANCY_LABEL if set, else off — only pick up tickets with this label}
-[7] In Progress       {CLANCY_STATUS_IN_PROGRESS if set, else off — move ticket on pickup}
-[8] Done              {CLANCY_STATUS_DONE if set, else off — move ticket on completion}
+[7] Pickup status     {CLANCY_STATUS_IN_PROGRESS if set, else off — move ticket on pickup}
+[8] Done status       {CLANCY_STATUS_DONE if set, else off — move ticket on completion}
 
 {If Linear:}
 Linear
 [4] Label filter      {CLANCY_LABEL if set, else off — only pick up issues with this label}
-[5] In Progress       {CLANCY_STATUS_IN_PROGRESS if set, else off — move issue on pickup}
-[6] Done              {CLANCY_STATUS_DONE if set, else off — move issue on completion}
+[5] Pickup status     {CLANCY_STATUS_IN_PROGRESS if set, else off — move issue on pickup}
+[6] Done status       {CLANCY_STATUS_DONE if set, else off — move issue on completion}
 
 Optional enhancements
 [{N}] Figma MCP       {enabled if FIGMA_API_KEY set, else not set}
@@ -66,7 +66,7 @@ Optional enhancements
 Which setting would you like to change?
 ```
 
-Number each option sequentially. Show only the board-specific section that matches the configured board. If Jira: show [4] queue status, [5] sprint, [6] label, [7] In Progress, [8] Done. If Linear: show [4] label, [5] In Progress, [6] Done. If GitHub: no board-specific options.
+Number each option sequentially. Show only the board-specific section that matches the configured board. If Jira: show [4] queue status, [5] sprint, [6] label, [7] pickup status, [8] done status. If Linear: show [4] label, [5] pickup status, [6] done status. If GitHub: no board-specific options.
 
 ---
 
