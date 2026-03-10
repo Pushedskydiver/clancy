@@ -305,8 +305,8 @@ async function main() {
       registerHook('PostToolUse',  `node ${monitorScript}`);
 
       // Statusline: registered as top-level key, not inside hooks
-      if (!settings.statusline) {
-        settings.statusline = `node ${statuslineScript}`;
+      if (!settings.statusLine) {
+        settings.statusLine = { type: 'command', command: `node ${statuslineScript}` };
       }
 
       fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2) + '\n');

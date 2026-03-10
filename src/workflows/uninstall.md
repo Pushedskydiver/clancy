@@ -56,7 +56,7 @@ For each location being removed, delete these hook files if they exist:
 Then remove the Clancy hook registrations from the corresponding `settings.json` (`.claude/settings.json` for local, `~/.claude/settings.json` for global):
 - Remove any entry in `hooks.SessionStart` whose `command` contains `clancy-check-update`
 - Remove any entry in `hooks.PostToolUse` whose `command` contains `clancy-context-monitor`
-- Remove the `statusline` key if its value contains `clancy-statusline`
+- Remove the `statusLine` key if its `command` value contains `clancy-statusline`
 - If removing an entry leaves a `hooks.SessionStart` or `hooks.PostToolUse` array empty, remove the key entirely
 
 Also remove the update check cache if it exists: `~/.claude/cache/clancy-update-check.json`
