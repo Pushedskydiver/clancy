@@ -28,6 +28,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - **`DRY_RUN` overwritable by `.env` source** — the flag was set before `.clancy/.env` was sourced; a `.env` exporting `DRY_RUN=false` could silently negate `--dry-run`. Fixed with `readonly DRY_RUN` immediately after flag parsing in all three scripts.
 - **Jira transition payload used string interpolation** — `IN_PROGRESS_ID` and `DONE_ID` were interpolated directly into the curl `-d` JSON string. Both are now routed through `jq --arg` for safe JSON construction.
 - **Linear: silent failure when workflow state name not found** — if `CLANCY_STATUS_IN_PROGRESS` or `CLANCY_STATUS_DONE` didn't match any state in `workflowStates`, the transition was silently skipped with no feedback. An explicit warning is now printed so misconfigured state names are immediately visible.
+- **`/clancy:uninstall` left orphaned hooks** — the uninstall workflow only removed command and workflow directories. The three hook files, their `settings.json` registrations (SessionStart, PostToolUse, statusline), and the update check cache were all left behind. All are now cleaned up on uninstall.
 
 ### ✅ Tests
 
