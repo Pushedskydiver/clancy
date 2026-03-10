@@ -35,9 +35,33 @@ Continue? (yes / no)
 ```
 
 - `no` → print "Nothing removed." and stop
-- `yes` → delete both the commands directory and the workflows directory for the chosen location(s), print "✓ Clancy removed from [location]."
+- `yes` → proceed to remove commands, workflows, hooks, and settings entries (Steps 2a–2c)
 
-If "Both" was chosen in Step 1: confirm once for both, remove all four directories, print two confirmation lines.
+If "Both" was chosen in Step 1: confirm once for both, remove everything for both locations.
+
+### Step 2a — Remove command and workflow directories
+
+Delete both the commands directory and the workflows directory for the chosen location(s):
+- Project-local: `.claude/commands/clancy/` and `.claude/clancy/`
+- Global: `~/.claude/commands/clancy/` and `~/.claude/clancy/`
+
+Print: `✓ Clancy commands removed from [location].`
+
+### Step 2b — Remove hooks
+
+For each location being removed, delete these hook files if they exist:
+- Project-local: `.claude/hooks/clancy-check-update.js`, `.claude/hooks/clancy-statusline.js`, `.claude/hooks/clancy-context-monitor.js`
+- Global: `~/.claude/hooks/clancy-check-update.js`, `~/.claude/hooks/clancy-statusline.js`, `~/.claude/hooks/clancy-context-monitor.js`
+
+Then remove the Clancy hook registrations from the corresponding `settings.json` (`.claude/settings.json` for local, `~/.claude/settings.json` for global):
+- Remove any entry in `hooks.SessionStart` whose `command` contains `clancy-check-update`
+- Remove any entry in `hooks.PostToolUse` whose `command` contains `clancy-context-monitor`
+- Remove the `statusline` key if its value contains `clancy-statusline`
+- If removing an entry leaves a `hooks.SessionStart` or `hooks.PostToolUse` array empty, remove the key entirely
+
+Also remove the update check cache if it exists: `~/.claude/cache/clancy-update-check.json`
+
+If `settings.json` does not exist or cannot be parsed, skip silently — do not create or overwrite it.
 
 ---
 
