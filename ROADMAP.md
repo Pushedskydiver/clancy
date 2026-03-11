@@ -59,6 +59,7 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 - Notion database support
 - Azure DevOps support
 - Board auto-detection: Clancy detects which board is configured without asking
+- `/clancy:reapply-patches` — guided restore of user-modified files backed up during updates
 
 ---
 
