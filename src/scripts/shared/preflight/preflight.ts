@@ -48,7 +48,7 @@ export function isGitRepo(): boolean {
 /**
  * Run all preflight checks common to every board script.
  *
- * Checks for required binaries (`claude`, `jq`, `curl`), the `.clancy/.env` file,
+ * Checks for required binaries (`claude`, `git`), the `.clancy/.env` file,
  * git repository state, and uncommitted changes.
  *
  * @param projectRoot - The root directory of the project.
@@ -65,7 +65,7 @@ export function isGitRepo(): boolean {
  */
 export function runPreflight(projectRoot: string): PreflightResult {
   // Check required binaries
-  for (const bin of ['claude', 'jq', 'curl']) {
+  for (const bin of ['claude', 'git']) {
     if (!binaryExists(bin)) {
       return { ok: false, error: `✗ ${bin} is required but not found` };
     }
