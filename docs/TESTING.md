@@ -32,9 +32,9 @@ src/
 │       └── linear/linear.test.ts             — Linear API parsing
 ├── schemas/                                  — (tested via board module tests)
 ├── installer/
-│   ├── hook-installer/hook-installer.test.ts
-│   ├── manifest/manifest.test.ts
-│   └── ...
+│   ├── file-ops/file-ops.test.ts             — file copy operations
+│   ├── hook-installer/hook-installer.test.ts — hook registration
+│   └── manifest/manifest.test.ts             — SHA-256 manifest generation
 └── utils/
     ├── ansi/ansi.test.ts
     └── parse-json/parse-json.test.ts

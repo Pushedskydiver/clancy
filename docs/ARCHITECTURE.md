@@ -8,9 +8,13 @@ Clancy is an npm package that installs Claude Code slash commands, workflows, an
 
 ```
 clancy/
-├── bin/
-│   └── install.js              — npx entry point, global vs local install
 ├── src/
+│   ├── installer/              — TypeScript installer (compiled to dist/)
+│   │   ├── install.ts          — npx entry point, global vs local install
+│   │   ├── file-ops/           — file copy + directory operations
+│   │   ├── hook-installer/     — hook registration in settings.json
+│   │   ├── manifest/           — SHA-256 manifests for patch preservation
+│   │   └── prompts/            — interactive install prompts
 │   ├── commands/               — 14 slash command files (.md)
 │   │   ├── init.md
 │   │   ├── run.md
@@ -40,36 +44,37 @@ clancy/
 │   ├── templates/
 │   │   ├── CLAUDE.md           — template injected into user's CLAUDE.md
 │   │   └── .env.example.*      — env templates per board
+│   ├── utils/                  — shared utilities (ansi, parse-json)
 │   └── agents/                 — 5 specialist agent prompts
 │       ├── tech-agent.md       — writes STACK.md + INTEGRATIONS.md
 │       ├── arch-agent.md       — writes ARCHITECTURE.md
 │       ├── quality-agent.md    — writes CONVENTIONS.md + TESTING.md + GIT.md + DEFINITION-OF-DONE.md
 │       ├── design-agent.md     — writes DESIGN-SYSTEM.md + ACCESSIBILITY.md
 │       └── concerns-agent.md   — writes CONCERNS.md
-├── hooks/                      — Node.js hooks installed alongside commands
+├── hooks/                      — Node.js hooks installed alongside commands (pre-built CommonJS)
 │   ├── clancy-credential-guard.js  — PreToolUse: blocks credential writes
 │   ├── clancy-context-monitor.js   — PostToolUse: warns on low context
 │   ├── clancy-statusline.js        — Statusline: context bar + update notice
 │   └── clancy-check-update.js      — SessionStart: background version check
 ├── registry/
 │   └── boards.json             — board definitions for community extensions
-├── test/
-│   └── README.md               — test documentation
 └── docs/                       — project documentation (this directory)
 ```
 
 ## How the Installer Works
 
-`bin/install.js` is the entry point for `npx chief-clancy`:
+`src/installer/install.ts` is the entry point for `npx chief-clancy` (compiled to `dist/installer/install.js`):
 
 1. Prompts for global (`~/.claude`) or local (`./.claude`) install
 2. Copies `src/commands/*.md` → `{dest}/commands/clancy/`
 3. Copies `src/workflows/*.md` → `{dest}/clancy/workflows/`
-4. Copies `hooks/*.js` → `{dest}/clancy/hooks/`
+4. Copies `hooks/*.js` → `{dest}/hooks/` (pre-built CommonJS, not compiled from TS)
 5. Registers hooks in `settings.json` (PreToolUse, PostToolUse, SessionStart, statusLine)
 6. Writes `{"type":"commonjs"}` package.json into hooks dir (ESM compatibility)
 7. Generates SHA-256 manifests for patch preservation on future updates
 8. For global installs: inlines workflow content into command files (@ paths don't resolve globally)
+
+The installer is split into focused modules: `file-ops` (copy/mkdir), `hook-installer` (settings.json registration), `manifest` (SHA-256 checksums), and `prompts` (interactive install questions).
 
 ## Command → Workflow Relationship
 

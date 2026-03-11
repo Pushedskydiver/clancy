@@ -5,7 +5,7 @@
 | Language | Used for |
 |---|---|
 | TypeScript (ESM) | Board modules (`src/scripts/`), shared utilities, tests (`*.test.ts`) |
-| Node.js (CommonJS) | Installer (`bin/install.js`), hooks (`hooks/`) |
+| Node.js (CommonJS) | Hooks (`hooks/`) — pre-built, not compiled from TS |
 | Markdown | Commands, workflows, agent prompts, documentation |
 | JSON | Fixtures, board registry, package.json, manifests |
 
@@ -19,13 +19,14 @@
 - Vitest as test runner with ~80% coverage thresholds
 - Prefer pure functions — side effects only at the edges (CLI entry points)
 
-## Node.js (Hooks + Installer)
+## Node.js (Hooks only)
 
 - `'use strict';` at the top of every file
 - CommonJS only (`require`/`module.exports`) — hooks must work in ESM projects
 - Zero dependencies — only Node.js built-ins (`fs`, `path`, `os`, `readline`, `child_process`, `crypto`)
 - Best-effort error handling: `try/catch` at the top level, exit cleanly on failure
 - Hooks read from stdin (JSON), write to stdout (JSON), and must respond within 3 seconds
+- Hooks are pre-built CommonJS — they are NOT compiled from TypeScript
 
 ## Markdown (Commands + Workflows)
 
