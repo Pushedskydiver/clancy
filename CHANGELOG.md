@@ -31,6 +31,8 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - **CONTRIBUTING.md rewritten** — board contribution guide now describes creating TypeScript modules instead of shell scripts.
 - **CONVENTIONS.md rewritten** — language matrix updated from Bash/Node to TypeScript ESM/Node CJS.
 - **PR template updated** — checklist items reference TypeScript modules and co-located tests.
+- **README** — updated permissions TIP (`curl` → `node`), stale references cleaned up.
+- **CLAUDE.md, ARCHITECTURE.md, TESTING.md** — fully rewritten for TypeScript codebase.
 
 ### ⬆️ Upgrading from 0.2.x
 
