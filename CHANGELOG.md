@@ -34,6 +34,16 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - **More test fixtures** — added edge-case coverage identified post-release: Linear `ISSUE_ID` extraction, Linear `CLANCY_LABEL` request body (with and without label), GitHub all-PRs response returning zero real issues.
 - **Credential guard tests** — 32 tests covering non-file-writing tool passthrough, allowed-path exemptions, 13 credential pattern categories (AWS, GitHub, Stripe, Slack, private keys, connection strings, etc.), Edit/MultiEdit support, block reason content, and error resilience (malformed input never crashes). Total: 94 passing (up from 55).
 
+### ⬆️ Upgrading from 0.1.x
+
+Run `/clancy:update` or `npx chief-clancy@latest`. The installer handles everything — new commands, workflows, hooks, and `settings.json` registrations are added automatically. User-modified files are backed up to `.claude/clancy/local-patches/` before overwriting.
+
+**Optional new `.env` vars** (documented in `.env.example`):
+- `CLANCY_STATUS_IN_PROGRESS` — column name for auto-transitioning tickets on pickup (Jira/Linear)
+- `CLANCY_STATUS_DONE` — column name for auto-transitioning tickets on completion (Jira/Linear)
+
+No manual migration steps required. All new features work out of the box or are opt-in via `.env`.
+
 ---
 
 ## [0.1.7] — 2026-03-11
