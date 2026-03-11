@@ -2,7 +2,7 @@
 
 **Autonomous, board-driven development for Claude Code.**
 
-[![npm](https://img.shields.io/npm/v/chief-clancy?color=cb3837)](https://www.npmjs.com/package/chief-clancy) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE) [![Tests](https://img.shields.io/badge/tests-55%20passing-brightgreen)](./test/) [![GitHub Stars](https://img.shields.io/github/stars/Pushedskydiver/clancy?style=flat)](https://github.com/Pushedskydiver/clancy/stargazers)
+[![npm](https://img.shields.io/npm/v/chief-clancy?style=for-the-badge&color=cb3837)](https://www.npmjs.com/package/chief-clancy) [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE) [![Tests](https://img.shields.io/badge/tests-94%20passing-brightgreen?style=for-the-badge)](./test/) [![GitHub Stars](https://img.shields.io/github/stars/Pushedskydiver/clancy?style=for-the-badge)](https://github.com/Pushedskydiver/clancy/stargazers)
 
 ```bash
 npx chief-clancy
