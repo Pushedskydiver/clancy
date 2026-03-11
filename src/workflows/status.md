@@ -76,7 +76,10 @@ query {
 
 If tickets found, display:
 ```
-Next up for Clancy:
+🚨 Clancy — Status
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Next up:
 
 1. [{TICKET-KEY}] {Summary}
    Epic: {epic key} — {epic title}
@@ -90,19 +93,25 @@ Next up for Clancy:
    Epic: {epic key} — {epic title}
    Status: {status}
 
-Run /clancy:once to pick up the first ticket.
-Run /clancy:run to process all tickets in the queue.
+"Let me check the dispatch..." — Run /clancy:once to pick up #1, or /clancy:run to process the queue.
 ```
 
 If no tickets found:
 ```
-No tickets found in the current queue. Check your board or run /clancy:init
-to verify your configuration.
+🚨 Clancy — Status
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+No tickets found in the current queue.
+
+"Quiet. Too quiet." — Check your board or run /clancy:init to verify your config.
 ```
 
 If API call fails, show the error clearly:
 ```
-Board API error: {error message}
+🚨 Clancy — Status
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ Board API error: {error message}
 
 Tips:
 - Check your credentials in .clancy/.env

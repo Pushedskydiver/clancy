@@ -38,9 +38,9 @@ If all are present: continue silently.
 If any are missing, output:
 
 ```
-⚠ Missing prerequisites:
+⚠️ Missing prerequisites:
 
-  ✗ node — Install Node.js 22+ (nodejs.org)
+  ❌ node — Install Node.js 22+ (nodejs.org)
 
 Clancy requires these binaries to run. Install them, then re-run /clancy:init.
 ```
@@ -53,9 +53,16 @@ List only the missing ones. Then stop — do not proceed with setup until prereq
 
 Output:
 
+```
+🚨 Clancy — Init
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+"Chief Wiggum reporting for duty."
+
 Clancy pulls tickets from your Kanban board, implements them, commits, and squash-merges — one ticket per run, fresh context every time.
 
 Let's get you set up.
+```
 
 ---
 
@@ -130,12 +137,12 @@ After collecting all credentials for the chosen board, verify the connection bef
 
 On success (HTTP 200), show:
 ```
-✓ Jira connected — project {JIRA_PROJECT_KEY} reachable.
+✅ Jira connected — project {JIRA_PROJECT_KEY} reachable.
 ```
 
 On failure, show:
 ```
-✗ Couldn't connect to Jira (HTTP {status}).
+❌ Couldn't connect to Jira (HTTP {status}).
 Check your credentials in the values you just entered.
 
 [1] Re-enter credentials
@@ -147,12 +154,12 @@ If [1]: go back to Q2 and re-ask all Jira questions. If the user wants to abando
 
 On success (HTTP 200), show:
 ```
-✓ GitHub connected — {GITHUB_REPO} reachable.
+✅ GitHub connected — {GITHUB_REPO} reachable.
 ```
 
 On failure, show:
 ```
-✗ Couldn't connect to GitHub (HTTP {status}).
+❌ Couldn't connect to GitHub (HTTP {status}).
 Check your token has `repo` scope and the repo name is correct.
 
 [1] Re-enter credentials
@@ -164,12 +171,12 @@ If [1]: go back to Q2 and re-ask all GitHub questions. If the user wants to aban
 
 On success (HTTP 200 with `data.viewer`), show:
 ```
-✓ Linear connected — {viewer.name}.
+✅ Linear connected — {viewer.name}.
 ```
 
 On failure, show:
 ```
-✗ Couldn't connect to Linear.
+❌ Couldn't connect to Linear.
 Check your API key at linear.app/settings/api.
 
 [1] Re-enter credentials
@@ -297,7 +304,7 @@ If a key is entered:
 1. Verify the key by calling `GET https://api.figma.com/v1/me` with `X-Figma-Token: {key}`
 2. On success, show:
    ```
-   ✓ Figma connected: {email}
+   ✅ Figma connected: {email}
 
    Note: Figma's API does not expose plan information.
    Clancy uses 3 MCP calls per ticket (metadata, design context, screenshot).
@@ -309,7 +316,7 @@ If a key is entered:
 
 If `GET /v1/me` fails (non-200), show:
 ```
-✗ Couldn't verify Figma API key (HTTP {status}).
+❌ Couldn't verify Figma API key (HTTP {status}).
 Double-check it at figma.com/settings → Personal access tokens.
 
 [1] Try a different key
@@ -470,11 +477,15 @@ If no: output "Run /clancy:map-codebase when you're ready." then continue to fin
 
 Output:
 
-Clancy is ready.
+```
+╔═══════════════════════════════════════════════════════════╗
+║  ✅ Clancy is ready.                                     ║
+╚═══════════════════════════════════════════════════════════╝
 
 - Scripts: `.clancy/clancy-once.js`, `.clancy/clancy-afk.js`
 - Docs: `.clancy/docs/` (10 files)
 - Config: `.clancy/.env`
 - CLAUDE.md: updated
 
-Run `/clancy:dry-run` to preview the first ticket without making changes, `/clancy:once` to pick it up, or `/clancy:run` to process the full queue.
+"Clancy's on the beat." — Run /clancy:dry-run to preview, /clancy:once to pick up a ticket, or /clancy:run to process the queue.
+```

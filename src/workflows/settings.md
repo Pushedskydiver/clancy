@@ -34,7 +34,10 @@ Source `.clancy/.env` silently. Detect which board is configured:
 Show all current values. Board-specific settings only appear when that board is configured.
 
 ```
-Clancy settings — .clancy/.env
+🚨 Clancy — Settings
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+"Welcome to headquarters." — .clancy/.env
 
 General
 [1] Max iterations    {MAX_ITERATIONS:-5}          tickets per /clancy:run session
@@ -72,7 +75,7 @@ Number each option sequentially. Show only the board-specific section that match
 
 ## Step 4 — Handle each selection
 
-After the user picks a number, handle it as below. After saving, print `✓ Saved.` and loop back to Step 3 to show the updated menu.
+After the user picks a number, handle it as below. After saving, print `✅ Saved.` and loop back to Step 3 to show the updated menu.
 
 ---
 
@@ -344,7 +347,7 @@ Verify the new credentials before making any changes — same checks as the init
 
 ```
 Verifying...
-✓ Connected — {board-specific confirmation, e.g. "PROJ reachable" / "acme/my-app found" / "Linear authenticated"}
+✅ Connected — {board-specific confirmation, e.g. "PROJ reachable" / "acme/my-app found" / "Linear authenticated"}
 ```
 
 If verification fails, tell the user clearly and offer:
@@ -384,7 +387,7 @@ If no: print `Cancelled. No changes made.` and loop back to the menu.
 Print:
 
 ```
-✓ Switched to {new board}.
+✅ Switched to {new board}. "New beat, same Chief."
 ```
 
 Then loop back to the main settings menu.
@@ -434,7 +437,7 @@ When selected:
    }
    ```
 
-3. Print: `✓ Defaults saved to ~/.clancy/defaults.json — new projects will inherit these settings.`
+3. Print: `✅ Defaults saved to ~/.clancy/defaults.json — new projects will inherit these settings.`
 
 4. Loop back to the settings menu.
 

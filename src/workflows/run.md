@@ -4,7 +4,7 @@ Before doing anything else, check for updates:
 
 1. Run: `npm show chief-clancy version`
 2. Read the installed version from the Clancy `package.json`
-3. If a newer version exists, print: `ℹ Clancy v{current} → v{latest} available. Run /clancy:update to upgrade.` then continue normally.
+3. If a newer version exists, print: `ℹ️ Clancy v{current} → v{latest} available. Run /clancy:update to upgrade.` then continue normally.
 4. If already on latest, continue silently.
 5. If the npm check fails for any reason (offline, network error), continue silently. Never block on this.
 
@@ -28,14 +28,17 @@ The command may be invoked as `/clancy:run` or `/clancy:run N` where N is a posi
 If the resolved value of `MAX_ITERATIONS` is **10 or greater**, show a warning before continuing:
 
 ```
-⚠ You're about to run Clancy for up to {N} tickets.
+🚨 Clancy — Run
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ You're about to run Clancy for up to {N} tickets.
 
 At rough estimates per ticket (Sonnet):
   Simple tickets  ~$0.25–$0.75 each  →  up to ~${low} total
   Complex tickets ~$2.00–$5.00 each  →  up to ~${high} total
 
-Mistakes compound — if Claude misreads a ticket, it will do so {N} times before you check.
-Consider starting with /clancy:once or a smaller run to validate first.
+"Slow down there, cowboy..." — Mistakes compound. If Claude misreads a ticket, it will do so {N} times.
+Consider /clancy:once or a smaller run to validate first.
 
 Continue with {N} tickets? [Y/n]
 ```
@@ -82,9 +85,12 @@ If the user types `n` or `N`: print `Cancelled.` and stop. Any other input (incl
 
 ## Step 3 — Start
 
-Display:
+Display (only if the high-iteration warning was not already shown):
 ```
-Starting Clancy — will process up to {N} ticket(s). Ctrl+C to stop early.
+🚨 Clancy — Run
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+"All right, boys. Let's do this." — Processing up to {N} ticket(s). Ctrl+C to stop early.
 ```
 
 ---
@@ -106,8 +112,9 @@ When the script exits, echo the final summary line from the output.
 
 If `clancy-afk.js` exits with a non-zero status:
 ```
-Clancy stopped with an error. Check the output above.
-Run /clancy:once for more detail on the next ticket.
+❌ Clancy stopped with an error. Check the output above.
+
+"Looks like we've got ourselves a 23-19." — Run /clancy:once for more detail on the next ticket.
 ```
 
 ---

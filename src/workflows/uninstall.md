@@ -29,6 +29,9 @@ Check both locations silently. Each install has two parts — commands and workf
 Show exactly this message, filling in the detected location:
 
 ```
+🚨 Clancy — Uninstall
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 This will remove Clancy's slash commands from [location].
 Your .clancy/ folder will not be touched.
 Continue? (yes / no)
@@ -45,7 +48,7 @@ Delete both the commands directory and the workflows directory for the chosen lo
 - Project-local: `.claude/commands/clancy/` and `.claude/clancy/`
 - Global: `~/.claude/commands/clancy/` and `~/.claude/clancy/`
 
-Print: `✓ Clancy commands removed from [location].`
+Print: `✅ Clancy commands removed from [location].`
 
 ### Step 2b — Remove hooks
 
@@ -79,7 +82,7 @@ Read the full file content. Determine whether Clancy created the file or appende
 - **Clancy created it** (the file contains only whitespace outside the markers — no meaningful content before `<!-- clancy:start -->` or after `<!-- clancy:end -->`): delete the entire file.
 - **Clancy appended to an existing file** (there is meaningful content outside the markers): remove everything from `<!-- clancy:start -->` through `<!-- clancy:end -->` (inclusive), plus any blank lines immediately before the start marker that were added as spacing. Write the cleaned file back.
 
-Print `✓ CLAUDE.md cleaned up.` (or `✓ CLAUDE.md removed.` if deleted).
+Print `✅ CLAUDE.md cleaned up.` (or `✅ CLAUDE.md removed.` if deleted).
 
 **If no markers found:** skip — Clancy didn't modify this file.
 
@@ -97,7 +100,7 @@ If it does, check whether it contains the Clancy entries (`# Clancy credentials`
 
 If the file is now empty (or contains only whitespace) after removal, delete it entirely — Clancy created it during init.
 
-Print `✓ .gitignore cleaned up.` (or `✓ .gitignore removed.` if deleted).
+Print `✅ .gitignore cleaned up.` (or `✅ .gitignore removed.` if deleted).
 
 **If not found:** skip — Clancy didn't modify this file.
 
@@ -116,8 +119,8 @@ If it does, ask separately:
 Remove it too? This cannot be undone. (yes / no)
 ```
 
-- `no` → print "✓ .clancy/ kept — your docs and progress log are safe."
-- `yes` → delete `.clancy/` and print "✓ .clancy/ removed."
+- `no` → print "✅ .clancy/ kept — your docs and progress log are safe."
+- `yes` → delete `.clancy/` and print "✅ .clancy/ removed."
 
 If `.clancy/` does not exist, skip this step entirely.
 
@@ -126,7 +129,9 @@ If `.clancy/` does not exist, skip this step entirely.
 ## Step 6 — Final message
 
 ```
-Clancy uninstalled. To reinstall: npx chief-clancy
+✅ Clancy uninstalled.
+
+"You have the right to remain silent... goodbye, Clancy." — To reinstall: npx chief-clancy
 ```
 
 ---

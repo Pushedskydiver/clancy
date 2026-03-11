@@ -10,7 +10,12 @@ Read `.clancy/progress.txt` and present a formatted summary.
 
 If `.clancy/progress.txt` does not exist:
 ```
-No progress logged yet. Run /clancy:once or /clancy:run to get started.
+🚨 Clancy — Logs
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+No progress logged yet.
+
+"The law is powerless to help you... but not for long." — Run /clancy:once or /clancy:run to get started.
 ```
 Stop.
 
@@ -43,15 +48,16 @@ If only 1–3 DONE entries: show a flat list, skip grouping.
 If 4+ entries, show the full grouped display:
 
 ```
-Clancy Progress Log
-───────────────────────────────────────
+🚨 Clancy — Logs
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 Total tickets completed: {count}
 First run: {YYYY-MM-DD}
 Latest run: {YYYY-MM-DD}
 
 This week ({Mon date}–{Sun date or today}):
-  ✓ {TICKET-KEY}  {Summary}
-  ✓ {TICKET-KEY}  {Summary}
+  ✅ {TICKET-KEY}  {Summary}
+  ✅ {TICKET-KEY}  {Summary}
   ...
 
 By epic:
@@ -59,9 +65,10 @@ By epic:
   {EPIC-KEY} {Epic name or prefix}  {bar}  {count} tickets
   (other)                           {bar}  {count} tickets
 
+Reviews run: {N}
 Full log: .clancy/progress.txt
 
-Reviews run: {N}
+"The law is powerless to help you, but here's what Clancy's done."
 ```
 
 ### Display rules

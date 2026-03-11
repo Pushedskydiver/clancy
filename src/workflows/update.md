@@ -73,12 +73,13 @@ Compare installed vs latest:
 
 **If installed == latest:**
 ```
-## Clancy Update
+🚨 Clancy — Update
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 **Installed:** X.Y.Z
 **Latest:** X.Y.Z
 
-You're already on the latest version.
+✅ You're already on the latest version. "Nothing to see here, folks."
 ```
 
 Exit.
@@ -92,7 +93,8 @@ curl -s https://raw.githubusercontent.com/Pushedskydiver/clancy/main/CHANGELOG.m
 Extract only the entries between the installed version and the latest version. Display:
 
 ```
-## Clancy Update Available
+🚨 Clancy — Update
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 **Installed:** {installed}
 **Latest:** {latest}
@@ -112,10 +114,10 @@ If you've modified any Clancy files directly, they'll be automatically backed up
 to `.claude/clancy/local-patches/` before overwriting.
 
 Your project files are preserved:
-- `.clancy/` project folder (scripts, docs, .env, progress log) ✓
-- `CLAUDE.md` ✓
-- Custom commands not in `commands/clancy/` ✓
-- Custom hooks ✓
+- `.clancy/` project folder (scripts, docs, .env, progress log) ✅
+- `CLAUDE.md` ✅
+- Custom commands not in `commands/clancy/` ✅
+- Custom hooks ✅
 ```
 
 Ask the user: **"Proceed with update?"** with options:
@@ -160,10 +162,10 @@ Display completion message:
 
 ```
 ╔═══════════════════════════════════════════════════════════╗
-║  Clancy Updated: v{old} → v{new}                        ║
+║  ✅ Clancy Updated: v{old} → v{new}                     ║
 ╚═══════════════════════════════════════════════════════════╝
 
-⚠️  Restart Claude Code to pick up the new commands.
+"New badge, same Chief." — Restart Claude Code to pick up the new commands.
 
 View full changelog: github.com/Pushedskydiver/clancy/blob/main/CHANGELOG.md
 ```

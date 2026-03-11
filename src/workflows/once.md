@@ -4,7 +4,7 @@ Before doing anything else, check for updates:
 
 1. Run: `npm show chief-clancy version`
 2. Read the installed version from the Clancy `package.json`
-3. If a newer version exists, print: `ℹ Clancy v{current} → v{latest} available. Run /clancy:update to upgrade.` then continue normally.
+3. If a newer version exists, print: `ℹ️ Clancy v{current} → v{latest} available. Run /clancy:update to upgrade.` then continue normally.
 4. If already on latest, continue silently.
 5. If the npm check fails for any reason (offline, network error), continue silently. Never block on this.
 
@@ -51,7 +51,10 @@ Check if the user passed `--dry-run` as an argument to the slash command.
 
 Display:
 ```
-Running Clancy for one ticket.
+🚨 Clancy — Once
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+"I'm on the case." — Running for one ticket.
 ```
 
 Execute:
@@ -63,7 +66,10 @@ node .clancy/clancy-once.js
 
 Display:
 ```
-Running Clancy in dry-run mode — no changes will be made.
+🚨 Clancy — Dry Run
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+"Just a routine patrol." — Running in dry-run mode, no changes will be made.
 ```
 
 Execute:
@@ -79,13 +85,16 @@ Stream output directly — do not buffer or summarise.
 
 On success, echo the result line from the script output:
 ```
-✓ {TICKET-KEY} complete.
+✅ {TICKET-KEY} complete.
+
+"That's some fine police work there, Lou."
 ```
 
 On failure:
 ```
-Clancy stopped. See output above for details.
-Run /clancy:status to check the board, or /clancy:review to inspect the ticket.
+❌ Clancy stopped. See output above for details.
+
+"Looks like we've got ourselves a 23-19." — Run /clancy:status to check the board, or /clancy:review to inspect the ticket.
 ```
 
 ---
