@@ -48,6 +48,13 @@ async function choose(question, options, defaultChoice = 1) {
   return raw.trim() || String(defaultChoice);
 }
 
+const crypto = require('crypto');
+
+function fileHash(filePath) {
+  const content = fs.readFileSync(filePath);
+  return crypto.createHash('sha256').digest('hex', content);
+}
+
 function copyDir(src, dest) {
   // Use lstatSync (not statSync) to detect symlinks — statSync follows them and misreports
   if (fs.existsSync(dest)) {
@@ -62,6 +69,73 @@ function copyDir(src, dest) {
     const d = path.join(dest, entry.name);
     entry.isDirectory() ? copyDir(s, d) : fs.copyFileSync(s, d);
   }
+}
+
+/**
+ * Build a manifest of installed files with SHA-256 hashes.
+ * Format: { "relative/path.md": "<sha256>", ... }
+ */
+function buildManifest(baseDir) {
+  const manifest = {};
+  function walk(dir, prefix) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+      const full = path.join(dir, entry.name);
+      const rel = prefix ? `${prefix}/${entry.name}` : entry.name;
+      if (entry.isDirectory()) {
+        walk(full, rel);
+      } else {
+        const content = fs.readFileSync(full);
+        manifest[rel] = crypto.createHash('sha256').update(content).digest('hex');
+      }
+    }
+  }
+  walk(baseDir, '');
+  return manifest;
+}
+
+/**
+ * Detect files modified by the user since last install by comparing
+ * current file hashes against the stored manifest. Returns array of
+ * { rel, absPath } for modified files.
+ */
+function detectModifiedFiles(baseDir, manifestPath) {
+  if (!fs.existsSync(manifestPath)) return [];
+  let manifest;
+  try {
+    manifest = JSON.parse(fs.readFileSync(manifestPath, 'utf8'));
+  } catch { return []; }
+
+  const modified = [];
+  for (const [rel, hash] of Object.entries(manifest)) {
+    const absPath = path.join(baseDir, rel);
+    if (!fs.existsSync(absPath)) continue;
+    const content = fs.readFileSync(absPath);
+    const currentHash = crypto.createHash('sha256').update(content).digest('hex');
+    if (currentHash !== hash) {
+      modified.push({ rel, absPath });
+    }
+  }
+  return modified;
+}
+
+/**
+ * Back up modified files to a patches directory alongside the install.
+ * Returns the backup directory path if any files were backed up.
+ */
+function backupModifiedFiles(modified, patchesDir) {
+  if (modified.length === 0) return null;
+  fs.mkdirSync(patchesDir, { recursive: true });
+  for (const { rel, absPath } of modified) {
+    const backupPath = path.join(patchesDir, rel);
+    fs.mkdirSync(path.dirname(backupPath), { recursive: true });
+    fs.copyFileSync(absPath, backupPath);
+  }
+  // Write metadata so /clancy:update workflow knows what was backed up
+  fs.writeFileSync(
+    path.join(patchesDir, 'backup-meta.json'),
+    JSON.stringify({ backed_up: modified.map(m => m.rel), date: new Date().toISOString() }, null, 2)
+  );
+  return patchesDir;
 }
 
 async function main() {
@@ -115,13 +189,41 @@ async function main() {
   console.log(dim(`  Installing to: ${dest}`));
 
   try {
+    // Determine manifest and patches paths (sibling to commands dir)
+    const claudeDir = path.dirname(path.dirname(dest)); // .claude/ (parent of commands/)
+    const manifestPath = path.join(claudeDir, 'clancy', 'manifest.json');
+    const patchesDir = path.join(claudeDir, 'clancy', 'local-patches');
+
     if (fs.existsSync(dest) || fs.existsSync(workflowsDest)) {
       console.log('');
+
+      // Detect user-modified files before overwriting
+      const modified = detectModifiedFiles(dest, manifestPath);
+      const modifiedWorkflows = detectModifiedFiles(workflowsDest, manifestPath.replace('manifest.json', 'workflows-manifest.json'));
+      const allModified = [...modified, ...modifiedWorkflows];
+
+      if (allModified.length > 0) {
+        console.log(blue('  Modified files detected:'));
+        for (const { rel } of allModified) {
+          console.log(`    ${dim('•')} ${rel}`);
+        }
+        console.log('');
+        console.log(dim('  These will be backed up to .claude/clancy/local-patches/'));
+        console.log(dim('  before overwriting. You can reapply them after the update.'));
+        console.log('');
+      }
+
       const overwrite = await ask(blue(`  Commands already exist at ${dest}. Overwrite? [y/N] `));
       if (!overwrite.trim().toLowerCase().startsWith('y')) {
         console.log('\n  Aborted. No files changed.');
         rl.close();
         process.exit(0);
+      }
+
+      // Back up modified files before overwriting
+      if (allModified.length > 0) {
+        backupModifiedFiles(allModified, patchesDir);
+        console.log(green(`\n  ✓ ${allModified.length} modified file(s) backed up to local-patches/`));
       }
     }
 
@@ -148,6 +250,14 @@ async function main() {
 
     // Write VERSION file so /clancy:doctor and /clancy:update can read the installed version
     fs.writeFileSync(path.join(dest, 'VERSION'), PKG.version);
+
+    // Write manifests so future updates can detect user-modified files
+    fs.mkdirSync(path.dirname(manifestPath), { recursive: true });
+    fs.writeFileSync(manifestPath, JSON.stringify(buildManifest(dest), null, 2));
+    fs.writeFileSync(
+      manifestPath.replace('manifest.json', 'workflows-manifest.json'),
+      JSON.stringify(buildManifest(workflowsDest), null, 2)
+    );
 
     console.log('');
     console.log(green('  ✓ Clancy installed successfully.'));

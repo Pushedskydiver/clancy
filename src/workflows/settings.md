@@ -336,9 +336,50 @@ When updating a value:
 
 ---
 
+### Save as global defaults
+
+At the bottom of the settings menu (before Exit), show:
+
+```
+[{N}] Save as defaults   save current settings for all future projects
+```
+
+When selected:
+
+1. Read the current `.clancy/.env` and extract only the non-credential, non-board-specific settings:
+   - `MAX_ITERATIONS`
+   - `CLANCY_MODEL`
+   - `CLANCY_BASE_BRANCH`
+   - `PLAYWRIGHT_ENABLED`
+   - `PLAYWRIGHT_STARTUP_WAIT`
+
+2. Write these to `~/.clancy/defaults.json`:
+   ```json
+   {
+     "MAX_ITERATIONS": "5",
+     "CLANCY_MODEL": "claude-sonnet-4-6",
+     "CLANCY_BASE_BRANCH": "main"
+   }
+   ```
+
+3. Print: `✓ Defaults saved to ~/.clancy/defaults.json — new projects will inherit these settings.`
+
+4. Loop back to the settings menu.
+
+**Never save credentials, board-specific settings (status filter, sprint, label), or webhook URLs to global defaults.**
+
+---
+
+## Step 6 — Load global defaults during init
+
+When `/clancy:init` creates `.clancy/.env`, check if `~/.clancy/defaults.json` exists. If so, pre-populate the `.env` with those values instead of the built-in defaults. The user's answers during init still take priority — defaults are only used for settings that init doesn't ask about (max iterations, model, etc.).
+
+---
+
 ## Notes
 
 - All changes are written to `.clancy/.env` immediately after confirmation
 - Switching boards verifies credentials before making any changes — nothing is written if verification fails
 - `/clancy:init` remains available for a full re-setup (re-scaffolds scripts and docs)
 - This command never restarts any servers or triggers any ticket processing
+- Global defaults (`~/.clancy/defaults.json`) are optional — if the file doesn't exist, built-in defaults are used

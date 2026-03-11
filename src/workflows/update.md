@@ -108,6 +108,9 @@ Extract only the entries between the installed version and the latest version. D
 - `.claude/commands/clancy/` will be replaced
 - `.claude/clancy/workflows/` will be replaced
 
+If you've modified any Clancy files directly, they'll be automatically backed up
+to `.claude/clancy/local-patches/` before overwriting.
+
 Your project files are preserved:
 - `.clancy/` project folder (scripts, docs, .env, progress log) ✓
 - `CLAUDE.md` ✓
@@ -164,6 +167,31 @@ Display completion message:
 
 View full changelog: github.com/Pushedskydiver/clancy/blob/main/CHANGELOG.md
 ```
+
+---
+
+## Step 6 — Check for local patches
+
+After the update completes, check if the installer backed up any locally modified files:
+
+Check for `.claude/clancy/local-patches/backup-meta.json` (local install) or `~/.claude/clancy/local-patches/backup-meta.json` (global install).
+
+**If patches were found:**
+
+```
+Local patches were backed up before the update.
+Your modified files are in .claude/clancy/local-patches/
+
+To review what changed:
+  Compare each file in local-patches/ against its counterpart in
+  .claude/commands/clancy/ or .claude/clancy/workflows/ and manually
+  reapply any customisations you want to keep.
+
+Backed up files:
+{list from backup-meta.json}
+```
+
+**If no patches:** Continue normally (no message needed).
 
 ---
 
