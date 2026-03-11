@@ -271,6 +271,7 @@ async function main() {
       'clancy-check-update.js',
       'clancy-statusline.js',
       'clancy-context-monitor.js',
+      'clancy-credential-guard.js',
     ];
 
     try {
@@ -306,9 +307,11 @@ async function main() {
       const updateScript    = path.join(hooksInstallDir, 'clancy-check-update.js');
       const statuslineScript = path.join(hooksInstallDir, 'clancy-statusline.js');
       const monitorScript   = path.join(hooksInstallDir, 'clancy-context-monitor.js');
+      const guardScript     = path.join(hooksInstallDir, 'clancy-credential-guard.js');
 
       registerHook('SessionStart', `node ${updateScript}`);
       registerHook('PostToolUse',  `node ${monitorScript}`);
+      registerHook('PreToolUse',   `node ${guardScript}`);
 
       // Statusline: registered as top-level key, not inside hooks
       if (!settings.statusLine) {

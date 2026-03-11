@@ -50,14 +50,15 @@ Print: `✓ Clancy commands removed from [location].`
 ### Step 2b — Remove hooks
 
 For each location being removed, delete these hook files if they exist:
-- Project-local: `.claude/hooks/clancy-check-update.js`, `.claude/hooks/clancy-statusline.js`, `.claude/hooks/clancy-context-monitor.js`
-- Global: `~/.claude/hooks/clancy-check-update.js`, `~/.claude/hooks/clancy-statusline.js`, `~/.claude/hooks/clancy-context-monitor.js`
+- Project-local: `.claude/hooks/clancy-check-update.js`, `.claude/hooks/clancy-statusline.js`, `.claude/hooks/clancy-context-monitor.js`, `.claude/hooks/clancy-credential-guard.js`
+- Global: `~/.claude/hooks/clancy-check-update.js`, `~/.claude/hooks/clancy-statusline.js`, `~/.claude/hooks/clancy-context-monitor.js`, `~/.claude/hooks/clancy-credential-guard.js`
 
 Then remove the Clancy hook registrations from the corresponding `settings.json` (`.claude/settings.json` for local, `~/.claude/settings.json` for global):
 - Remove any entry in `hooks.SessionStart` whose `command` contains `clancy-check-update`
 - Remove any entry in `hooks.PostToolUse` whose `command` contains `clancy-context-monitor`
+- Remove any entry in `hooks.PreToolUse` whose `command` contains `clancy-credential-guard`
 - Remove the `statusLine` key if its `command` value contains `clancy-statusline`
-- If removing an entry leaves a `hooks.SessionStart` or `hooks.PostToolUse` array empty, remove the key entirely
+- If removing an entry leaves a `hooks.SessionStart`, `hooks.PostToolUse`, or `hooks.PreToolUse` array empty, remove the key entirely
 
 Also remove the update check cache if it exists: `~/.claude/cache/clancy-update-check.json`
 
