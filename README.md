@@ -336,6 +336,12 @@ Your board tokens and API keys live in `.clancy/.env`. Although Claude doesn't n
 
 This prevents Claude from reading these files regardless of what commands run. Clancy automatically adds `.clancy/.env` to `.gitignore` during init, but the deny list is an additional layer.
 
+### Credential guard
+
+Clancy installs a `PreToolUse` hook (`clancy-credential-guard.js`) that scans every Write, Edit, and MultiEdit operation for credential patterns — API keys, tokens, passwords, private keys, and connection strings. If a match is found, the operation is blocked with a message telling Claude to move the credential to `.clancy/.env` instead. Files that are expected to contain credentials (`.clancy/.env`, `.env.example`, etc.) are exempt.
+
+This is best-effort — it won't catch every possible credential format, but it prevents the most common accidental leaks.
+
 ### Token scopes
 
 Use the minimum permissions each integration requires:
