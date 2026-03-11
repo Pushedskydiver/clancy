@@ -50,7 +50,7 @@ export function checkStopCondition(output: string): {
  * Executes the `clancy-once` script repeatedly up to `maxIterations` times,
  * checking for stop conditions after each run.
  *
- * @param scriptDir - The directory containing `clancy-once.sh` (or `.js` in v0.3.0+).
+ * @param scriptDir - The directory containing `clancy-once.js`.
  * @param maxIterations - Maximum number of iterations (default: 5).
  */
 export function runAfkLoop(scriptDir: string, maxIterations = 5): void {

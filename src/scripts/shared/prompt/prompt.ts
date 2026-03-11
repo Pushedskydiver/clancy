@@ -67,7 +67,7 @@ export function buildPrompt(input: PromptInput): string {
   const pLabel = parentLabel(input.provider);
   const blockerLine =
     input.blockers && input.provider !== 'github'
-      ? `\n${pLabel === 'Epic' ? 'Blockers' : 'Blockers'}: ${input.blockers}`
+      ? `\nBlockers: ${input.blockers}`
       : '';
 
   return `You are implementing ${label} ${input.key}.

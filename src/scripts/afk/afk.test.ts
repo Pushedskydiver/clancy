@@ -27,7 +27,9 @@ describe('afk', () => {
     });
 
     it('stops on preflight failure', () => {
-      const result = checkStopCondition('✗ jq is required but not found');
+      const result = checkStopCondition(
+        '✗ Board credentials missing in .clancy/.env',
+      );
       expect(result.stop).toBe(true);
       expect(result.reason).toContain('Preflight');
     });

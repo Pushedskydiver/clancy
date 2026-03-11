@@ -113,7 +113,7 @@ claude --dangerously-skip-permissions
 ```
 
 > [!TIP]
-> This is how Clancy is intended to be used — stopping to approve `git commit` and `curl` 50 times defeats the purpose. Only use it on codebases you own and trust.
+> This is how Clancy is intended to be used — stopping to approve `git commit` and `node` 50 times defeats the purpose. Only use it on codebases you own and trust.
 
 ---
 

@@ -4,7 +4,7 @@
  * Wraps common git commands used during the ticket lifecycle:
  * branch creation, checkout, squash merge, and cleanup.
  */
-import { execSync } from 'node:child_process';
+import { execFileSync, execSync } from 'node:child_process';
 
 /**
  * Run a git command and return trimmed stdout.
@@ -67,7 +67,7 @@ export function ensureBranch(branch: string, baseBranch: string): void {
  * @param force - If `true`, uses `-B` to force-create/reset the branch.
  */
 export function checkout(branch: string, force = false): void {
-  git(`checkout ${force ? '-B' : ''} ${branch}`);
+  git([`checkout`, ...(force ? ['-B'] : []), branch].join(' '));
 }
 
 /**
@@ -88,7 +88,7 @@ export function squashMerge(
     execSync('git diff --cached --quiet', { stdio: 'ignore' });
     return false; // nothing staged
   } catch {
-    git(`commit -m "${commitMessage}"`);
+    execFileSync('git', ['commit', '-m', commitMessage], { encoding: 'utf8' });
     return true;
   }
 }

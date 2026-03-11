@@ -368,15 +368,22 @@ export async function run(argv: string[]): Promise<void> {
 
     if (config.provider === 'github') {
       const issueNumber = parseInt(ticket.key.replace('#', ''), 10);
-      const closed = await closeIssue(
-        config.env.GITHUB_TOKEN,
-        config.env.GITHUB_REPO,
-        issueNumber,
-      );
-      if (!closed) {
+
+      if (Number.isNaN(issueNumber)) {
         console.log(
-          `⚠ Could not close issue ${ticket.key}. Close it manually on GitHub.`,
+          `⚠ Could not parse issue number from ${ticket.key}. Close it manually on GitHub.`,
         );
+      } else {
+        const closed = await closeIssue(
+          config.env.GITHUB_TOKEN,
+          config.env.GITHUB_REPO,
+          issueNumber,
+        );
+        if (!closed) {
+          console.log(
+            `⚠ Could not close issue ${ticket.key}. Close it manually on GitHub.`,
+          );
+        }
       }
     } else if (statusDone) {
       await transitionToStatus(config, ticket, statusDone);
