@@ -30,6 +30,7 @@
   "main": "dist/installer/install.js",
   "files": [
     "dist/",
+    "hooks/",
     "src/commands/",
     "src/workflows/",
     "src/agents/",
@@ -41,13 +42,13 @@
     "dev": "vitest",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "test:legacy": "bash test/unit/jira.test.sh && bash test/unit/github.test.sh && bash test/unit/linear.test.sh && bash test/unit/scaffold.test.sh && bash test/unit/credential-guard.test.sh",
     "smoke": "bash test/smoke/smoke.sh",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build",
     "prepare": "husky"
   },
   "lint-staged": {

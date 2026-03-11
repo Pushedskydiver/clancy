@@ -22,19 +22,29 @@ jobs:
             src/templates/scripts/clancy-once.sh \
             src/templates/scripts/clancy-once-github.sh \
             src/templates/scripts/clancy-once-linear.sh \
-            src/templates/scripts/clancy-afk.sh \
-            test/unit/jira.test.sh \
-            test/unit/github.test.sh \
-            test/unit/linear.test.sh \
-            test/unit/scaffold.test.sh \
-            test/unit/credential-guard.test.sh \
-            test/smoke/smoke.sh
+            src/templates/scripts/clancy-afk.sh
 
-  unit-tests:
-    name: Unit tests
+  build-and-test:
+    name: Build, lint & test
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Run unit tests
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+      - name: Test
         run: npm test
