@@ -9,24 +9,25 @@ Autonomous, board-driven development for Claude Code. npm package: `chief-clancy
 | `bin/install.js` | Entry point — `npx chief-clancy` runs this |
 | `src/commands/*.md` | 14 slash commands installed to `.claude/commands/clancy/` |
 | `src/workflows/*.md` | Implementation workflows referenced by commands |
-| `src/templates/scripts/` | 4 shell scripts (clancy-once Jira/GitHub/Linear + clancy-afk) |
+| `src/scripts/once/once.ts` | Unified once orchestrator (all 3 boards) |
+| `src/scripts/afk/afk.ts` | AFK loop runner |
+| `src/scripts/shared/` | Shared utilities (env-schema, branch, prompt, progress, etc.) |
+| `src/scripts/board/` | Board-specific modules (jira, github, linear) |
+| `src/schemas/` | Zod schemas for API responses and env validation |
 | `src/templates/CLAUDE.md` | CLAUDE.md template injected into user projects |
 | `src/agents/` | 5 specialist agent prompts for `/clancy:map-codebase` |
 | `hooks/` | 4 Node.js hooks (credential guard, context monitor, statusline, update check) |
 | `registry/boards.json` | Board registry for community board integrations |
-| `test/unit/` | Unit tests (bash) |
-| `test/fixtures/` | JSON API response fixtures for all three boards |
-| `test/smoke/` | Live API smoke tests |
 
 ## Running tests
 
 ```bash
-npm test                      # all unit tests (94 total)
-bash test/unit/jira.test.sh   # individual suite
-bash test/smoke/smoke.sh      # live API (requires configured .env)
+npm test          # all unit tests (vitest)
+npm run typecheck # tsc --noEmit
+npm run lint      # eslint
 ```
 
-All tests are bash scripts that parse JSON fixtures with `jq` and assert expected values. The credential guard tests invoke the Node.js hook directly.
+Tests are co-located TypeScript files (`<name>/<name>.test.ts`) using Vitest.
 
 ## Commit format
 
@@ -66,14 +67,6 @@ See [docs/GIT.md](docs/GIT.md) for full details. Summary:
 7. Publish to npm: `npm publish` (or `npm publish --tag beta` for pre-releases)
 8. Merge `main` back into `develop`
 
-## Shell script conventions
-
-- `#!/usr/bin/env bash` + `set -euo pipefail`
-- All scripts must pass `shellcheck`
-- Use `jq` for JSON parsing — never parse JSON with grep/sed/awk
-- Preflight checks at the top: binary check, `.env` validation, git state, board reachability
-- `readonly` for constants and flags set during argument parsing
-
 ## Important technical details
 
 - Jira uses the new `POST /rest/api/3/search/jql` endpoint (old GET `/search` removed Aug 2025)
@@ -81,4 +74,6 @@ See [docs/GIT.md](docs/GIT.md) for full details. Summary:
 - Linear filters by `state.type: "unstarted"` (enum), not state name (team-specific)
 - Hook files must run as CommonJS — the installer writes `{"type":"commonjs"}` package.json into the hooks directory
 - Hooks are best-effort — they must never crash or block the user's workflow
-- The `scaffold.md` workflow embeds exact script content. If you change a shell script in `src/templates/scripts/`, update the embedded copy in `src/workflows/scaffold.md` too — the drift test will catch it if you forget
+- TypeScript modules use `zod/mini` for all runtime validation of external data
+- Path aliases (`~/`) are resolved by `tsc-alias` at build time
+- User projects get board-agnostic JS shims that `import('chief-clancy/scripts/once')` from the installed package
