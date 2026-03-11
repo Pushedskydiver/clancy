@@ -17,7 +17,7 @@ describe('installHooks', () => {
   let claudeDir: string;
 
   beforeEach(() => {
-    tmp = join(tmpdir(), `clancy-test-${Date.now()}`);
+    tmp = join(tmpdir(), `clancy-test-${Date.now()}-${crypto.randomUUID()}`);
     hooksSource = join(tmp, 'hooks-src');
     claudeDir = join(tmp, '.claude');
     mkdirSync(hooksSource, { recursive: true });

@@ -11,24 +11,11 @@ import {
   jiraSearchResponseSchema,
   jiraTransitionsResponseSchema,
 } from '~/schemas/jira.js';
+import { jiraHeaders, pingEndpoint } from '~/scripts/shared/http/http.js';
+import type { PingResult } from '~/scripts/shared/http/http.js';
 import type { Ticket } from '~/types/index.js';
 
 const SAFE_VALUE_PATTERN = /^[a-zA-Z0-9 _\-"'.]+$/;
-
-type JiraEnv = {
-  JIRA_BASE_URL: string;
-  JIRA_USER: string;
-  JIRA_API_TOKEN: string;
-  JIRA_PROJECT_KEY: string;
-  CLANCY_JQL_STATUS?: string;
-  CLANCY_JQL_SPRINT?: string;
-  CLANCY_LABEL?: string;
-  CLANCY_BASE_BRANCH?: string;
-  CLANCY_STATUS_IN_PROGRESS?: string;
-  CLANCY_STATUS_DONE?: string;
-  CLANCY_MODEL?: string;
-  CLANCY_NOTIFY_WEBHOOK?: string;
-};
 
 /**
  * Build Jira Basic auth header value.
@@ -69,37 +56,17 @@ export async function pingJira(
   baseUrl: string,
   projectKey: string,
   auth: string,
-): Promise<{ ok: boolean; error?: string }> {
-  try {
-    const response = await fetch(
-      `${baseUrl}/rest/api/3/project/${projectKey}`,
-      {
-        headers: {
-          Authorization: `Basic ${auth}`,
-          Accept: 'application/json',
-        },
-      },
-    );
-
-    if (response.ok) return { ok: true };
-
-    if (response.status === 401)
-      return { ok: false, error: '✗ Jira auth failed — check credentials' };
-    if (response.status === 403)
-      return { ok: false, error: '✗ Jira permission denied for this project' };
-    if (response.status === 404)
-      return {
-        ok: false,
-        error: `✗ Jira project "${projectKey}" not found`,
-      };
-
-    return {
-      ok: false,
-      error: `✗ Jira returned HTTP ${response.status}`,
-    };
-  } catch {
-    return { ok: false, error: '✗ Could not reach Jira — check network' };
-  }
+): Promise<PingResult> {
+  return pingEndpoint(
+    `${baseUrl}/rest/api/3/project/${projectKey}`,
+    jiraHeaders(auth),
+    {
+      401: '✗ Jira auth failed — check credentials',
+      403: '✗ Jira permission denied for this project',
+      404: `✗ Jira project "${projectKey}" not found`,
+    },
+    '✗ Could not reach Jira — check network',
+  );
 }
 
 /**
@@ -168,31 +135,35 @@ export function extractAdfText(adf: unknown): string {
 /**
  * Fetch the next available ticket from Jira.
  *
- * @param env - The Jira environment variables.
+ * @param baseUrl - The Jira Cloud base URL.
+ * @param auth - The Base64-encoded Basic auth string.
+ * @param projectKey - The Jira project key.
+ * @param status - The JQL status to filter by.
+ * @param sprint - Optional sprint filter.
+ * @param label - Optional label filter.
  * @returns The fetched ticket, or `undefined` if no tickets are available.
  */
-export async function fetchTicket(env: JiraEnv): Promise<
+export async function fetchTicket(
+  baseUrl: string,
+  auth: string,
+  projectKey: string,
+  status: string,
+  sprint?: string,
+  label?: string,
+): Promise<
   | (Ticket & {
       epicKey?: string;
       blockers: string[];
     })
   | undefined
 > {
-  const status = env.CLANCY_JQL_STATUS ?? 'To Do';
-  const auth = buildAuthHeader(env.JIRA_USER, env.JIRA_API_TOKEN);
-  const jql = buildJql(
-    env.JIRA_PROJECT_KEY,
-    status,
-    env.CLANCY_JQL_SPRINT,
-    env.CLANCY_LABEL,
-  );
+  const jql = buildJql(projectKey, status, sprint, label);
 
-  const response = await fetch(`${env.JIRA_BASE_URL}/rest/api/3/search/jql`, {
+  const response = await fetch(`${baseUrl}/rest/api/3/search/jql`, {
     method: 'POST',
     headers: {
-      Authorization: `Basic ${auth}`,
+      ...jiraHeaders(auth),
       'Content-Type': 'application/json',
-      Accept: 'application/json',
     },
     body: JSON.stringify({
       jql,
@@ -241,6 +212,42 @@ export async function fetchTicket(env: JiraEnv): Promise<
 }
 
 /**
+ * Look up a Jira transition ID by status name.
+ *
+ * @param baseUrl - The Jira Cloud base URL.
+ * @param auth - The Base64-encoded Basic auth string.
+ * @param issueKey - The Jira issue key (e.g., `'PROJ-123'`).
+ * @param statusName - The target status name (e.g., `'In Progress'`).
+ * @returns The transition ID, or `undefined` if not found.
+ */
+export async function lookupTransitionId(
+  baseUrl: string,
+  auth: string,
+  issueKey: string,
+  statusName: string,
+): Promise<string | undefined> {
+  const response = await fetch(
+    `${baseUrl}/rest/api/3/issue/${issueKey}/transitions`,
+    { headers: jiraHeaders(auth) },
+  );
+
+  if (!response.ok) return undefined;
+
+  const parsed = jiraTransitionsResponseSchema.safeParse(await response.json());
+
+  if (!parsed.success) {
+    console.warn(
+      `⚠ Unexpected Jira transitions response: ${parsed.error.message}`,
+    );
+    return undefined;
+  }
+
+  const transition = parsed.data.transitions.find((t) => t.name === statusName);
+
+  return transition?.id;
+}
+
+/**
  * Transition a Jira issue to a new status.
  *
  * Fetches available transitions and executes the one matching the target status name.
@@ -259,55 +266,33 @@ export async function transitionIssue(
   statusName: string,
 ): Promise<boolean> {
   try {
-    // Fetch available transitions
-    const transResponse = await fetch(
-      `${baseUrl}/rest/api/3/issue/${issueKey}/transitions`,
-      {
-        headers: {
-          Authorization: `Basic ${auth}`,
-          Accept: 'application/json',
-        },
-      },
+    const transitionId = await lookupTransitionId(
+      baseUrl,
+      auth,
+      issueKey,
+      statusName,
     );
 
-    if (!transResponse.ok) return false;
-
-    const parsed = jiraTransitionsResponseSchema.safeParse(
-      await transResponse.json(),
-    );
-
-    if (!parsed.success) {
-      console.warn(
-        `⚠ Unexpected Jira transitions response: ${parsed.error.message}`,
-      );
-      return false;
-    }
-
-    const transition = parsed.data.transitions.find(
-      (t) => t.name === statusName,
-    );
-
-    if (!transition) {
+    if (!transitionId) {
       console.warn(
         `⚠ Jira transition "${statusName}" not found for ${issueKey}`,
       );
       return false;
     }
 
-    // Execute transition
-    const execResponse = await fetch(
+    const response = await fetch(
       `${baseUrl}/rest/api/3/issue/${issueKey}/transitions`,
       {
         method: 'POST',
         headers: {
-          Authorization: `Basic ${auth}`,
+          ...jiraHeaders(auth),
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ transition: { id: transition.id } }),
+        body: JSON.stringify({ transition: { id: transitionId } }),
       },
     );
 
-    return execResponse.ok;
+    return response.ok;
   } catch {
     return false;
   }

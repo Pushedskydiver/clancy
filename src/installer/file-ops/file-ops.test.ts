@@ -9,7 +9,7 @@ describe('fileHash', () => {
   let tmp: string;
 
   beforeEach(() => {
-    tmp = join(tmpdir(), `clancy-test-${Date.now()}`);
+    tmp = join(tmpdir(), `clancy-test-${Date.now()}-${crypto.randomUUID()}`);
     mkdirSync(tmp, { recursive: true });
   });
 
@@ -40,7 +40,7 @@ describe('copyDir', () => {
   let tmp: string;
 
   beforeEach(() => {
-    tmp = join(tmpdir(), `clancy-test-${Date.now()}`);
+    tmp = join(tmpdir(), `clancy-test-${Date.now()}-${crypto.randomUUID()}`);
     mkdirSync(tmp, { recursive: true });
   });
 

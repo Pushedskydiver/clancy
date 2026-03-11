@@ -13,7 +13,7 @@ describe('buildManifest', () => {
   let tmp: string;
 
   beforeEach(() => {
-    tmp = join(tmpdir(), `clancy-test-${Date.now()}`);
+    tmp = join(tmpdir(), `clancy-test-${Date.now()}-${crypto.randomUUID()}`);
     mkdirSync(tmp, { recursive: true });
   });
 
@@ -49,7 +49,7 @@ describe('detectModifiedFiles', () => {
   let tmp: string;
 
   beforeEach(() => {
-    tmp = join(tmpdir(), `clancy-test-${Date.now()}`);
+    tmp = join(tmpdir(), `clancy-test-${Date.now()}-${crypto.randomUUID()}`);
     mkdirSync(tmp, { recursive: true });
   });
 
@@ -93,7 +93,7 @@ describe('backupModifiedFiles', () => {
   let tmp: string;
 
   beforeEach(() => {
-    tmp = join(tmpdir(), `clancy-test-${Date.now()}`);
+    tmp = join(tmpdir(), `clancy-test-${Date.now()}-${crypto.randomUUID()}`);
     mkdirSync(tmp, { recursive: true });
   });
 

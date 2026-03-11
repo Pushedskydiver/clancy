@@ -8,17 +8,12 @@
  * This script filters out PRs explicitly.
  */
 import { githubIssuesResponseSchema } from '~/schemas/github.js';
+import { githubHeaders, pingEndpoint } from '~/scripts/shared/http/http.js';
+import type { PingResult } from '~/scripts/shared/http/http.js';
 import type { Ticket } from '~/types/index.js';
 
 const SAFE_REPO_PATTERN = /^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/;
-
-type GitHubEnv = {
-  GITHUB_TOKEN: string;
-  GITHUB_REPO: string;
-  CLANCY_BASE_BRANCH?: string;
-  CLANCY_MODEL?: string;
-  CLANCY_NOTIFY_WEBHOOK?: string;
-};
+const GITHUB_API = 'https://api.github.com';
 
 /**
  * Validate that a GitHub repo string is in `owner/repo` format.
@@ -40,35 +35,17 @@ export function isValidRepo(repo: string): boolean {
 export async function pingGitHub(
   token: string,
   repo: string,
-): Promise<{ ok: boolean; error?: string }> {
-  try {
-    const response = await fetch(`https://api.github.com/repos/${repo}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-        Accept: 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-    });
-
-    if (response.ok) return { ok: true };
-
-    if (response.status === 401)
-      return {
-        ok: false,
-        error: '✗ GitHub auth failed — check GITHUB_TOKEN',
-      };
-    if (response.status === 403)
-      return { ok: false, error: '✗ GitHub permission denied' };
-    if (response.status === 404)
-      return { ok: false, error: `✗ GitHub repo "${repo}" not found` };
-
-    return {
-      ok: false,
-      error: `✗ GitHub returned HTTP ${response.status}`,
-    };
-  } catch {
-    return { ok: false, error: '✗ Could not reach GitHub — check network' };
-  }
+): Promise<PingResult> {
+  return pingEndpoint(
+    `${GITHUB_API}/repos/${repo}`,
+    githubHeaders(token),
+    {
+      401: '✗ GitHub auth failed — check GITHUB_TOKEN',
+      403: '✗ GitHub permission denied',
+      404: `✗ GitHub repo "${repo}" not found`,
+    },
+    '✗ Could not reach GitHub — check network',
+  );
 }
 
 /**
@@ -99,21 +76,17 @@ export function slugifyMilestone(title: string): string {
  * Requests 3 results to account for PR pollution (GitHub Issues endpoint
  * returns PRs too), then filters to real issues only.
  *
- * @param env - The GitHub environment variables.
+ * @param token - The GitHub personal access token.
+ * @param repo - The repository in `owner/repo` format.
  * @returns The fetched ticket with optional milestone, or `undefined` if none available.
  */
 export async function fetchIssue(
-  env: GitHubEnv,
+  token: string,
+  repo: string,
 ): Promise<(Ticket & { milestone?: string }) | undefined> {
   const response = await fetch(
-    `https://api.github.com/repos/${env.GITHUB_REPO}/issues?state=open&assignee=@me&labels=clancy&per_page=3`,
-    {
-      headers: {
-        Authorization: `Bearer ${env.GITHUB_TOKEN}`,
-        Accept: 'application/vnd.github+json',
-        'X-GitHub-Api-Version': '2022-11-28',
-      },
-    },
+    `${GITHUB_API}/repos/${repo}/issues?state=open&assignee=@me&labels=clancy&per_page=3`,
+    { headers: githubHeaders(token) },
   );
 
   if (!response.ok) return undefined;
@@ -156,13 +129,11 @@ export async function closeIssue(
 ): Promise<boolean> {
   try {
     const response = await fetch(
-      `https://api.github.com/repos/${repo}/issues/${issueNumber}`,
+      `${GITHUB_API}/repos/${repo}/issues/${issueNumber}`,
       {
         method: 'PATCH',
         headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/vnd.github+json',
-          'X-GitHub-Api-Version': '2022-11-28',
+          ...githubHeaders(token),
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ state: 'closed' }),
