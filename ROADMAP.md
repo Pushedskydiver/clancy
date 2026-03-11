@@ -50,14 +50,25 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 
 ---
 
+## v0.4.0 — TypeScript rewrite
+
+- Rewrite all Node.js code (installer, hooks) from CommonJS JavaScript to TypeScript
+- Replace all bash shell scripts with TypeScript equivalents — removes bash/jq/curl as runtime dependencies
+- ESM output — compile to modern ES modules
+- Vitest test suite replacing bash test scripts
+- Bump minimum Node.js version to latest stable (currently 22.x)
+- Native Windows support — no WSL required (bash dependency removed)
+- Ship compiled JS in the npm package — users never need TypeScript installed
+
+---
+
 ## v1.0.0 — Production-ready
 
 - Stable API — no breaking changes to command signatures after this
-- Full test coverage for all three built-in boards
+- Full test coverage for all built-in boards
 - Polished init wizard with auto-detection for common setups
 - Complete documentation site
 - npm package integrity checks
-- Native Windows support — Node.js-based runner replacing bash scripts, no WSL required
 
 ---
 
