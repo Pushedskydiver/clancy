@@ -14,9 +14,9 @@ Same as status workflow. Check `.clancy/`, `.clancy/.env`, and board credentials
 
 ## Step 2 — Fetch next ticket
 
-Detect board from `.clancy/.env` and fetch with `maxResults=1`. The query must match `clancy-once.sh` exactly — what review shows is what run would pick up.
+Detect board from `.clancy/.env` and fetch with `maxResults=1`. The query must match the once-runner exactly — what review shows is what run would pick up.
 
-**Jira:** Build JQL using the same clauses as `clancy-once.sh`:
+**Jira:** Build JQL using the same clauses as the once-runner:
 - Sprint clause: include `AND sprint in openSprints()` if `CLANCY_JQL_SPRINT` is set
 - Label clause: include `AND labels = "$CLANCY_LABEL"` if `CLANCY_LABEL` is set
 - `CLANCY_JQL_STATUS` defaults to `To Do` if not set

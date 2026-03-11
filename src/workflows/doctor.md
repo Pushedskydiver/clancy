@@ -32,8 +32,7 @@ Test each required binary:
 
 | Binary | Check | Fix hint |
 |---|---|---|
-| `jq` | `command -v jq` | `brew install jq` / `apt install jq` |
-| `curl` | `command -v curl` | Install curl for your OS |
+| `node` | `command -v node` | Install Node.js 22+ |
 | `git` | `command -v git` | Install git for your OS |
 
 Print `✓` or `✗` for each.
@@ -43,8 +42,8 @@ Print `✓` or `✗` for each.
 ## Step 3 — Check project setup
 
 - `.clancy/` exists → `✓ .clancy/ found`
-- `.clancy/clancy-once.sh` exists and is executable → `✓ clancy-once.sh`
-- `.clancy/clancy-afk.sh` exists and is executable → `✓ clancy-afk.sh`
+- `.clancy/clancy-once.js` exists → `✓ clancy-once.js`
+- `.clancy/clancy-afk.js` exists → `✓ clancy-afk.js`
 - `.clancy/.env` exists → `✓ .clancy/.env found`
 - `.clancy/docs/` has non-empty files → `✓ codebase docs present ({N} files)`
 
@@ -100,7 +99,7 @@ Source `.clancy/.env` and detect which board is configured:
 Clancy doctor — {N} checks passed, {N} warnings, {N} failures
 
 ✓ Clancy v0.1.0 installed (global)
-✓ jq, curl, git — all present
+✓ node, git — all present
 ✓ .clancy/ set up — 10 docs present
 ✓ Jira connected — PROJ reachable
 ✓ Figma connected — alex@example.com (check plan at figma.com/settings)

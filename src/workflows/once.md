@@ -32,12 +32,12 @@ Pick up exactly one ticket from the Kanban board, implement it, commit, squash-m
    ```
    Stop.
 
-3. The script to run is always `.clancy/clancy-once.sh` regardless of board.
-   `/clancy:init` copies the correct board variant as `clancy-once.sh` during setup.
+3. The script to run is always `.clancy/clancy-once.js` regardless of board.
+   `/clancy:init` copies the correct board variant as `clancy-once.js` during setup.
 
-4. Check `.clancy/clancy-once.sh` exists. If not:
+4. Check `.clancy/clancy-once.js` exists. If not:
    ```
-   .clancy/clancy-once.sh not found. Run /clancy:init to scaffold scripts.
+   .clancy/clancy-once.js not found. Run /clancy:init to scaffold scripts.
    ```
    Stop.
 
@@ -56,7 +56,7 @@ Running Clancy for one ticket.
 
 Execute:
 ```bash
-bash .clancy/clancy-once.sh
+node .clancy/clancy-once.js
 ```
 
 **With `--dry-run`:**
@@ -68,7 +68,7 @@ Running Clancy in dry-run mode — no changes will be made.
 
 Execute:
 ```bash
-bash .clancy/clancy-once.sh --dry-run
+node .clancy/clancy-once.js --dry-run
 ```
 
 Stream output directly — do not buffer or summarise.
@@ -94,3 +94,4 @@ Run /clancy:status to check the board, or /clancy:review to inspect the ticket.
 
 - Do not loop. This command runs the script exactly once and stops.
 - Do not attempt to run scripts from `src/templates/` — only scripts in `.clancy/`.
+- The JS shim imports from the installed `chief-clancy` package — ensure it's installed as a devDependency.

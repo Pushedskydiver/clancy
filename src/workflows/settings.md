@@ -379,7 +379,7 @@ If no: print `Cancelled. No changes made.` and loop back to the menu.
    - Linear: `LINEAR_API_KEY`, `LINEAR_TEAM_ID`
 2. Write the new board credentials to `.clancy/.env`
 3. If switching to Jira: also ask the status filter question (same as init Q3) and write `CLANCY_JQL_STATUS` to `.clancy/.env`
-4. Write the correct `clancy-once.sh` variant for the new board to `.clancy/clancy-once.sh` — same script content as init Step 4 uses (Jira → `clancy-once.sh`, GitHub → `clancy-once-github.sh`, Linear → `clancy-once-linear.sh`). Make it executable: `chmod +x .clancy/clancy-once.sh`
+4. No script replacement needed — the JS shims are board-agnostic (board detection happens at runtime from `.clancy/.env`)
 
 Print:
 

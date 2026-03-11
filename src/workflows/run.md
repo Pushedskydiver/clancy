@@ -72,9 +72,9 @@ If the user types `n` or `N`: print `Cancelled.` and stop. Any other input (incl
    ```
    Stop.
 
-4. Check `.clancy/clancy-afk.sh` exists. If not:
+4. Check `.clancy/clancy-afk.js` exists. If not:
    ```
-   .clancy/clancy-afk.sh not found. Run /clancy:init to scaffold scripts.
+   .clancy/clancy-afk.js not found. Run /clancy:init to scaffold scripts.
    ```
    Stop.
 
@@ -93,7 +93,7 @@ Starting Clancy — will process up to {N} ticket(s). Ctrl+C to stop early.
 
 Execute:
 ```bash
-MAX_ITERATIONS={N} bash .clancy/clancy-afk.sh
+MAX_ITERATIONS={N} node .clancy/clancy-afk.js
 ```
 
 Stream output directly — do not buffer or summarise.
@@ -104,7 +104,7 @@ Stream output directly — do not buffer or summarise.
 
 When the script exits, echo the final summary line from the output.
 
-If `clancy-afk.sh` exits with a non-zero status:
+If `clancy-afk.js` exits with a non-zero status:
 ```
 Clancy stopped with an error. Check the output above.
 Run /clancy:once for more detail on the next ticket.
@@ -117,3 +117,4 @@ Run /clancy:once for more detail on the next ticket.
 - The `N` argument is session-only. It never modifies `.clancy/.env`.
 - If the user wants to permanently change their default, they edit `.clancy/.env` directly or re-run `/clancy:init` advanced setup.
 - Do not attempt to run scripts from `src/templates/` — only run scripts in `.clancy/`.
+- The JS shims import from the installed `chief-clancy` package — ensure it's installed as a devDependency.
