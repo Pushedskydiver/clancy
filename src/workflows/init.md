@@ -122,6 +122,65 @@ If enter is pressed with no value: skip — omit the label clause entirely (Clan
 
 ---
 
+### Q2b: Board credential verification
+
+After collecting all credentials for the chosen board, verify the connection before continuing.
+
+**Jira** — call `GET {JIRA_BASE_URL}/rest/api/3/project/{JIRA_PROJECT_KEY}` with basic auth (`{JIRA_USER}:{JIRA_API_TOKEN}` base64-encoded in the `Authorization: Basic` header).
+
+On success (HTTP 200), show:
+```
+✓ Jira connected — project {JIRA_PROJECT_KEY} reachable.
+```
+
+On failure, show:
+```
+✗ Couldn't connect to Jira (HTTP {status}).
+Check your credentials in the values you just entered.
+
+[1] Re-enter credentials
+```
+
+If [1]: go back to Q2 and re-ask all Jira questions. If the user wants to abandon setup entirely, they can Ctrl+C.
+
+**GitHub Issues** — call `GET https://api.github.com/repos/{GITHUB_REPO}` with `Authorization: Bearer {GITHUB_TOKEN}` and `X-GitHub-Api-Version: 2022-11-28`.
+
+On success (HTTP 200), show:
+```
+✓ GitHub connected — {GITHUB_REPO} reachable.
+```
+
+On failure, show:
+```
+✗ Couldn't connect to GitHub (HTTP {status}).
+Check your token has `repo` scope and the repo name is correct.
+
+[1] Re-enter credentials
+```
+
+If [1]: go back to Q2 and re-ask all GitHub questions. If the user wants to abandon setup entirely, they can Ctrl+C.
+
+**Linear** — call `POST https://api.linear.app/graphql` with `Authorization: {LINEAR_API_KEY}` (no Bearer prefix) and body `{"query": "{ viewer { id name } }"}`.
+
+On success (HTTP 200 with `data.viewer`), show:
+```
+✓ Linear connected — {viewer.name}.
+```
+
+On failure, show:
+```
+✗ Couldn't connect to Linear.
+Check your API key at linear.app/settings/api.
+
+[1] Re-enter credentials
+```
+
+If [1]: go back to Q2 and re-ask all Linear questions. If the user wants to abandon setup entirely, they can Ctrl+C.
+
+Never silently continue with unverified credentials — the user must fix their credentials or exit with Ctrl+C.
+
+---
+
 ### Q3 (Jira only): Status name
 
 Output:
