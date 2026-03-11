@@ -40,17 +40,7 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 
 ---
 
-## v0.3.0 — Board ecosystem
-
-- Community board contributions from v0.1.0 merged
-- Shortcut (formerly Clubhouse) support
-- Notion database support
-- Azure DevOps support
-- Board auto-detection: Clancy detects which board is configured without asking
-
----
-
-## v0.4.0 — TypeScript rewrite
+## v0.3.0 — TypeScript rewrite
 
 - Rewrite all Node.js code (installer, hooks) from CommonJS JavaScript to TypeScript
 - Replace all bash shell scripts with TypeScript equivalents — removes bash/jq/curl as runtime dependencies
@@ -59,6 +49,16 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 - Bump minimum Node.js version to latest stable (currently 22.x)
 - Native Windows support — no WSL required (bash dependency removed)
 - Ship compiled JS in the npm package — users never need TypeScript installed
+
+---
+
+## v0.4.0 — Board ecosystem
+
+- Community board contributions
+- Shortcut (formerly Clubhouse) support
+- Notion database support
+- Azure DevOps support
+- Board auto-detection: Clancy detects which board is configured without asking
 
 ---
 
