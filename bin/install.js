@@ -8,6 +8,7 @@ const readline = require('readline');
 const PKG = require('../package.json');
 const COMMANDS_SRC = path.join(__dirname, '..', 'src', 'commands');
 const WORKFLOWS_SRC = path.join(__dirname, '..', 'src', 'workflows');
+const HOOKS_SRC = path.join(__dirname, '..', 'hooks');
 
 const homeDir = process.env.HOME || process.env.USERPROFILE;
 if (!homeDir) {
@@ -259,6 +260,69 @@ async function main() {
       JSON.stringify(buildManifest(workflowsDest), null, 2)
     );
 
+    // Install hooks and register them in Claude settings.json
+    const claudeConfigDir = dest === GLOBAL_DEST
+      ? path.join(homeDir, '.claude')
+      : path.join(process.cwd(), '.claude');
+    const hooksInstallDir = path.join(claudeConfigDir, 'hooks');
+    const settingsFile = path.join(claudeConfigDir, 'settings.json');
+
+    const hookFiles = [
+      'clancy-check-update.js',
+      'clancy-statusline.js',
+      'clancy-context-monitor.js',
+      'clancy-credential-guard.js',
+    ];
+
+    try {
+      fs.mkdirSync(hooksInstallDir, { recursive: true });
+      for (const f of hookFiles) {
+        fs.copyFileSync(path.join(HOOKS_SRC, f), path.join(hooksInstallDir, f));
+      }
+      // Force CommonJS resolution for hook files — projects with "type":"module"
+      // in their package.json would otherwise treat .js files as ESM, breaking require().
+      fs.writeFileSync(
+        path.join(hooksInstallDir, 'package.json'),
+        JSON.stringify({ type: 'commonjs' }, null, 2) + '\n'
+      );
+
+      // Merge hooks into settings.json without clobbering existing config
+      let settings = {};
+      if (fs.existsSync(settingsFile)) {
+        try { settings = JSON.parse(fs.readFileSync(settingsFile, 'utf8')); } catch {}
+      }
+      if (!settings.hooks) settings.hooks = {};
+
+      // Helper: add a hook command to an event array if not already present
+      function registerHook(event, command) {
+        if (!settings.hooks[event]) settings.hooks[event] = [];
+        const already = settings.hooks[event].some(
+          h => h.hooks && h.hooks.some(hh => hh.command === command)
+        );
+        if (!already) {
+          settings.hooks[event].push({ hooks: [{ type: 'command', command }] });
+        }
+      }
+
+      const updateScript    = path.join(hooksInstallDir, 'clancy-check-update.js');
+      const statuslineScript = path.join(hooksInstallDir, 'clancy-statusline.js');
+      const monitorScript   = path.join(hooksInstallDir, 'clancy-context-monitor.js');
+      const guardScript     = path.join(hooksInstallDir, 'clancy-credential-guard.js');
+
+      registerHook('SessionStart', `node ${updateScript}`);
+      registerHook('PostToolUse',  `node ${monitorScript}`);
+      registerHook('PreToolUse',   `node ${guardScript}`);
+
+      // Statusline: registered as top-level key, not inside hooks
+      if (!settings.statusLine) {
+        settings.statusLine = { type: 'command', command: `node ${statuslineScript}` };
+      }
+
+      fs.writeFileSync(settingsFile, JSON.stringify(settings, null, 2) + '\n');
+    } catch {
+      // Hook registration is best-effort — don't fail the install over it
+    }
+
     console.log('');
     console.log(green('  ✓ Clancy installed successfully.'));
     console.log('');
@@ -273,6 +337,7 @@ async function main() {
       ['/clancy:map-codebase', 'Scan codebase with 5 parallel agents'],
       ['/clancy:run',          'Run Clancy in loop mode'],
       ['/clancy:once',         'Pick up one ticket and stop'],
+      ['/clancy:dry-run',      'Preview next ticket without making changes'],
       ['/clancy:status',       'Show next tickets without running'],
       ['/clancy:review',       'Score next ticket and get recommendations'],
       ['/clancy:logs',         'Display progress log'],

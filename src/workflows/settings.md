@@ -46,10 +46,14 @@ Jira
 [4] Queue status      {CLANCY_JQL_STATUS:-To Do}
 [5] Sprint filter     {on if CLANCY_JQL_SPRINT set, else off}
 [6] Label filter      {CLANCY_LABEL if set, else off — only pick up tickets with this label}
+[7] Pickup status     {CLANCY_STATUS_IN_PROGRESS if set, else off — move ticket on pickup}
+[8] Done status       {CLANCY_STATUS_DONE if set, else off — move ticket on completion}
 
 {If Linear:}
 Linear
 [4] Label filter      {CLANCY_LABEL if set, else off — only pick up issues with this label}
+[5] Pickup status     {CLANCY_STATUS_IN_PROGRESS if set, else off — move issue on pickup}
+[6] Done status       {CLANCY_STATUS_DONE if set, else off — move issue on completion}
 
 Optional enhancements
 [{N}] Figma MCP       {enabled if FIGMA_API_KEY set, else not set}
@@ -62,7 +66,7 @@ Optional enhancements
 Which setting would you like to change?
 ```
 
-Number each option sequentially. Show only the board-specific section that matches the configured board. If Jira: show [4] queue status, [5] sprint, [6] label. If Linear: show [4] label. If GitHub: no board-specific options.
+Number each option sequentially. Show only the board-specific section that matches the configured board. If Jira: show [4] queue status, [5] sprint, [6] label, [7] pickup status, [8] done status. If Linear: show [4] label, [5] pickup status, [6] done status. If GitHub: no board-specific options.
 
 ---
 
@@ -164,6 +168,40 @@ If [2]: remove `CLANCY_LABEL` from `.clancy/.env`.
 
 ---
 
+### [7] Jira In Progress status (Jira only)
+
+```
+Jira In Progress status — current: {value or "off"}
+When set, Clancy moves a ticket to this status when it starts working on it.
+Must match the exact column name shown in your Jira board.
+
+[1] Set status name
+[2] Off (do not transition on pickup)
+[3] Cancel
+```
+
+If [1]: prompt `What status name should Clancy use for In Progress? (e.g. In Progress, In Dev, Doing)` then write `CLANCY_STATUS_IN_PROGRESS=<value>` to `.clancy/.env`.
+If [2]: remove `CLANCY_STATUS_IN_PROGRESS` from `.clancy/.env`.
+
+---
+
+### [8] Jira Done status (Jira only)
+
+```
+Jira Done status — current: {value or "off"}
+When set, Clancy moves a ticket to this status after completing it.
+Must match the exact column name shown in your Jira board.
+
+[1] Set status name
+[2] Off (do not transition on completion)
+[3] Cancel
+```
+
+If [1]: prompt `What status name should Clancy use for Done? (e.g. Done, Complete, Closed)` then write `CLANCY_STATUS_DONE=<value>` to `.clancy/.env`.
+If [2]: remove `CLANCY_STATUS_DONE` from `.clancy/.env`.
+
+---
+
 ### [4] Linear label filter (Linear only)
 
 ```
@@ -178,6 +216,40 @@ where some issues are not suitable for autonomous implementation.
 
 If [1]: prompt `What label should Clancy filter by? (must already exist in your Linear team)` then write `CLANCY_LABEL=<value>` to `.clancy/.env`.
 If [2]: remove `CLANCY_LABEL` from `.clancy/.env`.
+
+---
+
+### [5] Linear In Progress status (Linear only)
+
+```
+Linear In Progress status — current: {value or "off"}
+When set, Clancy moves an issue to this workflow state when it starts working on it.
+Must match the exact state name shown in your Linear board column header.
+
+[1] Set state name
+[2] Off (do not transition on pickup)
+[3] Cancel
+```
+
+If [1]: prompt `What workflow state name should Clancy use for In Progress? (e.g. In Progress, In Dev, Doing)` then write `CLANCY_STATUS_IN_PROGRESS=<value>` to `.clancy/.env`.
+If [2]: remove `CLANCY_STATUS_IN_PROGRESS` from `.clancy/.env`.
+
+---
+
+### [6] Linear Done status (Linear only)
+
+```
+Linear Done status — current: {value or "off"}
+When set, Clancy moves an issue to this workflow state after completing it.
+Must match the exact state name shown in your Linear board column header.
+
+[1] Set state name
+[2] Off (do not transition on completion)
+[3] Cancel
+```
+
+If [1]: prompt `What workflow state name should Clancy use for Done? (e.g. Done, Complete, Closed)` then write `CLANCY_STATUS_DONE=<value>` to `.clancy/.env`.
+If [2]: remove `CLANCY_STATUS_DONE` from `.clancy/.env`.
 
 ---
 

@@ -45,6 +45,10 @@ Pick up exactly one ticket from the Kanban board, implement it, commit, squash-m
 
 ## Step 2 — Run
 
+Check if the user passed `--dry-run` as an argument to the slash command.
+
+**Without `--dry-run`:**
+
 Display:
 ```
 Running Clancy for one ticket.
@@ -53,6 +57,18 @@ Running Clancy for one ticket.
 Execute:
 ```bash
 bash .clancy/clancy-once.sh
+```
+
+**With `--dry-run`:**
+
+Display:
+```
+Running Clancy in dry-run mode — no changes will be made.
+```
+
+Execute:
+```bash
+bash .clancy/clancy-once.sh --dry-run
 ```
 
 Stream output directly — do not buffer or summarise.

@@ -3,6 +3,15 @@
 # This means any command that fails will stop the script immediately rather than silently continuing.
 set -euo pipefail
 
+# Parse flags — must happen before preflight so --dry-run works without side effects.
+DRY_RUN=false
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN=true ;;
+  esac
+done
+readonly DRY_RUN
+
 # ─── WHAT THIS SCRIPT DOES ─────────────────────────────────────────────────────
 #
 # Board: GitHub Issues
@@ -136,10 +145,22 @@ TICKET_BRANCH="feature/issue-${ISSUE_NUMBER}"
 if [ "$MILESTONE" != "none" ]; then
   MILESTONE_SLUG=$(echo "$MILESTONE" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd '[:alnum:]-')
   TARGET_BRANCH="milestone/${MILESTONE_SLUG}"
-  git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" \
-    || git checkout -b "$TARGET_BRANCH" "$BASE_BRANCH"
 else
   TARGET_BRANCH="$BASE_BRANCH"
+fi
+
+# ─── DRY RUN ───────────────────────────────────────────────────────────────────
+
+if [ "$DRY_RUN" = "true" ]; then
+  echo ""
+  echo "── Dry run ──────────────────────────────────────"
+  echo "  Issue:          [#${ISSUE_NUMBER}] $TITLE"
+  echo "  Milestone:      $MILESTONE"
+  echo "  Target branch:  $TARGET_BRANCH"
+  echo "  Feature branch: $TICKET_BRANCH"
+  echo "─────────────────────────────────────────────────"
+  echo "  No changes made. Remove --dry-run to run for real."
+  exit 0
 fi
 
 # ─── IMPLEMENT ─────────────────────────────────────────────────────────────────
@@ -147,6 +168,8 @@ fi
 echo "Picking up: [#${ISSUE_NUMBER}] $TITLE"
 echo "Milestone: $MILESTONE | Target branch: $TARGET_BRANCH"
 
+git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" \
+  || git checkout -b "$TARGET_BRANCH" "$BASE_BRANCH"
 git checkout "$TARGET_BRANCH"
 # -B creates the branch if it doesn't exist, or resets it to HEAD if it does.
 # This handles retries cleanly without failing on an already-existing branch.
@@ -172,7 +195,8 @@ If you must SKIP this issue:
 4. Stop — no branches, no file changes, no git operations.
 
 If the issue IS implementable, continue:
-1. Read ALL docs in .clancy/docs/ — especially GIT.md for branching and commit conventions
+1. Read core docs in .clancy/docs/: STACK.md, ARCHITECTURE.md, CONVENTIONS.md, GIT.md, DEFINITION-OF-DONE.md, CONCERNS.md
+   Also read if relevant to this ticket: INTEGRATIONS.md (external APIs/services/auth), TESTING.md (tests/specs/coverage), DESIGN-SYSTEM.md (UI/components/styles), ACCESSIBILITY.md (accessibility/ARIA/WCAG)
 2. Follow the conventions in GIT.md exactly
 3. Implement the issue fully
 4. Commit your work following the conventions in GIT.md

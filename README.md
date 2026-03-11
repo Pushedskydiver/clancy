@@ -2,7 +2,7 @@
 
 **Autonomous, board-driven development for Claude Code.**
 
-[![npm](https://img.shields.io/npm/v/chief-clancy?color=cb3837)](https://www.npmjs.com/package/chief-clancy) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE) [![Tests](https://img.shields.io/badge/tests-51%20passing-brightgreen)](./test/) [![GitHub Stars](https://img.shields.io/github/stars/Pushedskydiver/clancy?style=flat)](https://github.com/Pushedskydiver/clancy/stargazers)
+[![npm](https://img.shields.io/npm/v/chief-clancy?style=for-the-badge&color=cb3837)](https://www.npmjs.com/package/chief-clancy) [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE) [![Tests](https://img.shields.io/badge/tests-94%20passing-brightgreen?style=for-the-badge)](./test/) [![GitHub Stars](https://img.shields.io/github/stars/Pushedskydiver/clancy?style=for-the-badge)](https://github.com/Pushedskydiver/clancy/stargazers)
 
 ```bash
 npx chief-clancy
@@ -130,10 +130,13 @@ npx chief-clancy
 # 3. Scan your codebase (or say yes during init)
 /clancy:map-codebase
 
-# 4. Watch your first ticket
+# 4. Preview the first ticket (no changes made)
+/clancy:dry-run
+
+# 5. Watch your first ticket
 /clancy:once
 
-# 5. Go AFK
+# 6. Go AFK
 /clancy:run
 ```
 
@@ -147,6 +150,7 @@ npx chief-clancy
 | `/clancy:run`          | Loop mode — processes tickets until queue is empty or MAX_ITERATIONS hit |
 | `/clancy:run 20`       | Same, override MAX_ITERATIONS to 20 for this session                     |
 | `/clancy:once`         | Pick up one ticket and stop                                              |
+| `/clancy:dry-run`      | Preview next ticket without making changes — no git ops, no Claude call  |
 | `/clancy:status`       | Show next tickets without running — read-only                            |
 | `/clancy:review`       | Score next ticket (0–100%) with actionable recommendations               |
 | `/clancy:logs`         | Format and display `.clancy/progress.txt`                                |
@@ -214,6 +218,15 @@ PLAYWRIGHT_STARTUP_WAIT=15
 ```
 
 After implementing a UI ticket, Clancy starts the dev server or Storybook, screenshots, assesses visually, checks the console, and fixes anything wrong before committing.
+
+### Status transitions
+
+```
+CLANCY_STATUS_IN_PROGRESS="In Progress"
+CLANCY_STATUS_DONE="Done"
+```
+
+Clancy automatically moves tickets through your board when it picks up and completes them. Set these to the exact column name shown in your Jira or Linear board. Best-effort — a failed transition never stops the run. Configurable via `/clancy:settings`.
 
 ### Notifications
 
@@ -322,6 +335,12 @@ Your board tokens and API keys live in `.clancy/.env`. Although Claude doesn't n
 ```
 
 This prevents Claude from reading these files regardless of what commands run. Clancy automatically adds `.clancy/.env` to `.gitignore` during init, but the deny list is an additional layer.
+
+### Credential guard
+
+Clancy installs a `PreToolUse` hook (`clancy-credential-guard.js`) that scans every Write, Edit, and MultiEdit operation for credential patterns — API keys, tokens, passwords, private keys, and connection strings. If a match is found, the operation is blocked with a message telling Claude to move the credential to `.clancy/.env` instead. Files that are expected to contain credentials (`.clancy/.env`, `.env.example`, etc.) are exempt.
+
+This is best-effort — it won't catch every possible credential format, but it prevents the most common accidental leaks.
 
 ### Token scopes
 

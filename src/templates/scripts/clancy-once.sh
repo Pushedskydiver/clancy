@@ -3,6 +3,15 @@
 # This means any command that fails will stop the script immediately rather than silently continuing.
 set -euo pipefail
 
+# Parse flags — must happen before preflight so --dry-run works without side effects.
+DRY_RUN=false
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN=true ;;
+  esac
+done
+readonly DRY_RUN
+
 # ─── WHAT THIS SCRIPT DOES ─────────────────────────────────────────────────────
 #
 # Board: Jira
@@ -178,10 +187,23 @@ TICKET_BRANCH="feature/$(echo "$TICKET_KEY" | tr '[:upper:]' '[:lower:]')"
 # BASE_BRANCH if it doesn't exist yet). Otherwise branch from BASE_BRANCH directly.
 if [ "$EPIC_INFO" != "none" ]; then
   TARGET_BRANCH="epic/$(echo "$EPIC_INFO" | tr '[:upper:]' '[:lower:]')"
-  git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" \
-    || git checkout -b "$TARGET_BRANCH" "$BASE_BRANCH"
 else
   TARGET_BRANCH="$BASE_BRANCH"
+fi
+
+# ─── DRY RUN ───────────────────────────────────────────────────────────────────
+
+if [ "$DRY_RUN" = "true" ]; then
+  echo ""
+  echo "── Dry run ──────────────────────────────────────"
+  echo "  Ticket:         [$TICKET_KEY] $SUMMARY"
+  echo "  Epic:           $EPIC_INFO"
+  echo "  Blockers:       $BLOCKERS"
+  echo "  Target branch:  $TARGET_BRANCH"
+  echo "  Feature branch: $TICKET_BRANCH"
+  echo "─────────────────────────────────────────────────"
+  echo "  No changes made. Remove --dry-run to run for real."
+  exit 0
 fi
 
 # ─── IMPLEMENT ─────────────────────────────────────────────────────────────────
@@ -189,10 +211,31 @@ fi
 echo "Picking up: [$TICKET_KEY] $SUMMARY"
 echo "Epic: $EPIC_INFO | Target branch: $TARGET_BRANCH | Blockers: $BLOCKERS"
 
+git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" \
+  || git checkout -b "$TARGET_BRANCH" "$BASE_BRANCH"
 git checkout "$TARGET_BRANCH"
 # -B creates the branch if it doesn't exist, or resets it to HEAD if it does.
 # This handles retries cleanly without failing on an already-existing branch.
 git checkout -B "$TICKET_BRANCH"
+
+# Transition ticket to In Progress (best-effort — never fails the run)
+if [ -n "${CLANCY_STATUS_IN_PROGRESS:-}" ]; then
+  TRANSITIONS=$(curl -s \
+    -u "$JIRA_USER:$JIRA_API_TOKEN" \
+    -H "Accept: application/json" \
+    "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY/transitions")
+  IN_PROGRESS_ID=$(echo "$TRANSITIONS" | jq -r \
+    --arg name "$CLANCY_STATUS_IN_PROGRESS" \
+    '.transitions[] | select(.name == $name) | .id' | head -1)
+  if [ -n "$IN_PROGRESS_ID" ]; then
+    curl -s -X POST \
+      -u "$JIRA_USER:$JIRA_API_TOKEN" \
+      -H "Content-Type: application/json" \
+      "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY/transitions" \
+      -d "$(jq -n --arg id "$IN_PROGRESS_ID" '{"transition":{"id":$id}}')" >/dev/null 2>&1 || true
+    echo "  → Transitioned to $CLANCY_STATUS_IN_PROGRESS"
+  fi
+fi
 
 PROMPT="You are implementing Jira ticket $TICKET_KEY.
 
@@ -215,7 +258,8 @@ If you must SKIP this ticket:
 4. Stop — no branches, no file changes, no git operations.
 
 If the ticket IS implementable, continue:
-1. Read ALL docs in .clancy/docs/ — especially GIT.md for branching and commit conventions
+1. Read core docs in .clancy/docs/: STACK.md, ARCHITECTURE.md, CONVENTIONS.md, GIT.md, DEFINITION-OF-DONE.md, CONCERNS.md
+   Also read if relevant to this ticket: INTEGRATIONS.md (external APIs/services/auth), TESTING.md (tests/specs/coverage), DESIGN-SYSTEM.md (UI/components/styles), ACCESSIBILITY.md (accessibility/ARIA/WCAG)
 2. Follow the conventions in GIT.md exactly
 3. Implement the ticket fully
 4. Commit your work following the conventions in GIT.md
@@ -238,6 +282,25 @@ fi
 
 # Delete ticket branch locally (never push deletes)
 git branch -d "$TICKET_BRANCH"
+
+# Transition ticket to Done (best-effort — never fails the run)
+if [ -n "${CLANCY_STATUS_DONE:-}" ]; then
+  TRANSITIONS=$(curl -s \
+    -u "$JIRA_USER:$JIRA_API_TOKEN" \
+    -H "Accept: application/json" \
+    "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY/transitions")
+  DONE_ID=$(echo "$TRANSITIONS" | jq -r \
+    --arg name "$CLANCY_STATUS_DONE" \
+    '.transitions[] | select(.name == $name) | .id' | head -1)
+  if [ -n "$DONE_ID" ]; then
+    curl -s -X POST \
+      -u "$JIRA_USER:$JIRA_API_TOKEN" \
+      -H "Content-Type: application/json" \
+      "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY/transitions" \
+      -d "$(jq -n --arg id "$DONE_ID" '{"transition":{"id":$id}}')" >/dev/null 2>&1 || true
+    echo "  → Transitioned to $CLANCY_STATUS_DONE"
+  fi
+fi
 
 # Log progress
 echo "$(date '+%Y-%m-%d %H:%M') | $TICKET_KEY | $SUMMARY | DONE" >> .clancy/progress.txt

@@ -84,6 +84,55 @@ assert_eq "null description defaults to No description" "No description" "$DESCR
 IDENTIFIER=$(jq -r '.data.viewer.assignedIssues.nodes[0].identifier' "$FIXTURE")
 assert_eq "identifier still parsed with null description" "ENG-50" "$IDENTIFIER"
 
+# ─── ISSUE_ID extraction ──────────────────────────────────────────────────────
+echo ""
+echo "ISSUE_ID extraction (for status transitions):"
+FIXTURE="$FIXTURES_DIR/linear-happy-path.json"
+
+ISSUE_ID=$(jq -r '.data.viewer.assignedIssues.nodes[0].id' "$FIXTURE")
+assert_eq "ISSUE_ID is UUID string" "abc123" "$ISSUE_ID"
+
+IDENTIFIER=$(jq -r '.data.viewer.assignedIssues.nodes[0].identifier' "$FIXTURE")
+assert_eq "IDENTIFIER differs from ISSUE_ID" "ENG-42" "$IDENTIFIER"
+
+# Confirm id and identifier are different fields (mutation needs id, not identifier)
+if [ "$ISSUE_ID" = "$IDENTIFIER" ]; then
+  fail "id and identifier are separate fields" "different values" "same value: $ISSUE_ID"
+else
+  pass "id and identifier are separate fields"
+fi
+
+# ─── CLANCY_LABEL request body branch ─────────────────────────────────────────
+echo ""
+echo "CLANCY_LABEL request body (with label set):"
+TEAM_ID="team-uuid-123"
+LABEL="clancy"
+
+# Simulate the label branch: jq builds the request body with label variable
+REQUEST_WITH_LABEL=$(jq -n \
+  --arg teamId "$TEAM_ID" \
+  --arg label "$LABEL" \
+  '{"query": "query($teamId: String!, $label: String) { viewer { assignedIssues(filter: { labels: { name: { eq: $label } } }) { nodes { id } } } }", "variables": {"teamId": $teamId, "label": $label}}')
+
+LABEL_IN_VARS=$(echo "$REQUEST_WITH_LABEL" | jq -r '.variables.label // empty')
+assert_eq "label appears in variables when CLANCY_LABEL set" "$LABEL" "$LABEL_IN_VARS"
+
+TEAM_IN_VARS=$(echo "$REQUEST_WITH_LABEL" | jq -r '.variables.teamId // empty')
+assert_eq "teamId present alongside label" "$TEAM_ID" "$TEAM_IN_VARS"
+
+echo ""
+echo "CLANCY_LABEL request body (without label set):"
+# Simulate the no-label branch: jq builds the request body without label variable
+REQUEST_NO_LABEL=$(jq -n \
+  --arg teamId "$TEAM_ID" \
+  '{"query": "query($teamId: String!) { viewer { assignedIssues(filter: { state: { type: { eq: \"unstarted\" } } }) { nodes { id } } } }", "variables": {"teamId": $teamId}}')
+
+LABEL_IN_NO_LABEL=$(echo "$REQUEST_NO_LABEL" | jq '.variables | has("label")')
+assert_eq "label absent from variables when CLANCY_LABEL unset" "false" "$LABEL_IN_NO_LABEL"
+
+TEAM_ONLY=$(echo "$REQUEST_NO_LABEL" | jq -r '.variables.teamId // empty')
+assert_eq "teamId present when no label" "$TEAM_ID" "$TEAM_ONLY"
+
 # ─── No parent (no epic) ──────────────────────────────────────────────────────
 echo ""
 echo "no parent (epic is none):"

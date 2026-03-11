@@ -30,17 +30,31 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 ## v0.2.0 — Stability and DX
 
 - Jira/Linear ticket status transitions — move ticket to In Progress on pickup, Done on completion
-- `--dry-run` flag for `clancy-once.sh` — shows what would be done without doing it
+- `/clancy:dry-run` command — dedicated dropdown command to preview the next ticket without making any changes (no git ops, no Claude call)
 - Credential guard hook — PreToolUse hook that blocks writing API keys, tokens, and passwords to code files
 - Targeted doc loading — load only relevant `.clancy/docs/` files per ticket rather than all 10 every run (token optimisation)
 - Shellcheck CI for all shell scripts
 - More test fixtures (edge cases discovered post-release)
+- Auto update check via `SessionStart` hook — background npm version check at session start, surfaces notification when a newer version of `chief-clancy` is available (same pattern as GSD's `gsd-check-update.js`)
+- Context window monitor via `PostToolUse` hook — warns Claude when context is running low (≤35% remaining: wrap up analysis, ≤25%: commit current work and log progress to `.clancy/progress.txt`); most valuable during `/clancy:map-codebase` and large ticket implementations. Hook infrastructure shared with the update check.
 
 ---
 
-## v0.3.0 — Board ecosystem
+## v0.3.0 — TypeScript rewrite
 
-- Community board contributions from v0.1.0 merged
+- Rewrite all Node.js code (installer, hooks) from CommonJS JavaScript to TypeScript
+- Replace all bash shell scripts with TypeScript equivalents — removes bash/jq/curl as runtime dependencies
+- ESM output — compile to modern ES modules
+- Vitest test suite replacing bash test scripts
+- Bump minimum Node.js version to latest stable (currently 22.x)
+- Native Windows support — no WSL required (bash dependency removed)
+- Ship compiled JS in the npm package — users never need TypeScript installed
+
+---
+
+## v0.4.0 — Board ecosystem
+
+- Community board contributions
 - Shortcut (formerly Clubhouse) support
 - Notion database support
 - Azure DevOps support
@@ -51,11 +65,10 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 ## v1.0.0 — Production-ready
 
 - Stable API — no breaking changes to command signatures after this
-- Full test coverage for all three built-in boards
+- Full test coverage for all built-in boards
 - Polished init wizard with auto-detection for common setups
 - Complete documentation site
 - npm package integrity checks
-- Native Windows support — Node.js-based runner replacing bash scripts, no WSL required
 
 ---
 

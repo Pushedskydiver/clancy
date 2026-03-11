@@ -86,6 +86,23 @@ assert_eq "null body defaults to No description" "No description" "$BODY"
 MILESTONE=$(echo "$ISSUE" | jq -r '.milestone.title // "none"')
 assert_eq "null milestone defaults to none" "none" "$MILESTONE"
 
+# ─── All PRs — no real issues ─────────────────────────────────────────────────
+echo ""
+echo "all PRs (no real issues after filtering):"
+FIXTURE="$FIXTURES_DIR/github-all-prs.json"
+
+ALL_COUNT=$(jq 'length' "$FIXTURE")
+assert_eq "fixture has 3 results" "3" "$ALL_COUNT"
+
+PR_COUNT=$(jq 'map(select(has("pull_request"))) | length' "$FIXTURE")
+assert_eq "all 3 results are PRs" "3" "$PR_COUNT"
+
+ISSUE=$(jq 'map(select(has("pull_request") | not)) | .[0]' "$FIXTURE")
+assert_eq "no real issue found (null)" '"null"' "$(echo "$ISSUE" | jq 'type')"
+
+REAL_ISSUE_COUNT=$(jq 'map(select(has("pull_request") | not)) | length' "$FIXTURE")
+assert_eq "zero real issues after PR filter" "0" "$REAL_ISSUE_COUNT"
+
 # ─── Branch naming ────────────────────────────────────────────────────────────
 echo ""
 echo "branch naming:"

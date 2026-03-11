@@ -3,18 +3,25 @@
 
 This project uses Clancy for autonomous ticket-driven development.
 
+### Version check
+At the start of each session, read `~/.claude/cache/clancy-update-check.json` (use the Bash tool). If it exists and `update_available` is true, display exactly:
+`⚠ Clancy update available: v{installed} → v{latest}. Run /clancy:update to upgrade.`
+Then continue normally. If the file is missing or unreadable, continue silently.
+
 ### Docs
-Before every run, read all docs in `.clancy/docs/`:
+Before every run, read these core docs from `.clancy/docs/`:
 - STACK.md — tech stack and dependencies
-- INTEGRATIONS.md — external services and APIs
 - ARCHITECTURE.md — system design and data flow
 - CONVENTIONS.md — code style and patterns
-- TESTING.md — test approach and coverage expectations
 - GIT.md — branching, commit format, merge strategy
-- DESIGN-SYSTEM.md — tokens, components, visual conventions
-- ACCESSIBILITY.md — WCAG requirements and ARIA patterns
 - DEFINITION-OF-DONE.md — checklist before marking a ticket complete
 - CONCERNS.md — known risks, tech debt, things to avoid
+
+Also read these if relevant to the ticket:
+- INTEGRATIONS.md — if the ticket touches external APIs, services, or authentication
+- TESTING.md — if the ticket involves tests, specs, or coverage requirements
+- DESIGN-SYSTEM.md — if the ticket touches UI, components, styles, or visual design
+- ACCESSIBILITY.md — if the ticket touches accessibility, ARIA, or WCAG requirements
 
 ### Executability check
 

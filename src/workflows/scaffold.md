@@ -304,6 +304,15 @@ Write this file when the chosen board is **Jira**:
 # This means any command that fails will stop the script immediately rather than silently continuing.
 set -euo pipefail
 
+# Parse flags — must happen before preflight so --dry-run works without side effects.
+DRY_RUN=false
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN=true ;;
+  esac
+done
+readonly DRY_RUN
+
 # ─── WHAT THIS SCRIPT DOES ─────────────────────────────────────────────────────
 #
 # Board: Jira
@@ -479,10 +488,23 @@ TICKET_BRANCH="feature/$(echo "$TICKET_KEY" | tr '[:upper:]' '[:lower:]')"
 # BASE_BRANCH if it doesn't exist yet). Otherwise branch from BASE_BRANCH directly.
 if [ "$EPIC_INFO" != "none" ]; then
   TARGET_BRANCH="epic/$(echo "$EPIC_INFO" | tr '[:upper:]' '[:lower:]')"
-  git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" \
-    || git checkout -b "$TARGET_BRANCH" "$BASE_BRANCH"
 else
   TARGET_BRANCH="$BASE_BRANCH"
+fi
+
+# ─── DRY RUN ───────────────────────────────────────────────────────────────────
+
+if [ "$DRY_RUN" = "true" ]; then
+  echo ""
+  echo "── Dry run ──────────────────────────────────────"
+  echo "  Ticket:         [$TICKET_KEY] $SUMMARY"
+  echo "  Epic:           $EPIC_INFO"
+  echo "  Blockers:       $BLOCKERS"
+  echo "  Target branch:  $TARGET_BRANCH"
+  echo "  Feature branch: $TICKET_BRANCH"
+  echo "─────────────────────────────────────────────────"
+  echo "  No changes made. Remove --dry-run to run for real."
+  exit 0
 fi
 
 # ─── IMPLEMENT ─────────────────────────────────────────────────────────────────
@@ -490,10 +512,31 @@ fi
 echo "Picking up: [$TICKET_KEY] $SUMMARY"
 echo "Epic: $EPIC_INFO | Target branch: $TARGET_BRANCH | Blockers: $BLOCKERS"
 
+git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" \
+  || git checkout -b "$TARGET_BRANCH" "$BASE_BRANCH"
 git checkout "$TARGET_BRANCH"
 # -B creates the branch if it doesn't exist, or resets it to HEAD if it does.
 # This handles retries cleanly without failing on an already-existing branch.
 git checkout -B "$TICKET_BRANCH"
+
+# Transition ticket to In Progress (best-effort — never fails the run)
+if [ -n "${CLANCY_STATUS_IN_PROGRESS:-}" ]; then
+  TRANSITIONS=$(curl -s \
+    -u "$JIRA_USER:$JIRA_API_TOKEN" \
+    -H "Accept: application/json" \
+    "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY/transitions")
+  IN_PROGRESS_ID=$(echo "$TRANSITIONS" | jq -r \
+    --arg name "$CLANCY_STATUS_IN_PROGRESS" \
+    '.transitions[] | select(.name == $name) | .id' | head -1)
+  if [ -n "$IN_PROGRESS_ID" ]; then
+    curl -s -X POST \
+      -u "$JIRA_USER:$JIRA_API_TOKEN" \
+      -H "Content-Type: application/json" \
+      "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY/transitions" \
+      -d "$(jq -n --arg id "$IN_PROGRESS_ID" '{"transition":{"id":$id}}')" >/dev/null 2>&1 || true
+    echo "  → Transitioned to $CLANCY_STATUS_IN_PROGRESS"
+  fi
+fi
 
 PROMPT="You are implementing Jira ticket $TICKET_KEY.
 
@@ -516,7 +559,8 @@ If you must SKIP this ticket:
 4. Stop — no branches, no file changes, no git operations.
 
 If the ticket IS implementable, continue:
-1. Read ALL docs in .clancy/docs/ — especially GIT.md for branching and commit conventions
+1. Read core docs in .clancy/docs/: STACK.md, ARCHITECTURE.md, CONVENTIONS.md, GIT.md, DEFINITION-OF-DONE.md, CONCERNS.md
+   Also read if relevant to this ticket: INTEGRATIONS.md (external APIs/services/auth), TESTING.md (tests/specs/coverage), DESIGN-SYSTEM.md (UI/components/styles), ACCESSIBILITY.md (accessibility/ARIA/WCAG)
 2. Follow the conventions in GIT.md exactly
 3. Implement the ticket fully
 4. Commit your work following the conventions in GIT.md
@@ -539,6 +583,25 @@ fi
 
 # Delete ticket branch locally (never push deletes)
 git branch -d "$TICKET_BRANCH"
+
+# Transition ticket to Done (best-effort — never fails the run)
+if [ -n "${CLANCY_STATUS_DONE:-}" ]; then
+  TRANSITIONS=$(curl -s \
+    -u "$JIRA_USER:$JIRA_API_TOKEN" \
+    -H "Accept: application/json" \
+    "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY/transitions")
+  DONE_ID=$(echo "$TRANSITIONS" | jq -r \
+    --arg name "$CLANCY_STATUS_DONE" \
+    '.transitions[] | select(.name == $name) | .id' | head -1)
+  if [ -n "$DONE_ID" ]; then
+    curl -s -X POST \
+      -u "$JIRA_USER:$JIRA_API_TOKEN" \
+      -H "Content-Type: application/json" \
+      "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY/transitions" \
+      -d "$(jq -n --arg id "$DONE_ID" '{"transition":{"id":$id}}')" >/dev/null 2>&1 || true
+    echo "  → Transitioned to $CLANCY_STATUS_DONE"
+  fi
+fi
 
 # Log progress
 echo "$(date '+%Y-%m-%d %H:%M') | $TICKET_KEY | $SUMMARY | DONE" >> .clancy/progress.txt
@@ -571,6 +634,15 @@ Write this file when the chosen board is **GitHub Issues**:
 # Strict mode: exit on error (-e), undefined variables (-u), pipe failures (-o pipefail).
 # This means any command that fails will stop the script immediately rather than silently continuing.
 set -euo pipefail
+
+# Parse flags — must happen before preflight so --dry-run works without side effects.
+DRY_RUN=false
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN=true ;;
+  esac
+done
+readonly DRY_RUN
 
 # ─── WHAT THIS SCRIPT DOES ─────────────────────────────────────────────────────
 #
@@ -705,10 +777,22 @@ TICKET_BRANCH="feature/issue-${ISSUE_NUMBER}"
 if [ "$MILESTONE" != "none" ]; then
   MILESTONE_SLUG=$(echo "$MILESTONE" | tr '[:upper:]' '[:lower:]' | tr ' ' '-' | tr -cd '[:alnum:]-')
   TARGET_BRANCH="milestone/${MILESTONE_SLUG}"
-  git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" \
-    || git checkout -b "$TARGET_BRANCH" "$BASE_BRANCH"
 else
   TARGET_BRANCH="$BASE_BRANCH"
+fi
+
+# ─── DRY RUN ───────────────────────────────────────────────────────────────────
+
+if [ "$DRY_RUN" = "true" ]; then
+  echo ""
+  echo "── Dry run ──────────────────────────────────────"
+  echo "  Issue:          [#${ISSUE_NUMBER}] $TITLE"
+  echo "  Milestone:      $MILESTONE"
+  echo "  Target branch:  $TARGET_BRANCH"
+  echo "  Feature branch: $TICKET_BRANCH"
+  echo "─────────────────────────────────────────────────"
+  echo "  No changes made. Remove --dry-run to run for real."
+  exit 0
 fi
 
 # ─── IMPLEMENT ─────────────────────────────────────────────────────────────────
@@ -716,6 +800,8 @@ fi
 echo "Picking up: [#${ISSUE_NUMBER}] $TITLE"
 echo "Milestone: $MILESTONE | Target branch: $TARGET_BRANCH"
 
+git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" \
+  || git checkout -b "$TARGET_BRANCH" "$BASE_BRANCH"
 git checkout "$TARGET_BRANCH"
 # -B creates the branch if it doesn't exist, or resets it to HEAD if it does.
 # This handles retries cleanly without failing on an already-existing branch.
@@ -741,7 +827,8 @@ If you must SKIP this issue:
 4. Stop — no branches, no file changes, no git operations.
 
 If the issue IS implementable, continue:
-1. Read ALL docs in .clancy/docs/ — especially GIT.md for branching and commit conventions
+1. Read core docs in .clancy/docs/: STACK.md, ARCHITECTURE.md, CONVENTIONS.md, GIT.md, DEFINITION-OF-DONE.md, CONCERNS.md
+   Also read if relevant to this ticket: INTEGRATIONS.md (external APIs/services/auth), TESTING.md (tests/specs/coverage), DESIGN-SYSTEM.md (UI/components/styles), ACCESSIBILITY.md (accessibility/ARIA/WCAG)
 2. Follow the conventions in GIT.md exactly
 3. Implement the issue fully
 4. Commit your work following the conventions in GIT.md
@@ -805,6 +892,15 @@ Write this file when the chosen board is **Linear**:
 # Strict mode: exit on error (-e), undefined variables (-u), pipe failures (-o pipefail).
 # This means any command that fails will stop the script immediately rather than silently continuing.
 set -euo pipefail
+
+# Parse flags — must happen before preflight so --dry-run works without side effects.
+DRY_RUN=false
+for arg in "$@"; do
+  case "$arg" in
+    --dry-run) DRY_RUN=true ;;
+  esac
+done
+readonly DRY_RUN
 
 # ─── WHAT THIS SCRIPT DOES ─────────────────────────────────────────────────────
 #
@@ -956,6 +1052,7 @@ if [ "$NODE_COUNT" -eq 0 ]; then
   exit 0
 fi
 
+ISSUE_ID=$(echo "$RESPONSE" | jq -r '.data.viewer.assignedIssues.nodes[0].id')
 IDENTIFIER=$(echo "$RESPONSE" | jq -r '.data.viewer.assignedIssues.nodes[0].identifier')
 TITLE=$(echo "$RESPONSE" | jq -r '.data.viewer.assignedIssues.nodes[0].title')
 DESCRIPTION=$(echo "$RESPONSE" | jq -r '.data.viewer.assignedIssues.nodes[0].description // "No description"')
@@ -975,10 +1072,22 @@ TICKET_BRANCH="feature/$(echo "$IDENTIFIER" | tr '[:upper:]' '[:lower:]')"
 # BASE_BRANCH if it doesn't exist yet). Otherwise branch from BASE_BRANCH directly.
 if [ "$PARENT_ID" != "none" ]; then
   TARGET_BRANCH="epic/$(echo "$PARENT_ID" | tr '[:upper:]' '[:lower:]')"
-  git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" \
-    || git checkout -b "$TARGET_BRANCH" "$BASE_BRANCH"
 else
   TARGET_BRANCH="$BASE_BRANCH"
+fi
+
+# ─── DRY RUN ───────────────────────────────────────────────────────────────────
+
+if [ "$DRY_RUN" = "true" ]; then
+  echo ""
+  echo "── Dry run ──────────────────────────────────────"
+  echo "  Issue:          [$IDENTIFIER] $TITLE"
+  echo "  Epic:           $EPIC_INFO"
+  echo "  Target branch:  $TARGET_BRANCH"
+  echo "  Feature branch: $TICKET_BRANCH"
+  echo "─────────────────────────────────────────────────"
+  echo "  No changes made. Remove --dry-run to run for real."
+  exit 0
 fi
 
 # ─── IMPLEMENT ─────────────────────────────────────────────────────────────────
@@ -986,10 +1095,34 @@ fi
 echo "Picking up: [$IDENTIFIER] $TITLE"
 echo "Epic: $EPIC_INFO | Target branch: $TARGET_BRANCH"
 
+git show-ref --verify --quiet "refs/heads/$TARGET_BRANCH" \
+  || git checkout -b "$TARGET_BRANCH" "$BASE_BRANCH"
 git checkout "$TARGET_BRANCH"
 # -B creates the branch if it doesn't exist, or resets it to HEAD if it does.
 # This handles retries cleanly without failing on an already-existing branch.
 git checkout -B "$TICKET_BRANCH"
+
+# Transition issue to In Progress (best-effort — never fails the run).
+# Queries team workflow states by type "started", picks the first match.
+if [ -n "${CLANCY_STATUS_IN_PROGRESS:-}" ]; then
+  STATE_RESP=$(curl -s -X POST https://api.linear.app/graphql \
+    -H "Content-Type: application/json" \
+    -H "Authorization: $LINEAR_API_KEY" \
+    -d "$(jq -n --arg teamId "$LINEAR_TEAM_ID" --arg name "$CLANCY_STATUS_IN_PROGRESS" \
+      '{"query": "query($teamId: String!, $name: String!) { workflowStates(filter: { team: { id: { eq: $teamId } } name: { eq: $name } }) { nodes { id } } }", "variables": {"teamId": $teamId, "name": $name}}')")
+  IN_PROGRESS_STATE_ID=$(echo "$STATE_RESP" | jq -r '.data.workflowStates.nodes[0].id // empty')
+  if [ -n "$IN_PROGRESS_STATE_ID" ]; then
+    curl -s -X POST https://api.linear.app/graphql \
+      -H "Content-Type: application/json" \
+      -H "Authorization: $LINEAR_API_KEY" \
+      -d "$(jq -n --arg issueId "$ISSUE_ID" --arg stateId "$IN_PROGRESS_STATE_ID" \
+        '{"query": "mutation($issueId: String!, $stateId: String!) { issueUpdate(id: $issueId, input: { stateId: $stateId }) { success } }", "variables": {"issueId": $issueId, "stateId": $stateId}}')" \
+      >/dev/null 2>&1 || true
+    echo "  → Transitioned to $CLANCY_STATUS_IN_PROGRESS"
+  else
+    echo "  ⚠ Workflow state '$CLANCY_STATUS_IN_PROGRESS' not found — check CLANCY_STATUS_IN_PROGRESS in .clancy/.env."
+  fi
+fi
 
 PROMPT="You are implementing Linear issue $IDENTIFIER.
 
@@ -1011,7 +1144,8 @@ If you must SKIP this issue:
 4. Stop — no branches, no file changes, no git operations.
 
 If the issue IS implementable, continue:
-1. Read ALL docs in .clancy/docs/ — especially GIT.md for branching and commit conventions
+1. Read core docs in .clancy/docs/: STACK.md, ARCHITECTURE.md, CONVENTIONS.md, GIT.md, DEFINITION-OF-DONE.md, CONCERNS.md
+   Also read if relevant to this ticket: INTEGRATIONS.md (external APIs/services/auth), TESTING.md (tests/specs/coverage), DESIGN-SYSTEM.md (UI/components/styles), ACCESSIBILITY.md (accessibility/ARIA/WCAG)
 2. Follow the conventions in GIT.md exactly
 3. Implement the issue fully
 4. Commit your work following the conventions in GIT.md
@@ -1034,6 +1168,27 @@ fi
 
 # Delete ticket branch locally
 git branch -d "$TICKET_BRANCH"
+
+# Transition issue to Done (best-effort — never fails the run).
+if [ -n "${CLANCY_STATUS_DONE:-}" ]; then
+  STATE_RESP=$(curl -s -X POST https://api.linear.app/graphql \
+    -H "Content-Type: application/json" \
+    -H "Authorization: $LINEAR_API_KEY" \
+    -d "$(jq -n --arg teamId "$LINEAR_TEAM_ID" --arg name "$CLANCY_STATUS_DONE" \
+      '{"query": "query($teamId: String!, $name: String!) { workflowStates(filter: { team: { id: { eq: $teamId } } name: { eq: $name } }) { nodes { id } } }", "variables": {"teamId": $teamId, "name": $name}}')")
+  DONE_STATE_ID=$(echo "$STATE_RESP" | jq -r '.data.workflowStates.nodes[0].id // empty')
+  if [ -n "$DONE_STATE_ID" ]; then
+    curl -s -X POST https://api.linear.app/graphql \
+      -H "Content-Type: application/json" \
+      -H "Authorization: $LINEAR_API_KEY" \
+      -d "$(jq -n --arg issueId "$ISSUE_ID" --arg stateId "$DONE_STATE_ID" \
+        '{"query": "mutation($issueId: String!, $stateId: String!) { issueUpdate(id: $issueId, input: { stateId: $stateId }) { success } }", "variables": {"issueId": $issueId, "stateId": $stateId}}')" \
+      >/dev/null 2>&1 || true
+    echo "  → Transitioned to $CLANCY_STATUS_DONE"
+  else
+    echo "  ⚠ Workflow state '$CLANCY_STATUS_DONE' not found — check CLANCY_STATUS_DONE in .clancy/.env."
+  fi
+fi
 
 # Log progress
 echo "$(date '+%Y-%m-%d %H:%M') | $IDENTIFIER | $TITLE | DONE" >> .clancy/progress.txt
@@ -1234,6 +1389,12 @@ MAX_ITERATIONS=5
 # PLAYWRIGHT_STORYBOOK_PORT=6006
 # PLAYWRIGHT_STARTUP_WAIT=15
 
+# ─── Optional: Status transitions ────────────────────────────────────────────
+# Move tickets automatically when Clancy picks up or completes them.
+# Set to the exact status name shown in your Jira board column header.
+# CLANCY_STATUS_IN_PROGRESS="In Progress"
+# CLANCY_STATUS_DONE="Done"
+
 # ─── Optional: Notifications ──────────────────────────────────────────────────
 # Webhook URL for Slack or Teams notifications on ticket completion
 # CLANCY_NOTIFY_WEBHOOK=https://hooks.slack.com/services/your/webhook/url
@@ -1329,6 +1490,12 @@ MAX_ITERATIONS=20
 # PLAYWRIGHT_STORYBOOK_COMMAND="yarn storybook"
 # PLAYWRIGHT_STORYBOOK_PORT=6006
 # PLAYWRIGHT_STARTUP_WAIT=15
+
+# ─── Optional: Status transitions ────────────────────────────────────────────
+# Move issues automatically when Clancy picks up or completes them.
+# Set to the exact workflow state name shown in your Linear board column header.
+# CLANCY_STATUS_IN_PROGRESS="In Progress"
+# CLANCY_STATUS_DONE="Done"
 
 # ─── Optional: Notifications ──────────────────────────────────────────────────
 # Webhook URL for Slack or Teams notifications on ticket completion
