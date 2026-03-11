@@ -42,7 +42,8 @@
     "registry/"
   ],
   "scripts": {
-    "build": "tsc && tsc-alias",
+    "clean": "rm -rf dist",
+    "build": "npm run clean && tsc && tsc-alias",
     "dev": "vitest",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
