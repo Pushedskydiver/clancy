@@ -36,7 +36,30 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### ⬆️ Upgrading from 0.2.x
 
-Run `/clancy:update` or `npx chief-clancy@latest`. Then re-run `/clancy:init` to replace the old shell script shims with the new JS shims. Your `.clancy/.env`, `.clancy/docs/`, and `CLAUDE.md` are preserved.
+```bash
+# 1. Update Clancy commands
+npx chief-clancy@latest
+
+# 2. Replace old shell shims with new JS shims
+/clancy:init
+```
+
+**What changes:**
+- `.clancy/clancy-once.sh` (board-specific) → `.clancy/clancy-once.js` (board-agnostic)
+- `.clancy/clancy-afk.sh` → `.clancy/clancy-afk.js`
+- `jq` and `curl` are no longer required — only `node` (22+) and `git`
+
+**What's preserved:**
+- `.clancy/.env` — no credential changes needed, same env var format
+- `.clancy/docs/` — all 10 codebase docs are untouched
+- `CLAUDE.md` — the Clancy section is updated in place
+- `.clancy/progress.txt` — your run history is preserved
+
+**After upgrading:** you can safely delete any leftover `.sh` files in `.clancy/`:
+
+```bash
+rm -f .clancy/clancy-once.sh .clancy/clancy-once-github.sh .clancy/clancy-once-linear.sh .clancy/clancy-afk.sh
+```
 
 ---
 
