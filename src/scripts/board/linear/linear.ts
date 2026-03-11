@@ -164,6 +164,77 @@ export async function fetchIssue(env: LinearEnv): Promise<
 }
 
 /**
+ * Look up a Linear workflow state ID by name and team.
+ *
+ * @param apiKey - The Linear personal API key.
+ * @param teamId - The Linear team ID.
+ * @param stateName - The workflow state name (e.g., `'In Progress'`).
+ * @returns The state ID, or `undefined` if not found.
+ */
+export async function lookupWorkflowStateId(
+  apiKey: string,
+  teamId: string,
+  stateName: string,
+): Promise<string | undefined> {
+  const query = `
+    query($teamId: String!, $name: String!) {
+      workflowStates(filter: {
+        team: { id: { eq: $teamId } }
+        name: { eq: $name }
+      }) {
+        nodes { id }
+      }
+    }
+  `;
+
+  const raw = await linearGraphql(apiKey, query, { teamId, name: stateName });
+  const parsed = linearWorkflowStatesResponseSchema.safeParse(raw);
+
+  if (!parsed.success) {
+    console.warn(
+      `⚠ Unexpected Linear workflowStates response: ${parsed.error.message}`,
+    );
+    return undefined;
+  }
+
+  return parsed.data.data?.workflowStates?.nodes?.[0]?.id;
+}
+
+/**
+ * Execute a state transition on a Linear issue.
+ *
+ * @param apiKey - The Linear personal API key.
+ * @param issueId - The Linear issue internal ID.
+ * @param stateId - The target workflow state ID.
+ * @returns `true` if the mutation succeeded.
+ */
+export async function executeStateTransition(
+  apiKey: string,
+  issueId: string,
+  stateId: string,
+): Promise<boolean> {
+  const mutation = `
+    mutation($issueId: String!, $stateId: String!) {
+      issueUpdate(id: $issueId, input: { stateId: $stateId }) {
+        success
+      }
+    }
+  `;
+
+  const raw = await linearGraphql(apiKey, mutation, { issueId, stateId });
+  const parsed = linearIssueUpdateResponseSchema.safeParse(raw);
+
+  if (!parsed.success) {
+    console.warn(
+      `⚠ Unexpected Linear issueUpdate response: ${parsed.error.message}`,
+    );
+    return false;
+  }
+
+  return parsed.data.data?.issueUpdate?.success === true;
+}
+
+/**
  * Transition a Linear issue to a new workflow state.
  *
  * Looks up the workflow state ID by name, then executes the `issueUpdate` mutation.
@@ -182,32 +253,7 @@ export async function transitionIssue(
   stateName: string,
 ): Promise<boolean> {
   try {
-    // Look up workflow state ID
-    const stateQuery = `
-      query($teamId: String!, $name: String!) {
-        workflowStates(filter: {
-          team: { id: { eq: $teamId } }
-          name: { eq: $name }
-        }) {
-          nodes { id }
-        }
-      }
-    `;
-
-    const stateRaw = await linearGraphql(apiKey, stateQuery, {
-      teamId,
-      name: stateName,
-    });
-    const stateParsed = linearWorkflowStatesResponseSchema.safeParse(stateRaw);
-
-    if (!stateParsed.success) {
-      console.warn(
-        `⚠ Unexpected Linear workflowStates response: ${stateParsed.error.message}`,
-      );
-      return false;
-    }
-
-    const stateId = stateParsed.data.data?.workflowStates?.nodes?.[0]?.id;
+    const stateId = await lookupWorkflowStateId(apiKey, teamId, stateName);
 
     if (!stateId) {
       console.warn(
@@ -216,29 +262,7 @@ export async function transitionIssue(
       return false;
     }
 
-    // Execute state transition
-    const mutation = `
-      mutation($issueId: String!, $stateId: String!) {
-        issueUpdate(id: $issueId, input: { stateId: $stateId }) {
-          success
-        }
-      }
-    `;
-
-    const resultRaw = await linearGraphql(apiKey, mutation, {
-      issueId,
-      stateId,
-    });
-    const resultParsed = linearIssueUpdateResponseSchema.safeParse(resultRaw);
-
-    if (!resultParsed.success) {
-      console.warn(
-        `⚠ Unexpected Linear issueUpdate response: ${resultParsed.error.message}`,
-      );
-      return false;
-    }
-
-    return resultParsed.data.data?.issueUpdate?.success === true;
+    return await executeStateTransition(apiKey, issueId, stateId);
   } catch {
     return false;
   }

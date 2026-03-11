@@ -77,3 +77,10 @@ export const linearIssueUpdateResponseSchema = z.object({
 
 export type LinearIssueNode = z.infer<typeof linearIssueNodeSchema>;
 export type LinearIssuesResponse = z.infer<typeof linearIssuesResponseSchema>;
+export type LinearViewerResponse = z.infer<typeof linearViewerResponseSchema>;
+export type LinearWorkflowStatesResponse = z.infer<
+  typeof linearWorkflowStatesResponseSchema
+>;
+export type LinearIssueUpdateResponse = z.infer<
+  typeof linearIssueUpdateResponseSchema
+>;

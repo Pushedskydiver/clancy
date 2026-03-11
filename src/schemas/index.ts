@@ -13,4 +13,10 @@ export {
   linearViewerResponseSchema,
   linearWorkflowStatesResponseSchema,
 } from './linear.js';
-export type { LinearIssueNode, LinearIssuesResponse } from './linear.js';
+export type {
+  LinearIssueNode,
+  LinearIssueUpdateResponse,
+  LinearIssuesResponse,
+  LinearViewerResponse,
+  LinearWorkflowStatesResponse,
+} from './linear.js';

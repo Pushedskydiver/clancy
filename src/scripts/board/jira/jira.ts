@@ -224,7 +224,8 @@ export async function fetchTicket(env: JiraEnv): Promise<
   // Extract blockers
   const blockers = (fields.issuelinks ?? [])
     .filter((link) => link.type?.name === 'Blocks' && link.inwardIssue?.key)
-    .map((link) => link.inwardIssue!.key!);
+    .map((link) => link.inwardIssue?.key)
+    .filter((key): key is string => Boolean(key));
 
   // Extract epic (next-gen parent OR classic customfield)
   const epicKey = fields.parent?.key ?? fields.customfield_10014 ?? undefined;
