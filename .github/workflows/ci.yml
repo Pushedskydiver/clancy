@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, develop]
   pull_request:
-    branches: [main]
+    branches: [main, develop]
 
 jobs:
   shellcheck:
@@ -27,6 +27,7 @@ jobs:
             test/unit/github.test.sh \
             test/unit/linear.test.sh \
             test/unit/scaffold.test.sh \
+            test/unit/credential-guard.test.sh \
             test/smoke/smoke.sh
 
   unit-tests:
