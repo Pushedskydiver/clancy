@@ -28,6 +28,10 @@
     "clancy": "dist/installer/install.js"
   },
   "main": "dist/installer/install.js",
+  "exports": {
+    "./scripts/once": "./dist/scripts/once/once.js",
+    "./scripts/afk": "./dist/scripts/afk/afk.js"
+  },
   "files": [
     "dist/",
     "hooks/",
