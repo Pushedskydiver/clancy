@@ -2,7 +2,7 @@
 
 **Autonomous, board-driven development for Claude Code.**
 
-[![npm](https://img.shields.io/npm/v/chief-clancy?color=cb3837)](https://www.npmjs.com/package/chief-clancy) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE) [![Tests](https://img.shields.io/badge/tests-34%20passing-brightgreen)](./test/) [![GitHub Stars](https://img.shields.io/github/stars/Pushedskydiver/clancy?style=flat)](https://github.com/Pushedskydiver/clancy/stargazers)
+[![npm](https://img.shields.io/npm/v/chief-clancy?color=cb3837)](https://www.npmjs.com/package/chief-clancy) [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](./LICENSE) [![Tests](https://img.shields.io/badge/tests-51%20passing-brightgreen)](./test/) [![GitHub Stars](https://img.shields.io/github/stars/Pushedskydiver/clancy?style=flat)](https://github.com/Pushedskydiver/clancy/stargazers)
 
 ```bash
 npx chief-clancy
@@ -188,7 +188,7 @@ Clancy also merges a section into your `CLAUDE.md` (or creates one) that tells C
 
 ## Optional enhancements
 
-Set during `/clancy:init` advanced setup, or by editing `.clancy/.env` directly.
+Set during `/clancy:init` advanced setup, or by editing `.clancy/.env` directly. Use `/clancy:settings` → "Save as defaults" to save non-credential settings to `~/.clancy/defaults.json` — new projects created with `/clancy:init` will inherit them automatically.
 
 ### Figma MCP
 
@@ -405,6 +405,8 @@ lsof -ti:5173 | xargs kill -9   # replace 5173 with your PLAYWRIGHT_DEV_PORT
 
 Or directly: `npx chief-clancy@latest`
 
+The update workflow shows what's changed (changelog diff) and asks for confirmation before overwriting. If you've customised any command or workflow files, they're automatically backed up to `.claude/clancy/local-patches/` before the update — check there to reapply your changes afterwards.
+
 ---
 
 **Uninstalling?**
@@ -413,7 +415,7 @@ Or directly: `npx chief-clancy@latest`
 /clancy:uninstall
 ```
 
-Removes slash commands from your chosen location. Optionally removes `.clancy/` (credentials and docs). Never touches `CLAUDE.md`.
+Removes slash commands from your chosen location. Cleans up the `<!-- clancy:start -->` / `<!-- clancy:end -->` block from `CLAUDE.md` (or deletes it entirely if Clancy created it) and removes the `.clancy/.env` entry from `.gitignore`. Optionally removes `.clancy/` (credentials and docs).
 
 ---
 

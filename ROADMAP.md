@@ -4,7 +4,7 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 
 ---
 
-## v0.1.0 — Foundation (current)
+## v0.1.x — Foundation (current)
 
 - `npx chief-clancy` installer
 - Jira, GitHub Issues, Linear board support
@@ -20,13 +20,18 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 - Playwright visual checks with Storybook detection and Figma design compliance comparison
 - Slack/Teams webhook notifications
 - Board registry for community extensibility
+- Patch preservation on update — SHA-256 manifests detect user-modified files, backs them up before overwriting
+- Global defaults — save settings to `~/.clancy/defaults.json`, inherited by new projects
+- `/clancy:update` changelog preview and confirmation before updating
+- `/clancy:uninstall` cleanup of CLAUDE.md markers and .gitignore entries
 
 ---
 
 ## v0.2.0 — Stability and DX
 
-- Jira/Linear ticket status transition after completion — mark ticket done, prevent re-pickup in AFK loops
+- Jira/Linear ticket status transitions — move ticket to In Progress on pickup, Done on completion
 - `--dry-run` flag for `clancy-once.sh` — shows what would be done without doing it
+- Credential guard hook — PreToolUse hook that blocks writing API keys, tokens, and passwords to code files
 - Targeted doc loading — load only relevant `.clancy/docs/` files per ticket rather than all 10 every run (token optimisation)
 - Shellcheck CI for all shell scripts
 - More test fixtures (edge cases discovered post-release)
