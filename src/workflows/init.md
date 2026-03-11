@@ -198,7 +198,7 @@ Common values: To Do, Selected for Development, Ready, Open
 [1] To Do (default)
 [2] Enter a different value
 
-Store as `CLANCY_JQL_STATUS` in `.clancy/.env`. Always wrap the value in double quotes — status names often contain spaces (e.g. `CLANCY_JQL_STATUS="Selected for Development"`) and unquoted values with spaces cause bash parse errors when the file is sourced.
+Store as `CLANCY_JQL_STATUS` in `.clancy/.env`. Always wrap the value in double quotes — status names often contain spaces (e.g. `CLANCY_JQL_STATUS="Selected for Development"`).
 
 ---
 

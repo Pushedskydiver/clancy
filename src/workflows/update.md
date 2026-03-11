@@ -145,7 +145,7 @@ This only touches `.claude/commands/clancy/` and `.claude/clancy/workflows/`. It
 - `.clancy/.env` — credentials
 - `CLAUDE.md`
 
-**To update the shell scripts**, re-run `/clancy:init` — it will detect the existing setup and re-scaffold the scripts without asking for credentials again.
+**To re-scaffold the JS shims**, re-run `/clancy:init` — it will detect the existing setup and re-create `.clancy/clancy-once.js` and `.clancy/clancy-afk.js` without asking for credentials again.
 
 ---
 
