@@ -46,7 +46,6 @@
     "dev": "vitest",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "smoke": "bash test/smoke/smoke.sh",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
