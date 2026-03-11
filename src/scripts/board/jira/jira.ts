@@ -211,7 +211,12 @@ export async function fetchTicket(env: JiraEnv): Promise<
 
   const parsed = jiraSearchResponseSchema.safeParse(await response.json());
 
-  if (!parsed.success || !parsed.data.issues.length) return undefined;
+  if (!parsed.success) {
+    console.warn(`⚠ Unexpected Jira response shape: ${parsed.error.message}`);
+    return undefined;
+  }
+
+  if (!parsed.data.issues.length) return undefined;
 
   const issue = parsed.data.issues[0];
   const fields = issue.fields;
@@ -270,7 +275,12 @@ export async function transitionIssue(
       await transResponse.json(),
     );
 
-    if (!parsed.success) return false;
+    if (!parsed.success) {
+      console.warn(
+        `⚠ Unexpected Jira transitions response: ${parsed.error.message}`,
+      );
+      return false;
+    }
 
     const transition = parsed.data.transitions.find(
       (t) => t.name === statusName,

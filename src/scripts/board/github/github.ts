@@ -120,7 +120,10 @@ export async function fetchIssue(
 
   const parsed = githubIssuesResponseSchema.safeParse(await response.json());
 
-  if (!parsed.success) return undefined;
+  if (!parsed.success) {
+    console.warn(`⚠ Unexpected GitHub response shape: ${parsed.error.message}`);
+    return undefined;
+  }
 
   // Filter out pull requests
   const issues = parsed.data.filter((item) => !item.pull_request);

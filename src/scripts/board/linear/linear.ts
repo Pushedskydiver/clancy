@@ -142,9 +142,12 @@ export async function fetchIssue(env: LinearEnv): Promise<
   const raw = await linearGraphql(env.LINEAR_API_KEY, query, variables);
   const parsed = linearIssuesResponseSchema.safeParse(raw);
 
-  const nodes = parsed.success
-    ? parsed.data.data?.viewer?.assignedIssues?.nodes
-    : undefined;
+  if (!parsed.success) {
+    console.warn(`⚠ Unexpected Linear response shape: ${parsed.error.message}`);
+    return undefined;
+  }
+
+  const nodes = parsed.data.data?.viewer?.assignedIssues?.nodes;
 
   if (!nodes?.length) return undefined;
 
@@ -197,9 +200,14 @@ export async function transitionIssue(
     });
     const stateParsed = linearWorkflowStatesResponseSchema.safeParse(stateRaw);
 
-    const stateId = stateParsed.success
-      ? stateParsed.data.data?.workflowStates?.nodes?.[0]?.id
-      : undefined;
+    if (!stateParsed.success) {
+      console.warn(
+        `⚠ Unexpected Linear workflowStates response: ${stateParsed.error.message}`,
+      );
+      return false;
+    }
+
+    const stateId = stateParsed.data.data?.workflowStates?.nodes?.[0]?.id;
 
     if (!stateId) {
       console.warn(
@@ -223,9 +231,14 @@ export async function transitionIssue(
     });
     const resultParsed = linearIssueUpdateResponseSchema.safeParse(resultRaw);
 
-    return resultParsed.success
-      ? resultParsed.data.data?.issueUpdate?.success === true
-      : false;
+    if (!resultParsed.success) {
+      console.warn(
+        `⚠ Unexpected Linear issueUpdate response: ${resultParsed.error.message}`,
+      );
+      return false;
+    }
+
+    return resultParsed.data.data?.issueUpdate?.success === true;
   } catch {
     return false;
   }
