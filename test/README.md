@@ -2,32 +2,15 @@
 
 ## Unit tests
 
-Unit tests validate the `jq` parsing expressions used in Clancy's shell scripts against fixture JSON files. No live API calls. No credentials required.
+Unit tests use Vitest and validate Clancy's TypeScript modules against fixture JSON files. No live API calls. No credentials required.
 
 ```bash
 # Run all unit tests
 npm test
 
-# Run individual test suites
-bash test/unit/jira.test.sh
-bash test/unit/github.test.sh
-bash test/unit/linear.test.sh
+# Run with coverage
+npx vitest run --coverage
 ```
-
-## Smoke tests
-
-Smoke tests hit real APIs with real credentials. **Manual only** — do not run in CI without secrets configured.
-
-Run from the root of a project that has a valid `.env`:
-
-```bash
-bash test/smoke/smoke.sh
-```
-
-The smoke test checks:
-- Board credentials are valid
-- The project/repo is reachable
-- The search/issues endpoint responds correctly
 
 ## Fixtures
 
@@ -52,14 +35,14 @@ Fixtures live in `test/fixtures/` and cover:
 ## Adding a fixture for a new board
 
 1. Create `test/fixtures/{board}-{scenario}.json` with a representative API response
-2. Add test cases to `test/unit/{board}.test.sh`
+2. Add test cases to the board's co-located test file
 3. Cover at minimum: happy path, empty queue, auth failure
 4. Document the new fixture in this README
 
 ## Adding a new board
 
 See `CONTRIBUTING.md` — adding a board requires:
-1. A shell script in `src/templates/scripts/clancy-once-{board}.sh`
+1. A TypeScript module in `src/scripts/shared/boards/{board}/`
 2. A boards.json entry in `registry/boards.json` (with `author` and `url` — required)
 3. Fixtures in `test/fixtures/{board}-*.json`
-4. A test file at `test/unit/{board}.test.sh`
+4. Co-located test files

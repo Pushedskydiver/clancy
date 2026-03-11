@@ -14,8 +14,7 @@
         "CLANCY_JQL_SPRINT",
         "CLANCY_LABEL",
         "CLANCY_BASE_BRANCH"
-      ],
-      "script": "clancy-once.sh"
+      ]
     },
     {
       "id": "github",
@@ -27,8 +26,7 @@
         "GITHUB_REPO",
         "CLANCY_LABEL",
         "CLANCY_BASE_BRANCH"
-      ],
-      "script": "clancy-once-github.sh"
+      ]
     },
     {
       "id": "linear",
@@ -40,8 +38,7 @@
         "LINEAR_TEAM_ID",
         "CLANCY_LABEL",
         "CLANCY_BASE_BRANCH"
-      ],
-      "script": "clancy-once-linear.sh"
+      ]
     }
   ]
 }

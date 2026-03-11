@@ -1,12 +1,12 @@
 # Contributing to Clancy
 
-Thank you for your interest in contributing. Clancy is intentionally simple — shell scripts, markdown, and JSON. No build step, no transpilation.
+Thank you for your interest in contributing. Clancy uses TypeScript ESM for board modules and shared logic, with markdown commands and JSON configuration.
 
 ## How to contribute
 
 ### Reporting bugs
 
-Open a GitHub issue using the bug report template. Include your board type, OS, and the full script output.
+Open a GitHub issue using the bug report template. Include your board type, OS, and the full output.
 
 ### Suggesting features
 
@@ -17,26 +17,22 @@ Open a GitHub issue using the feature request template. Be specific about what y
 1. Fork the repository
 2. Create a branch: `git checkout -b feat/my-feature`
 3. Make your changes
-4. Run the unit tests: `npm test`
+4. Run the tests: `npm test`
 5. Open a PR using the PR template
 
 ## Adding a new board
 
 Adding board support is the most common contribution. Here's exactly what's needed:
 
-### 1. Shell script
+### 1. Board module
 
-Create `src/templates/scripts/clancy-once-{board}.sh`. Use `clancy-once.sh` (Jira) as your reference.
+Create a TypeScript module at `src/scripts/shared/boards/{board}/{board}.ts`. Use the existing Jira module (`src/scripts/shared/boards/jira/`) as your reference.
 
-Required structure:
-- `#!/usr/bin/env bash` + `set -euo pipefail`
-- Full preflight checks (copy from existing script, adapt credential checks)
-- Board API fetch (one ticket, don't paginate)
-- Create feature branch from `$CLANCY_BASE_BRANCH`
-- Pipe prompt to `claude --dangerously-skip-permissions`
-- Squash merge back to epic branch
-- Delete local ticket branch
-- Log to `.clancy/progress.txt`
+Required exports:
+- `fetch{Board}Issue(env)` — fetch one ticket from the board API
+- Zod schema for the board's env vars in `src/scripts/shared/env-schema/`
+
+The unified orchestrator (`src/scripts/once/once.ts`) handles branching, Claude invocation, merging, and logging — your module only needs to handle board-specific API calls.
 
 ### 2. boards.json entry
 
@@ -48,14 +44,13 @@ Add to `registry/boards.json`. The `author` and `url` fields are **required** �
   "name": "Your Board Name",
   "author": "Company Name",
   "url": "https://your-board.com",
-  "env": ["YOUR_BOARD_TOKEN", "CLANCY_BASE_BRANCH"],
-  "script": "clancy-once-{board}.sh"
+  "env": ["YOUR_BOARD_TOKEN", "CLANCY_BASE_BRANCH"]
 }
 ```
 
 ### 3. .env.example
 
-Create `src/templates/.env.example.{board}` with all required environment variables documented.
+Add the board's `.env.example` content to `src/workflows/scaffold.md` under the `.env.example files` section.
 
 ### 4. Fixtures
 
@@ -66,12 +61,11 @@ Create at minimum:
 
 ### 5. Unit tests
 
-Create `test/unit/{board}.test.sh` covering:
+Create co-located test files (`{board}.test.ts`) covering:
 - Issue count parsing
 - Key/identifier extraction
 - Title/summary extraction
 - Epic/parent extraction (or "none" when absent)
-- Branch name derivation
 - Auth failure detection
 
 ### 6. Update test/README.md
@@ -80,10 +74,10 @@ Document your new fixtures in the table.
 
 ## Style guide
 
-- Shell scripts: POSIX bash, `#!/usr/bin/env bash`, `set -euo pipefail`
+- TypeScript: ESM with `.js` extensions in imports, `zod/mini` for validation
 - JSON: 2-space indentation
 - Markdown: ATX-style headings, fenced code blocks
-- No Node.js dependencies beyond what's already in package.json
+- See `docs/CONVENTIONS.md` for full details
 
 ## Running tests
 
@@ -91,11 +85,11 @@ Document your new fixtures in the table.
 # Unit tests (no credentials required)
 npm test
 
-# Individual suite
-bash test/unit/jira.test.sh
+# Typecheck
+npm run typecheck
 
-# Smoke tests (requires valid .env in a configured project)
-bash test/smoke/smoke.sh
+# Lint
+npm run lint
 ```
 
 ## Questions

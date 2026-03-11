@@ -4,21 +4,20 @@
 
 | Language | Used for |
 |---|---|
-| Bash | Shell scripts (`src/templates/scripts/`), unit tests (`test/unit/`) |
+| TypeScript (ESM) | Board modules (`src/scripts/`), shared utilities, tests (`*.test.ts`) |
 | Node.js (CommonJS) | Installer (`bin/install.js`), hooks (`hooks/`) |
 | Markdown | Commands, workflows, agent prompts, documentation |
 | JSON | Fixtures, board registry, package.json, manifests |
 
-## Shell Scripts
+## TypeScript
 
-- Shebang: `#!/usr/bin/env bash`
-- Always: `set -euo pipefail`
-- Must pass `shellcheck` (enforced by CI)
-- Use `jq` for all JSON parsing — never grep/sed/awk on JSON
-- Use `readonly` for constants and flags after assignment
-- Preflight checks at the top of every script: binary check, `.env` validation, git state, board reachability
-- Quote all variable expansions: `"$VAR"` not `$VAR`
-- Use `jq --arg` for safe JSON construction — never interpolate variables into JSON strings
+- ESM with `NodeNext` module resolution — use `.js` extensions in imports
+- `zod/mini` for runtime validation of env vars and API responses
+- Discriminated unions for board config (`BoardConfig = { provider: 'jira'; env: JiraEnv } | ...`)
+- Co-located tests: `<name>/<name>.ts` + `<name>/<name>.test.ts`
+- Path aliases: `~/` maps to `src/` via `tsc-alias`
+- Vitest as test runner with ~80% coverage thresholds
+- Prefer pure functions — side effects only at the edges (CLI entry points)
 
 ## Node.js (Hooks + Installer)
 
@@ -40,11 +39,12 @@
 
 | Thing | Convention | Example |
 |---|---|---|
-| Shell scripts | `clancy-<name>.sh` | `clancy-once.sh`, `clancy-afk.sh` |
+| TypeScript modules | `<name>/<name>.ts` | `env-schema/env-schema.ts` |
+| Test files | `<name>/<name>.test.ts` | `env-schema/env-schema.test.ts` |
+| JS shims (user project) | `clancy-<name>.js` | `clancy-once.js`, `clancy-afk.js` |
 | Hook files | `clancy-<name>.js` | `clancy-credential-guard.js` |
 | Command files | `<name>.md` | `once.md`, `settings.md` |
 | Workflow files | `<name>.md` | `scaffold.md`, `init.md` |
-| Test files | `<name>.test.sh` | `jira.test.sh`, `credential-guard.test.sh` |
 | Fixture files | `<board>-<scenario>.json` | `jira-happy-path.json`, `github-empty.json` |
 | Env vars | `CLANCY_<NAME>` or `SCREAMING_SNAKE` | `CLANCY_BASE_BRANCH`, `JIRA_API_TOKEN` |
 | Branches | `type/short-description` | `feature/context-monitor` |
@@ -55,10 +55,6 @@
 - One workflow per file in `src/workflows/`
 - Commands and workflows are 1:1 (command references workflow)
 - Agent prompts in `src/agents/` — one per specialist
-- Shell script templates in `src/templates/scripts/`
+- Board modules and shared utilities in `src/scripts/`
 - All hooks in `hooks/` at the project root
 - Test fixtures mirror board names: `jira-*.json`, `github-*.json`, `linear-*.json`
-
-## Scaffold Sync Rule
-
-The `scaffold.md` workflow embeds exact copies of shell scripts and `.env.example` files from `src/templates/`. If you change a source template, you must update the embedded copy in `src/workflows/scaffold.md`. The drift test (`test/unit/scaffold.test.sh`) will catch any divergence.
