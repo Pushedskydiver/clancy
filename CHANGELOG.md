@@ -7,6 +7,37 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.3.0] — Unreleased
+
+### 🔧 Breaking changes
+
+- **Shell scripts replaced by TypeScript** — all four shell scripts (`clancy-once.sh`, `clancy-once-github.sh`, `clancy-once-linear.sh`, `clancy-afk.sh`) are replaced by TypeScript ESM modules. The `.clancy/` shim scripts are now board-agnostic 1-line JS files that `import('chief-clancy/scripts/once')` from the installed package. Board detection happens at runtime from `.clancy/.env`.
+- **Prerequisites changed** — `jq` and `curl` are no longer required. Only `node` (22+) and `git` are needed.
+- **Shellcheck CI removed** — the shellcheck job is removed from CI since there are no more shell scripts.
+- **Bash tests removed** — all `test/unit/*.test.sh` and `test/smoke/smoke.sh` files are replaced by Vitest tests co-located with their modules.
+
+### ✨ New features
+
+- **Unified once orchestrator** (`src/scripts/once/once.ts`) — single TypeScript entry point handles all three boards (Jira, GitHub Issues, Linear). Full lifecycle: preflight → board detection → fetch ticket → branch computation → dry-run gate → status transition → Claude session → squash merge → close/transition → progress log → notification.
+- **Zod env validation** — all board credentials and shared config are validated at startup using `zod/mini` schemas with clear error messages for missing or malformed values.
+- **Discriminated union board config** — `BoardConfig` type (`{ provider: 'jira' | 'github' | 'linear'; env: ... }`) enables exhaustive type checking across all board-specific code paths.
+- **Package exports** — `chief-clancy/scripts/once` and `chief-clancy/scripts/afk` subpath exports allow the JS shims to import directly from the installed package.
+- **Board-agnostic shims** — `.clancy/clancy-once.js` and `.clancy/clancy-afk.js` are identical for all boards. No more board-specific script selection during init or settings changes.
+
+### 📝 Documentation
+
+- **All workflow markdown files updated** — references to shell scripts, `bash`, `chmod +x`, `jq`, and `curl` replaced with TypeScript/Node equivalents throughout all 9 workflow files.
+- **scaffold.md reduced by ~1000 lines** — removed embedded shell scripts (3 board variants × once + afk), replaced with 2 short JS shim blocks.
+- **CONTRIBUTING.md rewritten** — board contribution guide now describes creating TypeScript modules instead of shell scripts.
+- **CONVENTIONS.md rewritten** — language matrix updated from Bash/Node to TypeScript ESM/Node CJS.
+- **PR template updated** — checklist items reference TypeScript modules and co-located tests.
+
+### ⬆️ Upgrading from 0.2.x
+
+Run `/clancy:update` or `npx chief-clancy@latest`. Then re-run `/clancy:init` to replace the old shell script shims with the new JS shims. Your `.clancy/.env`, `.clancy/docs/`, and `CLAUDE.md` are preserved.
+
+---
+
 ## [0.2.0] — 2026-03-09
 
 ### ✨ New features
