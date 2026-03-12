@@ -66,6 +66,11 @@ describe('jira', () => {
       const jql = buildJql('PROJ', 'To Do');
       expect(jql).not.toContain('labels');
     });
+
+    it('does not join ORDER BY with AND', () => {
+      const jql = buildJql('PROJ', 'To Do');
+      expect(jql).not.toContain('AND ORDER BY');
+    });
   });
 
   describe('extractAdfText', () => {

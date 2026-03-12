@@ -92,9 +92,8 @@ export function buildJql(
 
   parts.push(`assignee=currentUser()`);
   parts.push(`status="${status}"`);
-  parts.push('ORDER BY priority ASC');
 
-  return parts.join(' AND ');
+  return parts.join(' AND ') + ' ORDER BY priority ASC';
 }
 
 /**
