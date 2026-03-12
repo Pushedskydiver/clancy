@@ -13,6 +13,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 - **Shell scripts replaced by TypeScript** — all four shell scripts (`clancy-once.sh`, `clancy-once-github.sh`, `clancy-once-linear.sh`, `clancy-afk.sh`) are replaced by TypeScript ESM modules. The `.clancy/` shim scripts are now board-agnostic 1-line JS files that `import('chief-clancy/scripts/once')` from the installed package. Board detection happens at runtime from `.clancy/.env`.
 - **Prerequisites changed** — `jq` and `curl` are no longer required. Only `node` (22+) and `git` are needed.
+- **Windows now natively supported** — WSL is no longer required since all shell scripts have been replaced by cross-platform TypeScript.
 - **Shellcheck CI removed** — the shellcheck job is removed from CI since there are no more shell scripts.
 - **Bash tests removed** — all `test/unit/*.test.sh` and `test/smoke/smoke.sh` files are replaced by Vitest tests co-located with their modules.
 
