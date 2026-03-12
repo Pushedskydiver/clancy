@@ -350,6 +350,18 @@ describe('run', () => {
     expect(mockInvokeClaude).toHaveBeenCalled();
   });
 
+  it('skips feasibility check when --skip-feasibility is passed', async () => {
+    setupJiraHappyPath();
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run(['--skip-feasibility']);
+    log.mockRestore();
+
+    expect(mockCheckFeasibility).not.toHaveBeenCalled();
+    expect(mockEnsureBranch).toHaveBeenCalled();
+    expect(mockInvokeClaude).toHaveBeenCalled();
+  });
+
   it('handles unexpected errors gracefully', async () => {
     mockPreflight.mockImplementation(() => {
       throw new Error('boom');
