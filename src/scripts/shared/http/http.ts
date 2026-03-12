@@ -40,7 +40,15 @@ export async function pingEndpoint(
   networkError: string,
 ): Promise<PingResult> {
   try {
-    const response = await fetch(url, { headers });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10_000);
+
+    const response = await fetch(url, {
+      headers,
+      signal: controller.signal,
+    });
+
+    clearTimeout(timeout);
 
     if (response.ok) return { ok: true };
 

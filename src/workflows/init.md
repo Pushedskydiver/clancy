@@ -32,6 +32,7 @@ Before proceeding, silently run `command -v` for each required binary:
 |---|---|
 | `node` | Install Node.js 22+ (nodejs.org) |
 | `git` | `brew install git` / `apt install git` |
+| `claude` | `npm install -g @anthropic-ai/claude-code` |
 
 If all are present: continue silently.
 

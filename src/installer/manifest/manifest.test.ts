@@ -27,7 +27,7 @@ describe('buildManifest', () => {
 
     const manifest = buildManifest(tmp);
 
-    expect(Object.keys(manifest)).toEqual(['a.md', 'b.md']);
+    expect(Object.keys(manifest).sort()).toEqual(['a.md', 'b.md']);
     expect(manifest['a.md']).toMatch(/^[a-f0-9]{64}$/);
     expect(manifest['b.md']).toMatch(/^[a-f0-9]{64}$/);
     expect(manifest['a.md']).not.toBe(manifest['b.md']);

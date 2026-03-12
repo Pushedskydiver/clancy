@@ -12,11 +12,3 @@ export type Ticket = {
   description: string;
   provider: BoardProvider;
 };
-
-/** Board environment variables common to all providers. */
-export type BoardEnv = {
-  projectUrl: string;
-  apiToken: string;
-  statusInProgress?: string;
-  statusDone?: string;
-};

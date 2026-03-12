@@ -1,4 +1,4 @@
-export type { BoardEnv, BoardProvider, Ticket } from './board.js';
+export type { BoardProvider, Ticket } from './board.js';
 export type {
   BoardConfig,
   GitHubEnv,
