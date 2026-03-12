@@ -2,11 +2,41 @@ name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
+    branches: [main]
 
 jobs:
+  check-version:
+    name: Check for version bump
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.detect.outputs.version }}
+      tag: ${{ steps.detect.outputs.tag }}
+      changed: ${{ steps.detect.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Detect version change
+        id: detect
+        run: |
+          VERSION=$(node -p "require('./package.json').version")
+          TAG="v${VERSION}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+          if git rev-parse "${TAG}" >/dev/null 2>&1; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            echo "Tag ${TAG} already exists — no release needed."
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+            echo "New version detected: ${VERSION}"
+          fi
+
   release:
+    name: Tag, build, and release
+    needs: check-version
+    if: needs.check-version.outputs.changed == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: write
@@ -14,23 +44,49 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Extract changelog for this version
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: rm -rf node_modules package-lock.json && npm install
+
+      - name: Build
+        run: npm run build
+
+      - name: Create tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag "${{ needs.check-version.outputs.tag }}"
+          git push origin "${{ needs.check-version.outputs.tag }}"
+
+      - name: Extract changelog
         id: changelog
         run: |
-          VERSION="${GITHUB_REF_NAME#v}"
-          # Extract the section for this version from CHANGELOG.md
-          # Grabs everything between ## [VERSION] and the next ## heading
+          VERSION="${{ needs.check-version.outputs.version }}"
           NOTES=$(awk "/^## \[${VERSION}\]/{found=1; next} found && /^## \[/{exit} found{print}" CHANGELOG.md)
           if [ -z "$NOTES" ]; then
             NOTES="See [CHANGELOG.md](./CHANGELOG.md) for details."
           fi
-          # Write to file to avoid quoting issues with multiline strings
           echo "$NOTES" > release-notes.txt
 
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release create "$GITHUB_REF_NAME" \
-            --title "$GITHUB_REF_NAME" \
-            --notes-file release-notes.txt
+          TAG="${{ needs.check-version.outputs.tag }}"
+          IS_PRERELEASE=false
+          if echo "$TAG" | grep -qE '(alpha|beta|rc)'; then
+            IS_PRERELEASE=true
+          fi
+
+          PRERELEASE_FLAG=""
+          if [ "$IS_PRERELEASE" = "true" ]; then
+            PRERELEASE_FLAG="--prerelease"
+          fi
+
+          gh release create "$TAG" \
+            --title "$TAG" \
+            --notes-file release-notes.txt \
+            $PRERELEASE_FLAG
