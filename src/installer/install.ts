@@ -166,32 +166,68 @@ function inlineWorkflows(commandsDir: string, workflowsDir: string): void {
 }
 
 // ---------------------------------------------------------------------------
+// CLI flag parsing
+// ---------------------------------------------------------------------------
+
+/**
+ * Parse `--global` / `--local` from process.argv.
+ *
+ * When present the installer runs non-interactively — no prompts are shown.
+ * This is used by the `/clancy:update` workflow so the update can run
+ * without user interaction.
+ */
+function parseInstallFlag(): 'global' | 'local' | null {
+  const args = process.argv.slice(2);
+
+  if (args.includes('--global')) return 'global';
+  if (args.includes('--local')) return 'local';
+
+  return null;
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
 async function main(): Promise<void> {
-  printBanner();
+  const flag = parseInstallFlag();
+  const nonInteractive = flag !== null;
 
-  const installChoice = await choose('Where would you like to install?', [
-    `Global  ${dim('(~/.claude)')}   — available in all projects`,
-    `Local   ${dim('(./.claude)')}  — this project only`,
-  ]);
+  printBanner();
 
   let dest: string;
   let workflowsDest: string;
 
-  if (installChoice === '1' || installChoice.toLowerCase() === 'global') {
+  if (flag === 'global') {
     dest = GLOBAL_DEST;
     workflowsDest = GLOBAL_WORKFLOWS_DEST;
-  } else if (installChoice === '2' || installChoice.toLowerCase() === 'local') {
+    console.log(dim('  Mode: global (--global flag)'));
+  } else if (flag === 'local') {
     dest = LOCAL_DEST;
     workflowsDest = LOCAL_WORKFLOWS_DEST;
+    console.log(dim('  Mode: local (--local flag)'));
   } else {
-    console.log(
-      red('\n  Invalid choice. Run npx chief-clancy again and enter 1 or 2.'),
-    );
-    closePrompts();
-    process.exit(1);
+    const installChoice = await choose('Where would you like to install?', [
+      `Global  ${dim('(~/.claude)')}   — available in all projects`,
+      `Local   ${dim('(./.claude)')}  — this project only`,
+    ]);
+
+    if (installChoice === '1' || installChoice.toLowerCase() === 'global') {
+      dest = GLOBAL_DEST;
+      workflowsDest = GLOBAL_WORKFLOWS_DEST;
+    } else if (
+      installChoice === '2' ||
+      installChoice.toLowerCase() === 'local'
+    ) {
+      dest = LOCAL_DEST;
+      workflowsDest = LOCAL_WORKFLOWS_DEST;
+    } else {
+      console.log(
+        red('\n  Invalid choice. Run npx chief-clancy again and enter 1 or 2.'),
+      );
+      closePrompts();
+      process.exit(1);
+    }
   }
 
   // Validate source directories — guards against corrupted npm package
@@ -261,14 +297,22 @@ async function main(): Promise<void> {
         console.log('');
       }
 
-      const overwrite = await ask(
-        blue(`  Commands already exist at ${dest}. Overwrite? [y/N] `),
-      );
+      if (nonInteractive) {
+        console.log(
+          dim(
+            '  Auto-overwriting existing installation (non-interactive mode).',
+          ),
+        );
+      } else {
+        const overwrite = await ask(
+          blue(`  Commands already exist at ${dest}. Overwrite? [y/N] `),
+        );
 
-      if (!overwrite.trim().toLowerCase().startsWith('y')) {
-        console.log('\n  Aborted. No files changed.');
-        closePrompts();
-        process.exit(0);
+        if (!overwrite.trim().toLowerCase().startsWith('y')) {
+          console.log('\n  Aborted. No files changed.');
+          closePrompts();
+          process.exit(0);
+        }
       }
 
       if (allModified.length > 0) {

@@ -133,13 +133,21 @@ Ask the user: **"Proceed with update?"** with options:
 
 ## Step 4 — Run the update
 
-Run the installer using the detected install type:
+Run the installer using the detected install type from Step 1. Pass `--global` or `--local` so the installer runs non-interactively (no prompts):
+
+- If `INSTALL_TYPE` is `LOCAL`: `npx -y chief-clancy@latest --local`
+- If `INSTALL_TYPE` is `GLOBAL`: `npx -y chief-clancy@latest --global`
+- If `INSTALL_TYPE` is `UNKNOWN`: `npx -y chief-clancy@latest` (falls back to interactive mode)
 
 ```bash
-npx -y chief-clancy@latest
+# Example for local install:
+npx -y chief-clancy@latest --local
+
+# Example for global install:
+npx -y chief-clancy@latest --global
 ```
 
-The installer auto-detects whether to install globally or locally based on the existing install.
+The `--global`/`--local` flags skip the interactive install-type prompt and auto-accept the overwrite confirmation.
 
 This touches:
 - `.claude/commands/clancy/` — slash commands (replaced)
