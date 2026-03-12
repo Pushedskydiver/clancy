@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { describe, expect, it, vi } from 'vitest';
 
 import { binaryExists, isGitRepo } from './preflight.js';
@@ -6,18 +6,18 @@ import { binaryExists, isGitRepo } from './preflight.js';
 vi.mock('node:child_process');
 vi.mock('node:fs');
 
-const mockExecSync = vi.mocked(execSync);
+const mockExecFileSync = vi.mocked(execFileSync);
 
 describe('preflight', () => {
   describe('binaryExists', () => {
     it('returns true when binary is found', () => {
-      mockExecSync.mockReturnValue(Buffer.from(''));
+      mockExecFileSync.mockReturnValue(Buffer.from(''));
 
       expect(binaryExists('git')).toBe(true);
     });
 
     it('returns false when binary is not found', () => {
-      mockExecSync.mockImplementation(() => {
+      mockExecFileSync.mockImplementation(() => {
         throw new Error('not found');
       });
 
@@ -27,13 +27,13 @@ describe('preflight', () => {
 
   describe('isGitRepo', () => {
     it('returns true inside a git repo', () => {
-      mockExecSync.mockReturnValue(Buffer.from('.git'));
+      mockExecFileSync.mockReturnValue(Buffer.from('.git'));
 
       expect(isGitRepo()).toBe(true);
     });
 
     it('returns false outside a git repo', () => {
-      mockExecSync.mockImplementation(() => {
+      mockExecFileSync.mockImplementation(() => {
         throw new Error('not a git repo');
       });
 
