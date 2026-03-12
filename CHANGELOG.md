@@ -7,6 +7,14 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.3.6] — 2026-03-12
+
+### ✨ Features
+
+- **Feasibility check before branch creation** — The once orchestrator now runs a lightweight Claude evaluation before creating branches or transitioning tickets. If a ticket requires external tools, manual testing, or non-code work, it is skipped cleanly with no dangling branches or stuck tickets. Fails open — if Claude is unavailable, the ticket proceeds normally.
+
+---
+
 ## [0.3.5] — 2026-03-12
 
 ### 🐛 Bug fixes

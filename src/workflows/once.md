@@ -83,11 +83,18 @@ Stream output directly — do not buffer or summarise.
 
 ## Step 3 — Result
 
-On success, echo the result line from the script output:
+On success (output contains `complete`), echo:
 ```
 ✅ {TICKET-KEY} complete.
 
 "That's some fine police work there, Lou."
+```
+
+On skip (output contains `Ticket skipped`), echo:
+```
+⏭️ {TICKET-KEY} skipped — {reason from output}.
+
+"Not on my watch." — The ticket requires work that Clancy can't do as code changes. A human should handle this one.
 ```
 
 On failure:
