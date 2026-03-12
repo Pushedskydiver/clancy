@@ -252,7 +252,7 @@ clancy-afk.js
          7. git checkout $EPIC_BRANCH
          8. git merge --squash feature/{ticket-key}
          9. git commit -m "feat(TICKET): summary"
-        10. git branch -d feature/{ticket-key}
+        10. git branch -D feature/{ticket-key}
         11. Append to .clancy/progress.txt
        if "No tickets found": break
 ```

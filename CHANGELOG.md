@@ -24,6 +24,14 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - **Package exports** — `chief-clancy/scripts/once` and `chief-clancy/scripts/afk` subpath exports allow the JS shims to import directly from the installed package.
 - **Board-agnostic shims** — `.clancy/clancy-once.js` and `.clancy/clancy-afk.js` are identical for all boards. No more board-specific script selection during init or settings changes.
 
+### 🐛 Bug fixes
+
+- **Claude exit code check** — `invokeClaudeSession` now returns a `boolean` based on exit status. The orchestrator skips squash merge when Claude exits with an error, preventing empty or broken merges.
+- **Linear label filtering relaxed** — removed overly restrictive `SAFE_ID_PATTERN` regex that rejected labels containing spaces or special characters. Labels are now trimmed and passed directly as GraphQL variables (inherently safe).
+- **GitHub label parameter** — `fetchIssue` now accepts a configurable `label` parameter instead of hardcoding `'clancy'`, respecting the `CLANCY_LABEL` env var.
+- **GitHub `per_page` bumped** — increased from 3 to 10 to reduce the chance of missing eligible issues when PRs (which the API returns alongside issues) consume result slots.
+- **Force delete after squash merge** — `deleteBranch` now uses `git branch -D` instead of `-d`, since squash-merged branches are never seen as "merged" by git.
+
 ### 📝 Documentation
 
 - **All workflow markdown files updated** — references to shell scripts, `bash`, `chmod +x`, `jq`, and `curl` replaced with TypeScript/Node equivalents throughout all 9 workflow files.
