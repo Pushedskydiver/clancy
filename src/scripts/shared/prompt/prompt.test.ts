@@ -89,7 +89,9 @@ describe('buildPrompt', () => {
     });
 
     expect(prompt).toContain('⚠ Skipping [PROJ-123]');
-    expect(prompt).toContain('YYYY-MM-DD HH:MM | PROJ-123 | SKIPPED');
+    expect(prompt).toContain(
+      'YYYY-MM-DD HH:MM | PROJ-123 | {reason} | SKIPPED',
+    );
   });
 
   it('includes doc reading instructions', () => {

@@ -86,7 +86,7 @@ CLAUDE.md for the full list of skip conditions.
 If you must SKIP this ${input.provider === 'github' ? 'issue' : 'ticket'}:
 1. Output: ⚠ Skipping [${input.key}]: {one-line reason}
 2. Output: Ticket skipped — update it to be codebase-only work, then re-run.
-3. Append to .clancy/progress.txt: YYYY-MM-DD HH:MM | ${input.key} | SKIPPED | {reason}
+3. Append to .clancy/progress.txt: YYYY-MM-DD HH:MM | ${input.key} | {reason} | SKIPPED
 4. Stop — no branches, no file changes, no git operations.
 
 If the ${input.provider === 'github' ? 'issue' : 'ticket'} IS implementable, continue:
