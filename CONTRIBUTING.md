@@ -26,11 +26,11 @@ Adding board support is the most common contribution. Here's exactly what's need
 
 ### 1. Board module
 
-Create a TypeScript module at `src/scripts/shared/boards/{board}/{board}.ts`. Use the existing Jira module (`src/scripts/shared/boards/jira/`) as your reference.
+Create a TypeScript module at `src/scripts/board/{board}/{board}.ts`. Use the existing Jira module (`src/scripts/board/jira/`) as your reference.
 
 Required exports:
 - `fetch{Board}Issue(env)` — fetch one ticket from the board API
-- Zod schema for the board's env vars in `src/scripts/shared/env-schema/`
+- Zod schema for the board's env vars in `src/schemas/`
 
 The unified orchestrator (`src/scripts/once/once.ts`) handles branching, Claude invocation, merging, and logging — your module only needs to handle board-specific API calls.
 
@@ -52,25 +52,14 @@ Add to `registry/boards.json`. The `author` and `url` fields are **required** �
 
 Add the board's `.env.example` content to `src/workflows/scaffold.md` under the `.env.example files` section.
 
-### 4. Fixtures
+### 4. Unit tests
 
-Create at minimum:
-- `test/fixtures/{board}-happy-path.json` — one ticket, all fields populated
-- `test/fixtures/{board}-empty.json` — empty queue response
-- `test/fixtures/{board}-auth-failure.json` — authentication error response
-
-### 5. Unit tests
-
-Create co-located test files (`{board}.test.ts`) covering:
+Create co-located test files (`{board}/{board}.test.ts`) covering:
 - Issue count parsing
 - Key/identifier extraction
 - Title/summary extraction
 - Epic/parent extraction (or "none" when absent)
 - Auth failure detection
-
-### 6. Update test/README.md
-
-Document your new fixtures in the table.
 
 ## Style guide
 

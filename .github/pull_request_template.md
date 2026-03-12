@@ -12,21 +12,18 @@
 
 ## Checklist
 
-- [ ] Unit tests added or updated
-- [ ] Fixtures added if new board or new API response shape (`test/fixtures/`)
+- [ ] Unit tests added or updated (co-located `<name>.test.ts`)
 - [ ] `boards.json` updated if adding a board (with `author` and `url` — required)
 - [ ] CHANGELOG.md updated
 - [ ] README.md updated if commands or workflow changed
 
 ## New board checklist (if applicable)
 
-- [ ] TypeScript module created in `src/scripts/shared/boards/{board}/`
-- [ ] Env schema added to `src/scripts/shared/env-schema/`
+- [ ] TypeScript module created in `src/scripts/board/{board}/`
+- [ ] Env schema added to `src/schemas/`
 - [ ] `registry/boards.json` entry added (with `author` and `url`)
 - [ ] `.env.example` content added to `src/workflows/scaffold.md`
-- [ ] Fixtures: `test/fixtures/{board}-happy-path.json`, `{board}-empty.json`, `{board}-auth-failure.json`
-- [ ] Co-located unit tests
-- [ ] `test/README.md` updated with fixture descriptions
+- [ ] Co-located unit tests (`{board}.test.ts`)
 
 ## Testing
 

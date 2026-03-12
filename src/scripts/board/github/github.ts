@@ -83,15 +83,22 @@ export function slugifyMilestone(title: string): string {
 export async function fetchIssue(
   token: string,
   repo: string,
-  label = 'clancy',
+  label?: string,
 ): Promise<(Ticket & { milestone?: string }) | undefined> {
   let response: Response;
 
+  const params = new URLSearchParams({
+    state: 'open',
+    assignee: '@me',
+    per_page: '10',
+  });
+
+  if (label) params.set('labels', label);
+
   try {
-    response = await fetch(
-      `${GITHUB_API}/repos/${repo}/issues?state=open&assignee=@me&labels=${encodeURIComponent(label)}&per_page=10`,
-      { headers: githubHeaders(token) },
-    );
+    response = await fetch(`${GITHUB_API}/repos/${repo}/issues?${params}`, {
+      headers: githubHeaders(token),
+    });
   } catch (err) {
     console.warn(
       `⚠ GitHub API request failed: ${err instanceof Error ? err.message : String(err)}`,

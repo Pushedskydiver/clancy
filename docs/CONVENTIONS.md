@@ -7,7 +7,7 @@
 | TypeScript (ESM) | Board modules (`src/scripts/`), shared utilities, tests (`*.test.ts`) |
 | Node.js (CommonJS) | Hooks (`hooks/`) — pre-built, not compiled from TS |
 | Markdown | Commands, workflows, agent prompts, documentation |
-| JSON | Fixtures, board registry, package.json, manifests |
+| JSON | Board registry, package.json, tsconfig |
 
 ## TypeScript
 
@@ -46,7 +46,6 @@
 | Hook files | `clancy-<name>.js` | `clancy-credential-guard.js` |
 | Command files | `<name>.md` | `once.md`, `settings.md` |
 | Workflow files | `<name>.md` | `scaffold.md`, `init.md` |
-| Fixture files | `<board>-<scenario>.json` | `jira-happy-path.json`, `github-empty.json` |
 | Env vars | `CLANCY_<NAME>` or `SCREAMING_SNAKE` | `CLANCY_BASE_BRANCH`, `JIRA_API_TOKEN` |
 | Branches | `type/short-description` | `feature/context-monitor` |
 
@@ -58,4 +57,3 @@
 - Agent prompts in `src/agents/` — one per specialist
 - Board modules and shared utilities in `src/scripts/`
 - All hooks in `hooks/` at the project root
-- Test fixtures mirror board names: `jira-*.json`, `github-*.json`, `linear-*.json`
