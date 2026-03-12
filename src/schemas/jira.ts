@@ -26,7 +26,8 @@ const jiraIssueSchema = z.object({
 
 /** Response from `POST /rest/api/3/search/jql`. */
 export const jiraSearchResponseSchema = z.object({
-  total: z.number(),
+  total: z.optional(z.number()),
+  isLast: z.optional(z.boolean()),
   issues: z.array(jiraIssueSchema),
 });
 
