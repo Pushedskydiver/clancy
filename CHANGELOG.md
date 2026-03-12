@@ -7,6 +7,19 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.4.0] — 2026-03-12
+
+### ♻️ Refactor
+
+- **Architecture refactor — role-based source structure** — commands and workflows are now organized by role under `src/roles/{planner,implementer,reviewer,setup}/`. The installer walks each role's `commands/` and `workflows/` subdirectories and merges them into the same flat output directories (`.claude/commands/clancy/` and `.claude/clancy/workflows/`), preserving all existing `/clancy:*` command names. No functional changes — all commands work identically.
+
+### 📝 Documentation
+
+- **Role-grouped help** — `/clancy:help` now displays commands grouped by role (Implementer, Reviewer, Setup & Maintenance) instead of a flat list.
+- **Updated architecture docs** — `ARCHITECTURE.md`, `CONVENTIONS.md`, `CONTRIBUTING.md`, and `CLAUDE.md` updated to reflect the new `src/roles/` structure.
+
+---
+
 ## [0.3.9] — 2026-03-12
 
 ### ⚡️ Performance
