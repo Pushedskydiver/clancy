@@ -63,6 +63,12 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 
 ---
 
+## v0.5.0 — Visual verification
+
+- Playwright CLI integration — token-efficient alternative to Playwright MCP for visual checks. Init wizard offers CLI (recommended) or MCP mode. CLI uses `playwright-cli` commands (navigate, screenshot) instead of writing test scripts, with session isolation per ticket
+
+---
+
 ## v1.0.0 — Production-ready
 
 - Stable API — no breaking changes to command signatures after this
@@ -70,7 +76,6 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 - Polished init wizard with auto-detection for common setups
 - Complete documentation site
 - npm package integrity checks
-- Playwright CLI integration — token-efficient alternative to Playwright MCP for visual checks. Init wizard offers CLI (recommended) or MCP mode. CLI uses `playwright-cli` commands (navigate, screenshot) instead of writing test scripts, with session isolation per ticket
 
 ---
 
