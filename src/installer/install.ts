@@ -108,13 +108,6 @@ function printSuccess(): void {
 
   const groups: [string, [string, string][]][] = [
     [
-      'Planner',
-      [
-        ['/clancy:plan', 'Refine backlog tickets into plans (v0.5.0)'],
-        ['/clancy:approve', 'Promote plan to ticket description (v0.5.0)'],
-      ],
-    ],
-    [
       'Implementer',
       [
         ['/clancy:once', 'Pick up one ticket and stop'],
