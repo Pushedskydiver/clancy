@@ -90,7 +90,7 @@ Display (only if the high-iteration warning was not already shown):
 🚨 Clancy — Run
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-"All right, boys. Let's do this." — Processing up to {N} ticket(s). Ctrl+C to stop early.
+"All right, let's do this." — Processing up to {N} ticket(s). Ctrl+C to stop early.
 ```
 
 ---

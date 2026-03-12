@@ -85,7 +85,7 @@ export async function runAfkLoop(
   );
   console.log(
     dim('│') +
-      dim('  "I\'m on it, boys. Proceed to the abandoned warehouse." ') +
+      dim('  "I\'m on it. Proceed to the abandoned warehouse."      ') +
       dim('│'),
   );
   console.log(
@@ -151,6 +151,6 @@ export async function runAfkLoop(
     green(`🏁 Completed ${maxIterations} iterations`) +
       dim(` (${totalElapsed})`),
   );
-  console.log(dim('  "That\'s some good police work, boys."'));
+  console.log(dim('  "That\'s some good police work."'));
   console.log(dim('  Run clancy-afk again to continue.'));
 }
