@@ -52,7 +52,45 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 
 ---
 
-## v0.4.0 — Board ecosystem
+## v0.4.0 — Architecture refactor
+
+- Formalize roles: Planner, Implementer, Reviewer, Setup & Maintenance
+- Restructure project source by role (`src/roles/{planner,implementer,reviewer,setup}/`)
+- Role-grouped output in user projects (`.claude/commands/clancy/planner/`, `.claude/commands/clancy/implementer/`, etc.)
+- Role-grouped `/clancy:help` output
+- Role-grouped `/clancy:settings` menu (pick a role, then see its settings)
+- Role labels in progress log entries (`PLAN`, `APPROVE`, `ONCE`, `REVIEW`)
+- Update installer to walk role directories and clean up old flat structure on update
+- No functional changes — existing commands work identically, tests validate the migration
+
+---
+
+## v0.5.0 — Planner role
+
+- `/clancy:plan` — fetch backlog tickets, explore codebase, generate structured implementation plans, post as comments to the board
+- `/clancy:approve` — promote an approved plan to the ticket description (with confirmation prompt)
+- Board write-back for all 3 boards: Jira (ADF comments), GitHub (Markdown comments), Linear (GraphQL comments)
+- Feedback loop: `--force` re-plans by reading PO/team feedback comments from the board
+- Batch mode: `/clancy:plan N` plans up to N tickets (max 10)
+- Pre-exploration feasibility scan — skips non-codebase tickets from title alone before exploring files
+- QA return detection — checks progress log for previously-implemented tickets, focuses plan on what needs fixing
+- Figma design context — fetches Figma specs when ticket contains a URL (uses existing integration)
+- Parallel Explore subagents for M/L tickets (2-3 agents, same pattern as `/clancy:map-codebase`)
+- Dependency detection: blocking tickets, external APIs, unfinished designs, library upgrades
+- Plan template: Summary, Acceptance Criteria, Technical Approach, Affected Files, Edge Cases, Test Plan, Dependencies, Size Estimate (S/M/L)
+- New env vars: `CLANCY_PLAN_STATUS`, `CLANCY_PLAN_LABEL`, `CLANCY_PLAN_STATE_TYPE`
+
+---
+
+## v0.6.0 — Visual verification
+
+- Playwright CLI integration — token-efficient alternative to Playwright MCP for visual checks. Init wizard offers CLI (recommended) or MCP mode. CLI uses `playwright-cli` commands (navigate, screenshot) instead of writing test scripts, with session isolation per ticket
+- Lighthouse CI — optional enhancement to audit performance, accessibility, SEO, and best practices after UI ticket implementation. Returns a focused score summary, pairs with Playwright CLI for screenshot + audit in one pass
+- axe-core CLI — optional enhancement for automated accessibility testing after UI changes. Verifies against `.clancy/docs/ACCESSIBILITY.md` conventions with specific violation reporting
+
+---
+
+## v0.7.0 — Board ecosystem
 
 - Community board contributions
 - Shortcut (formerly Clubhouse) support
@@ -60,14 +98,6 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 - Azure DevOps support
 - Board auto-detection: Clancy detects which board is configured without asking
 - `/clancy:reapply-patches` — guided restore of user-modified files backed up during updates
-
----
-
-## v0.5.0 — Visual verification
-
-- Playwright CLI integration — token-efficient alternative to Playwright MCP for visual checks. Init wizard offers CLI (recommended) or MCP mode. CLI uses `playwright-cli` commands (navigate, screenshot) instead of writing test scripts, with session isolation per ticket
-- Lighthouse CI — optional enhancement to audit performance, accessibility, SEO, and best practices after UI ticket implementation. Returns a focused score summary, pairs with Playwright CLI for screenshot + audit in one pass
-- axe-core CLI — optional enhancement for automated accessibility testing after UI changes. Verifies against `.clancy/docs/ACCESSIBILITY.md` conventions with specific violation reporting
 
 ---
 
