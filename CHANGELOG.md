@@ -7,6 +7,71 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.3.0] — Unreleased
+
+### 🔧 Breaking changes
+
+- **Shell scripts replaced by TypeScript** — all four shell scripts (`clancy-once.sh`, `clancy-once-github.sh`, `clancy-once-linear.sh`, `clancy-afk.sh`) are replaced by TypeScript ESM modules. The `.clancy/` shim scripts are now board-agnostic 1-line JS files that `import('chief-clancy/scripts/once')` from the installed package. Board detection happens at runtime from `.clancy/.env`.
+- **Prerequisites changed** — `jq` and `curl` are no longer required. Only `node` (22+) and `git` are needed.
+- **Windows now natively supported** — WSL is no longer required since all shell scripts have been replaced by cross-platform TypeScript.
+- **Shellcheck CI removed** — the shellcheck job is removed from CI since there are no more shell scripts.
+- **Bash tests removed** — all `test/unit/*.test.sh` and `test/smoke/smoke.sh` files are replaced by Vitest tests co-located with their modules.
+
+### ✨ New features
+
+- **Unified once orchestrator** (`src/scripts/once/once.ts`) — single TypeScript entry point handles all three boards (Jira, GitHub Issues, Linear). Full lifecycle: preflight → board detection → fetch ticket → branch computation → dry-run gate → status transition → Claude session → squash merge → close/transition → progress log → notification.
+- **Zod env validation** — all board credentials and shared config are validated at startup using `zod/mini` schemas with clear error messages for missing or malformed values.
+- **Discriminated union board config** — `BoardConfig` type (`{ provider: 'jira' | 'github' | 'linear'; env: ... }`) enables exhaustive type checking across all board-specific code paths.
+- **Package exports** — `chief-clancy/scripts/once` and `chief-clancy/scripts/afk` subpath exports allow the JS shims to import directly from the installed package.
+- **Board-agnostic shims** — `.clancy/clancy-once.js` and `.clancy/clancy-afk.js` are identical for all boards. No more board-specific script selection during init or settings changes.
+
+### 🐛 Bug fixes
+
+- **Claude exit code check** — `invokeClaudeSession` now returns a `boolean` based on exit status. The orchestrator skips squash merge when Claude exits with an error, preventing empty or broken merges.
+- **Linear label filtering relaxed** — removed overly restrictive `SAFE_ID_PATTERN` regex that rejected labels containing spaces or special characters. Labels are now trimmed and passed directly as GraphQL variables (inherently safe).
+- **GitHub label parameter** — `fetchIssue` now accepts a configurable `label` parameter instead of hardcoding `'clancy'`, respecting the `CLANCY_LABEL` env var.
+- **GitHub `per_page` bumped** — increased from 3 to 10 to reduce the chance of missing eligible issues when PRs (which the API returns alongside issues) consume result slots.
+- **Force delete after squash merge** — `deleteBranch` now uses `git branch -D` instead of `-d`, since squash-merged branches are never seen as "merged" by git.
+
+### 📝 Documentation
+
+- **All workflow markdown files updated** — references to shell scripts, `bash`, `chmod +x`, `jq`, and `curl` replaced with TypeScript/Node equivalents throughout all 9 workflow files.
+- **scaffold.md reduced by ~1000 lines** — removed embedded shell scripts (3 board variants × once + afk), replaced with 2 short JS shim blocks.
+- **CONTRIBUTING.md rewritten** — board contribution guide now describes creating TypeScript modules instead of shell scripts.
+- **CONVENTIONS.md rewritten** — language matrix updated from Bash/Node to TypeScript ESM/Node CJS.
+- **PR template updated** — checklist items reference TypeScript modules and co-located tests.
+- **README** — updated permissions TIP (`curl` → `node`), stale references cleaned up.
+- **CLAUDE.md, ARCHITECTURE.md, TESTING.md** — fully rewritten for TypeScript codebase.
+
+### ⬆️ Upgrading from 0.2.x
+
+```bash
+# 1. Update Clancy commands
+npx chief-clancy@latest
+
+# 2. Replace old shell shims with new JS shims
+/clancy:init
+```
+
+**What changes:**
+- `.clancy/clancy-once.sh` (board-specific) → `.clancy/clancy-once.js` (board-agnostic)
+- `.clancy/clancy-afk.sh` → `.clancy/clancy-afk.js`
+- `jq` and `curl` are no longer required — only `node` (22+) and `git`
+
+**What's preserved:**
+- `.clancy/.env` — no credential changes needed, same env var format
+- `.clancy/docs/` — all 10 codebase docs are untouched
+- `CLAUDE.md` — the Clancy section is updated in place
+- `.clancy/progress.txt` — your run history is preserved
+
+**After upgrading:** you can safely delete any leftover `.sh` files in `.clancy/`:
+
+```bash
+rm -f .clancy/clancy-once.sh .clancy/clancy-once-github.sh .clancy/clancy-once-linear.sh .clancy/clancy-afk.sh
+```
+
+---
+
 ## [0.2.0] — 2026-03-09
 
 ### ✨ New features

@@ -43,12 +43,16 @@ Each agent is defined in `src/agents/`. Pass the agent the full path to the docs
 
 Tell the user agents are running:
 ```
-Scanning codebase with 5 parallel agents...
-  tech     → STACK.md, INTEGRATIONS.md
-  arch     → ARCHITECTURE.md
-  quality  → CONVENTIONS.md, TESTING.md, GIT.md, DEFINITION-OF-DONE.md
-  design   → DESIGN-SYSTEM.md, ACCESSIBILITY.md
-  concerns → CONCERNS.md
+🚨 Clancy — Map Codebase
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+"Sending in the task force..." — 5 agents deployed.
+
+  🔍 tech     → STACK.md, INTEGRATIONS.md
+  🔍 arch     → ARCHITECTURE.md
+  🔍 quality  → CONVENTIONS.md, TESTING.md, GIT.md, DEFINITION-OF-DONE.md
+  🔍 design   → DESIGN-SYSTEM.md, ACCESSIBILITY.md
+  🔍 concerns → CONCERNS.md
 ```
 
 ---
@@ -57,11 +61,11 @@ Scanning codebase with 5 parallel agents...
 
 Each agent returns a brief confirmation when done. Display as they complete:
 ```
-  ✓ tech agent complete
-  ✓ arch agent complete
-  ✓ quality agent complete
-  ✓ design agent complete
-  ✓ concerns agent complete
+  ✅ tech agent complete
+  ✅ arch agent complete
+  ✅ quality agent complete
+  ✅ design agent complete
+  ✅ concerns agent complete
 ```
 
 ---
@@ -102,12 +106,9 @@ git commit -m "docs(clancy): map codebase — generate .clancy/docs/"
 ## Step 7 — Final message
 
 ```
-Codebase mapped. Clancy is ready.
+✅ Codebase mapped — 10 files written to .clancy/docs/
 
-Docs written to .clancy/docs/ (10 files)
-
-Run /clancy:once to pick up your first ticket.
-Run /clancy:run to process the full queue.
+"Case closed. All files accounted for." — Run /clancy:once to pick up your first ticket, or /clancy:run to process the queue.
 ```
 
 ---

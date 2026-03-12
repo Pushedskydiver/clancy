@@ -12,21 +12,18 @@
 
 ## Checklist
 
-- [ ] Unit tests added or updated (`test/unit/`)
-- [ ] Fixtures added if new board or new API response shape (`test/fixtures/`)
-- [ ] Shell scripts are POSIX-compliant (`#!/usr/bin/env bash`, `set -euo pipefail`)
+- [ ] Unit tests added or updated (co-located `<name>.test.ts`)
 - [ ] `boards.json` updated if adding a board (with `author` and `url` — required)
 - [ ] CHANGELOG.md updated
 - [ ] README.md updated if commands or workflow changed
 
 ## New board checklist (if applicable)
 
-- [ ] `src/templates/scripts/clancy-once-{board}.sh` created
+- [ ] TypeScript module created in `src/scripts/board/{board}/`
+- [ ] Env schema added to `src/schemas/`
 - [ ] `registry/boards.json` entry added (with `author` and `url`)
-- [ ] `.env.example.{board}` created in `src/templates/`
-- [ ] Fixtures: `test/fixtures/{board}-happy-path.json`, `{board}-empty.json`, `{board}-auth-failure.json`
-- [ ] Unit tests: `test/unit/{board}.test.sh`
-- [ ] `test/README.md` updated with fixture descriptions
+- [ ] `.env.example` content added to `src/workflows/scaffold.md`
+- [ ] Co-located unit tests (`{board}.test.ts`)
 
 ## Testing
 

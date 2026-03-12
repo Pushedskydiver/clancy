@@ -4,7 +4,7 @@ Before doing anything else, check for updates:
 
 1. Run: `npm show chief-clancy version`
 2. Read the installed version from the Clancy `package.json`
-3. If a newer version exists, print: `ℹ Clancy v{current} → v{latest} available. Run /clancy:update to upgrade.` then continue normally.
+3. If a newer version exists, print: `ℹ️ Clancy v{current} → v{latest} available. Run /clancy:update to upgrade.` then continue normally.
 4. If already on latest, continue silently.
 5. If the npm check fails for any reason (offline, network error), continue silently. Never block on this.
 
@@ -22,7 +22,7 @@ Diagnose your Clancy setup — test every configured integration and report what
 
 - Verify Clancy commands are installed (`.claude/commands/clancy/` or `~/.claude/commands/clancy/`)
 - Read installed version from `package.json` in the commands directory
-- Print: `✓ Clancy v{version} installed ({location})`
+- Print: `✅ Clancy v{version} installed ({location})`
 
 ---
 
@@ -32,24 +32,23 @@ Test each required binary:
 
 | Binary | Check | Fix hint |
 |---|---|---|
-| `jq` | `command -v jq` | `brew install jq` / `apt install jq` |
-| `curl` | `command -v curl` | Install curl for your OS |
+| `node` | `command -v node` | Install Node.js 22+ |
 | `git` | `command -v git` | Install git for your OS |
 
-Print `✓` or `✗` for each.
+Print `✅` or `❌` for each.
 
 ---
 
 ## Step 3 — Check project setup
 
-- `.clancy/` exists → `✓ .clancy/ found`
-- `.clancy/clancy-once.sh` exists and is executable → `✓ clancy-once.sh`
-- `.clancy/clancy-afk.sh` exists and is executable → `✓ clancy-afk.sh`
-- `.clancy/.env` exists → `✓ .clancy/.env found`
-- `.clancy/docs/` has non-empty files → `✓ codebase docs present ({N} files)`
+- `.clancy/` exists → `✅ .clancy/ found`
+- `.clancy/clancy-once.js` exists → `✅ clancy-once.js`
+- `.clancy/clancy-afk.js` exists → `✅ clancy-afk.js`
+- `.clancy/.env` exists → `✅ .clancy/.env found`
+- `.clancy/docs/` has non-empty files → `✅ codebase docs present ({N} files)`
 
-If `.clancy/` is missing: `✗ .clancy/ not found — run /clancy:init`
-If `.clancy/.env` is missing: `✗ .clancy/.env not found — run /clancy:init`
+If `.clancy/` is missing: `❌ .clancy/ not found — run /clancy:init`
+If `.clancy/.env` is missing: `❌ .clancy/.env not found — run /clancy:init`
 
 ---
 
@@ -78,8 +77,8 @@ Source `.clancy/.env` and detect which board is configured:
 
 **Figma** — if `FIGMA_API_KEY` is set:
 - Call `GET https://api.figma.com/v1/me` with `X-Figma-Token: $FIGMA_API_KEY`
-- On success: print `✓ Figma connected — {email}`
-- On 403: print `✗ Figma authentication failed. Check FIGMA_API_KEY in .clancy/.env.`
+- On success: print `✅ Figma connected — {email}`
+- On 403: print `❌ Figma authentication failed. Check FIGMA_API_KEY in .clancy/.env.`
 - Note: Figma's API does not expose plan information — check your plan at figma.com/settings
 
 **Playwright** — if `PLAYWRIGHT_ENABLED=true`:
@@ -97,19 +96,29 @@ Source `.clancy/.env` and detect which board is configured:
 ## Step 6 — Summary
 
 ```
-Clancy doctor — {N} checks passed, {N} warnings, {N} failures
+🚨 Clancy — Doctor
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-✓ Clancy v0.1.0 installed (global)
-✓ jq, curl, git — all present
-✓ .clancy/ set up — 10 docs present
-✓ Jira connected — PROJ reachable
-✓ Figma connected — alex@example.com (check plan at figma.com/settings)
-✗ PLAYWRIGHT_STORYBOOK_PORT — not set in .clancy/.env
+{N} checks passed, {N} warnings, {N} failures
 
-Fix the ✗ items, then run /clancy:once to verify end-to-end.
+✅ Clancy v0.1.0 installed (global)
+✅ node, git — all present
+✅ .clancy/ set up — 10 docs present
+✅ Jira connected — PROJ reachable
+✅ Figma connected — alex@example.com (check plan at figma.com/settings)
+❌ PLAYWRIGHT_STORYBOOK_PORT — not set in .clancy/.env
+
+Fix the ❌ items, then run /clancy:once to verify end-to-end.
+
+"We've got a 415 in progress — a config disturbance."
 ```
 
 If all checks pass:
 ```
-All good. Run /clancy:once to pick up your first ticket.
+🚨 Clancy — Doctor
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+All {N} checks passed.
+
+"Nothing to see here, folks. Move along." — Run /clancy:once to pick up your first ticket.
 ```

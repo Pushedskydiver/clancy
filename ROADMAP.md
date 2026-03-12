@@ -59,6 +59,15 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 - Notion database support
 - Azure DevOps support
 - Board auto-detection: Clancy detects which board is configured without asking
+- `/clancy:reapply-patches` — guided restore of user-modified files backed up during updates
+
+---
+
+## v0.5.0 — Visual verification
+
+- Playwright CLI integration — token-efficient alternative to Playwright MCP for visual checks. Init wizard offers CLI (recommended) or MCP mode. CLI uses `playwright-cli` commands (navigate, screenshot) instead of writing test scripts, with session isolation per ticket
+- Lighthouse CI — optional enhancement to audit performance, accessibility, SEO, and best practices after UI ticket implementation. Returns a focused score summary, pairs with Playwright CLI for screenshot + audit in one pass
+- axe-core CLI — optional enhancement for automated accessibility testing after UI changes. Verifies against `.clancy/docs/ACCESSIBILITY.md` conventions with specific violation reporting
 
 ---
 
@@ -69,6 +78,7 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 - Polished init wizard with auto-detection for common setups
 - Complete documentation site
 - npm package integrity checks
+- Sentry CLI — optional enhancement to check for new errors after ticket completion. Flags regressions in the progress log and triggers notifications during AFK mode
 
 ---
 

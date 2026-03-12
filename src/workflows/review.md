@@ -14,9 +14,9 @@ Same as status workflow. Check `.clancy/`, `.clancy/.env`, and board credentials
 
 ## Step 2 — Fetch next ticket
 
-Detect board from `.clancy/.env` and fetch with `maxResults=1`. The query must match `clancy-once.sh` exactly — what review shows is what run would pick up.
+Detect board from `.clancy/.env` and fetch with `maxResults=1`. The query must match the once-runner exactly — what review shows is what run would pick up.
 
-**Jira:** Build JQL using the same clauses as `clancy-once.sh`:
+**Jira:** Build JQL using the same clauses as the once-runner:
 - Sprint clause: include `AND sprint in openSprints()` if `CLANCY_JQL_SPRINT` is set
 - Label clause: include `AND labels = "$CLANCY_LABEL"` if `CLANCY_LABEL` is set
 - `CLANCY_JQL_STATUS` defaults to `To Do` if not set
@@ -43,7 +43,12 @@ Fetch full ticket content: summary, description (full text), acceptance criteria
 
 If no tickets found:
 ```
+🚨 Clancy — Review
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 No tickets in the queue. Nothing to review.
+
+"Quiet. Too quiet." — Check your board or run /clancy:status.
 ```
 Stop.
 
@@ -108,43 +113,51 @@ Bad: "Ensure design specs are provided"
 ## Step 5 — Display output
 
 ```
-Reviewing: [{TICKET-KEY}] {Summary}
-
-Confidence: {score}% — {band label}
+🚨 Clancy — Review
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-{for each criterion:}
-✓ {criterion name} — {pass reason}
-⚠ {criterion name} — {warn reason}
-  → {specific recommendation}
-✗ {criterion name} — {fail reason}
-  → {specific recommendation}
+[{TICKET-KEY}] {Summary}
 
-Verdict: {action based on band}
-         {next step options}
+Confidence: {score}% — {badge} {band label}
+
+{for each criterion:}
+✅ {criterion name} — {pass reason}
+⚠️ {criterion name} — {warn reason}
+   → {specific recommendation}
+❌ {criterion name} — {fail reason}
+   → {specific recommendation}
+
+{verdict line}
+
+{sign-off quote}
 ```
 
 ### Confidence bands
 
-| Score | Label | Verdict action |
-|---|---|---|
-| 85–100% | Ready | "Run with confidence." |
-| 65–84% | Good to go with caveats | "Review the warnings above, then run /clancy:once." |
-| 40–64% | Needs work | "Address the ✗ items in the ticket, then re-run /clancy:review." |
-| 0–39% | Not ready | "This ticket needs significant rework before Clancy can implement it reliably." |
+| Score | Badge | Label | Verdict action |
+|---|---|---|---|
+| 85–100% | 🟢 | Ready | "Run with confidence." |
+| 65–84% | 🟡 | Good to go with caveats | "Review the warnings above, then run /clancy:once." |
+| 40–64% | 🟠 | Needs work | "Address the ❌ items in the ticket, then re-run /clancy:review." |
+| 0–39% | 🔴 | Not ready | "This ticket needs significant rework before Clancy can implement it reliably." |
 
 **Executability override:** If criterion 7 (Clancy executability) scores Fail, ignore the calculated band and show:
 ```
-Verdict: Not ready for Clancy
-         This ticket requires work outside the codebase — Clancy can only implement code changes.
-         Update the ticket to focus on the codebase side, or remove it from the queue.
+🔴 Verdict: Not ready for Clancy
+   This ticket requires work outside the codebase — Clancy can only implement code changes.
+   Update the ticket to focus on the codebase side, or remove it from the queue.
+
+   "This is Papa Bear. Put out an APB for a better ticket spec."
 ```
 
-Next-step line per band (append after the verdict — never suggest bypassing the review on low-confidence tickets):
-- **Ready:** `Run /clancy:once to pick it up.`
-- **Good to go:** `Fix the warnings if possible, then run /clancy:once.`
-- **Needs work:** `Update the ticket to address the ✗ items above, then re-run /clancy:review.`
-- **Not ready / executability override:** `Rework the ticket first — do not run Clancy on it yet.`
+### Sign-off quotes per band
+
+Append a Wiggum-themed quote after the verdict to add personality. Never suggest bypassing the review on low-confidence tickets:
+
+- **🟢 Ready:** `"Bake 'em away, toys." — Run /clancy:once to pick it up.`
+- **🟡 Good to go:** `"I'd rather let Herman go. I don't think we've got enough to nail him." — Fix the warnings, then run /clancy:once.`
+- **🟠 Needs work:** `"Uh, no. You got the wrong number. This is 9-1... 2." — Update the ticket, then re-run /clancy:review.`
+- **🔴 Not ready:** `"This is Papa Bear. Put out an APB for a better ticket spec." — Rework the ticket first.`
 
 ---
 

@@ -1,3 +1,9 @@
+# Build output
+dist/
+
+# Coverage
+coverage/
+
 # Dependencies
 node_modules/
 

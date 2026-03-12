@@ -1,6 +1,6 @@
 {
   "name": "chief-clancy",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Autonomous, board-driven development for Claude Code — scaffolds docs, integrates Kanban boards, runs tickets in a loop.",
   "keywords": [
     "claude",
@@ -23,21 +23,65 @@
   },
   "license": "MIT",
   "author": "Alex Clapperton",
+  "type": "module",
   "bin": {
-    "clancy": "bin/install.js"
+    "clancy": "dist/installer/install.js"
   },
-  "main": "bin/install.js",
+  "main": "dist/installer/install.js",
+  "exports": {
+    "./scripts/once": "./dist/scripts/once/once.js",
+    "./scripts/afk": "./dist/scripts/afk/afk.js"
+  },
   "files": [
-    "bin/",
+    "dist/",
     "hooks/",
-    "src/",
+    "src/commands/",
+    "src/workflows/",
+    "src/agents/",
+    "src/templates/",
     "registry/"
   ],
   "scripts": {
-    "test": "bash test/unit/jira.test.sh && bash test/unit/github.test.sh && bash test/unit/linear.test.sh && bash test/unit/scaffold.test.sh && bash test/unit/credential-guard.test.sh",
-    "smoke": "bash test/smoke/smoke.sh"
+    "clean": "rm -rf dist",
+    "build": "npm run clean && tsc && tsc-alias",
+    "dev": "vitest",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.ts": [
+      "eslint --fix",
+      "prettier --write"
+    ]
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@trivago/prettier-plugin-sort-imports": "^6.0.2",
+    "@types/node": "^25.4.0",
+    "@vitest/coverage-v8": "^4.0.18",
+    "eslint": "^10.0.3",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-prettier": "^5.5.5",
+    "husky": "^9.1.7",
+    "jiti": "^2.6.1",
+    "lint-staged": "^16.3.3",
+    "prettier": "^3.8.1",
+    "tsc-alias": "^1.8.16",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.57.0",
+    "vitest": "^4.0.18"
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
   }
 }

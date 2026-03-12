@@ -2,15 +2,19 @@
 
 ## Overview
 
-Clancy is an npm package that installs Claude Code slash commands, workflows, and hooks into a user's project. It has no runtime dependencies — everything is markdown, shell scripts, and vanilla Node.js.
+Clancy is an npm package that installs Claude Code slash commands, workflows, and hooks into a user's project. Board logic is implemented in TypeScript ESM modules. Hooks are pre-built CommonJS. Commands and workflows are markdown.
 
 ## Directory Structure
 
 ```
 clancy/
-├── bin/
-│   └── install.js              — npx entry point, global vs local install
 ├── src/
+│   ├── installer/              — TypeScript installer (compiled to dist/)
+│   │   ├── install.ts          — npx entry point, global vs local install
+│   │   ├── file-ops/           — file copy + directory operations
+│   │   ├── hook-installer/     — hook registration in settings.json
+│   │   ├── manifest/           — SHA-256 manifests for patch preservation
+│   │   └── prompts/            — interactive install prompts
 │   ├── commands/               — 14 slash command files (.md)
 │   │   ├── init.md
 │   │   ├── run.md
@@ -31,45 +35,46 @@ clancy/
 │   │   ├── init.md             — setup wizard
 │   │   ├── map-codebase.md     — orchestrates 5 parallel agents
 │   │   └── ...                 — one workflow per command
+│   ├── scripts/
+│   │   ├── once/once.ts        — unified once orchestrator (all 3 boards)
+│   │   ├── afk/afk.ts          — AFK loop runner
+│   │   ├── board/              — board-specific modules (jira, github, linear)
+│   │   └── shared/             — env-schema, branch, prompt, progress, etc.
+│   ├── schemas/                — Zod schemas for API responses and env vars
 │   ├── templates/
 │   │   ├── CLAUDE.md           — template injected into user's CLAUDE.md
-│   │   └── scripts/            — 4 shell scripts
-│   │       ├── clancy-once.sh          — Jira board script
-│   │       ├── clancy-once-github.sh   — GitHub Issues board script
-│   │       ├── clancy-once-linear.sh   — Linear board script
-│   │       └── clancy-afk.sh          — loop runner (board-agnostic)
+│   │   └── .env.example.*      — env templates per board
+│   ├── utils/                  — shared utilities (ansi, parse-json)
 │   └── agents/                 — 5 specialist agent prompts
 │       ├── tech-agent.md       — writes STACK.md + INTEGRATIONS.md
 │       ├── arch-agent.md       — writes ARCHITECTURE.md
 │       ├── quality-agent.md    — writes CONVENTIONS.md + TESTING.md + GIT.md + DEFINITION-OF-DONE.md
 │       ├── design-agent.md     — writes DESIGN-SYSTEM.md + ACCESSIBILITY.md
 │       └── concerns-agent.md   — writes CONCERNS.md
-├── hooks/                      — Node.js hooks installed alongside commands
+├── hooks/                      — Node.js hooks installed alongside commands (pre-built CommonJS)
 │   ├── clancy-credential-guard.js  — PreToolUse: blocks credential writes
 │   ├── clancy-context-monitor.js   — PostToolUse: warns on low context
 │   ├── clancy-statusline.js        — Statusline: context bar + update notice
 │   └── clancy-check-update.js      — SessionStart: background version check
 ├── registry/
 │   └── boards.json             — board definitions for community extensions
-├── test/
-│   ├── unit/                   — bash test scripts
-│   ├── fixtures/               — JSON API response fixtures
-│   └── smoke/                  — live API validation
 └── docs/                       — project documentation (this directory)
 ```
 
 ## How the Installer Works
 
-`bin/install.js` is the entry point for `npx chief-clancy`:
+`src/installer/install.ts` is the entry point for `npx chief-clancy` (compiled to `dist/installer/install.js`):
 
 1. Prompts for global (`~/.claude`) or local (`./.claude`) install
 2. Copies `src/commands/*.md` → `{dest}/commands/clancy/`
 3. Copies `src/workflows/*.md` → `{dest}/clancy/workflows/`
-4. Copies `hooks/*.js` → `{dest}/clancy/hooks/`
+4. Copies `hooks/*.js` → `{dest}/hooks/` (pre-built CommonJS, not compiled from TS)
 5. Registers hooks in `settings.json` (PreToolUse, PostToolUse, SessionStart, statusLine)
 6. Writes `{"type":"commonjs"}` package.json into hooks dir (ESM compatibility)
 7. Generates SHA-256 manifests for patch preservation on future updates
 8. For global installs: inlines workflow content into command files (@ paths don't resolve globally)
+
+The installer is split into focused modules: `file-ops` (copy/mkdir), `hook-installer` (settings.json registration), `manifest` (SHA-256 checksums), and `prompts` (interactive install questions).
 
 ## Command → Workflow Relationship
 
@@ -99,22 +104,29 @@ statusline writes → /tmp/clancy-ctx-{session}.json → context monitor reads
 
 All hooks are best-effort — they catch all errors and exit cleanly rather than blocking the user.
 
-## Shell Script Flow
+## Script Flow
 
-The core work happens in shell scripts, not in Claude Code directly:
+The core work happens in TypeScript modules, invoked via JS shims in the user's project:
 
 ```
-clancy-afk.sh (loop runner)
-  └─ while i < MAX_ITERATIONS:
-       bash clancy-once.sh          (or -github.sh / -linear.sh)
-         1. Preflight checks
-         2. Fetch next ticket from board API (curl + jq)
-         3. Create feature branch from epic/base branch
-         4. Pipe prompt to: claude --dangerously-skip-permissions
-         5. Squash merge back to parent branch
-         6. Delete ticket branch
-         7. Log to .clancy/progress.txt
-       if "No tickets found": break
+clancy-afk.js (loop runner)
+  └─ import('chief-clancy/scripts/afk')
+       └─ while i < MAX_ITERATIONS:
+            run(argv)  ← once orchestrator
+              1. Preflight checks (node, git)
+              2. Parse .clancy/.env → detectBoard() → BoardConfig
+              3. Fetch next ticket from board API
+              4. Compute epic/feature branches
+              5. [dry-run gate — exit here if --dry-run]
+              6. Transition ticket to In Progress
+              7. Create feature branch
+              8. Pipe prompt to: claude --dangerously-skip-permissions
+              9. Squash merge back to parent branch
+             10. Delete ticket branch
+             11. Transition ticket to Done / close issue
+             12. Log to .clancy/progress.txt
+             13. Send notification (if configured)
+            if "No tickets found": break
 ```
 
 ## What Gets Created in User Projects
@@ -123,8 +135,8 @@ After `/clancy:init` + `/clancy:map-codebase`:
 
 ```
 .clancy/
-  clancy-once.sh        — board-specific ticket script
-  clancy-afk.sh         — loop runner
+  clancy-once.js        — 1-line shim: import('chief-clancy/scripts/once')
+  clancy-afk.js         — 1-line shim: import('chief-clancy/scripts/afk')
   docs/                 — 10 structured docs (read before every run)
   progress.txt          — append-only completion log
   .env                  — board credentials (gitignored)

@@ -2,13 +2,13 @@
 
 **Autonomous, board-driven development for Claude Code.**
 
-[![npm](https://img.shields.io/npm/v/chief-clancy?style=for-the-badge&color=cb3837)](https://www.npmjs.com/package/chief-clancy) [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE) [![Tests](https://img.shields.io/badge/tests-94%20passing-brightgreen?style=for-the-badge)](./test/) [![GitHub Stars](https://img.shields.io/github/stars/Pushedskydiver/clancy?style=for-the-badge)](https://github.com/Pushedskydiver/clancy/stargazers)
+[![npm](https://img.shields.io/npm/v/chief-clancy?style=for-the-badge&color=cb3837)](https://www.npmjs.com/package/chief-clancy) [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE) [![Tests](https://img.shields.io/badge/tests-146%20passing-brightgreen?style=for-the-badge)](docs/TESTING.md) [![GitHub Stars](https://img.shields.io/github/stars/Pushedskydiver/clancy?style=for-the-badge)](https://github.com/Pushedskydiver/clancy/stargazers)
 
 ```bash
 npx chief-clancy
 ```
 
-Works on Mac and Linux. Windows requires [WSL](https://learn.microsoft.com/en-us/windows/wsl/install).
+Works on Mac, Linux, and Windows.
 
 [What it does](#what-it-does) · [Install](#install) · [Commands](#commands) · [Supported boards](#supported-boards) · [Comparison](./COMPARISON.md) · [Roadmap](./ROADMAP.md) · [Contributing](./CONTRIBUTING.md)
 
@@ -101,8 +101,7 @@ You'll be asked: global install (`~/.claude`) or local (`./.claude`). Either wor
 **Prerequisites:**
 
 - [Claude Code](https://claude.ai/code) CLI installed
-- `jq` installed (`brew install jq` or `apt install jq`)
-- `curl` installed (comes with macOS/most Linux)
+- Node.js 22+ (`node -v`)
 - `git` installed (comes with most development environments)
 
 ### Permissions
@@ -114,7 +113,7 @@ claude --dangerously-skip-permissions
 ```
 
 > [!TIP]
-> This is how Clancy is intended to be used — stopping to approve `git commit` and `curl` 50 times defeats the purpose. Only use it on codebases you own and trust.
+> This is how Clancy is intended to be used — stopping to approve `git commit` and `node` 50 times defeats the purpose. Only use it on codebases you own and trust.
 
 ---
 
@@ -168,8 +167,8 @@ npx chief-clancy
 
 ```
 .clancy/
-  clancy-once.sh      — picks up one ticket, implements, commits, merges
-  clancy-afk.sh       — loop runner (board-agnostic)
+  clancy-once.js      — picks up one ticket, implements, commits, merges
+  clancy-afk.js       — loop runner (board-agnostic)
   docs/               — 10 structured docs read before every run
     STACK.md
     INTEGRATIONS.md
@@ -241,9 +240,9 @@ Posts to Slack or Teams when a ticket completes or Clancy hits an error. URL is 
 ## How the loop works
 
 ```
-clancy-afk.sh
+clancy-afk.js
   └─ while i < MAX_ITERATIONS:
-       bash clancy-once.sh
+       node clancy-once.js
          1. Preflight checks (credentials, git state, board reachability)
          2. Fetch next ticket from board (maxResults=1)
          3. git checkout $EPIC_BRANCH
@@ -253,7 +252,7 @@ clancy-afk.sh
          7. git checkout $EPIC_BRANCH
          8. git merge --squash feature/{ticket-key}
          9. git commit -m "feat(TICKET): summary"
-        10. git branch -d feature/{ticket-key}
+        10. git branch -D feature/{ticket-key}
         11. Append to .clancy/progress.txt
        if "No tickets found": break
 ```
@@ -294,9 +293,7 @@ Clancy runs Claude with `--dangerously-skip-permissions`, which suppresses all p
     "allow": [
       "Bash(git:*)",
       "Bash(bash:*)",
-      "Bash(curl:*)",
-      "Bash(jq:*)",
-      "Bash(chmod:*)",
+      "Bash(node:*)",
       "Bash(npm:*)",
       "Bash(mkdir:*)",
       "Bash(cat:*)",
@@ -318,7 +315,7 @@ Clancy runs Claude with `--dangerously-skip-permissions`, which suppresses all p
 
 ### Protect your credentials from Claude
 
-Your board tokens and API keys live in `.clancy/.env`. Although Claude doesn't need to read this file during a run (the shell script sources it before invoking Claude), adding it to Claude Code's deny list is good defence-in-depth. Add it to `.claude/settings.json` in your project, or `~/.claude/settings.json` globally:
+Your board tokens and API keys live in `.clancy/.env`. Although Claude doesn't need to read this file during a run (the JS shim loads it before invoking Claude), adding it to Claude Code's deny list is good defence-in-depth. Add it to `.claude/settings.json` in your project, or `~/.claude/settings.json` globally:
 
 ```json
 {
@@ -394,15 +391,7 @@ Run `/clancy:status` to see what Clancy would pick up. If the queue is empty:
 
 ---
 
-**Scripts not executable?**
-
-```bash
-chmod +x .clancy/*.sh
-```
-
----
-
-**`.clancy/clancy-once.sh` not found?**
+**`.clancy/clancy-once.js` not found?**
 
 Re-run `/clancy:init` — it will detect the existing setup and offer to re-scaffold without asking for credentials again.
 
@@ -440,7 +429,7 @@ Removes slash commands from your chosen location. Cleans up the `<!-- clancy:sta
 
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md). The most useful contribution is adding a new board — it's a shell script + a JSON entry.
+See [CONTRIBUTING.md](./CONTRIBUTING.md). The most useful contribution is adding a new board — it's a TypeScript module + a JSON entry.
 
 ## License
 

@@ -1,0 +1,75 @@
+/**
+ * Board detection from raw `.clancy/.env` variables.
+ *
+ * Validates env vars against Zod schemas and returns a typed
+ * discriminated union for the detected board provider.
+ */
+import type { BoardConfig } from '~/schemas/env.js';
+import {
+  githubEnvSchema,
+  jiraEnvSchema,
+  linearEnvSchema,
+} from '~/schemas/env.js';
+
+// Re-export types for downstream consumers
+export type {
+  BoardConfig,
+  GitHubEnv,
+  JiraEnv,
+  LinearEnv,
+  SharedEnv,
+} from '~/schemas/env.js';
+
+/**
+ * Detect which board is configured from raw env vars and return a typed config.
+ *
+ * Detection priority: Jira → GitHub → Linear (checked by presence of
+ * board-specific required keys). Returns the first match.
+ *
+ * @param raw - The raw key-value record from `.clancy/.env`.
+ * @returns A typed `BoardConfig` or an error string if no board is detected
+ *   or validation fails.
+ *
+ * @example
+ * ```ts
+ * const result = detectBoard({ GITHUB_TOKEN: 'ghp_xxx', GITHUB_REPO: 'acme/app' });
+ * if (typeof result === 'string') console.error(result);
+ * else console.log(result.provider); // 'github'
+ * ```
+ */
+export function detectBoard(raw: Record<string, string>): BoardConfig | string {
+  // Jira — check for JIRA_BASE_URL as the distinguishing key
+  if (raw.JIRA_BASE_URL) {
+    const parsed = jiraEnvSchema.safeParse(raw);
+
+    if (!parsed.success) {
+      return `✗ Jira env validation failed: ${parsed.error.message}`;
+    }
+
+    return { provider: 'jira', env: parsed.data };
+  }
+
+  // GitHub — check for GITHUB_TOKEN as the distinguishing key
+  if (raw.GITHUB_TOKEN) {
+    const parsed = githubEnvSchema.safeParse(raw);
+
+    if (!parsed.success) {
+      return `✗ GitHub env validation failed: ${parsed.error.message}`;
+    }
+
+    return { provider: 'github', env: parsed.data };
+  }
+
+  // Linear — check for LINEAR_API_KEY as the distinguishing key
+  if (raw.LINEAR_API_KEY) {
+    const parsed = linearEnvSchema.safeParse(raw);
+
+    if (!parsed.success) {
+      return `✗ Linear env validation failed: ${parsed.error.message}`;
+    }
+
+    return { provider: 'linear', env: parsed.data };
+  }
+
+  return '✗ No board detected — set Jira, GitHub, or Linear credentials in .clancy/.env';
+}

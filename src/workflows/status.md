@@ -23,7 +23,7 @@ Detect board from `.clancy/.env`:
 
 **Jira:**
 
-Build the JQL string first using the same clauses as `clancy-once.sh`:
+Build the JQL string first using the same clauses as the once-runner:
 - Sprint clause: include `AND sprint in openSprints()` if `CLANCY_JQL_SPRINT` is set
 - Label clause: include `AND labels = "$CLANCY_LABEL"` if `CLANCY_LABEL` is set
 - `CLANCY_JQL_STATUS` defaults to `To Do` if not set
@@ -76,7 +76,10 @@ query {
 
 If tickets found, display:
 ```
-Next up for Clancy:
+🚨 Clancy — Status
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Next up:
 
 1. [{TICKET-KEY}] {Summary}
    Epic: {epic key} — {epic title}
@@ -90,19 +93,25 @@ Next up for Clancy:
    Epic: {epic key} — {epic title}
    Status: {status}
 
-Run /clancy:once to pick up the first ticket.
-Run /clancy:run to process all tickets in the queue.
+"Let me check the dispatch..." — Run /clancy:once to pick up #1, or /clancy:run to process the queue.
 ```
 
 If no tickets found:
 ```
-No tickets found in the current queue. Check your board or run /clancy:init
-to verify your configuration.
+🚨 Clancy — Status
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+No tickets found in the current queue.
+
+"Quiet. Too quiet." — Check your board or run /clancy:init to verify your config.
 ```
 
 If API call fails, show the error clearly:
 ```
-Board API error: {error message}
+🚨 Clancy — Status
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+❌ Board API error: {error message}
 
 Tips:
 - Check your credentials in .clancy/.env
@@ -117,4 +126,4 @@ Tips:
 - Show up to 3 tickets. If only 1 or 2 are available, show those.
 - Omit "Epic:" line if no epic/parent data is present for that ticket.
 - This command is strictly read-only. No git ops, no file writes, no Claude invocation for analysis.
-- The query used here must be identical to the one used by `clancy-once.sh` — what status shows is exactly what run would pick up.
+- The query used here must be identical to the one used by the once-runner — what status shows is exactly what run would pick up.
