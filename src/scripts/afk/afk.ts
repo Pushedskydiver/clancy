@@ -99,6 +99,10 @@ export async function runAfkLoop(
     console.log('');
     console.log(bold(`🔁 Iteration ${i}/${maxIterations}`));
 
+    // stderr is inherited so errors are visible to the user in real time.
+    // Exit codes are not checked — once.ts always exits 0 by design so that
+    // a transient failure in one iteration does not halt the entire AFK run.
+    // Stop conditions are explicit board-level signals parsed from stdout.
     const result = spawnSync('node', [onceScript], {
       encoding: 'utf8',
       stdio: ['inherit', 'pipe', 'inherit'],
