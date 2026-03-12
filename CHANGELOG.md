@@ -7,7 +7,15 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
-## [0.3.1] — Unreleased
+## [0.3.2] — Unreleased
+
+### 🐛 Bug fixes
+
+- **Fixed Jira JQL query syntax** — `buildJql()` was joining `ORDER BY priority ASC` with `AND`, producing invalid JQL (`... AND ORDER BY priority ASC`) that Jira rejected with HTTP 400. The once command couldn't fetch tickets while review/status (which build JQL inline) worked fine.
+
+---
+
+## [0.3.1] — 2026-03-12
 
 ### 🔧 Breaking changes
 
