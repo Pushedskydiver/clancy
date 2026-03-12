@@ -52,21 +52,14 @@ Examples:
 See [docs/GIT.md](docs/GIT.md) for full details. Summary:
 
 - `main` — production. Tagged releases. Never commit directly.
-- `develop` — integration branch. Never commit directly.
-- `feature/`, `fix/`, `chore/` — branch from `develop`
-- `hotfix/` — branch from `main` for urgent production fixes
-- `release/` — branch from `develop` for release prep
+- `feature/`, `fix/`, `chore/` — branch from `main`, PR back to `main`
 
 ## Release checklist
 
-1. Create `release/vX.Y.Z` from `develop`
-2. Update `CHANGELOG.md` with the new version entry
-3. Bump version in `package.json`
-4. Merge release branch to `main`
-5. Tag and push: `git tag vX.Y.Z && git push origin vX.Y.Z`
-6. Verify the GitHub Actions release workflow completed
-7. Publish to npm: `npm publish` (or `npm publish --tag beta` for pre-releases)
-8. Merge `main` back into `develop`
+1. Include version bump (`package.json`) and `CHANGELOG.md` entry in the PR
+2. Squash merge PR to `main`
+3. GitHub Actions automatically: creates tag → builds → creates GitHub Release
+4. Publish to npm: `npm publish` (or `npm publish --tag beta` for pre-releases)
 
 ## Important technical details
 
