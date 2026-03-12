@@ -382,7 +382,7 @@ If no: print `Cancelled. No changes made.` and loop back to the menu.
    - Linear: `LINEAR_API_KEY`, `LINEAR_TEAM_ID`
 2. Write the new board credentials to `.clancy/.env`
 3. If switching to Jira: also ask the status filter question (same as init Q3) and write `CLANCY_JQL_STATUS` to `.clancy/.env`
-4. No script replacement needed — the JS shims are board-agnostic (board detection happens at runtime from `.clancy/.env`)
+4. No script replacement needed — the bundled runtime scripts are board-agnostic (board detection happens at runtime from `.clancy/.env`)
 
 Print:
 
