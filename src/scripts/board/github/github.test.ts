@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { isValidRepo, slugifyMilestone } from './github.js';
+import { isValidRepo } from './github.js';
 
 describe('github', () => {
   describe('isValidRepo', () => {
@@ -26,28 +26,6 @@ describe('github', () => {
 
     it('rejects repos with special characters', () => {
       expect(isValidRepo('owner/repo;rm -rf')).toBe(false);
-    });
-  });
-
-  describe('slugifyMilestone', () => {
-    it('converts to lowercase', () => {
-      expect(slugifyMilestone('Sprint 3')).toBe('sprint-3');
-    });
-
-    it('replaces spaces with hyphens', () => {
-      expect(slugifyMilestone('My Milestone')).toBe('my-milestone');
-    });
-
-    it('strips non-alphanumeric characters', () => {
-      expect(slugifyMilestone('v1.0 Release!')).toBe('v10-release');
-    });
-
-    it('handles multiple spaces', () => {
-      expect(slugifyMilestone('Sprint   Three')).toBe('sprint-three');
-    });
-
-    it('handles empty string', () => {
-      expect(slugifyMilestone('')).toBe('');
     });
   });
 });

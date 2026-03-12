@@ -103,4 +103,4 @@ On failure:
 
 - Do not loop. This command runs the script exactly once and stops.
 - Do not attempt to run scripts from `src/templates/` — only scripts in `.clancy/`.
-- The JS shim imports from the installed `chief-clancy` package — ensure it's installed as a devDependency.
+- The runtime scripts in `.clancy/` are self-contained bundles — no npm package dependency needed at runtime.
