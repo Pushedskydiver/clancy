@@ -73,4 +73,24 @@ describe('copyDir', () => {
 
     expect(() => copyDir(src, dest)).toThrow('symlink');
   });
+
+  it('merges multiple source directories into a single flat destination', () => {
+    const roleA = join(tmp, 'roles', 'implementer', 'commands');
+    const roleB = join(tmp, 'roles', 'reviewer', 'commands');
+    const dest = join(tmp, 'dest');
+    mkdirSync(roleA, { recursive: true });
+    mkdirSync(roleB, { recursive: true });
+    writeFileSync(join(roleA, 'once.md'), 'once content');
+    writeFileSync(join(roleB, 'review.md'), 'review content');
+
+    copyDir(roleA, dest);
+    copyDir(roleB, dest);
+
+    expect(fileHash(join(dest, 'once.md'))).toBe(
+      fileHash(join(roleA, 'once.md')),
+    );
+    expect(fileHash(join(dest, 'review.md'))).toBe(
+      fileHash(join(roleB, 'review.md')),
+    );
+  });
 });

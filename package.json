@@ -31,8 +31,7 @@
   "files": [
     "dist/",
     "hooks/",
-    "src/commands/",
-    "src/workflows/",
+    "src/roles/",
     "src/agents/",
     "src/templates/",
     "registry/"

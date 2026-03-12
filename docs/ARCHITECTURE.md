@@ -15,26 +15,19 @@ clancy/
 │   │   ├── hook-installer/     — hook registration in settings.json
 │   │   ├── manifest/           — SHA-256 manifests for patch preservation
 │   │   └── prompts/            — interactive install prompts
-│   ├── commands/               — 14 slash command files (.md)
-│   │   ├── init.md
-│   │   ├── run.md
-│   │   ├── once.md
-│   │   ├── dry-run.md
-│   │   ├── status.md
-│   │   ├── review.md
-│   │   ├── logs.md
-│   │   ├── map-codebase.md
-│   │   ├── update-docs.md
-│   │   ├── settings.md
-│   │   ├── doctor.md
-│   │   ├── update.md
-│   │   ├── uninstall.md
-│   │   └── help.md
-│   ├── workflows/              — implementation workflows referenced by commands
-│   │   ├── scaffold.md         — writes .clancy/ structure during init
-│   │   ├── init.md             — setup wizard
-│   │   ├── map-codebase.md     — orchestrates 5 parallel agents
-│   │   └── ...                 — one workflow per command
+│   ├── roles/                  — commands and workflows organised by role
+│   │   ├── planner/            — backlog refinement (plan, approve)
+│   │   │   ├── commands/
+│   │   │   └── workflows/
+│   │   ├── implementer/        — ticket execution (once, run, dry-run)
+│   │   │   ├── commands/
+│   │   │   └── workflows/
+│   │   ├── reviewer/           — quality checks (review, status, logs)
+│   │   │   ├── commands/
+│   │   │   └── workflows/
+│   │   └── setup/              — configuration and maintenance
+│   │       ├── commands/       — init, settings, doctor, help, etc.
+│   │       └── workflows/      — scaffold, init, map-codebase, etc.
 │   ├── scripts/
 │   │   ├── once/once.ts        — unified once orchestrator (all 3 boards)
 │   │   ├── afk/afk.ts          — AFK loop runner
@@ -66,8 +59,8 @@ clancy/
 `src/installer/install.ts` is the entry point for `npx chief-clancy` (compiled to `dist/installer/install.js`):
 
 1. Prompts for global (`~/.claude`) or local (`./.claude`) install
-2. Copies `src/commands/*.md` → `{dest}/commands/clancy/`
-3. Copies `src/workflows/*.md` → `{dest}/clancy/workflows/`
+2. Walks `src/roles/*/commands/` and copies all command files flat → `{dest}/commands/clancy/`
+3. Walks `src/roles/*/workflows/` and copies all workflow files flat → `{dest}/clancy/workflows/`
 4. Copies `hooks/*.js` → `{dest}/hooks/` (pre-built CommonJS, not compiled from TS)
 5. Copies bundled runtime scripts (`dist/bundle/clancy-once.js`, `clancy-afk.js`) → `.clancy/`
 6. Registers hooks in `settings.json` (PreToolUse, PostToolUse, SessionStart, statusLine)
@@ -82,7 +75,7 @@ The installer is split into focused modules: `file-ops` (copy/mkdir), `hook-inst
 Commands are thin wrappers. Each command file references a workflow:
 
 ```
-/clancy:once  →  src/commands/once.md  →  @clancy/workflows/once.md
+/clancy:once  →  src/roles/implementer/commands/once.md  →  @clancy/workflows/once.md
 ```
 
 Commands are user-facing (appear in Claude Code's `/` menu). Workflows contain the actual implementation logic and are never exposed directly.

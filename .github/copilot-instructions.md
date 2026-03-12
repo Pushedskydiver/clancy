@@ -63,8 +63,7 @@ Examples: `✨ feat:`, `🐛 fix:`, `♻️ refactor:`, `📝 docs:`, `📦 chor
 | `src/scripts/board/` | Board-specific modules (jira, github, linear) |
 | `src/scripts/shared/` | Shared utilities (env-schema, branch, git-ops, etc.) |
 | `src/schemas/` | Zod schemas for API responses and env validation |
-| `src/commands/*.md` | 14 slash commands |
-| `src/workflows/*.md` | Implementation workflows referenced by commands |
+| `src/roles/` | Commands and workflows organised by role (planner, implementer, reviewer, setup) |
 | `hooks/` | 4 pre-built CommonJS hooks |
 
 ## Running checks
