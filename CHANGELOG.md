@@ -7,6 +7,14 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.3.8] — 2026-03-12
+
+### ✨ Features
+
+- **Prettier ignore handling** — During init, if a `.prettierignore` file exists, Clancy now appends `.clancy/` and `.claude/commands/clancy/` to prevent Prettier from reformatting generated files. On uninstall, those entries are cleanly removed. Projects without Prettier are unaffected.
+
+---
+
 ## [0.3.7] — 2026-03-12
 
 ### 🐛 Bug fixes

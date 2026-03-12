@@ -2,7 +2,7 @@
 
 ## Overview
 
-Remove Clancy's slash commands from the local project, globally, or both. Optionally remove the `.clancy/` project folder (which includes `.clancy/.env`). Clean up CLAUDE.md and .gitignore changes made during init.
+Remove Clancy's slash commands from the local project, globally, or both. Optionally remove the `.clancy/` project folder (which includes `.clancy/.env`). Clean up CLAUDE.md, .gitignore, and .prettierignore changes made during init.
 
 ---
 
@@ -108,7 +108,25 @@ Print `✅ .gitignore cleaned up.` (or `✅ .gitignore removed.` if deleted).
 
 ---
 
-## Step 5 — Offer to remove .clancy/ (if present)
+## Step 5 — Clean up .prettierignore
+
+Check whether `.prettierignore` exists in the current project directory.
+
+If it does, check whether it contains Clancy entries (`# Clancy generated files` and/or `.clancy/` and/or `.claude/commands/clancy/`):
+
+**If found:** remove the `# Clancy generated files` comment line, the `.clancy/` line, and the `.claude/commands/clancy/` line. Also remove any blank line immediately before or after the removed block to avoid leaving double blank lines. Write the cleaned file back.
+
+If the file is now empty (or contains only whitespace) after removal, delete it entirely — Clancy added those entries during init.
+
+Print `✅ .prettierignore cleaned up.` (or `✅ .prettierignore removed.` if deleted).
+
+**If not found:** skip — Clancy didn't modify this file.
+
+**If .prettierignore does not exist:** skip.
+
+---
+
+## Step 6 — Offer to remove .clancy/ (if present)
 
 Check whether `.clancy/` exists in the current project directory.
 
@@ -126,7 +144,7 @@ If `.clancy/` does not exist, skip this step entirely.
 
 ---
 
-## Step 6 — Final message
+## Step 7 — Final message
 
 ```
 ✅ Clancy uninstalled.
@@ -138,6 +156,6 @@ If `.clancy/` does not exist, skip this step entirely.
 
 ## Hard constraints
 
-- **Never touch any `.env` at the project root** — Clancy's credentials live in `.clancy/.env` and are only removed as part of `.clancy/` in Step 5
-- Steps 1–2 (commands removal), Steps 3–4 (CLAUDE.md and .gitignore cleanup), and Step 5 (`.clancy/` removal) are always asked separately — never bundle them into one confirmation
+- **Never touch any `.env` at the project root** — Clancy's credentials live in `.clancy/.env` and are only removed as part of `.clancy/` in Step 6
+- Steps 1–2 (commands removal), Steps 3–5 (CLAUDE.md, .gitignore, and .prettierignore cleanup), and Step 6 (`.clancy/` removal) are always asked separately — never bundle them into one confirmation
 - If the user says no to commands removal in Step 2, skip all remaining steps and stop
