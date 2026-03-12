@@ -124,4 +124,4 @@ If `clancy-afk.js` exits with a non-zero status:
 - The `N` argument is session-only. It never modifies `.clancy/.env`.
 - If the user wants to permanently change their default, they edit `.clancy/.env` directly or re-run `/clancy:init` advanced setup.
 - Do not attempt to run scripts from `src/templates/` — only run scripts in `.clancy/`.
-- The JS shims import from the installed `chief-clancy` package — ensure it's installed as a devDependency.
+- The runtime scripts in `.clancy/` are self-contained bundles — no npm package dependency needed at runtime.

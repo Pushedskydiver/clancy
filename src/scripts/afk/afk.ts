@@ -7,8 +7,9 @@
  */
 import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
-import { join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { fileURLToPath } from 'node:url';
 
 import { bold, dim, green, red } from '~/utils/ansi/ansi.js';
 
@@ -85,7 +86,7 @@ export async function runAfkLoop(
   );
   console.log(
     dim('│') +
-      dim('  "I\'m on it. Proceed to the abandoned warehouse."      ') +
+      dim('  "I\'m on it. Proceed to the abandoned warehouse."       ') +
       dim('│'),
   );
   console.log(
@@ -153,4 +154,14 @@ export async function runAfkLoop(
   );
   console.log(dim('  "That\'s some good police work."'));
   console.log(dim('  Run clancy-afk again to continue.'));
+}
+
+// Main guard — self-execute when run directly (e.g. node .clancy/clancy-afk.js)
+if (
+  process.argv[1] &&
+  fileURLToPath(import.meta.url) === resolve(process.argv[1])
+) {
+  const scriptDir = dirname(fileURLToPath(import.meta.url));
+  const maxIterations = parseInt(process.env.MAX_ITERATIONS ?? '5', 10) || 5;
+  runAfkLoop(scriptDir, maxIterations);
 }

@@ -69,10 +69,11 @@ clancy/
 2. Copies `src/commands/*.md` → `{dest}/commands/clancy/`
 3. Copies `src/workflows/*.md` → `{dest}/clancy/workflows/`
 4. Copies `hooks/*.js` → `{dest}/hooks/` (pre-built CommonJS, not compiled from TS)
-5. Registers hooks in `settings.json` (PreToolUse, PostToolUse, SessionStart, statusLine)
-6. Writes `{"type":"commonjs"}` package.json into hooks dir (ESM compatibility)
-7. Generates SHA-256 manifests for patch preservation on future updates
-8. For global installs: inlines workflow content into command files (@ paths don't resolve globally)
+5. Copies bundled runtime scripts (`dist/bundle/clancy-once.js`, `clancy-afk.js`) → `.clancy/`
+6. Registers hooks in `settings.json` (PreToolUse, PostToolUse, SessionStart, statusLine)
+7. Writes `{"type":"commonjs"}` package.json into hooks dir (ESM compatibility)
+8. Generates SHA-256 manifests for patch preservation on future updates
+9. For global installs: inlines workflow content into command files (@ paths don't resolve globally)
 
 The installer is split into focused modules: `file-ops` (copy/mkdir), `hook-installer` (settings.json registration), `manifest` (SHA-256 checksums), and `prompts` (interactive install questions).
 
@@ -106,12 +107,11 @@ All hooks are best-effort — they catch all errors and exit cleanly rather than
 
 ## Script Flow
 
-The core work happens in TypeScript modules, invoked via JS shims in the user's project:
+The core work happens in TypeScript modules, bundled into self-contained scripts by esbuild:
 
 ```
-clancy-afk.js (loop runner)
-  └─ import('chief-clancy/scripts/afk')
-       └─ while i < MAX_ITERATIONS:
+clancy-afk.js (loop runner — bundled, self-contained)
+  └─ while i < MAX_ITERATIONS:
             run(argv)  ← once orchestrator
               1. Preflight checks (node, git)
               2. Parse .clancy/.env → detectBoard() → BoardConfig
@@ -135,8 +135,8 @@ After `/clancy:init` + `/clancy:map-codebase`:
 
 ```
 .clancy/
-  clancy-once.js        — 1-line shim: import('chief-clancy/scripts/once')
-  clancy-afk.js         — 1-line shim: import('chief-clancy/scripts/afk')
+  clancy-once.js        — bundled once orchestrator (self-contained, copied by installer)
+  clancy-afk.js         — bundled AFK loop runner (self-contained, copied by installer)
   docs/                 — 10 structured docs (read before every run)
   progress.txt          — append-only completion log
   .env                  — board credentials (gitignored)

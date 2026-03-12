@@ -8,6 +8,7 @@
  * detects and backs up user-modified files, and registers hooks in Claude settings.
  */
 import {
+  copyFileSync,
   existsSync,
   mkdirSync,
   readFileSync,
@@ -41,6 +42,7 @@ const PKG = require('../../package.json') as { version: string };
 const COMMANDS_SRC = join(__dirname, '..', '..', 'src', 'commands');
 const WORKFLOWS_SRC = join(__dirname, '..', '..', 'src', 'workflows');
 const HOOKS_SRC = join(__dirname, '..', '..', 'hooks');
+const BUNDLE_SRC = join(__dirname, '..', 'bundle');
 
 const _homeDir = process.env.HOME ?? process.env.USERPROFILE;
 
@@ -196,9 +198,22 @@ async function main(): Promise<void> {
   for (const [label, src] of [
     ['Commands', COMMANDS_SRC],
     ['Workflows', WORKFLOWS_SRC],
+    ['Runtime bundles', BUNDLE_SRC],
   ] as const) {
     if (!existsSync(src)) {
       console.error(red(`\n  Error: ${label} source not found: ${src}`));
+      console.error(
+        red('  The npm package may be corrupted. Try: npm cache clean --force'),
+      );
+      closePrompts();
+      process.exit(1);
+    }
+  }
+
+  // Validate individual bundle files exist
+  for (const script of ['clancy-once.js', 'clancy-afk.js']) {
+    if (!existsSync(join(BUNDLE_SRC, script))) {
+      console.error(red(`\n  Error: Bundled script not found: ${script}`));
       console.error(
         red('  The npm package may be corrupted. Try: npm cache clean --force'),
       );
@@ -284,6 +299,23 @@ async function main(): Promise<void> {
     writeFileSync(
       workflowsManifestPath,
       JSON.stringify(buildManifest(workflowsDest), null, 2),
+    );
+
+    // Copy bundled runtime scripts to .clancy/ in the current project.
+    // Always use cwd — workflows run `node .clancy/clancy-once.js` relative
+    // to the project root, regardless of global vs local install.
+    const clancyProjectDir = join(process.cwd(), '.clancy');
+
+    mkdirSync(clancyProjectDir, { recursive: true });
+
+    for (const script of ['clancy-once.js', 'clancy-afk.js']) {
+      copyFileSync(join(BUNDLE_SRC, script), join(clancyProjectDir, script));
+    }
+
+    // Ensure .clancy is treated as an ESM package so Node runs clancy-*.js as ESM
+    writeFileSync(
+      join(clancyProjectDir, 'package.json'),
+      JSON.stringify({ type: 'module' }, null, 2) + '\n',
     );
 
     // Install hooks

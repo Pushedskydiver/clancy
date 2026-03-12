@@ -77,4 +77,5 @@ See [docs/GIT.md](docs/GIT.md) for full details. Summary:
 - Hooks are best-effort — they must never crash or block the user's workflow
 - TypeScript modules use `zod/mini` for all runtime validation of external data
 - Path aliases (`~/`) are resolved by `tsc-alias` at build time
-- User projects get board-agnostic JS shims that `import('chief-clancy/scripts/once')` from the installed package
+- Runtime scripts (`clancy-once.js`, `clancy-afk.js`) are esbuild bundles — self-contained, zero runtime dependency on the npm package
+- `dist/bundle/` contains the bundled scripts; the installer copies them to `.clancy/` during install

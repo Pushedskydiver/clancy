@@ -7,11 +7,33 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
-## [0.3.0] — Unreleased
+## [0.3.1] — Unreleased
 
 ### 🔧 Breaking changes
 
-- **Shell scripts replaced by TypeScript** — all four shell scripts (`clancy-once.sh`, `clancy-once-github.sh`, `clancy-once-linear.sh`, `clancy-afk.sh`) are replaced by TypeScript ESM modules. The `.clancy/` shim scripts are now board-agnostic 1-line JS files that `import('chief-clancy/scripts/once')` from the installed package. Board detection happens at runtime from `.clancy/.env`.
+- **Runtime scripts are now bundled** — `.clancy/clancy-once.js` and `.clancy/clancy-afk.js` are now self-contained esbuild bundles copied by the installer. They no longer `import('chief-clancy/scripts/once')` from `node_modules`. This means `npx chief-clancy` is fire-and-forget — zero runtime dependency on the npm package.
+- **Subpath exports removed** — `chief-clancy/scripts/once` and `chief-clancy/scripts/afk` package exports are removed (no longer needed).
+- **`zod` moved to devDependencies** — zod is now inlined into the bundles at build time, so it's no longer a runtime dependency.
+
+### ⬆️ Upgrading from 0.3.0
+
+```bash
+npx -y chief-clancy@latest
+```
+
+The installer automatically replaces your `.clancy/clancy-once.js` and `.clancy/clancy-afk.js` with the new bundled versions. No manual steps needed. You can safely remove `chief-clancy` from your project's devDependencies if it was added for the shims:
+
+```bash
+npm uninstall chief-clancy
+```
+
+---
+
+## [0.3.0] — 2026-03-12
+
+### 🔧 Breaking changes
+
+- **Shell scripts replaced by TypeScript** — all four shell scripts (`clancy-once.sh`, `clancy-once-github.sh`, `clancy-once-linear.sh`, `clancy-afk.sh`) are replaced by TypeScript ESM modules. Board detection happens at runtime from `.clancy/.env`.
 - **Prerequisites changed** — `jq` and `curl` are no longer required. Only `node` (22+) and `git` are needed.
 - **Windows now natively supported** — WSL is no longer required since all shell scripts have been replaced by cross-platform TypeScript.
 - **Shellcheck CI removed** — the shellcheck job is removed from CI since there are no more shell scripts.
@@ -22,8 +44,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - **Unified once orchestrator** (`src/scripts/once/once.ts`) — single TypeScript entry point handles all three boards (Jira, GitHub Issues, Linear). Full lifecycle: preflight → board detection → fetch ticket → branch computation → dry-run gate → status transition → Claude session → squash merge → close/transition → progress log → notification.
 - **Zod env validation** — all board credentials and shared config are validated at startup using `zod/mini` schemas with clear error messages for missing or malformed values.
 - **Discriminated union board config** — `BoardConfig` type (`{ provider: 'jira' | 'github' | 'linear'; env: ... }`) enables exhaustive type checking across all board-specific code paths.
-- **Package exports** — `chief-clancy/scripts/once` and `chief-clancy/scripts/afk` subpath exports allow the JS shims to import directly from the installed package.
-- **Board-agnostic shims** — `.clancy/clancy-once.js` and `.clancy/clancy-afk.js` are identical for all boards. No more board-specific script selection during init or settings changes.
+- **Board-agnostic runtime scripts** — `.clancy/clancy-once.js` and `.clancy/clancy-afk.js` are identical for all boards. No more board-specific script selection during init or settings changes.
 
 ### 🐛 Bug fixes
 
@@ -46,16 +67,12 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 ### ⬆️ Upgrading from 0.2.x
 
 ```bash
-# 1. Update Clancy commands
 npx chief-clancy@latest
-
-# 2. Replace old shell shims with new JS shims
-/clancy:init
 ```
 
 **What changes:**
-- `.clancy/clancy-once.sh` (board-specific) → `.clancy/clancy-once.js` (board-agnostic)
-- `.clancy/clancy-afk.sh` → `.clancy/clancy-afk.js`
+- `.clancy/clancy-once.sh` (board-specific) → `.clancy/clancy-once.js` (board-agnostic, bundled)
+- `.clancy/clancy-afk.sh` → `.clancy/clancy-afk.js` (bundled)
 - `jq` and `curl` are no longer required — only `node` (22+) and `git`
 
 **What's preserved:**

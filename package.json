@@ -1,6 +1,6 @@
 {
   "name": "chief-clancy",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Autonomous, board-driven development for Claude Code — scaffolds docs, integrates Kanban boards, runs tickets in a loop.",
   "keywords": [
     "claude",
@@ -28,10 +28,6 @@
     "clancy": "dist/installer/install.js"
   },
   "main": "dist/installer/install.js",
-  "exports": {
-    "./scripts/once": "./dist/scripts/once/once.js",
-    "./scripts/afk": "./dist/scripts/afk/afk.js"
-  },
   "files": [
     "dist/",
     "hooks/",
@@ -43,7 +39,8 @@
   ],
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "npm run clean && tsc && tsc-alias",
+    "build": "npm run clean && tsc && tsc-alias && npm run bundle",
+    "bundle": "mkdir -p dist/bundle && esbuild dist/scripts/once/once.js --bundle --platform=node --format=esm --target=node22 --outfile=dist/bundle/clancy-once.js && esbuild dist/scripts/afk/afk.js --bundle --platform=node --format=esm --target=node22 --outfile=dist/bundle/clancy-afk.js",
     "dev": "vitest",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
@@ -69,6 +66,7 @@
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "@types/node": "^25.4.0",
     "@vitest/coverage-v8": "^4.0.18",
+    "esbuild": "^0.27.3",
     "eslint": "^10.0.3",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
@@ -79,9 +77,7 @@
     "tsc-alias": "^1.8.16",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.57.0",
-    "vitest": "^4.0.18"
-  },
-  "dependencies": {
+    "vitest": "^4.0.18",
     "zod": "^4.3.6"
   }
 }
