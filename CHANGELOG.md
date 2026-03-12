@@ -7,7 +7,15 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
-## [0.3.3] — Unreleased
+## [0.3.4] — Unreleased
+
+### ✨ Features
+
+- **Non-interactive installer** — Added `--global` and `--local` CLI flags to `npx chief-clancy`. When present, the installer skips the interactive install-type prompt and auto-accepts the overwrite confirmation. The `/clancy:update` workflow now passes the detected install type, so updates run without user interaction.
+
+---
+
+## [0.3.3] — 2026-03-12
 
 ### 🐛 Bug fixes
 
