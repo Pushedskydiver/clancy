@@ -258,6 +258,7 @@ async function transitionToStatus(
  */
 export async function run(argv: string[]): Promise<void> {
   const dryRun = argv.includes('--dry-run');
+  const skipFeasibility = argv.includes('--skip-feasibility');
 
   const startTime = Date.now();
 
@@ -347,6 +348,9 @@ export async function run(argv: string[]): Promise<void> {
         console.log(`  Blockers:       ${ticket.blockers}`);
       }
       console.log(`  Target branch:  ${ticketBranch} → ${targetBranch}`);
+      if (ticket.description) {
+        console.log(`  Description:    ${ticket.description}`);
+      }
       console.log(yellow('─────────────────────────────────────────────────'));
       console.log(dim('  No changes made. Remove --dry-run to run for real.'));
       return;
@@ -366,25 +370,29 @@ export async function run(argv: string[]): Promise<void> {
     }
     console.log('');
 
-    // 9. Feasibility check
-    console.log(dim('  Checking feasibility...'));
-    const feasibility = checkFeasibility(
-      {
-        key: ticket.key,
-        title: ticket.title,
-        description: ticket.description,
-      },
-      config.env.CLANCY_MODEL,
-    );
+    // 9. Feasibility check (skipped when --skip-feasibility is passed;
+    //    the workflow handles feasibility evaluation directly in that case)
+    if (!skipFeasibility) {
+      console.log(dim('  Checking feasibility...'));
+      const feasibility = checkFeasibility(
+        {
+          key: ticket.key,
+          title: ticket.title,
+          description: ticket.description,
+        },
+        config.env.CLANCY_MODEL,
+      );
 
-    if (!feasibility.feasible) {
-      const reason = feasibility.reason ?? 'not implementable as code changes';
-      console.log(yellow(`⏭️ Ticket skipped [${ticket.key}]: ${reason}`));
-      appendProgress(process.cwd(), ticket.key, ticket.title, 'SKIPPED');
-      return;
+      if (!feasibility.feasible) {
+        const reason =
+          feasibility.reason ?? 'not implementable as code changes';
+        console.log(yellow(`⏭️ Ticket skipped [${ticket.key}]: ${reason}`));
+        appendProgress(process.cwd(), ticket.key, ticket.title, 'SKIPPED');
+        return;
+      }
+
+      console.log(green('  ✓ Feasibility check passed'));
     }
-
-    console.log(green('  ✓ Feasibility check passed'));
     console.log('');
 
     // 10. Git: set up branches

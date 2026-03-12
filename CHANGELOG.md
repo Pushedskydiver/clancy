@@ -7,6 +7,14 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.3.7] — 2026-03-12
+
+### 🐛 Bug fixes
+
+- **Fixed feasibility check nesting error** — The `claude -p` call in the feasibility check created a blocked nested session when running inside Claude Code via `/clancy:once`. The workflow now evaluates feasibility directly (no subprocess) using the dry-run output, then runs the script with `--skip-feasibility`. The script-level `claude -p` check is preserved for standalone/AFK mode where it works correctly.
+
+---
+
 ## [0.3.6] — 2026-03-12
 
 ### ✨ Features
