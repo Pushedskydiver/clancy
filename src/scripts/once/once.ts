@@ -378,11 +378,8 @@ export async function run(argv: string[]): Promise<void> {
     );
 
     if (!feasibility.feasible) {
-      console.log(
-        yellow(
-          `⚠ Skipping [${ticket.key}]: ${feasibility.reason ?? 'not implementable as code changes'}`,
-        ),
-      );
+      const reason = feasibility.reason ?? 'not implementable as code changes';
+      console.log(yellow(`⏭️ Ticket skipped [${ticket.key}]: ${reason}`));
       appendProgress(process.cwd(), ticket.key, ticket.title, 'SKIPPED');
       return;
     }
