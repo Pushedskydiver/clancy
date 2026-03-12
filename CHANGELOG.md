@@ -18,7 +18,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 ### ⬆️ Upgrading from 0.3.0
 
 ```bash
-npx chief-clancy@latest
+npx -y chief-clancy@latest
 ```
 
 The installer automatically replaces your `.clancy/clancy-once.js` and `.clancy/clancy-afk.js` with the new bundled versions. No manual steps needed. You can safely remove `chief-clancy` from your project's devDependencies if it was added for the shims:
