@@ -8,6 +8,9 @@
  * All errors exit with code 0 (not 1). This is intentional — the AFK runner
  * detects stop conditions by parsing stdout, not exit codes.
  */
+import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
 import {
   closeIssue,
   fetchIssue as fetchGitHubIssue,
@@ -470,4 +473,12 @@ export async function run(argv: string[]): Promise<void> {
       }
     }
   }
+}
+
+// Main guard — self-execute when run directly (e.g. node .clancy/clancy-once.js)
+if (
+  process.argv[1] &&
+  fileURLToPath(import.meta.url) === resolve(process.argv[1])
+) {
+  run(process.argv);
 }
