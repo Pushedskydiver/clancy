@@ -90,7 +90,7 @@ Your board isn't supported yet — but you can add it:
 
 In the meantime, you can still use Clancy manually:
   · Run /clancy:map-codebase to scan and document your codebase
-  · Add `chief-clancy` as a devDependency and implement your board's API module
+  · Run `npx chief-clancy@latest` and implement your board's API module
   · Store credentials in .clancy/.env
 
 Do not scaffold anything after this message. Stop completely.

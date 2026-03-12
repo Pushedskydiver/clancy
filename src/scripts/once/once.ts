@@ -262,7 +262,7 @@ export async function run(argv: string[]): Promise<void> {
     dim('│') + bold('  🤖 Clancy — once mode              ') + dim('│'),
   );
   console.log(
-    dim('│') + dim('  "Let\'s roll."                       ') + dim('│'),
+    dim('│') + dim('  "Let\'s roll."                      ') + dim('│'),
   );
   console.log(dim('└──────────────────────────────────────┘'));
   console.log('');

@@ -49,28 +49,6 @@ export async function pingGitHub(
 }
 
 /**
- * Slugify a milestone title for use as a branch name.
- *
- * Converts to lowercase, replaces spaces with hyphens, and strips
- * non-alphanumeric characters.
- *
- * @param title - The milestone title to slugify.
- * @returns The slugified branch-safe string.
- *
- * @example
- * ```ts
- * slugifyMilestone('Sprint 3 - Auth');  // 'sprint-3---auth'
- * slugifyMilestone('v1.0 Release');     // 'v10-release'
- * ```
- */
-export function slugifyMilestone(title: string): string {
-  return title
-    .toLowerCase()
-    .replace(/\s+/g, '-')
-    .replace(/[^a-z0-9-]/g, '');
-}
-
-/**
  * Fetch the next available issue from GitHub Issues.
  *
  * Requests extra results to account for PR pollution (GitHub Issues endpoint

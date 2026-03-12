@@ -85,7 +85,7 @@ export async function runAfkLoop(
   );
   console.log(
     dim('│') +
-      dim('  "I\'m on it. Proceed to the abandoned warehouse."      ') +
+      dim('  "I\'m on it. Proceed to the abandoned warehouse."       ') +
       dim('│'),
   );
   console.log(
