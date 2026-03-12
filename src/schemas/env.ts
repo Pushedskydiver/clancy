@@ -5,6 +5,12 @@
  */
 import * as z from 'zod/mini';
 
+/** A non-empty string — rejects `""` from the .env file. */
+const nonEmpty = z.string().check(z.minLength(1));
+
+/** A valid HTTP(S) URL. */
+const httpUrl = z.string().check(z.regex(/^https?:\/\/.+/));
+
 // ─── Shared optional env vars ────────────────────────────────────────────────
 
 export const sharedEnvSchema = z.object({
@@ -22,22 +28,22 @@ export const sharedEnvSchema = z.object({
 // ─── Board-specific schemas ──────────────────────────────────────────────────
 
 export const jiraEnvSchema = z.extend(sharedEnvSchema, {
-  JIRA_BASE_URL: z.string(),
-  JIRA_USER: z.string(),
-  JIRA_API_TOKEN: z.string(),
-  JIRA_PROJECT_KEY: z.string(),
+  JIRA_BASE_URL: httpUrl,
+  JIRA_USER: nonEmpty,
+  JIRA_API_TOKEN: nonEmpty,
+  JIRA_PROJECT_KEY: nonEmpty,
   CLANCY_JQL_STATUS: z.optional(z.string()),
   CLANCY_JQL_SPRINT: z.optional(z.string()),
 });
 
 export const githubEnvSchema = z.extend(sharedEnvSchema, {
-  GITHUB_TOKEN: z.string(),
-  GITHUB_REPO: z.string(),
+  GITHUB_TOKEN: nonEmpty,
+  GITHUB_REPO: nonEmpty,
 });
 
 export const linearEnvSchema = z.extend(sharedEnvSchema, {
-  LINEAR_API_KEY: z.string(),
-  LINEAR_TEAM_ID: z.string(),
+  LINEAR_API_KEY: nonEmpty,
+  LINEAR_TEAM_ID: nonEmpty,
 });
 
 // ─── Inferred types ──────────────────────────────────────────────────────────

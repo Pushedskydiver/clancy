@@ -41,7 +41,7 @@ describe('jira', () => {
   describe('buildJql', () => {
     it('builds basic JQL with project and status', () => {
       const jql = buildJql('PROJ', 'To Do');
-      expect(jql).toContain('project=PROJ');
+      expect(jql).toContain('project="PROJ"');
       expect(jql).toContain('status="To Do"');
       expect(jql).toContain('assignee=currentUser()');
       expect(jql).toContain('ORDER BY priority ASC');

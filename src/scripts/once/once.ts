@@ -36,6 +36,7 @@ import { detectBoard } from '~/scripts/shared/env-schema/env-schema.js';
 import type { BoardConfig } from '~/scripts/shared/env-schema/env-schema.js';
 import {
   checkout,
+  currentBranch,
   deleteBranch,
   ensureBranch,
   squashMerge,
@@ -168,6 +169,9 @@ function validateInputs(config: BoardConfig): string | undefined {
   switch (config.provider) {
     case 'jira': {
       const { env } = config;
+      if (!isSafeJqlValue(env.JIRA_PROJECT_KEY)) {
+        return '✗ JIRA_PROJECT_KEY contains invalid characters';
+      }
       if (env.CLANCY_LABEL && !isSafeJqlValue(env.CLANCY_LABEL)) {
         return '✗ CLANCY_LABEL contains invalid characters';
       }
@@ -263,6 +267,8 @@ export async function run(argv: string[]): Promise<void> {
   console.log(dim('└──────────────────────────────────────┘'));
   console.log('');
 
+  let originalBranch: string | undefined;
+
   try {
     // 1. Preflight
     const preflight = runPreflight(process.cwd());
@@ -357,6 +363,7 @@ export async function run(argv: string[]): Promise<void> {
     console.log('');
 
     // 9. Git: set up branches
+    originalBranch = currentBranch();
     ensureBranch(targetBranch, baseBranch);
     checkout(targetBranch);
     checkout(ticketBranch, true);
@@ -453,5 +460,14 @@ export async function run(argv: string[]): Promise<void> {
     console.error(red(`❌ Clancy stopped`) + dim(` (${elapsed})`));
     console.error(red(`   ${msg}`));
     console.error(dim('  "I\'d rather let Herman go."'));
+
+    // Best-effort: restore the branch the user was on before Clancy started
+    if (originalBranch) {
+      try {
+        checkout(originalBranch);
+      } catch {
+        // Ignore — branch restore is best-effort
+      }
+    }
   }
 }

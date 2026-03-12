@@ -16,6 +16,7 @@ import type { PingResult } from '~/scripts/shared/http/http.js';
 import type { Ticket } from '~/types/index.js';
 
 const SAFE_VALUE_PATTERN = /^[a-zA-Z0-9 _\-'.]+$/;
+const ISSUE_KEY_PATTERN = /^[A-Z][A-Z0-9]+-\d+$/;
 
 /**
  * Build Jira Basic auth header value.
@@ -84,7 +85,7 @@ export function buildJql(
   sprint?: string,
   label?: string,
 ): string {
-  const parts = [`project=${projectKey}`];
+  const parts = [`project="${projectKey}"`];
 
   if (sprint) parts.push('sprint in openSprints()');
   if (label) parts.push(`labels = "${label}"`);
@@ -247,14 +248,34 @@ export async function lookupTransitionId(
   issueKey: string,
   statusName: string,
 ): Promise<string | undefined> {
-  const response = await fetch(
-    `${baseUrl}/rest/api/3/issue/${issueKey}/transitions`,
-    { headers: jiraHeaders(auth) },
-  );
+  if (!ISSUE_KEY_PATTERN.test(issueKey)) return undefined;
+
+  let response: Response;
+
+  try {
+    response = await fetch(
+      `${baseUrl}/rest/api/3/issue/${issueKey}/transitions`,
+      { headers: jiraHeaders(auth) },
+    );
+  } catch (err) {
+    console.warn(
+      `⚠ Jira transitions request failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return undefined;
+  }
 
   if (!response.ok) return undefined;
 
-  const parsed = jiraTransitionsResponseSchema.safeParse(await response.json());
+  let json: unknown;
+
+  try {
+    json = await response.json();
+  } catch {
+    console.warn('⚠ Jira transitions returned invalid JSON');
+    return undefined;
+  }
+
+  const parsed = jiraTransitionsResponseSchema.safeParse(json);
 
   if (!parsed.success) {
     console.warn(

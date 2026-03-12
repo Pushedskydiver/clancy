@@ -114,15 +114,15 @@ export function installHooks(options: HookInstallerOptions): boolean {
     const monitorScript = join(hooksInstallDir, 'clancy-context-monitor.js');
     const guardScript = join(hooksInstallDir, 'clancy-credential-guard.js');
 
-    registerHook(hooks, 'SessionStart', `node ${updateScript}`);
-    registerHook(hooks, 'PostToolUse', `node ${monitorScript}`);
-    registerHook(hooks, 'PreToolUse', `node ${guardScript}`);
+    registerHook(hooks, 'SessionStart', `node ${JSON.stringify(updateScript)}`);
+    registerHook(hooks, 'PostToolUse', `node ${JSON.stringify(monitorScript)}`);
+    registerHook(hooks, 'PreToolUse', `node ${JSON.stringify(guardScript)}`);
 
     // Statusline: registered as top-level key, not inside hooks
     if (!settings.statusLine) {
       settings.statusLine = {
         type: 'command',
-        command: `node ${statuslineScript}`,
+        command: `node ${JSON.stringify(statuslineScript)}`,
       };
     }
 

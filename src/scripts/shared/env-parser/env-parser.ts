@@ -37,10 +37,11 @@ export function parseEnvContent(content: string): Record<string, string> {
     const key = trimmed.slice(0, eqIndex).trim();
     let value = trimmed.slice(eqIndex + 1).trim();
 
-    // Strip surrounding quotes
+    // Strip surrounding quotes (minimum 2 chars to avoid stripping a lone quote)
     if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
+      value.length >= 2 &&
+      ((value.startsWith('"') && value.endsWith('"')) ||
+        (value.startsWith("'") && value.endsWith("'")))
     ) {
       value = value.slice(1, -1);
     }

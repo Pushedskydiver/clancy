@@ -149,6 +149,8 @@ export async function closeIssue(
   repo: string,
   issueNumber: number,
 ): Promise<boolean> {
+  if (!isValidRepo(repo)) return false;
+
   try {
     const response = await fetch(
       `${GITHUB_API}/repos/${repo}/issues/${issueNumber}`,

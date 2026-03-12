@@ -66,8 +66,15 @@ function scanForCredentials(content) {
   return matches;
 }
 
+// Read hook input — Claude Code passes PreToolUse data as a JSON argument.
+// Fall back to stdin for forward compatibility with potential API changes.
+function readInput() {
+  if (process.argv[2]) return process.argv[2];
+  try { return require('fs').readFileSync('/dev/stdin', 'utf8'); } catch { return '{}'; }
+}
+
 try {
-  const input = JSON.parse(process.argv[2] || '{}');
+  const input = JSON.parse(readInput());
   const toolName = input.tool_name || '';
   const toolInput = input.tool_input || {};
 

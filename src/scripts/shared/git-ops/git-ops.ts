@@ -17,6 +17,15 @@ function git(...args: string[]): string {
 }
 
 /**
+ * Get the name of the currently checked-out branch.
+ *
+ * @returns The current branch name.
+ */
+export function currentBranch(): string {
+  return git('rev-parse', '--abbrev-ref', 'HEAD');
+}
+
+/**
  * Check whether the working directory has uncommitted changes.
  *
  * @returns `true` if there are staged or unstaged changes.

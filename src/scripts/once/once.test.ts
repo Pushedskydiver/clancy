@@ -56,6 +56,7 @@ vi.mock('~/scripts/board/linear/linear.js', () => ({
 vi.mock('~/scripts/shared/git-ops/git-ops.js', () => ({
   branchExists: vi.fn(() => false),
   checkout: vi.fn(),
+  currentBranch: vi.fn(() => 'main'),
   deleteBranch: vi.fn(),
   ensureBranch: vi.fn(),
   squashMerge: vi.fn(() => true),

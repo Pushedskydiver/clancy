@@ -37,7 +37,7 @@ if (!fs.existsSync(cacheDir)) {
 // This script returns immediately so it never delays session start.
 const child = spawn(process.execPath, ['-e', `
   const fs = require('fs');
-  const { execSync } = require('child_process');
+  const { execFileSync } = require('child_process');
 
   const cacheFile = ${JSON.stringify(cacheFile)};
   const versionFile = ${JSON.stringify(versionFile)};
@@ -47,7 +47,7 @@ const child = spawn(process.execPath, ['-e', `
 
   let latest = null;
   try {
-    latest = execSync('npm view chief-clancy version', {
+    latest = execFileSync('npm', ['view', 'chief-clancy', 'version'], {
       encoding: 'utf8',
       timeout: 10000,
       windowsHide: true,
