@@ -4,7 +4,7 @@
  * Validates the environment before running a ticket:
  * required binaries, .env file, git repository, and working directory state.
  */
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 
 import { loadClancyEnv } from '~/scripts/shared/env-parser/env-parser.js';
 import { hasUncommittedChanges } from '~/scripts/shared/git-ops/git-ops.js';
@@ -24,7 +24,7 @@ type PreflightResult = {
  */
 export function binaryExists(name: string): boolean {
   try {
-    execSync(`command -v ${name}`, { stdio: 'ignore' });
+    execFileSync('which', [name], { stdio: 'ignore' });
     return true;
   } catch {
     return false;
@@ -38,7 +38,7 @@ export function binaryExists(name: string): boolean {
  */
 export function isGitRepo(): boolean {
   try {
-    execSync('git rev-parse --git-dir', { stdio: 'ignore' });
+    execFileSync('git', ['rev-parse', '--git-dir'], { stdio: 'ignore' });
     return true;
   } catch {
     return false;

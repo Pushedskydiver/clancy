@@ -15,7 +15,7 @@ import { jiraHeaders, pingEndpoint } from '~/scripts/shared/http/http.js';
 import type { PingResult } from '~/scripts/shared/http/http.js';
 import type { Ticket } from '~/types/index.js';
 
-const SAFE_VALUE_PATTERN = /^[a-zA-Z0-9 _\-"'.]+$/;
+const SAFE_VALUE_PATTERN = /^[a-zA-Z0-9 _\-'.]+$/;
 
 /**
  * Build Jira Basic auth header value.
