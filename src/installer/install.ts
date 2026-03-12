@@ -198,9 +198,22 @@ async function main(): Promise<void> {
   for (const [label, src] of [
     ['Commands', COMMANDS_SRC],
     ['Workflows', WORKFLOWS_SRC],
+    ['Runtime bundles', BUNDLE_SRC],
   ] as const) {
     if (!existsSync(src)) {
       console.error(red(`\n  Error: ${label} source not found: ${src}`));
+      console.error(
+        red('  The npm package may be corrupted. Try: npm cache clean --force'),
+      );
+      closePrompts();
+      process.exit(1);
+    }
+  }
+
+  // Validate individual bundle files exist
+  for (const script of ['clancy-once.js', 'clancy-afk.js']) {
+    if (!existsSync(join(BUNDLE_SRC, script))) {
+      console.error(red(`\n  Error: Bundled script not found: ${script}`));
       console.error(
         red('  The npm package may be corrupted. Try: npm cache clean --force'),
       );
@@ -288,19 +301,15 @@ async function main(): Promise<void> {
       JSON.stringify(buildManifest(workflowsDest), null, 2),
     );
 
-    // Copy bundled runtime scripts to .clancy/
-    const clancyProjectDir =
-      dest === GLOBAL_DEST
-        ? join(homeDir, '.clancy')
-        : join(process.cwd(), '.clancy');
+    // Copy bundled runtime scripts to .clancy/ in the current project.
+    // Always use cwd — workflows run `node .clancy/clancy-once.js` relative
+    // to the project root, regardless of global vs local install.
+    const clancyProjectDir = join(process.cwd(), '.clancy');
 
     mkdirSync(clancyProjectDir, { recursive: true });
 
     for (const script of ['clancy-once.js', 'clancy-afk.js']) {
-      const src = join(BUNDLE_SRC, script);
-      if (existsSync(src)) {
-        copyFileSync(src, join(clancyProjectDir, script));
-      }
+      copyFileSync(join(BUNDLE_SRC, script), join(clancyProjectDir, script));
     }
 
     // Install hooks
