@@ -16,7 +16,7 @@ Include as much detail as you can: what you found, how to reproduce it, and what
 Report it if you find:
 
 - The installer (`npx chief-clancy`) fetching or executing code from an unexpected source
-- A shell script in `src/templates/scripts/` that can be made to exfiltrate credentials or execute arbitrary commands beyond its documented purpose
+- A board module or script that can be made to exfiltrate credentials or execute arbitrary commands beyond its documented purpose
 - A workflow or agent prompt that can be manipulated to bypass Clancy's stated behaviour in a way that harms users
 - A dependency with a known CVE that affects Clancy's attack surface
 
@@ -24,7 +24,7 @@ Report it if you find:
 
 ## What is intentional, not a vulnerability
 
-- **`--dangerously-skip-permissions`** — Clancy's shell scripts invoke `claude --dangerously-skip-permissions` by design. This is documented, opt-in, and required for unattended operation. It is not a bug.
+- **`--dangerously-skip-permissions`** — Clancy invokes `claude --dangerously-skip-permissions` by design. This is documented, opt-in, and required for unattended operation. It is not a bug.
 - **Full filesystem access during a run** — Claude has read/write access to your project when Clancy runs. This is documented and expected behaviour.
 - **Credentials stored in `.clancy/.env`** — users are responsible for keeping this file secure. Clancy adds it to `.gitignore` automatically and documents the deny-list approach in the README.
 

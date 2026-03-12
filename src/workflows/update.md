@@ -73,12 +73,13 @@ Compare installed vs latest:
 
 **If installed == latest:**
 ```
-## Clancy Update
+🚨 Clancy — Update
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 **Installed:** X.Y.Z
 **Latest:** X.Y.Z
 
-You're already on the latest version.
+✅ You're already on the latest version. "Nothing to see here, folks."
 ```
 
 Exit.
@@ -92,7 +93,8 @@ curl -s https://raw.githubusercontent.com/Pushedskydiver/clancy/main/CHANGELOG.m
 Extract only the entries between the installed version and the latest version. Display:
 
 ```
-## Clancy Update Available
+🚨 Clancy — Update
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 **Installed:** {installed}
 **Latest:** {latest}
@@ -112,10 +114,10 @@ If you've modified any Clancy files directly, they'll be automatically backed up
 to `.claude/clancy/local-patches/` before overwriting.
 
 Your project files are preserved:
-- `.clancy/` project folder (scripts, docs, .env, progress log) ✓
-- `CLAUDE.md` ✓
-- Custom commands not in `commands/clancy/` ✓
-- Custom hooks ✓
+- `.clancy/` project folder (scripts, docs, .env, progress log) ✅
+- `CLAUDE.md` ✅
+- Custom commands not in `commands/clancy/` ✅
+- Custom hooks ✅
 ```
 
 Ask the user: **"Proceed with update?"** with options:
@@ -137,13 +139,13 @@ npx -y chief-clancy@latest
 The installer auto-detects whether to install globally or locally based on the existing install.
 
 This only touches `.claude/commands/clancy/` and `.claude/clancy/workflows/`. It never modifies:
-- `.clancy/clancy-once.sh` or `.clancy/clancy-afk.sh` — shell scripts
+- `.clancy/clancy-once.js` or `.clancy/clancy-afk.js` — JS shims (these import from the installed chief-clancy package, so updating the package automatically updates the behavior)
 - `.clancy/docs/` — codebase documentation
 - `.clancy/progress.txt` — progress log
 - `.clancy/.env` — credentials
 - `CLAUDE.md`
 
-**To update the shell scripts**, re-run `/clancy:init` — it will detect the existing setup and re-scaffold the scripts without asking for credentials again.
+**To re-scaffold the JS shims**, re-run `/clancy:init` — it will detect the existing setup and re-create `.clancy/clancy-once.js` and `.clancy/clancy-afk.js` without asking for credentials again.
 
 ---
 
@@ -160,10 +162,10 @@ Display completion message:
 
 ```
 ╔═══════════════════════════════════════════════════════════╗
-║  Clancy Updated: v{old} → v{new}                        ║
+║  ✅ Clancy Updated: v{old} → v{new}                     ║
 ╚═══════════════════════════════════════════════════════════╝
 
-⚠️  Restart Claude Code to pick up the new commands.
+"New badge, same Chief." — Restart Claude Code to pick up the new commands.
 
 View full changelog: github.com/Pushedskydiver/clancy/blob/main/CHANGELOG.md
 ```

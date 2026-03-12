@@ -30,20 +30,20 @@ Before proceeding, silently run `command -v` for each required binary:
 
 | Binary | Install hint |
 |---|---|
-| `jq` | `brew install jq` / `apt install jq` |
-| `curl` | pre-installed on macOS and most Linux |
+| `node` | Install Node.js 22+ (nodejs.org) |
 | `git` | `brew install git` / `apt install git` |
+| `claude` | `npm install -g @anthropic-ai/claude-code` |
 
 If all are present: continue silently.
 
 If any are missing, output:
 
 ```
-⚠ Missing prerequisites:
+⚠️ Missing prerequisites:
 
-  ✗ jq — brew install jq  (or apt install jq on Linux)
+  ❌ node — Install Node.js 22+ (nodejs.org)
 
-Clancy's shell scripts require these binaries to run. Install them, then re-run /clancy:init.
+Clancy requires these binaries to run. Install them, then re-run /clancy:init.
 ```
 
 List only the missing ones. Then stop — do not proceed with setup until prerequisites are satisfied.
@@ -54,9 +54,16 @@ List only the missing ones. Then stop — do not proceed with setup until prereq
 
 Output:
 
+```
+🚨 Clancy — Init
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+"Chief Wiggum reporting for duty."
+
 Clancy pulls tickets from your Kanban board, implements them, commits, and squash-merges — one ticket per run, fresh context every time.
 
 Let's get you set up.
+```
 
 ---
 
@@ -79,13 +86,12 @@ Clancy currently supports Jira, GitHub Issues, and Linear out of the box.
 
 Your board isn't supported yet — but you can add it:
   · Open an issue:   github.com/Pushedskydiver/clancy/issues
-  · Contribute one:  see CONTRIBUTING.md — adding a board is just a script template + a boards.json entry
+  · Contribute one:  see CONTRIBUTING.md — adding a board is a TypeScript module + a boards.json entry
 
 In the meantime, you can still use Clancy manually:
   · Run /clancy:map-codebase to scan and document your codebase
-  · Use the clancy-once.sh template from the GitHub repo as a starting point
-  · Implement your board's API fetch, store credentials in .clancy/.env
-  · Point clancy-afk.sh at your custom script via CLANCY_ONCE_SCRIPT in .clancy/.env
+  · Add `chief-clancy` as a devDependency and implement your board's API module
+  · Store credentials in .clancy/.env
 
 Do not scaffold anything after this message. Stop completely.
 
@@ -124,6 +130,65 @@ If enter is pressed with no value: skip — omit the label clause entirely (Clan
 
 ---
 
+### Q2b: Board credential verification
+
+After collecting all credentials for the chosen board, verify the connection before continuing.
+
+**Jira** — call `GET {JIRA_BASE_URL}/rest/api/3/project/{JIRA_PROJECT_KEY}` with basic auth (`{JIRA_USER}:{JIRA_API_TOKEN}` base64-encoded in the `Authorization: Basic` header).
+
+On success (HTTP 200), show:
+```
+✅ Jira connected — project {JIRA_PROJECT_KEY} reachable.
+```
+
+On failure, show:
+```
+❌ Couldn't connect to Jira (HTTP {status}).
+Check your credentials in the values you just entered.
+
+[1] Re-enter credentials
+```
+
+If [1]: go back to Q2 and re-ask all Jira questions. If the user wants to abandon setup entirely, they can Ctrl+C.
+
+**GitHub Issues** — call `GET https://api.github.com/repos/{GITHUB_REPO}` with `Authorization: Bearer {GITHUB_TOKEN}` and `X-GitHub-Api-Version: 2022-11-28`.
+
+On success (HTTP 200), show:
+```
+✅ GitHub connected — {GITHUB_REPO} reachable.
+```
+
+On failure, show:
+```
+❌ Couldn't connect to GitHub (HTTP {status}).
+Check your token has `repo` scope and the repo name is correct.
+
+[1] Re-enter credentials
+```
+
+If [1]: go back to Q2 and re-ask all GitHub questions. If the user wants to abandon setup entirely, they can Ctrl+C.
+
+**Linear** — call `POST https://api.linear.app/graphql` with `Authorization: {LINEAR_API_KEY}` (no Bearer prefix) and body `{"query": "{ viewer { id name } }"}`.
+
+On success (HTTP 200 with `data.viewer`), show:
+```
+✅ Linear connected — {viewer.name}.
+```
+
+On failure, show:
+```
+❌ Couldn't connect to Linear.
+Check your API key at linear.app/settings/api.
+
+[1] Re-enter credentials
+```
+
+If [1]: go back to Q2 and re-ask all Linear questions. If the user wants to abandon setup entirely, they can Ctrl+C.
+
+Never silently continue with unverified credentials — the user must fix their credentials or exit with Ctrl+C.
+
+---
+
 ### Q3 (Jira only): Status name
 
 Output:
@@ -134,7 +199,7 @@ Common values: To Do, Selected for Development, Ready, Open
 [1] To Do (default)
 [2] Enter a different value
 
-Store as `CLANCY_JQL_STATUS` in `.clancy/.env`. Always wrap the value in double quotes — status names often contain spaces (e.g. `CLANCY_JQL_STATUS="Selected for Development"`) and unquoted values with spaces cause bash parse errors when the file is sourced.
+Store as `CLANCY_JQL_STATUS` in `.clancy/.env`. Always wrap the value in double quotes — status names often contain spaces (e.g. `CLANCY_JQL_STATUS="Selected for Development"`).
 
 ---
 
@@ -176,9 +241,9 @@ Store the detected (or confirmed) value as `CLANCY_BASE_BRANCH` in `.clancy/.env
 
 Create `.clancy/` directory and the following:
 
-1. Write the correct `clancy-once.sh` for the chosen board to `.clancy/clancy-once.sh` — use the exact script content from scaffold.md, do not generate or modify it
-2. Write `clancy-afk.sh` to `.clancy/clancy-afk.sh` — use the exact script content from scaffold.md, do not generate or modify it
-3. Make both scripts executable: `chmod +x .clancy/*.sh`
+1. Ensure `chief-clancy` is installed as a devDependency: `npm install --save-dev chief-clancy` (skip if already installed)
+2. Write `.clancy/clancy-once.js` — use the exact shim content from scaffold.md, do not generate or modify it
+3. Write `.clancy/clancy-afk.js` — use the exact shim content from scaffold.md, do not generate or modify it
 4. Create `.clancy/docs/` with 10 empty template files (UPPERCASE.md with section headings only):
    - STACK.md, INTEGRATIONS.md, ARCHITECTURE.md, CONVENTIONS.md, TESTING.md
    - GIT.md, DESIGN-SYSTEM.md, ACCESSIBILITY.md, DEFINITION-OF-DONE.md, CONCERNS.md
@@ -198,7 +263,7 @@ Create `.clancy/` directory and the following:
 After scaffolding, commit everything created (excluding `.clancy/.env` which contains credentials):
 
 ```bash
-git add .clancy/clancy-once.sh .clancy/clancy-afk.sh .clancy/.env.example .clancy/docs/ CLAUDE.md .gitignore
+git add .clancy/clancy-once.js .clancy/clancy-afk.js .clancy/.env.example .clancy/docs/ CLAUDE.md .gitignore
 git commit -m "chore(clancy): initialise — scaffold scripts, docs templates, and config"
 ```
 
@@ -240,7 +305,7 @@ If a key is entered:
 1. Verify the key by calling `GET https://api.figma.com/v1/me` with `X-Figma-Token: {key}`
 2. On success, show:
    ```
-   ✓ Figma connected: {email}
+   ✅ Figma connected: {email}
 
    Note: Figma's API does not expose plan information.
    Clancy uses 3 MCP calls per ticket (metadata, design context, screenshot).
@@ -252,7 +317,7 @@ If a key is entered:
 
 If `GET /v1/me` fails (non-200), show:
 ```
-✗ Couldn't verify Figma API key (HTTP {status}).
+❌ Couldn't verify Figma API key (HTTP {status}).
 Double-check it at figma.com/settings → Personal access tokens.
 
 [1] Try a different key
@@ -413,11 +478,15 @@ If no: output "Run /clancy:map-codebase when you're ready." then continue to fin
 
 Output:
 
-Clancy is ready.
+```
+╔═══════════════════════════════════════════════════════════╗
+║  ✅ Clancy is ready.                                     ║
+╚═══════════════════════════════════════════════════════════╝
 
-- Scripts: `.clancy/clancy-once.sh`, `.clancy/clancy-afk.sh`
+- Scripts: `.clancy/clancy-once.js`, `.clancy/clancy-afk.js`
 - Docs: `.clancy/docs/` (10 files)
 - Config: `.clancy/.env`
 - CLAUDE.md: updated
 
-Run `/clancy:dry-run` to preview the first ticket without making changes, `/clancy:once` to pick it up, or `/clancy:run` to process the full queue.
+"Clancy's on the beat." — Run /clancy:dry-run to preview, /clancy:once to pick up a ticket, or /clancy:run to process the queue.
+```

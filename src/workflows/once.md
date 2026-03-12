@@ -4,7 +4,7 @@ Before doing anything else, check for updates:
 
 1. Run: `npm show chief-clancy version`
 2. Read the installed version from the Clancy `package.json`
-3. If a newer version exists, print: `ℹ Clancy v{current} → v{latest} available. Run /clancy:update to upgrade.` then continue normally.
+3. If a newer version exists, print: `ℹ️ Clancy v{current} → v{latest} available. Run /clancy:update to upgrade.` then continue normally.
 4. If already on latest, continue silently.
 5. If the npm check fails for any reason (offline, network error), continue silently. Never block on this.
 
@@ -32,12 +32,12 @@ Pick up exactly one ticket from the Kanban board, implement it, commit, squash-m
    ```
    Stop.
 
-3. The script to run is always `.clancy/clancy-once.sh` regardless of board.
-   `/clancy:init` copies the correct board variant as `clancy-once.sh` during setup.
+3. The script to run is always `.clancy/clancy-once.js` regardless of board.
+   `/clancy:init` copies the correct board variant as `clancy-once.js` during setup.
 
-4. Check `.clancy/clancy-once.sh` exists. If not:
+4. Check `.clancy/clancy-once.js` exists. If not:
    ```
-   .clancy/clancy-once.sh not found. Run /clancy:init to scaffold scripts.
+   .clancy/clancy-once.js not found. Run /clancy:init to scaffold scripts.
    ```
    Stop.
 
@@ -51,24 +51,30 @@ Check if the user passed `--dry-run` as an argument to the slash command.
 
 Display:
 ```
-Running Clancy for one ticket.
+🚨 Clancy — Once
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+"I'm on the case." — Running for one ticket.
 ```
 
 Execute:
 ```bash
-bash .clancy/clancy-once.sh
+node .clancy/clancy-once.js
 ```
 
 **With `--dry-run`:**
 
 Display:
 ```
-Running Clancy in dry-run mode — no changes will be made.
+🚨 Clancy — Dry Run
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+"Just a routine patrol." — Running in dry-run mode, no changes will be made.
 ```
 
 Execute:
 ```bash
-bash .clancy/clancy-once.sh --dry-run
+node .clancy/clancy-once.js --dry-run
 ```
 
 Stream output directly — do not buffer or summarise.
@@ -79,13 +85,16 @@ Stream output directly — do not buffer or summarise.
 
 On success, echo the result line from the script output:
 ```
-✓ {TICKET-KEY} complete.
+✅ {TICKET-KEY} complete.
+
+"That's some fine police work there, Lou."
 ```
 
 On failure:
 ```
-Clancy stopped. See output above for details.
-Run /clancy:status to check the board, or /clancy:review to inspect the ticket.
+❌ Clancy stopped. See output above for details.
+
+"Looks like we've got ourselves a 23-19." — Run /clancy:status to check the board, or /clancy:review to inspect the ticket.
 ```
 
 ---
@@ -94,3 +103,4 @@ Run /clancy:status to check the board, or /clancy:review to inspect the ticket.
 
 - Do not loop. This command runs the script exactly once and stops.
 - Do not attempt to run scripts from `src/templates/` — only scripts in `.clancy/`.
+- The JS shim imports from the installed `chief-clancy` package — ensure it's installed as a devDependency.

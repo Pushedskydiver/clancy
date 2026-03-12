@@ -1,0 +1,61 @@
+/**
+ * Zod schemas for `.clancy/.env` configuration variables.
+ *
+ * Validates board credentials and shared Clancy settings at startup.
+ */
+import * as z from 'zod/mini';
+
+/** A non-empty string — rejects `""` from the .env file. */
+const nonEmpty = z.string().check(z.minLength(1));
+
+/** A valid HTTP(S) URL. */
+const httpUrl = z.string().check(z.regex(/^https?:\/\/.+/));
+
+// ─── Shared optional env vars ────────────────────────────────────────────────
+
+export const sharedEnvSchema = z.object({
+  CLANCY_BASE_BRANCH: z.optional(z.string()),
+  CLANCY_LABEL: z.optional(z.string()),
+  CLANCY_MODEL: z.optional(z.string()),
+  CLANCY_NOTIFY_WEBHOOK: z.optional(z.string()),
+  CLANCY_STATUS_IN_PROGRESS: z.optional(z.string()),
+  CLANCY_STATUS_DONE: z.optional(z.string()),
+  MAX_ITERATIONS: z.optional(z.string()),
+  PLAYWRIGHT_ENABLED: z.optional(z.string()),
+  PLAYWRIGHT_DEV_PORT: z.optional(z.string()),
+});
+
+// ─── Board-specific schemas ──────────────────────────────────────────────────
+
+export const jiraEnvSchema = z.extend(sharedEnvSchema, {
+  JIRA_BASE_URL: httpUrl,
+  JIRA_USER: nonEmpty,
+  JIRA_API_TOKEN: nonEmpty,
+  JIRA_PROJECT_KEY: nonEmpty,
+  CLANCY_JQL_STATUS: z.optional(z.string()),
+  CLANCY_JQL_SPRINT: z.optional(z.string()),
+});
+
+export const githubEnvSchema = z.extend(sharedEnvSchema, {
+  GITHUB_TOKEN: nonEmpty,
+  GITHUB_REPO: nonEmpty,
+});
+
+export const linearEnvSchema = z.extend(sharedEnvSchema, {
+  LINEAR_API_KEY: nonEmpty,
+  LINEAR_TEAM_ID: nonEmpty,
+});
+
+// ─── Inferred types ──────────────────────────────────────────────────────────
+
+export type SharedEnv = z.infer<typeof sharedEnvSchema>;
+export type JiraEnv = z.infer<typeof jiraEnvSchema>;
+export type GitHubEnv = z.infer<typeof githubEnvSchema>;
+export type LinearEnv = z.infer<typeof linearEnvSchema>;
+
+// ─── Board config discriminated union ────────────────────────────────────────
+
+export type BoardConfig =
+  | { provider: 'jira'; env: JiraEnv }
+  | { provider: 'github'; env: GitHubEnv }
+  | { provider: 'linear'; env: LinearEnv };

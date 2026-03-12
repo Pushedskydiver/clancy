@@ -4,7 +4,7 @@
 This project uses Clancy for autonomous ticket-driven development.
 
 ### Version check
-At the start of each session, read `~/.claude/cache/clancy-update-check.json` (use the Bash tool). If it exists and `update_available` is true, display exactly:
+At the start of each session, read `~/.claude/cache/clancy-update-check.json` (use the Read tool). If it exists and `update_available` is true, display exactly:
 `⚠ Clancy update available: v{installed} → v{latest}. Run /clancy:update to upgrade.`
 Then continue normally. If the file is missing or unreadable, continue silently.
 
