@@ -4,16 +4,16 @@
  * Wraps common git commands used during the ticket lifecycle:
  * branch creation, checkout, squash merge, and cleanup.
  */
-import { execFileSync, execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 
 /**
  * Run a git command and return trimmed stdout.
  *
- * @param args - The git command arguments (e.g., `'status --short'`).
+ * @param args - The git sub-command and its arguments.
  * @returns The trimmed stdout output.
  */
-function git(args: string): string {
-  return execSync(`git ${args}`, { encoding: 'utf8' }).trim();
+function git(...args: string[]): string {
+  return execFileSync('git', args, { encoding: 'utf8' }).trim();
 }
 
 /**
@@ -23,8 +23,8 @@ function git(args: string): string {
  */
 export function hasUncommittedChanges(): boolean {
   try {
-    execSync('git diff --quiet', { stdio: 'ignore' });
-    execSync('git diff --cached --quiet', { stdio: 'ignore' });
+    execFileSync('git', ['diff', '--quiet'], { stdio: 'ignore' });
+    execFileSync('git', ['diff', '--cached', '--quiet'], { stdio: 'ignore' });
     return false;
   } catch {
     return true;
@@ -39,9 +39,13 @@ export function hasUncommittedChanges(): boolean {
  */
 export function branchExists(branch: string): boolean {
   try {
-    execSync(`git show-ref --verify --quiet refs/heads/${branch}`, {
-      stdio: 'ignore',
-    });
+    execFileSync(
+      'git',
+      ['show-ref', '--verify', '--quiet', `refs/heads/${branch}`],
+      {
+        stdio: 'ignore',
+      },
+    );
     return true;
   } catch {
     return false;
@@ -56,7 +60,7 @@ export function branchExists(branch: string): boolean {
  */
 export function ensureBranch(branch: string, baseBranch: string): void {
   if (!branchExists(branch)) {
-    git(`checkout -b ${branch} ${baseBranch}`);
+    git('checkout', '-b', branch, baseBranch);
   }
 }
 
@@ -67,7 +71,7 @@ export function ensureBranch(branch: string, baseBranch: string): void {
  * @param force - If `true`, uses `-B` to force-create/reset the branch.
  */
 export function checkout(branch: string, force = false): void {
-  git([`checkout`, ...(force ? ['-B'] : []), branch].join(' '));
+  git('checkout', ...(force ? ['-B'] : []), branch);
 }
 
 /**
@@ -82,10 +86,10 @@ export function squashMerge(
   sourceBranch: string,
   commitMessage: string,
 ): boolean {
-  git(`merge --squash ${sourceBranch}`);
+  git('merge', '--squash', sourceBranch);
 
   try {
-    execSync('git diff --cached --quiet', { stdio: 'ignore' });
+    execFileSync('git', ['diff', '--cached', '--quiet'], { stdio: 'ignore' });
     return false; // nothing staged
   } catch {
     execFileSync('git', ['commit', '-m', commitMessage], { encoding: 'utf8' });
@@ -99,5 +103,5 @@ export function squashMerge(
  * @param branch - The branch name to delete.
  */
 export function deleteBranch(branch: string): void {
-  git(`branch -d ${branch}`);
+  git('branch', '-d', branch);
 }

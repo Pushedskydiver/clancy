@@ -5,9 +5,20 @@
  * Detects stop conditions by parsing the script's stdout output.
  * Does NOT know about boards — board logic lives entirely in the once script.
  */
-import { execSync } from 'node:child_process';
+import { spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
+import { setTimeout as sleep } from 'node:timers/promises';
+
+import { bold, dim, green, red } from '~/utils/ansi/ansi.js';
+
+function formatDuration(ms: number): string {
+  const secs = Math.floor(ms / 1000);
+  if (secs < 60) return `${secs}s`;
+  const mins = Math.floor(secs / 60);
+  const remSecs = secs % 60;
+  return remSecs > 0 ? `${mins}m ${remSecs}s` : `${mins}m`;
+}
 
 /** Stop condition patterns matched against script output. */
 const STOP_PATTERNS = {
@@ -53,50 +64,89 @@ export function checkStopCondition(output: string): {
  * @param scriptDir - The directory containing `clancy-once.js`.
  * @param maxIterations - Maximum number of iterations (default: 5).
  */
-export function runAfkLoop(scriptDir: string, maxIterations = 5): void {
+export async function runAfkLoop(
+  scriptDir: string,
+  maxIterations = 5,
+): Promise<void> {
   const onceScript = join(scriptDir, 'clancy-once.js');
 
   if (!existsSync(onceScript)) {
-    console.error('✗ clancy-once.js not found in', scriptDir);
+    console.error(red('✗ clancy-once.js not found in'), scriptDir);
     return;
   }
 
+  console.log(
+    dim('┌──────────────────────────────────────────────────────────┐'),
+  );
+  console.log(
+    dim('│') +
+      bold('  🤖 Clancy — AFK mode                                  ') +
+      dim('│'),
+  );
+  console.log(
+    dim('│') +
+      dim('  "I\'m on it, boys. Proceed to the abandoned warehouse." ') +
+      dim('│'),
+  );
+  console.log(
+    dim('└──────────────────────────────────────────────────────────┘'),
+  );
+
+  const loopStart = Date.now();
+
   for (let i = 1; i <= maxIterations; i++) {
-    console.log(`\n── Iteration ${i}/${maxIterations} ──\n`);
+    const iterStart = Date.now();
+    console.log('');
+    console.log(bold(`🔁 Iteration ${i}/${maxIterations}`));
 
-    let output: string;
+    const result = spawnSync('node', [onceScript], {
+      encoding: 'utf8',
+      stdio: ['inherit', 'pipe', 'inherit'],
+      cwd: process.cwd(),
+    });
 
-    try {
-      output = execSync(`node "${onceScript}"`, {
-        encoding: 'utf8',
-        stdio: ['inherit', 'pipe', 'inherit'],
-        cwd: process.cwd(),
-      });
+    const output = result.stdout ?? '';
 
-      // Stream output to user
+    if (output) {
       process.stdout.write(output);
-    } catch (error) {
-      // Script may exit non-zero on some platforms
-      output =
-        error instanceof Error && 'stdout' in error
-          ? String((error as { stdout: unknown }).stdout)
-          : '';
+    }
+
+    const iterElapsed = formatDuration(Date.now() - iterStart);
+
+    if (result.error) {
+      console.error(
+        red(`✗ Failed to run clancy-once: ${result.error.message}`),
+      );
+      return;
     }
 
     const condition = checkStopCondition(output);
 
     if (condition.stop) {
+      const totalElapsed = formatDuration(Date.now() - loopStart);
+      console.log('');
+      console.log(dim(`  Iteration ${i} took ${iterElapsed}`));
       console.log(`\n${condition.reason}`);
+      console.log(
+        dim(`  Total: ${i} iteration${i > 1 ? 's' : ''} in ${totalElapsed}`),
+      );
       return;
     }
 
+    console.log(dim(`  Iteration ${i} took ${iterElapsed}`));
+
     // Brief pause between iterations
     if (i < maxIterations) {
-      execSync('sleep 2');
+      await sleep(2000);
     }
   }
 
+  const totalElapsed = formatDuration(Date.now() - loopStart);
+  console.log('');
   console.log(
-    `\n── Completed ${maxIterations} iterations. Run clancy-afk again to continue. ──`,
+    green(`🏁 Completed ${maxIterations} iterations`) +
+      dim(` (${totalElapsed})`),
   );
+  console.log(dim('  "That\'s some good police work, boys."'));
+  console.log(dim('  Run clancy-afk again to continue.'));
 }

@@ -44,6 +44,17 @@ import { sendNotification } from '~/scripts/shared/notify/notify.js';
 import { runPreflight } from '~/scripts/shared/preflight/preflight.js';
 import { appendProgress } from '~/scripts/shared/progress/progress.js';
 import { buildPrompt } from '~/scripts/shared/prompt/prompt.js';
+import { bold, dim, green, red, yellow } from '~/utils/ansi/ansi.js';
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+
+function formatDuration(ms: number): string {
+  const secs = Math.floor(ms / 1000);
+  if (secs < 60) return `${secs}s`;
+  const mins = Math.floor(secs / 60);
+  const remSecs = secs % 60;
+  return remSecs > 0 ? `${mins}m ${remSecs}s` : `${mins}m`;
+}
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -236,6 +247,18 @@ async function transitionToStatus(
 export async function run(argv: string[]): Promise<void> {
   const dryRun = argv.includes('--dry-run');
 
+  const startTime = Date.now();
+
+  console.log(dim('┌──────────────────────────────────────┐'));
+  console.log(
+    dim('│') + bold('  🤖 Clancy — once mode              ') + dim('│'),
+  );
+  console.log(
+    dim('│') + dim('  "Let\'s roll, boys."                ') + dim('│'),
+  );
+  console.log(dim('└──────────────────────────────────────┘'));
+  console.log('');
+
   try {
     // 1. Preflight
     const preflight = runPreflight(process.cwd());
@@ -275,13 +298,13 @@ export async function run(argv: string[]): Promise<void> {
       return;
     }
 
-    console.log('✓ Preflight passed. Starting Clancy...');
+    console.log(green('✅ Preflight passed'));
 
     // 5. Fetch ticket
     const ticket = await fetchTicket(config);
 
     if (!ticket) {
-      console.log('No tickets found. All done!');
+      console.log(dim('No tickets found. All done!'));
       return;
     }
 
@@ -299,32 +322,35 @@ export async function run(argv: string[]): Promise<void> {
     if (dryRun) {
       const parentLabel = config.provider === 'github' ? 'Milestone' : 'Epic';
       console.log('');
-      console.log('── Dry run ──────────────────────────────────────');
-      console.log(`  Ticket:         [${ticket.key}] ${ticket.title}`);
+      console.log(yellow('── Dry Run ──────────────────────────────────────'));
+      console.log(
+        `  Ticket:         ${bold(`[${ticket.key}]`)} ${ticket.title}`,
+      );
       console.log(
         `  ${parentLabel}:${' '.repeat(14 - parentLabel.length)}${ticket.parentInfo}`,
       );
       if (config.provider !== 'github') {
         console.log(`  Blockers:       ${ticket.blockers}`);
       }
-      console.log(`  Target branch:  ${targetBranch}`);
-      console.log(`  Feature branch: ${ticketBranch}`);
-      console.log('─────────────────────────────────────────────────');
-      console.log('  No changes made. Remove --dry-run to run for real.');
+      console.log(`  Target branch:  ${ticketBranch} → ${targetBranch}`);
+      console.log(yellow('─────────────────────────────────────────────────'));
+      console.log(dim('  No changes made. Remove --dry-run to run for real.'));
       return;
     }
 
     // 8. Print ticket info
-    console.log(`Picking up: [${ticket.key}] ${ticket.title}`);
-    if (config.provider === 'github') {
-      console.log(
-        `Milestone: ${ticket.parentInfo} | Target branch: ${targetBranch}`,
-      );
-    } else {
-      console.log(
-        `Epic: ${ticket.parentInfo} | Target branch: ${targetBranch} | Blockers: ${ticket.blockers}`,
-      );
+    const parentLabel = config.provider === 'github' ? 'Milestone' : 'Epic';
+    console.log('');
+    console.log(`🎫 ${bold(`[${ticket.key}]`)} ${ticket.title}`);
+    console.log(
+      dim(
+        `  ${parentLabel}: ${ticket.parentInfo} | Branch: ${ticketBranch} → ${targetBranch}`,
+      ),
+    );
+    if (config.provider !== 'github' && ticket.blockers !== 'None') {
+      console.log(yellow(`  Blockers: ${ticket.blockers}`));
     }
+    console.log('');
 
     // 9. Git: set up branches
     ensureBranch(targetBranch, baseBranch);
@@ -356,7 +382,9 @@ export async function run(argv: string[]): Promise<void> {
 
     if (!hadChanges) {
       console.log(
-        '⚠ No changes staged after squash merge. Claude may not have committed any work.',
+        yellow(
+          '⚠ No changes staged after squash merge. Claude may not have committed any work.',
+        ),
       );
     }
 
@@ -392,7 +420,10 @@ export async function run(argv: string[]): Promise<void> {
     // 15. Log progress
     appendProgress(process.cwd(), ticket.key, ticket.title, 'DONE');
 
-    console.log(`✓ ${ticket.key} complete.`);
+    const elapsed = formatDuration(Date.now() - startTime);
+    console.log('');
+    console.log(green(`🏁 ${ticket.key} complete`) + dim(` (${elapsed})`));
+    console.log(dim('  "Bake \'em away, toys."'));
 
     // 16. Send notification (best-effort)
     const webhook = config.env.CLANCY_NOTIFY_WEBHOOK;
@@ -406,6 +437,10 @@ export async function run(argv: string[]): Promise<void> {
   } catch (error) {
     // Unexpected errors — print and exit cleanly (exit 0 for AFK loop compat)
     const msg = error instanceof Error ? error.message : String(error);
-    console.error(`✗ Unexpected error: ${msg}`);
+    const elapsed = formatDuration(Date.now() - startTime);
+    console.error('');
+    console.error(red(`❌ Clancy stopped`) + dim(` (${elapsed})`));
+    console.error(red(`   ${msg}`));
+    console.error(dim('  "I\'d rather let Herman go."'));
   }
 }

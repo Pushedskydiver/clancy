@@ -84,14 +84,35 @@ export async function fetchIssue(
   token: string,
   repo: string,
 ): Promise<(Ticket & { milestone?: string }) | undefined> {
-  const response = await fetch(
-    `${GITHUB_API}/repos/${repo}/issues?state=open&assignee=@me&labels=clancy&per_page=3`,
-    { headers: githubHeaders(token) },
-  );
+  let response: Response;
 
-  if (!response.ok) return undefined;
+  try {
+    response = await fetch(
+      `${GITHUB_API}/repos/${repo}/issues?state=open&assignee=@me&labels=clancy&per_page=3`,
+      { headers: githubHeaders(token) },
+    );
+  } catch (err) {
+    console.warn(
+      `⚠ GitHub API request failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return undefined;
+  }
 
-  const parsed = githubIssuesResponseSchema.safeParse(await response.json());
+  if (!response.ok) {
+    console.warn(`⚠ GitHub API returned HTTP ${response.status}`);
+    return undefined;
+  }
+
+  let json: unknown;
+
+  try {
+    json = await response.json();
+  } catch {
+    console.warn('⚠ GitHub API returned invalid JSON');
+    return undefined;
+  }
+
+  const parsed = githubIssuesResponseSchema.safeParse(json);
 
   if (!parsed.success) {
     console.warn(`⚠ Unexpected GitHub response shape: ${parsed.error.message}`);

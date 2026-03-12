@@ -308,4 +308,8 @@ async function main(): Promise<void> {
   closePrompts();
 }
 
-main();
+main().catch((err) => {
+  const message = err instanceof Error ? err.message : String(err);
+  console.error(red(`\n  Install failed: ${message}`));
+  process.exit(1);
+});

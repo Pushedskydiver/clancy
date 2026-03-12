@@ -51,3 +51,11 @@ export const green = (s: string): string => `\x1b[32m${s}\x1b[0m`;
  * @returns The string wrapped in ANSI red codes.
  */
 export const red = (s: string): string => `\x1b[31m${s}\x1b[0m`;
+
+/**
+ * Colour the given string yellow.
+ *
+ * @param s - The string to style.
+ * @returns The string wrapped in ANSI yellow codes.
+ */
+export const yellow = (s: string): string => `\x1b[33m${s}\x1b[0m`;

@@ -54,8 +54,10 @@ export async function linearGraphql(
   query: string,
   variables?: Record<string, unknown>,
 ): Promise<unknown> {
+  let response: Response;
+
   try {
-    const response = await fetch(LINEAR_API_URL, {
+    response = await fetch(LINEAR_API_URL, {
       method: 'POST',
       headers: {
         Authorization: apiKey,
@@ -63,11 +65,22 @@ export async function linearGraphql(
       },
       body: JSON.stringify({ query, variables }),
     });
+  } catch (err) {
+    console.warn(
+      `⚠ Linear API request failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return undefined;
+  }
 
-    if (!response.ok) return undefined;
+  if (!response.ok) {
+    console.warn(`⚠ Linear API returned HTTP ${response.status}`);
+    return undefined;
+  }
 
+  try {
     return await response.json();
   } catch {
+    console.warn('⚠ Linear API returned invalid JSON');
     return undefined;
   }
 }

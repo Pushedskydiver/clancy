@@ -159,28 +159,49 @@ export async function fetchTicket(
 > {
   const jql = buildJql(projectKey, status, sprint, label);
 
-  const response = await fetch(`${baseUrl}/rest/api/3/search/jql`, {
-    method: 'POST',
-    headers: {
-      ...jiraHeaders(auth),
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      jql,
-      maxResults: 1,
-      fields: [
-        'summary',
-        'description',
-        'issuelinks',
-        'parent',
-        'customfield_10014',
-      ],
-    }),
-  });
+  let response: Response;
 
-  if (!response.ok) return undefined;
+  try {
+    response = await fetch(`${baseUrl}/rest/api/3/search/jql`, {
+      method: 'POST',
+      headers: {
+        ...jiraHeaders(auth),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        jql,
+        maxResults: 1,
+        fields: [
+          'summary',
+          'description',
+          'issuelinks',
+          'parent',
+          'customfield_10014',
+        ],
+      }),
+    });
+  } catch (err) {
+    console.warn(
+      `⚠ Jira API request failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return undefined;
+  }
 
-  const parsed = jiraSearchResponseSchema.safeParse(await response.json());
+  if (!response.ok) {
+    console.warn(`⚠ Jira API returned HTTP ${response.status}`);
+    return undefined;
+  }
+
+  let json: unknown;
+
+  try {
+    json = await response.json();
+  } catch {
+    console.warn('⚠ Jira API returned invalid JSON');
+    return undefined;
+  }
+
+  const parsed = jiraSearchResponseSchema.safeParse(json);
 
   if (!parsed.success) {
     console.warn(`⚠ Unexpected Jira response shape: ${parsed.error.message}`);
