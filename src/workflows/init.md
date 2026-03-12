@@ -241,33 +241,39 @@ Store the detected (or confirmed) value as `CLANCY_BASE_BRANCH` in `.clancy/.env
 
 Create `.clancy/` directory and the following:
 
-1. Ensure `chief-clancy` is installed as a devDependency: `npm install --save-dev chief-clancy` (skip if already installed)
-2. Write `.clancy/clancy-once.js` — use the exact shim content from scaffold.md, do not generate or modify it
-3. Write `.clancy/clancy-afk.js` — use the exact shim content from scaffold.md, do not generate or modify it
-4. Create `.clancy/docs/` with 10 empty template files (UPPERCASE.md with section headings only):
+1. Verify `.clancy/clancy-once.js` and `.clancy/clancy-afk.js` exist (copied by the installer). If missing, tell the user to run `npx chief-clancy@latest` and stop.
+2. Create `.clancy/docs/` with 10 empty template files (UPPERCASE.md with section headings only):
    - STACK.md, INTEGRATIONS.md, ARCHITECTURE.md, CONVENTIONS.md, TESTING.md
    - GIT.md, DESIGN-SYSTEM.md, ACCESSIBILITY.md, DEFINITION-OF-DONE.md, CONCERNS.md
-5. Write the correct `.env.example` for the chosen board to `.clancy/.env.example` — use the exact content from scaffold.md
-6. Write collected credentials to `.clancy/.env` (if the user provided them)
-7. Handle `CLAUDE.md` — follow the merge logic in scaffold.md exactly:
+3. Write the correct `.env.example` for the chosen board to `.clancy/.env.example` — use the exact content from scaffold.md
+4. Write collected credentials to `.clancy/.env` (if the user provided them)
+5. Handle `CLAUDE.md` — follow the merge logic in scaffold.md exactly:
    - If no CLAUDE.md: write the full template as `CLAUDE.md`
    - If CLAUDE.md exists without `<!-- clancy:start -->`: append the Clancy section to the end
    - If CLAUDE.md exists with `<!-- clancy:start -->`: replace only the content between the markers
    - Never overwrite the entire file
-8. Check `.gitignore` — if `.clancy/.env` is not listed, append it
+6. Check `.gitignore` — if `.clancy/.env` is not listed, append it
 
 ---
 
 ## Step 4b — Commit scaffold
 
-After scaffolding, commit everything created (excluding `.clancy/.env` which contains credentials):
+After scaffolding, ask the user whether to commit the scaffolded files:
+
+```
+Commit the Clancy scaffold to git? (recommended) [Y/n]
+```
+
+If yes (or enter): commit everything created (excluding `.clancy/.env` which contains credentials):
 
 ```bash
-git add .clancy/clancy-once.js .clancy/clancy-afk.js .clancy/.env.example .clancy/docs/ CLAUDE.md .gitignore
-git commit -m "chore(clancy): initialise — scaffold scripts, docs templates, and config"
+git add .clancy/.env.example .clancy/docs/ CLAUDE.md .gitignore
+git commit -m "chore(clancy): initialise — scaffold docs templates and config"
 ```
 
 If `CLAUDE.md` was not modified (it already existed and was not changed), omit it from the `git add`. If `.gitignore` was not modified, omit it too. Only stage files that actually changed.
+
+If no: skip the commit silently. The user can commit manually later.
 
 ---
 
