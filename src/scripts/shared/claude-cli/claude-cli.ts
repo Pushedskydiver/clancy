@@ -7,21 +7,6 @@
 import { spawnSync } from 'node:child_process';
 
 /**
- * Invoke a Claude Code session with the given prompt.
- *
- * Pipes the prompt to stdin and streams stdout/stderr live.
- * Uses `--dangerously-skip-permissions` for autonomous operation.
- *
- * @param prompt - The full implementation prompt.
- * @param model - Optional model override (e.g., `'opus'`, `'sonnet'`).
- * @returns `true` if Claude exited successfully (code 0), `false` otherwise.
- *
- * @example
- * ```ts
- * invokeClaudeSession('You are implementing PROJ-123...', 'opus');
- * ```
- */
-/**
  * Invoke Claude in print mode and capture the response.
  *
  * Uses `claude -p` for a single-prompt, non-interactive invocation.
@@ -53,6 +38,21 @@ export function invokeClaudePrint(
   };
 }
 
+/**
+ * Invoke a Claude Code session with the given prompt.
+ *
+ * Pipes the prompt to stdin and streams stdout/stderr live.
+ * Uses `--dangerously-skip-permissions` for autonomous operation.
+ *
+ * @param prompt - The full implementation prompt.
+ * @param model - Optional model override (e.g., `'opus'`, `'sonnet'`).
+ * @returns `true` if Claude exited successfully (code 0), `false` otherwise.
+ *
+ * @example
+ * ```ts
+ * invokeClaudeSession('You are implementing PROJ-123...', 'opus');
+ * ```
+ */
 export function invokeClaudeSession(prompt: string, model?: string): boolean {
   const args = ['--dangerously-skip-permissions'];
 
