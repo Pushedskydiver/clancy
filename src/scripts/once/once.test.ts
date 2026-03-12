@@ -5,6 +5,7 @@ import { closeIssue } from '~/scripts/board/github/github.js';
 import { fetchTicket as fetchJiraTicket } from '~/scripts/board/jira/jira.js';
 import { invokeClaudeSession } from '~/scripts/shared/claude-cli/claude-cli.js';
 import { detectBoard } from '~/scripts/shared/env-schema/env-schema.js';
+import { checkFeasibility } from '~/scripts/shared/feasibility/feasibility.js';
 import {
   checkout,
   deleteBranch,
@@ -66,6 +67,10 @@ vi.mock('~/scripts/shared/claude-cli/claude-cli.js', () => ({
   invokeClaudeSession: vi.fn(() => true),
 }));
 
+vi.mock('~/scripts/shared/feasibility/feasibility.js', () => ({
+  checkFeasibility: vi.fn(() => ({ feasible: true })),
+}));
+
 vi.mock('~/scripts/shared/notify/notify.js', () => ({
   sendNotification: vi.fn(() => Promise.resolve()),
 }));
@@ -90,6 +95,7 @@ const mockDeleteBranch = vi.mocked(deleteBranch);
 const mockAppendProgress = vi.mocked(appendProgress);
 const mockSendNotification = vi.mocked(sendNotification);
 const mockCloseIssue = vi.mocked(closeIssue);
+const mockCheckFeasibility = vi.mocked(checkFeasibility);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -306,6 +312,42 @@ describe('run', () => {
     log.mockRestore();
 
     expect(mockEnsureBranch).toHaveBeenCalledWith('main', 'main');
+  });
+
+  it('skips ticket when feasibility check fails', async () => {
+    setupJiraHappyPath();
+    mockCheckFeasibility.mockReturnValue({
+      feasible: false,
+      reason: 'requires OneTrust admin access',
+    });
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run([]);
+    log.mockRestore();
+
+    // No branch created, no Claude session
+    expect(mockEnsureBranch).not.toHaveBeenCalled();
+    expect(mockInvokeClaude).not.toHaveBeenCalled();
+
+    // Progress logged as SKIPPED
+    expect(mockAppendProgress).toHaveBeenCalledWith(
+      expect.any(String),
+      'PROJ-123',
+      'Add login page',
+      'SKIPPED',
+    );
+  });
+
+  it('proceeds when feasibility check passes', async () => {
+    setupJiraHappyPath();
+    mockCheckFeasibility.mockReturnValue({ feasible: true });
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run([]);
+    log.mockRestore();
+
+    expect(mockEnsureBranch).toHaveBeenCalled();
+    expect(mockInvokeClaude).toHaveBeenCalled();
   });
 
   it('handles unexpected errors gracefully', async () => {
