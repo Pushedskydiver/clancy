@@ -7,6 +7,14 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.3.5] — 2026-03-12
+
+### 🐛 Bug fixes
+
+- **Fixed Jira search schema validation** — The `POST /rest/api/3/search/jql` endpoint returns `isLast` instead of `total` in its response. The Zod schema required `total` as a mandatory number, causing validation to fail at runtime. Both fields are now optional.
+
+---
+
 ## [0.3.4] — 2026-03-12
 
 ### ✨ Features

@@ -1,6 +1,6 @@
 {
   "name": "chief-clancy",
-  "version": "0.3.4",
+  "version": "0.3.5",
   "description": "Autonomous, board-driven development for Claude Code — scaffolds docs, integrates Kanban boards, runs tickets in a loop.",
   "keywords": [
     "claude",
