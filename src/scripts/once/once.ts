@@ -377,7 +377,14 @@ export async function run(argv: string[]): Promise<void> {
       blockers: config.provider !== 'github' ? ticket.blockers : undefined,
     });
 
-    invokeClaudeSession(prompt, config.env.CLANCY_MODEL);
+    const claudeOk = invokeClaudeSession(prompt, config.env.CLANCY_MODEL);
+
+    if (!claudeOk) {
+      console.log(
+        yellow('⚠ Claude session exited with an error. Skipping merge.'),
+      );
+      return;
+    }
 
     // 12. Squash merge
     checkout(targetBranch);

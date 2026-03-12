@@ -14,22 +14,25 @@ import { spawnSync } from 'node:child_process';
  *
  * @param prompt - The full implementation prompt.
  * @param model - Optional model override (e.g., `'opus'`, `'sonnet'`).
+ * @returns `true` if Claude exited successfully (code 0), `false` otherwise.
  *
  * @example
  * ```ts
  * invokeClaudeSession('You are implementing PROJ-123...', 'opus');
  * ```
  */
-export function invokeClaudeSession(prompt: string, model?: string): void {
+export function invokeClaudeSession(prompt: string, model?: string): boolean {
   const args = ['--dangerously-skip-permissions'];
 
   if (model) {
     args.push('--model', model);
   }
 
-  spawnSync('claude', args, {
+  const result = spawnSync('claude', args, {
     input: prompt,
     stdio: ['pipe', 'inherit', 'inherit'],
     encoding: 'utf8',
   });
+
+  return result.status === 0 && !result.error;
 }

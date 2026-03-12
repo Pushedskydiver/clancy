@@ -38,4 +38,21 @@ describe('invokeClaudeSession', () => {
     const args = call?.[1] as string[];
     expect(args).not.toContain('--model');
   });
+
+  it('returns true when claude exits with code 0', () => {
+    expect(invokeClaudeSession('test prompt')).toBe(true);
+  });
+
+  it('returns false when claude exits with non-zero code', () => {
+    vi.mocked(childProcess.spawnSync).mockReturnValueOnce({
+      status: 1,
+      signal: null,
+      output: [],
+      pid: 0,
+      stdout: '',
+      stderr: '',
+    });
+
+    expect(invokeClaudeSession('test prompt')).toBe(false);
+  });
 });

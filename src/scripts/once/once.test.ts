@@ -62,7 +62,7 @@ vi.mock('~/scripts/shared/git-ops/git-ops.js', () => ({
 }));
 
 vi.mock('~/scripts/shared/claude-cli/claude-cli.js', () => ({
-  invokeClaudeSession: vi.fn(),
+  invokeClaudeSession: vi.fn(() => true),
 }));
 
 vi.mock('~/scripts/shared/notify/notify.js', () => ({

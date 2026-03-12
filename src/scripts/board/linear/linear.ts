@@ -118,7 +118,8 @@ export async function fetchIssue(env: LinearEnv): Promise<
     })
   | undefined
 > {
-  const hasLabel = env.CLANCY_LABEL && SAFE_ID_PATTERN.test(env.CLANCY_LABEL);
+  const label = env.CLANCY_LABEL?.trim();
+  const hasLabel = Boolean(label);
 
   const labelFilter = hasLabel ? 'labels: { name: { eq: $label } }' : '';
 
@@ -150,7 +151,7 @@ export async function fetchIssue(env: LinearEnv): Promise<
     teamId: env.LINEAR_TEAM_ID,
   };
 
-  if (hasLabel) variables.label = env.CLANCY_LABEL;
+  if (hasLabel) variables.label = label;
 
   const raw = await linearGraphql(env.LINEAR_API_KEY, query, variables);
   const parsed = linearIssuesResponseSchema.safeParse(raw);
