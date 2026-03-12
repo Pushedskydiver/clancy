@@ -7,7 +7,15 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
-## [0.3.2] — Unreleased
+## [0.3.3] — Unreleased
+
+### 🐛 Bug fixes
+
+- **Republish with built bundles** — v0.3.2 was published without running the build step, so the bundled runtime scripts in `.clancy/` still contained the old JQL bug. This release is identical to 0.3.2 but with correctly built bundles.
+
+---
+
+## [0.3.2] — 2026-03-12
 
 ### 🐛 Bug fixes
 
