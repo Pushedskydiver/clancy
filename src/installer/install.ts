@@ -312,6 +312,12 @@ async function main(): Promise<void> {
       copyFileSync(join(BUNDLE_SRC, script), join(clancyProjectDir, script));
     }
 
+    // Ensure .clancy is treated as an ESM package so Node runs clancy-*.js as ESM
+    writeFileSync(
+      join(clancyProjectDir, 'package.json'),
+      JSON.stringify({ type: 'module' }, null, 2) + '\n',
+    );
+
     // Install hooks
     const claudeConfigDir =
       dest === GLOBAL_DEST

@@ -114,10 +114,13 @@ If you've modified any Clancy files directly, they'll be automatically backed up
 to `.claude/clancy/local-patches/` before overwriting.
 
 Your project files are preserved:
-- `.clancy/` project folder (scripts, docs, .env, progress log) ✅
+- `.clancy/docs/`, `.clancy/.env`, `.clancy/progress.txt` ✅
 - `CLAUDE.md` ✅
 - Custom commands not in `commands/clancy/` ✅
 - Custom hooks ✅
+
+Note: `.clancy/clancy-once.js` and `.clancy/clancy-afk.js` **will be replaced** with
+the latest bundled versions. The rest of `.clancy/` is untouched.
 ```
 
 Ask the user: **"Proceed with update?"** with options:

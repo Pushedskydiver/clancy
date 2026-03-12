@@ -298,7 +298,7 @@ The installer copies bundled runtime scripts (`clancy-once.js` and `clancy-afk.j
 
 If the scripts are missing (e.g. upgrading from an older version), tell the user to run:
 ```bash
-npx chief-clancy@latest
+npx -y chief-clancy@latest
 ```
 
 ---

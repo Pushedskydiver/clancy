@@ -90,7 +90,7 @@ Your board isn't supported yet — but you can add it:
 
 In the meantime, you can still use Clancy manually:
   · Run /clancy:map-codebase to scan and document your codebase
-  · Run `npx chief-clancy@latest` and implement your board's API module
+  · Run `npx -y chief-clancy@latest` and implement your board's API module
   · Store credentials in .clancy/.env
 
 Do not scaffold anything after this message. Stop completely.
@@ -241,7 +241,7 @@ Store the detected (or confirmed) value as `CLANCY_BASE_BRANCH` in `.clancy/.env
 
 Create `.clancy/` directory and the following:
 
-1. Verify `.clancy/clancy-once.js` and `.clancy/clancy-afk.js` exist (copied by the installer). If missing, tell the user to run `npx chief-clancy@latest` and stop.
+1. Verify `.clancy/clancy-once.js` and `.clancy/clancy-afk.js` exist (copied by the installer). If missing, tell the user to run `npx -y chief-clancy@latest` and stop.
 2. Create `.clancy/docs/` with 10 empty template files (UPPERCASE.md with section headings only):
    - STACK.md, INTEGRATIONS.md, ARCHITECTURE.md, CONVENTIONS.md, TESTING.md
    - GIT.md, DESIGN-SYSTEM.md, ACCESSIBILITY.md, DEFINITION-OF-DONE.md, CONCERNS.md
