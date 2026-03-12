@@ -290,6 +290,21 @@ node_modules/
 
 ---
 
+## .prettierignore check
+
+Check whether a `.prettierignore` file exists in the project root.
+
+**If it exists:** read it. If it does not already contain `.clancy/`, append:
+```
+# Clancy generated files
+.clancy/
+.claude/commands/clancy/
+```
+
+**If it does not exist:** skip — do not create it. Clancy only adds entries to an existing `.prettierignore` so it does not impose Prettier on projects that don't use it.
+
+---
+
 ## Runtime scripts
 
 The installer copies bundled runtime scripts (`clancy-once.js` and `clancy-afk.js`) directly into `.clancy/` during installation. These are self-contained — they have zero runtime dependency on the `chief-clancy` npm package.
