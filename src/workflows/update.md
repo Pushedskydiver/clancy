@@ -138,14 +138,16 @@ npx -y chief-clancy@latest
 
 The installer auto-detects whether to install globally or locally based on the existing install.
 
-This only touches `.claude/commands/clancy/` and `.claude/clancy/workflows/`. It never modifies:
-- `.clancy/clancy-once.js` or `.clancy/clancy-afk.js` — JS shims (these import from the installed chief-clancy package, so updating the package automatically updates the behavior)
+This touches:
+- `.claude/commands/clancy/` — slash commands (replaced)
+- `.claude/clancy/workflows/` — workflow files (replaced)
+- `.clancy/clancy-once.js` and `.clancy/clancy-afk.js` — bundled runtime scripts (replaced)
+
+It never modifies:
 - `.clancy/docs/` — codebase documentation
 - `.clancy/progress.txt` — progress log
 - `.clancy/.env` — credentials
 - `CLAUDE.md`
-
-**To re-scaffold the JS shims**, re-run `/clancy:init` — it will detect the existing setup and re-create `.clancy/clancy-once.js` and `.clancy/clancy-afk.js` without asking for credentials again.
 
 ---
 

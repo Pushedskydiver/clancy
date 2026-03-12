@@ -8,6 +8,7 @@
  * detects and backs up user-modified files, and registers hooks in Claude settings.
  */
 import {
+  copyFileSync,
   existsSync,
   mkdirSync,
   readFileSync,
@@ -41,6 +42,7 @@ const PKG = require('../../package.json') as { version: string };
 const COMMANDS_SRC = join(__dirname, '..', '..', 'src', 'commands');
 const WORKFLOWS_SRC = join(__dirname, '..', '..', 'src', 'workflows');
 const HOOKS_SRC = join(__dirname, '..', '..', 'hooks');
+const BUNDLE_SRC = join(__dirname, '..', 'bundle');
 
 const _homeDir = process.env.HOME ?? process.env.USERPROFILE;
 
@@ -285,6 +287,21 @@ async function main(): Promise<void> {
       workflowsManifestPath,
       JSON.stringify(buildManifest(workflowsDest), null, 2),
     );
+
+    // Copy bundled runtime scripts to .clancy/
+    const clancyProjectDir =
+      dest === GLOBAL_DEST
+        ? join(homeDir, '.clancy')
+        : join(process.cwd(), '.clancy');
+
+    mkdirSync(clancyProjectDir, { recursive: true });
+
+    for (const script of ['clancy-once.js', 'clancy-afk.js']) {
+      const src = join(BUNDLE_SRC, script);
+      if (existsSync(src)) {
+        copyFileSync(src, join(clancyProjectDir, script));
+      }
+    }
 
     // Install hooks
     const claudeConfigDir =
