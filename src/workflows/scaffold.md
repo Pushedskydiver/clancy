@@ -290,33 +290,15 @@ node_modules/
 
 ---
 
-## JS shim scripts
+## Runtime scripts
 
-Write these scripts exactly as shown — do not generate, summarise, or modify the content. Write the file contents byte-for-byte.
+The installer copies bundled runtime scripts (`clancy-once.js` and `clancy-afk.js`) directly into `.clancy/` during installation. These are self-contained — they have zero runtime dependency on the `chief-clancy` npm package.
 
-The shims are **board-agnostic** — the same files are used for all boards. Board detection happens at runtime from `.clancy/.env`.
+**Do NOT write or modify these files during init.** They are managed by the installer and updated automatically via `/clancy:update`.
 
-**Prerequisite:** Ensure `chief-clancy` is installed as a devDependency before writing these shims:
+If the scripts are missing (e.g. upgrading from an older version), tell the user to run:
 ```bash
-npm install --save-dev chief-clancy
-```
-
-### `.clancy/clancy-once.js` — all boards
-
-Write this file regardless of which board is chosen:
-
-```js
-import('chief-clancy/scripts/once').then(m => m.run(process.argv));
-```
-
----
-
-### `.clancy/clancy-afk.js` — all boards
-
-Write this file regardless of which board is chosen:
-
-```js
-import('chief-clancy/scripts/afk').then(m => m.runAfkLoop(process.cwd(), parseInt(process.env.MAX_ITERATIONS || '5')));
+npx chief-clancy@latest
 ```
 
 ---
