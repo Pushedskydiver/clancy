@@ -7,6 +7,14 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.3.9] — 2026-03-12
+
+### ⚡️ Performance
+
+- **Optimized runtime bundle size** — `clancy-once.js` reduced from 508 KB to 125 KB (75% smaller). Strips ~243 KB of unused zod locale translations via an esbuild plugin, and minifies both bundles. Moved from inline esbuild CLI to `esbuild.config.js` for maintainability.
+
+---
+
 ## [0.3.8] — 2026-03-12
 
 ### ✨ Features

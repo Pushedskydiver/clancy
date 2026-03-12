@@ -1,6 +1,6 @@
 {
   "name": "chief-clancy",
-  "version": "0.3.8",
+  "version": "0.3.9",
   "description": "Autonomous, board-driven development for Claude Code — scaffolds docs, integrates Kanban boards, runs tickets in a loop.",
   "keywords": [
     "claude",
@@ -40,7 +40,7 @@
   "scripts": {
     "clean": "rm -rf dist",
     "build": "npm run clean && tsc && tsc-alias && npm run bundle",
-    "bundle": "mkdir -p dist/bundle && esbuild dist/scripts/once/once.js --bundle --platform=node --format=esm --target=node22 --outfile=dist/bundle/clancy-once.js && esbuild dist/scripts/afk/afk.js --bundle --platform=node --format=esm --target=node22 --outfile=dist/bundle/clancy-afk.js",
+    "bundle": "node esbuild.config.js",
     "dev": "vitest",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
