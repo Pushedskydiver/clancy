@@ -73,7 +73,7 @@ export function slugifyMilestone(title: string): string {
 /**
  * Fetch the next available issue from GitHub Issues.
  *
- * Requests 3 results to account for PR pollution (GitHub Issues endpoint
+ * Requests extra results to account for PR pollution (GitHub Issues endpoint
  * returns PRs too), then filters to real issues only.
  *
  * @param token - The GitHub personal access token.
@@ -83,12 +83,13 @@ export function slugifyMilestone(title: string): string {
 export async function fetchIssue(
   token: string,
   repo: string,
+  label = 'clancy',
 ): Promise<(Ticket & { milestone?: string }) | undefined> {
   let response: Response;
 
   try {
     response = await fetch(
-      `${GITHUB_API}/repos/${repo}/issues?state=open&assignee=@me&labels=clancy&per_page=3`,
+      `${GITHUB_API}/repos/${repo}/issues?state=open&assignee=@me&labels=${encodeURIComponent(label)}&per_page=10`,
       { headers: githubHeaders(token) },
     );
   } catch (err) {

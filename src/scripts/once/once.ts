@@ -103,7 +103,11 @@ async function fetchTicket(
 
     case 'github': {
       const { env } = config;
-      const ticket = await fetchGitHubIssue(env.GITHUB_TOKEN, env.GITHUB_REPO);
+      const ticket = await fetchGitHubIssue(
+        env.GITHUB_TOKEN,
+        env.GITHUB_REPO,
+        env.CLANCY_LABEL,
+      );
 
       if (!ticket) return undefined;
 

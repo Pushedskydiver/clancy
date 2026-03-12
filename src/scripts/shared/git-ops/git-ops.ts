@@ -98,10 +98,13 @@ export function squashMerge(
 }
 
 /**
- * Delete a local branch.
+ * Delete a local branch (force).
+ *
+ * Uses `-D` because squash merges leave the branch in an "unmerged" state
+ * from git's perspective, causing `-d` to fail.
  *
  * @param branch - The branch name to delete.
  */
 export function deleteBranch(branch: string): void {
-  git('branch', '-d', branch);
+  git('branch', '-D', branch);
 }
