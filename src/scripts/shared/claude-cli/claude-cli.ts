@@ -7,6 +7,38 @@
 import { spawnSync } from 'node:child_process';
 
 /**
+ * Invoke Claude in print mode and capture the response.
+ *
+ * Uses `claude -p` for a single-prompt, non-interactive invocation.
+ * Stdout is captured (not streamed) so the caller can parse it.
+ *
+ * @param prompt - The prompt to send.
+ * @param model - Optional model override.
+ * @returns The captured stdout and whether the process succeeded.
+ */
+export function invokeClaudePrint(
+  prompt: string,
+  model?: string,
+): { stdout: string; ok: boolean } {
+  const args = ['-p', '--dangerously-skip-permissions'];
+
+  if (model) {
+    args.push('--model', model);
+  }
+
+  const result = spawnSync('claude', args, {
+    input: prompt,
+    stdio: ['pipe', 'pipe', 'pipe'],
+    encoding: 'utf8',
+  });
+
+  return {
+    stdout: result.stdout ?? '',
+    ok: result.status === 0 && !result.error,
+  };
+}
+
+/**
  * Invoke a Claude Code session with the given prompt.
  *
  * Pipes the prompt to stdin and streams stdout/stderr live.

@@ -2,8 +2,8 @@
  * Unified once orchestrator — replaces all three `clancy-once-*.sh` scripts.
  *
  * Full lifecycle: preflight → detect board → fetch ticket → compute branches →
- * [dry-run gate] → transition In Progress → create branch → invoke Claude →
- * squash merge → transition Done → log → notify.
+ * [dry-run gate] → feasibility check → create branch → transition In Progress →
+ * invoke Claude → squash merge → transition Done → log → notify.
  *
  * All errors exit with code 0 (not 1). This is intentional — the AFK runner
  * detects stop conditions by parsing stdout, not exit codes.
@@ -37,6 +37,7 @@ import {
 import { invokeClaudeSession } from '~/scripts/shared/claude-cli/claude-cli.js';
 import { detectBoard } from '~/scripts/shared/env-schema/env-schema.js';
 import type { BoardConfig } from '~/scripts/shared/env-schema/env-schema.js';
+import { checkFeasibility } from '~/scripts/shared/feasibility/feasibility.js';
 import {
   checkout,
   currentBranch,
@@ -365,19 +366,40 @@ export async function run(argv: string[]): Promise<void> {
     }
     console.log('');
 
-    // 9. Git: set up branches
+    // 9. Feasibility check
+    console.log(dim('  Checking feasibility...'));
+    const feasibility = checkFeasibility(
+      {
+        key: ticket.key,
+        title: ticket.title,
+        description: ticket.description,
+      },
+      config.env.CLANCY_MODEL,
+    );
+
+    if (!feasibility.feasible) {
+      const reason = feasibility.reason ?? 'not implementable as code changes';
+      console.log(yellow(`⏭️ Ticket skipped [${ticket.key}]: ${reason}`));
+      appendProgress(process.cwd(), ticket.key, ticket.title, 'SKIPPED');
+      return;
+    }
+
+    console.log(green('  ✓ Feasibility check passed'));
+    console.log('');
+
+    // 10. Git: set up branches
     originalBranch = currentBranch();
     ensureBranch(targetBranch, baseBranch);
     checkout(targetBranch);
     checkout(ticketBranch, true);
 
-    // 10. Transition to In Progress (best-effort)
+    // 11. Transition to In Progress (best-effort)
     const statusInProgress = config.env.CLANCY_STATUS_IN_PROGRESS;
     if (statusInProgress) {
       await transitionToStatus(config, ticket, statusInProgress);
     }
 
-    // 11. Build prompt and invoke Claude
+    // 12. Build prompt and invoke Claude
     const prompt = buildPrompt({
       provider: config.provider,
       key: ticket.key,
@@ -396,7 +418,7 @@ export async function run(argv: string[]): Promise<void> {
       return;
     }
 
-    // 12. Squash merge
+    // 13. Squash merge
     checkout(targetBranch);
     const commitMsg = `feat(${ticket.key}): ${ticket.title}`;
     const hadChanges = squashMerge(ticketBranch, commitMsg);
@@ -409,10 +431,10 @@ export async function run(argv: string[]): Promise<void> {
       );
     }
 
-    // 13. Delete feature branch
+    // 14. Delete feature branch
     deleteBranch(ticketBranch);
 
-    // 14. Transition to Done / close issue (best-effort)
+    // 15. Transition to Done / close issue (best-effort)
     const statusDone = config.env.CLANCY_STATUS_DONE;
 
     if (config.provider === 'github') {
@@ -438,7 +460,7 @@ export async function run(argv: string[]): Promise<void> {
       await transitionToStatus(config, ticket, statusDone);
     }
 
-    // 15. Log progress
+    // 16. Log progress
     appendProgress(process.cwd(), ticket.key, ticket.title, 'DONE');
 
     const elapsed = formatDuration(Date.now() - startTime);
@@ -446,7 +468,7 @@ export async function run(argv: string[]): Promise<void> {
     console.log(green(`🏁 ${ticket.key} complete`) + dim(` (${elapsed})`));
     console.log(dim('  "Bake \'em away, toys."'));
 
-    // 16. Send notification (best-effort)
+    // 17. Send notification (best-effort)
     const webhook = config.env.CLANCY_NOTIFY_WEBHOOK;
 
     if (webhook) {

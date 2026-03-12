@@ -1,10 +1,10 @@
 import * as childProcess from 'node:child_process';
 import { describe, expect, it, vi } from 'vitest';
 
-import { invokeClaudeSession } from './claude-cli.js';
+import { invokeClaudePrint, invokeClaudeSession } from './claude-cli.js';
 
 vi.mock('node:child_process', () => ({
-  spawnSync: vi.fn(() => ({ status: 0 })),
+  spawnSync: vi.fn(() => ({ status: 0, stdout: '', stderr: '' })),
 }));
 
 describe('invokeClaudeSession', () => {
@@ -54,5 +54,53 @@ describe('invokeClaudeSession', () => {
     });
 
     expect(invokeClaudeSession('test prompt')).toBe(false);
+  });
+});
+
+describe('invokeClaudePrint', () => {
+  it('spawns claude with -p flag and captures stdout', () => {
+    vi.mocked(childProcess.spawnSync).mockReturnValueOnce({
+      status: 0,
+      signal: null,
+      output: [],
+      pid: 0,
+      stdout: 'FEASIBLE',
+      stderr: '',
+    });
+
+    const result = invokeClaudePrint('test prompt');
+
+    expect(childProcess.spawnSync).toHaveBeenCalledWith(
+      'claude',
+      ['-p', '--dangerously-skip-permissions'],
+      expect.objectContaining({
+        input: 'test prompt',
+        stdio: ['pipe', 'pipe', 'pipe'],
+      }),
+    );
+    expect(result).toEqual({ stdout: 'FEASIBLE', ok: true });
+  });
+
+  it('includes --model flag when model is specified', () => {
+    invokeClaudePrint('test prompt', 'sonnet');
+
+    expect(childProcess.spawnSync).toHaveBeenCalledWith(
+      'claude',
+      ['-p', '--dangerously-skip-permissions', '--model', 'sonnet'],
+      expect.objectContaining({ input: 'test prompt' }),
+    );
+  });
+
+  it('returns ok=false on non-zero exit', () => {
+    vi.mocked(childProcess.spawnSync).mockReturnValueOnce({
+      status: 1,
+      signal: null,
+      output: [],
+      pid: 0,
+      stdout: '',
+      stderr: '',
+    });
+
+    expect(invokeClaudePrint('test prompt').ok).toBe(false);
   });
 });
