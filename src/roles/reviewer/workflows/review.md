@@ -8,7 +8,13 @@ Fetch the next ticket from the board and score how well-specified it is. Returns
 
 ## Step 1 — Preflight checks
 
-Same as status workflow. Check `.clancy/`, `.clancy/.env`, and board credentials.
+1. Check `.clancy/` exists and `.clancy/.env` is present. If not:
+   ```
+   .clancy/ not found. Run /clancy:init to set up Clancy first.
+   ```
+   Stop.
+
+2. Source `.clancy/.env` and check board credentials are present (same vars checked by `/clancy:status`).
 
 ---
 

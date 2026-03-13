@@ -50,6 +50,9 @@ If `PLAYWRIGHT_ENABLED=true` and the tech agent is re-running: verify `PLAYWRIGH
 ## Step 3 — Confirm before running
 
 ```
+🚨 Clancy — Update Docs
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
 Based on your changes, I'll re-run:
   - {agent list}
 
@@ -81,9 +84,9 @@ git commit -m "docs(clancy): update-docs — refresh .clancy/docs/"
 ## Step 6 — Final message
 
 ```
-Docs updated.
+✅ Docs updated — {N} files refreshed.
 
 Updated: {file list}
 
-Run /clancy:once or /clancy:run when ready.
+"Case files updated." — Run /clancy:once or /clancy:run when ready.
 ```

@@ -59,8 +59,10 @@ clancy/
 `src/installer/install.ts` is the entry point for `npx chief-clancy` (compiled to `dist/installer/install.js`):
 
 1. Prompts for global (`~/.claude`) or local (`./.claude`) install
-2. Walks `src/roles/*/commands/` and copies all command files flat → `{dest}/commands/clancy/`
-3. Walks `src/roles/*/workflows/` and copies all workflow files flat → `{dest}/clancy/workflows/`
+2. Walks `src/roles/*/commands/` and copies command files flat → `{dest}/commands/clancy/`
+   - Core roles (implementer, reviewer, setup) are always installed
+   - Optional roles (planner, etc.) are only installed if listed in `CLANCY_ROLES` env var in `.clancy/.env`, or if no `.clancy/.env` exists yet (first install = install all)
+3. Walks `src/roles/*/workflows/` and copies workflow files flat → `{dest}/clancy/workflows/` (same filtering)
 4. Copies `hooks/*.js` → `{dest}/hooks/` (pre-built CommonJS, not compiled from TS)
 5. Copies bundled runtime scripts (`dist/bundle/clancy-once.js`, `clancy-afk.js`) → `.clancy/`
 6. Registers hooks in `settings.json` (PreToolUse, PostToolUse, SessionStart, statusLine)

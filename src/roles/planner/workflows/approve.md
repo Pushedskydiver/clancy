@@ -69,7 +69,7 @@ For Linear, the user provides the issue identifier (e.g. `ENG-42`). Look up the 
 
 ```graphql
 query {
-  issueSearch(query: "$IDENTIFIER", first: 1) {
+  issueSearch(query: "$IDENTIFIER", first: 5) {
     nodes {
       id identifier title description
       comments { nodes { body createdAt } }
@@ -78,6 +78,8 @@ query {
 }
 ```
 
+**Important:** `issueSearch` is a fuzzy text search. After fetching results, verify the returned issue's `identifier` field exactly matches the provided key (case-insensitive). If no exact match is found in the results, report: `❌ Issue {KEY} not found. Check the identifier and try again.`
+
 Search the comments for the most recent one containing `## Clancy Implementation Plan`.
 
 If no plan comment is found:
@@ -85,6 +87,23 @@ If no plan comment is found:
 ❌ No Clancy plan found for {KEY}. Run /clancy:plan first.
 ```
 Stop.
+
+---
+
+## Step 3b — Check for existing plan in description
+
+Before confirming, check if the ticket description already contains `## Clancy Implementation Plan`.
+
+If it does:
+```
+⚠️  This ticket's description already contains a Clancy plan.
+Continuing will add a duplicate.
+
+[1] Continue anyway
+[2] Cancel
+```
+
+If the user picks [2], stop: `Cancelled. No changes made.`
 
 ---
 
@@ -192,6 +211,8 @@ On success:
 ```
 ✅ Plan promoted to description for [{KEY}].
 
+Move [{KEY}] to your implementation queue (e.g. "To Do") so /clancy:once picks it up.
+
 "Book 'em, Lou." — The ticket is ready for /clancy:once.
 ```
 
@@ -212,4 +233,5 @@ On failure:
 - This command only appends — it never overwrites the existing ticket description
 - If the ticket has multiple plan comments, the most recent one is used
 - The plan content is taken verbatim from the comment — no regeneration
-- This is safe to run multiple times — each run appends, so running it twice would duplicate the plan. Warn the user if the description already contains `## Clancy Implementation Plan`
+- Step 3b checks for existing plans in the description to prevent accidental duplication
+- The ticket key is case-insensitive — accept `PROJ-123`, `proj-123`, or `#123` (GitHub)

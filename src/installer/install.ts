@@ -193,19 +193,50 @@ function inlineWorkflows(commandsDir: string, workflowsDir: string): void {
 // Role directory copying
 // ---------------------------------------------------------------------------
 
+/** Roles that are always installed regardless of CLANCY_ROLES. */
+const CORE_ROLES = new Set(['implementer', 'reviewer', 'setup']);
+
+/**
+ * Parse the CLANCY_ROLES env var from `.clancy/.env` in the current project.
+ *
+ * Returns a Set of enabled optional role names, or null if no `.clancy/.env`
+ * exists or the var is not set (meaning install all roles).
+ */
+function parseEnabledRoles(): Set<string> | null {
+  const envPath = join(process.cwd(), '.clancy', '.env');
+  if (!existsSync(envPath)) return null;
+
+  const content = readFileSync(envPath, 'utf8');
+  const match = content.match(/^CLANCY_ROLES=["']?([^"'\n]+)["']?$/m);
+  if (!match) return null;
+
+  return new Set(
+    match[1]
+      .split(',')
+      .map((r) => r.trim().toLowerCase())
+      .filter(Boolean),
+  );
+}
+
 /**
  * Copy files from role subdirectories into a flat destination directory.
  *
  * Walks `src/roles/{role}/{subdir}/` for each role and copies all files
- * flat into `dest`. The installed output remains flat (e.g. all command
- * .md files in `.claude/commands/clancy/`) so that slash command names
- * are preserved (`/clancy:once`, not `/clancy:implementer:once`).
+ * flat into `dest`. Core roles (implementer, reviewer, setup) are always
+ * copied. Optional roles (planner, etc.) are only copied if listed in
+ * the CLANCY_ROLES env var, or if no .clancy/.env exists yet (first install).
  *
  * @param rolesDir - The roles source directory (`src/roles/`).
  * @param subdir - The subdirectory within each role (`commands` or `workflows`).
  * @param dest - The flat destination directory.
+ * @param enabledRoles - Set of enabled optional roles, or null to install all.
  */
-function copyRoleFiles(rolesDir: string, subdir: string, dest: string): void {
+function copyRoleFiles(
+  rolesDir: string,
+  subdir: string,
+  dest: string,
+  enabledRoles: Set<string> | null,
+): void {
   mkdirSync(dest, { recursive: true });
 
   const roles = readdirSync(rolesDir, { withFileTypes: true }).filter((d) =>
@@ -213,6 +244,11 @@ function copyRoleFiles(rolesDir: string, subdir: string, dest: string): void {
   );
 
   for (const role of roles) {
+    // Core roles always install; optional roles need explicit opt-in
+    if (!CORE_ROLES.has(role.name) && enabledRoles !== null) {
+      if (!enabledRoles.has(role.name)) continue;
+    }
+
     const srcDir = join(rolesDir, role.name, subdir);
     if (!existsSync(srcDir)) continue;
     copyDir(srcDir, dest);
@@ -379,8 +415,9 @@ async function main(): Promise<void> {
     }
 
     // Copy commands and workflows from role directories (flat output)
-    copyRoleFiles(ROLES_SRC, 'commands', dest);
-    copyRoleFiles(ROLES_SRC, 'workflows', workflowsDest);
+    const enabledRoles = parseEnabledRoles();
+    copyRoleFiles(ROLES_SRC, 'commands', dest, enabledRoles);
+    copyRoleFiles(ROLES_SRC, 'workflows', workflowsDest, enabledRoles);
 
     // Inline workflows for global installs
     if (dest === GLOBAL_DEST) {
