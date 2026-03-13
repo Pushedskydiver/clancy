@@ -168,7 +168,30 @@ npx chief-clancy
 | `/clancy:uninstall`    | Remove Clancy commands — optionally remove `.clancy/` too               |
 | `/clancy:help`         | Command reference                                                        |
 
-¹ Planner is an optional role. Enable with `CLANCY_ROLES=planner` in `.clancy/.env` and re-run the installer.
+¹ Planner is an optional role — see [Roles](#roles) below.
+
+---
+
+## Roles
+
+Clancy organises its commands into **roles** — each role handles a different stage of the development workflow.
+
+| Role | Purpose | Commands |
+| --- | --- | --- |
+| **Implementer** | Plan → code. Picks up tickets, implements, commits, merges | `/clancy:once`, `/clancy:run`, `/clancy:dry-run` |
+| **Reviewer** | Score ticket readiness and track progress | `/clancy:review`, `/clancy:status`, `/clancy:logs` |
+| **Setup** | Configure and maintain Clancy | `/clancy:init`, `/clancy:settings`, `/clancy:doctor`, etc. |
+| **Planner** *(optional)* | Refine backlog tickets into structured implementation plans | `/clancy:plan`, `/clancy:approve` |
+
+**Core roles** (Implementer, Reviewer, Setup) are always installed. **Optional roles** (Planner) are opt-in — add them to `CLANCY_ROLES` in `.clancy/.env` and re-run the installer:
+
+```bash
+# Enable the Planner role
+echo 'CLANCY_ROLES="planner"' >> .clancy/.env
+npx chief-clancy@latest --local   # or --global
+```
+
+You can also toggle roles from within Claude Code using `/clancy:settings`.
 
 ---
 
