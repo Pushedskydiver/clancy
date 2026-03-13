@@ -198,11 +198,14 @@ function inlineWorkflows(commandsDir: string, workflowsDir: string): void {
  * @param subdir - The subdirectory within each role (`commands` or `workflows`).
  * @param dest - The flat destination directory.
  */
+/** Roles excluded from installation (not yet implemented). */
+const SKIP_ROLES = new Set(['planner']);
+
 function copyRoleFiles(rolesDir: string, subdir: string, dest: string): void {
   mkdirSync(dest, { recursive: true });
 
-  const roles = readdirSync(rolesDir, { withFileTypes: true }).filter((d) =>
-    d.isDirectory(),
+  const roles = readdirSync(rolesDir, { withFileTypes: true }).filter(
+    (d) => d.isDirectory() && !SKIP_ROLES.has(d.name),
   );
 
   for (const role of roles) {
