@@ -51,8 +51,9 @@
 
 ## File Organisation
 
-- One command per file in `src/commands/`
-- One workflow per file in `src/workflows/`
+- Commands and workflows organised by role in `src/roles/{planner,implementer,reviewer,setup}/`
+- One command per file in `src/roles/{role}/commands/`
+- One workflow per file in `src/roles/{role}/workflows/`
 - Commands and workflows are 1:1 (command references workflow)
 - Agent prompts in `src/agents/` — one per specialist
 - Board modules and shared utilities in `src/scripts/`

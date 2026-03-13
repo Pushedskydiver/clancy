@@ -22,7 +22,7 @@
 - [ ] TypeScript module created in `src/scripts/board/{board}/`
 - [ ] Env schema added to `src/schemas/`
 - [ ] `registry/boards.json` entry added (with `author` and `url`)
-- [ ] `.env.example` content added to `src/workflows/scaffold.md`
+- [ ] `.env.example` content added to `src/roles/setup/workflows/scaffold.md`
 - [ ] Co-located unit tests (`{board}.test.ts`)
 
 ## Testing

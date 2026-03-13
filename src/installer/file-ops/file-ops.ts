@@ -43,7 +43,7 @@ export function fileHash(filePath: string): string {
  *
  * @example
  * ```ts
- * copyDir('src/commands', '/home/user/.claude/commands/clancy');
+ * copyDir('src/roles/implementer/commands', '/home/user/.claude/commands/clancy');
  * ```
  */
 export function copyDir(src: string, dest: string): void {

@@ -39,8 +39,7 @@ const __dirname = dirname(__filename);
 const require = createRequire(import.meta.url);
 const PKG = require('../../package.json') as { version: string };
 
-const COMMANDS_SRC = join(__dirname, '..', '..', 'src', 'commands');
-const WORKFLOWS_SRC = join(__dirname, '..', '..', 'src', 'workflows');
+const ROLES_SRC = join(__dirname, '..', '..', 'src', 'roles');
 const HOOKS_SRC = join(__dirname, '..', '..', 'hooks');
 const BUNDLE_SRC = join(__dirname, '..', 'bundle');
 
@@ -106,25 +105,43 @@ function printSuccess(): void {
   console.log(`    2. Run: ${cyan('/clancy:init')}`);
   console.log('');
   console.log('  Commands available:');
-  console.log('');
 
-  const cmds: [string, string][] = [
-    ['/clancy:init', 'Set up Clancy in your project'],
-    ['/clancy:map-codebase', 'Scan codebase with 5 parallel agents'],
-    ['/clancy:run', 'Run Clancy in loop mode'],
-    ['/clancy:once', 'Pick up one ticket and stop'],
-    ['/clancy:dry-run', 'Preview next ticket without making changes'],
-    ['/clancy:status', 'Show next tickets without running'],
-    ['/clancy:review', 'Score next ticket and get recommendations'],
-    ['/clancy:logs', 'Display progress log'],
-    ['/clancy:settings', 'View and change configuration'],
-    ['/clancy:doctor', 'Diagnose your setup'],
-    ['/clancy:update', 'Update Clancy to latest version'],
-    ['/clancy:help', 'Show all commands'],
+  const groups: [string, [string, string][]][] = [
+    [
+      'Implementer',
+      [
+        ['/clancy:once', 'Pick up one ticket and stop'],
+        ['/clancy:run', 'Run Clancy in loop mode'],
+        ['/clancy:dry-run', 'Preview next ticket without changes'],
+      ],
+    ],
+    [
+      'Reviewer',
+      [
+        ['/clancy:review', 'Score next ticket and get recommendations'],
+        ['/clancy:status', 'Show next tickets without running'],
+        ['/clancy:logs', 'Display progress log'],
+      ],
+    ],
+    [
+      'Setup & Maintenance',
+      [
+        ['/clancy:init', 'Set up Clancy in your project'],
+        ['/clancy:map-codebase', 'Scan codebase with 5 parallel agents'],
+        ['/clancy:settings', 'View and change configuration'],
+        ['/clancy:doctor', 'Diagnose your setup'],
+        ['/clancy:update', 'Update Clancy to latest version'],
+        ['/clancy:help', 'Show all commands'],
+      ],
+    ],
   ];
 
-  for (const [cmd, desc] of cmds) {
-    console.log(`    ${cyan(cmd.padEnd(22))}  ${dim(desc)}`);
+  for (const [group, cmds] of groups) {
+    console.log('');
+    console.log(`    ${bold(group)}`);
+    for (const [cmd, desc] of cmds) {
+      console.log(`      ${cyan(cmd.padEnd(22))}  ${dim(desc)}`);
+    }
   }
 
   console.log('');
@@ -162,6 +179,39 @@ function inlineWorkflows(commandsDir: string, workflowsDir: string): void {
 
     const workflowContent = readFileSync(workflowFile, 'utf8');
     writeFileSync(cmdPath, content.replace(match[0], workflowContent));
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Role directory copying
+// ---------------------------------------------------------------------------
+
+/**
+ * Copy files from role subdirectories into a flat destination directory.
+ *
+ * Walks `src/roles/{role}/{subdir}/` for each role and copies all files
+ * flat into `dest`. The installed output remains flat (e.g. all command
+ * .md files in `.claude/commands/clancy/`) so that slash command names
+ * are preserved (`/clancy:once`, not `/clancy:implementer:once`).
+ *
+ * @param rolesDir - The roles source directory (`src/roles/`).
+ * @param subdir - The subdirectory within each role (`commands` or `workflows`).
+ * @param dest - The flat destination directory.
+ */
+/** Roles excluded from installation (not yet implemented). */
+const SKIP_ROLES = new Set(['planner']);
+
+function copyRoleFiles(rolesDir: string, subdir: string, dest: string): void {
+  mkdirSync(dest, { recursive: true });
+
+  const roles = readdirSync(rolesDir, { withFileTypes: true }).filter(
+    (d) => d.isDirectory() && !SKIP_ROLES.has(d.name),
+  );
+
+  for (const role of roles) {
+    const srcDir = join(rolesDir, role.name, subdir);
+    if (!existsSync(srcDir)) continue;
+    copyDir(srcDir, dest);
   }
 }
 
@@ -232,8 +282,7 @@ async function main(): Promise<void> {
 
   // Validate source directories — guards against corrupted npm package
   for (const [label, src] of [
-    ['Commands', COMMANDS_SRC],
-    ['Workflows', WORKFLOWS_SRC],
+    ['Roles', ROLES_SRC],
     ['Runtime bundles', BUNDLE_SRC],
   ] as const) {
     if (!existsSync(src)) {
@@ -325,9 +374,9 @@ async function main(): Promise<void> {
       }
     }
 
-    // Copy commands and workflows
-    copyDir(COMMANDS_SRC, dest);
-    copyDir(WORKFLOWS_SRC, workflowsDest);
+    // Copy commands and workflows from role directories (flat output)
+    copyRoleFiles(ROLES_SRC, 'commands', dest);
+    copyRoleFiles(ROLES_SRC, 'workflows', workflowsDest);
 
     // Inline workflows for global installs
     if (dest === GLOBAL_DEST) {

@@ -3,8 +3,7 @@ node_modules/
 hooks/
 bin/
 test/
-src/commands/
-src/workflows/
+src/roles/
 src/agents/
 src/templates/
 registry/

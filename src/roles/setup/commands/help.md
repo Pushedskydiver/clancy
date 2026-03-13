@@ -12,22 +12,32 @@ Named after Chief Clancy Wiggum (Ralph's dad, The Simpsons). Built on the Ralph 
 coined by Geoffrey Huntley (ghuntley.com/ralph/). Clancy extends that foundation with board
 integration, structured codebase docs, and a git workflow built for team development.
 
-### Commands
+### Implementer
+
+| Command | Description |
+|---|---|
+| `/clancy:once` | Pick up one ticket and stop — good for first runs and debugging |
+| `/clancy:run` | Run in loop mode until queue is empty or MAX_ITERATIONS hit |
+| `/clancy:run 20` | Same, but override MAX_ITERATIONS to 20 for this session |
+| `/clancy:dry-run` | Preview next ticket without making any changes |
+
+### Reviewer
+
+| Command | Description |
+|---|---|
+| `/clancy:review` | Score next ticket (0–100%) with actionable recommendations |
+| `/clancy:status` | Show next tickets without running — read-only board check |
+| `/clancy:logs` | Format and display .clancy/progress.txt |
+
+### Setup & Maintenance
 
 | Command | Description |
 |---|---|
 | `/clancy:init` | Wizard — choose board, collect config, scaffold everything, offer map-codebase |
-| `/clancy:run` | Run in loop mode until queue is empty or MAX_ITERATIONS hit |
-| `/clancy:run 20` | Same, but override MAX_ITERATIONS to 20 for this session |
-| `/clancy:once` | Pick up one ticket and stop — good for first runs and debugging |
-| `/clancy:dry-run` | Preview next ticket without making any changes |
-| `/clancy:status` | Show next tickets without running — read-only board check |
-| `/clancy:review` | Score next ticket (0–100%) with actionable recommendations |
-| `/clancy:logs` | Format and display .clancy/progress.txt |
-| `/clancy:map-codebase` | Full 5-agent parallel codebase scan, writes all 10 docs |
-| `/clancy:update-docs` | Incremental refresh — re-runs agents for changed areas only |
 | `/clancy:settings` | View and change configuration — model, iterations, board, and more |
 | `/clancy:doctor` | Diagnose your setup — test every integration and report what's broken |
+| `/clancy:map-codebase` | Full 5-agent parallel codebase scan, writes all 10 docs |
+| `/clancy:update-docs` | Incremental refresh — re-runs agents for changed areas only |
 | `/clancy:update` | Update Clancy to latest version via npx |
 | `/clancy:uninstall` | Remove Clancy commands — optionally remove `.clancy/` too |
 | `/clancy:help` | This screen |

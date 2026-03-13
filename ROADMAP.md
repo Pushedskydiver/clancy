@@ -54,14 +54,12 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 
 ## v0.4.0 — Architecture refactor
 
-- Formalize roles: Planner, Implementer, Reviewer, Setup & Maintenance
+- Formalize roles: Implementer, Reviewer, Setup & Maintenance (Planner added in v0.5.0)
 - Restructure project source by role (`src/roles/{planner,implementer,reviewer,setup}/`)
-- Role-grouped output in user projects (`.claude/commands/clancy/planner/`, `.claude/commands/clancy/implementer/`, etc.)
+- Installed output remains flat (`.claude/commands/clancy/`) — preserves existing `/clancy:*` command names
 - Role-grouped `/clancy:help` output
-- Role-grouped `/clancy:settings` menu (pick a role, then see its settings)
-- Role labels in progress log entries (`PLAN`, `APPROVE`, `ONCE`, `REVIEW`)
-- Update installer to walk role directories and clean up old flat structure on update
-- No functional changes — existing commands work identically, tests validate the migration
+- Installer walks `src/roles/*/commands/` and `src/roles/*/workflows/` and merges into flat destination
+- No functional changes — existing commands work identically, all tests pass
 
 ---
 
