@@ -22,9 +22,9 @@ Before asking any questions, silently check:
 - Is this an existing project? Check for `package.json`, `.git`, `src/`, `app/`, `lib/`
 - Is a board already configured? Check `.clancy/.env` for `JIRA_BASE_URL`, `GITHUB_TOKEN`, `LINEAR_API_KEY`
 - Does `CLAUDE.md` already exist? Flag for merge — never overwrite
-- Does `.clancy/` already exist? Warn and offer re-init or abort
+- Does `.clancy/.env` already exist? This means init has been completed before — warn and offer re-init or abort. Note: `.clancy/` alone may exist from the installer (runtime scripts) without init having run.
 
-If `.clancy/` exists, output:
+If `.clancy/.env` exists, output:
 
 It looks like Clancy is already set up in this project.
 

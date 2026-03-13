@@ -7,6 +7,14 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.5.1] — 2026-03-13
+
+### 🐛 Fixes
+
+- **Init "already set up" false positive** — `/clancy:init` now checks for `.clancy/.env` (created by init) instead of `.clancy/` (created by the installer). Previously, running `npx chief-clancy --local` then `/clancy:init` for the first time would incorrectly warn that Clancy was already set up.
+
+---
+
 ## [0.5.0] — 2026-03-13
 
 ### ✨ Features
