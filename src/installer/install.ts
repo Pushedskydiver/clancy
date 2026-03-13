@@ -439,7 +439,8 @@ async function main(): Promise<void> {
     }
 
     // Copy commands and workflows from role directories (flat output)
-    const enabledRoles = parseEnabledRoles();
+    // Global installs always include all roles (no per-project .env to read)
+    const enabledRoles = dest === GLOBAL_DEST ? null : parseEnabledRoles();
     copyRoleFiles(ROLES_SRC, 'commands', dest, enabledRoles);
     copyRoleFiles(ROLES_SRC, 'workflows', workflowsDest, enabledRoles);
 
