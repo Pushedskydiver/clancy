@@ -218,7 +218,7 @@ Move [{KEY}] to your implementation queue (e.g. "To Do") so /clancy:once picks i
 
 Append to `.clancy/progress.txt`:
 ```
-YYYY-MM-DD HH:MM | {KEY} | Plan approved | DONE
+YYYY-MM-DD HH:MM | {KEY} | APPROVE | —
 ```
 
 On failure:

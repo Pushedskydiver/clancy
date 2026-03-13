@@ -13,6 +13,7 @@ import {
   mkdirSync,
   readFileSync,
   readdirSync,
+  unlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -259,13 +260,21 @@ function copyRoleFiles(
   );
 
   for (const role of roles) {
-    // Core roles always install; optional roles need explicit opt-in
-    if (!CORE_ROLES.has(role.name) && enabledRoles !== null) {
-      if (!enabledRoles.has(role.name)) continue;
-    }
-
     const srcDir = join(rolesDir, role.name, subdir);
     if (!existsSync(srcDir)) continue;
+
+    // Core roles always install; optional roles need explicit opt-in
+    if (!CORE_ROLES.has(role.name) && enabledRoles !== null) {
+      if (!enabledRoles.has(role.name)) {
+        // Remove previously-installed files for disabled optional roles
+        for (const file of readdirSync(srcDir)) {
+          const target = join(dest, file);
+          if (existsSync(target)) unlinkSync(target);
+        }
+        continue;
+      }
+    }
+
     copyDir(srcDir, dest);
   }
 }

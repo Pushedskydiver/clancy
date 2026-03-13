@@ -149,9 +149,9 @@ npx chief-clancy
 
 | Command                | Description                                                              |
 | ---------------------- | ------------------------------------------------------------------------ |
-| `/clancy:plan`         | Refine backlog tickets into structured implementation plans              |
-| `/clancy:plan 3`       | Plan up to 3 tickets in batch mode                                       |
-| `/clancy:approve`      | Promote an approved plan to the ticket description                       |
+| `/clancy:plan` ¹       | Refine backlog tickets into structured implementation plans              |
+| `/clancy:plan 3` ¹     | Plan up to 3 tickets in batch mode                                       |
+| `/clancy:approve` ¹    | Promote an approved plan to the ticket description                       |
 | `/clancy:init`         | Wizard — choose board, collect config, scaffold everything               |
 | `/clancy:run`          | Loop mode — processes tickets until queue is empty or MAX_ITERATIONS hit |
 | `/clancy:run 20`       | Same, override MAX_ITERATIONS to 20 for this session                     |
@@ -167,6 +167,8 @@ npx chief-clancy
 | `/clancy:update`       | Update Clancy to latest version                                          |
 | `/clancy:uninstall`    | Remove Clancy commands — optionally remove `.clancy/` too               |
 | `/clancy:help`         | Command reference                                                        |
+
+¹ Planner is an optional role. Enable with `CLANCY_ROLES=planner` in `.clancy/.env` and re-run the installer.
 
 ---
 

@@ -364,7 +364,7 @@ Linear accepts Markdown directly.
 
 For each planned ticket, append to `.clancy/progress.txt`:
 ```
-YYYY-MM-DD HH:MM | {KEY} | Plan posted ({S/M/L}) | DONE
+YYYY-MM-DD HH:MM | {KEY} | PLAN | {S/M/L}
 ```
 
 ---
