@@ -60,6 +60,9 @@
   "engines": {
     "node": ">=22.0.0"
   },
+  "overrides": {
+    "tinyexec": "1.0.2"
+  },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
