@@ -23,6 +23,9 @@ export const sharedEnvSchema = z.object({
   MAX_ITERATIONS: z.optional(z.string()),
   PLAYWRIGHT_ENABLED: z.optional(z.string()),
   PLAYWRIGHT_DEV_PORT: z.optional(z.string()),
+  CLANCY_PLAN_STATUS: z.optional(z.string()),
+  CLANCY_PLAN_LABEL: z.optional(z.string()),
+  CLANCY_PLAN_STATE_TYPE: z.optional(z.string()),
 });
 
 // ─── Board-specific schemas ──────────────────────────────────────────────────

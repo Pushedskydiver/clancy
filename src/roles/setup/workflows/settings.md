@@ -58,6 +58,14 @@ Linear
 [5] Pickup status     {CLANCY_STATUS_IN_PROGRESS if set, else off — move issue on pickup}
 [6] Done status       {CLANCY_STATUS_DONE if set, else off — move issue on completion}
 
+Planner
+{If Jira:}
+[{N}] Plan queue status  {CLANCY_PLAN_STATUS:-Backlog}    status for backlog tickets
+{If GitHub:}
+[{N}] Plan label         {CLANCY_PLAN_LABEL:-needs-refinement}   label for unrefined issues
+{If Linear:}
+[{N}] Plan state type    {CLANCY_PLAN_STATE_TYPE:-backlog}    state type for backlog issues
+
 Optional enhancements
 [{N}] Figma MCP       {enabled if FIGMA_API_KEY set, else not set}
 [{N}] Playwright      {enabled if PLAYWRIGHT_ENABLED=true, else off}
@@ -69,7 +77,7 @@ Optional enhancements
 Which setting would you like to change?
 ```
 
-Number each option sequentially. Show only the board-specific section that matches the configured board. If Jira: show [4] queue status, [5] sprint, [6] label, [7] pickup status, [8] done status. If Linear: show [4] label, [5] pickup status, [6] done status. If GitHub: no board-specific options.
+Number each option sequentially. Show only the board-specific section that matches the configured board. The Planner section always appears (one option per board). If Jira: show [4] queue status, [5] sprint, [6] label, [7] pickup status, [8] done status. If Linear: show [4] label, [5] pickup status, [6] done status. If GitHub: no board-specific options (other than the planner label).
 
 ---
 
@@ -253,6 +261,55 @@ Must match the exact state name shown in your Linear board column header.
 
 If [1]: prompt `What workflow state name should Clancy use for Done? (e.g. Done, Complete, Closed)` then write `CLANCY_STATUS_DONE=<value>` to `.clancy/.env`.
 If [2]: remove `CLANCY_STATUS_DONE` from `.clancy/.env`.
+
+---
+
+### Plan queue status (Jira only)
+
+```
+Plan queue status — current: {value or "Backlog"}
+Which Jira status should /clancy:plan fetch backlog tickets from?
+Common values: Backlog, To Refine, Unrefined
+
+[1] Backlog (default)
+[2] Enter a different value
+```
+
+If [1]: remove `CLANCY_PLAN_STATUS` from `.clancy/.env` (uses default).
+If [2]: prompt `What status name should /clancy:plan fetch from?` then write `CLANCY_PLAN_STATUS=<value>` to `.clancy/.env`.
+
+---
+
+### Plan label (GitHub only)
+
+```
+Plan label — current: {value or "needs-refinement"}
+Which label marks issues for /clancy:plan to refine?
+Create this label in GitHub first if it doesn't exist.
+
+[1] needs-refinement (default)
+[2] Enter a different label name
+```
+
+If [1]: remove `CLANCY_PLAN_LABEL` from `.clancy/.env` (uses default).
+If [2]: prompt `What label should /clancy:plan filter by?` then write `CLANCY_PLAN_LABEL=<value>` to `.clancy/.env`.
+
+---
+
+### Plan state type (Linear only)
+
+```
+Plan state type — current: {value or "backlog"}
+Which Linear state type should /clancy:plan fetch issues from?
+
+[1] backlog (default)
+[2] triage
+[3] Enter a different value
+```
+
+If [1]: remove `CLANCY_PLAN_STATE_TYPE` from `.clancy/.env` (uses default).
+If [2]: write `CLANCY_PLAN_STATE_TYPE=triage` to `.clancy/.env`.
+If [3]: prompt `What state type should /clancy:plan fetch from?` then write `CLANCY_PLAN_STATE_TYPE=<value>` to `.clancy/.env`.
 
 ---
 

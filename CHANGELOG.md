@@ -7,6 +7,23 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.5.0] — 2026-03-13
+
+### ✨ Features
+
+- **Planner role** — new `/clancy:plan` command fetches backlog tickets from the board, explores the codebase, and generates structured implementation plans posted as comments for human review. Supports batch mode (`/clancy:plan 3`), re-planning with feedback (`--force`), feasibility scanning, QA return detection, Figma design context, and parallel codebase exploration for larger tickets.
+- **`/clancy:approve`** — promotes an approved Clancy plan from a ticket comment to the ticket description. Appends below the existing description with a separator — never overwrites.
+- **Board comment write-back** — plans are posted as comments on all 3 boards: Jira (ADF format), GitHub (Markdown), Linear (GraphQL Markdown).
+- **Planner settings** — new board-specific settings for the planning queue: `CLANCY_PLAN_STATUS` (Jira, default: `Backlog`), `CLANCY_PLAN_LABEL` (GitHub, default: `needs-refinement`), `CLANCY_PLAN_STATE_TYPE` (Linear, default: `backlog`). Configurable via `/clancy:settings`.
+
+### 📝 Documentation
+
+- **Updated help output** — `/clancy:help` and the installer banner now include the Planner section with `plan` and `approve` commands.
+- **Updated .env.example templates** — all 3 board templates include planner queue configuration.
+- **Updated settings workflow** — planner queue settings added per board.
+
+---
+
 ## [0.4.0] — 2026-03-12
 
 ### ♻️ Refactor

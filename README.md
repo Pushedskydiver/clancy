@@ -25,11 +25,12 @@ Named after Chief Clancy Wiggum (The Simpsons) — built on the [Ralph technique
 
 ## What it does
 
-Clancy does three things:
+Clancy does four things:
 
 1. **Scaffolds itself** into a project — scripts, docs, CLAUDE.md, .clancy/.env
 2. **Scans your codebase** with 5 parallel specialist agents and writes 10 structured docs that Claude reads before every run
-3. **Runs autonomously** — picking one ticket per loop from your Kanban board, implementing it, committing, squash-merging, and logging progress
+3. **Plans tickets** — fetches backlog tickets, explores the codebase, and generates structured implementation plans posted as comments for human review
+4. **Runs autonomously** — picking one ticket per loop from your Kanban board, implementing it, committing, squash-merging, and logging progress
 
 One ticket per run. Fresh context window every iteration. No context rot.
 
@@ -148,6 +149,9 @@ npx chief-clancy
 
 | Command                | Description                                                              |
 | ---------------------- | ------------------------------------------------------------------------ |
+| `/clancy:plan`         | Refine backlog tickets into structured implementation plans              |
+| `/clancy:plan 3`       | Plan up to 3 tickets in batch mode                                       |
+| `/clancy:approve`      | Promote an approved plan to the ticket description                       |
 | `/clancy:init`         | Wizard — choose board, collect config, scaffold everything               |
 | `/clancy:run`          | Loop mode — processes tickets until queue is empty or MAX_ITERATIONS hit |
 | `/clancy:run 20`       | Same, override MAX_ITERATIONS to 20 for this session                     |

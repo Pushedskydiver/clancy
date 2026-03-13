@@ -80,6 +80,26 @@ Commands are thin wrappers. Each command file references a workflow:
 
 Commands are user-facing (appear in Claude Code's `/` menu). Workflows contain the actual implementation logic and are never exposed directly.
 
+## Planner Lifecycle
+
+The Planner role (`/clancy:plan` and `/clancy:approve`) operates as a pure workflow — no runtime script, no git operations:
+
+```
+Backlog ticket
+  │
+  ▼
+/clancy:plan ──── preflight → fetch from planning queue → explore codebase → generate plan → post as comment
+  │
+  ▼
+Human reviews plan on the board
+  │
+  ├─ Approves → /clancy:approve {KEY} → plan promoted to ticket description → ready for /clancy:once
+  │
+  └─ Rejects (leaves feedback) → /clancy:plan --force → reads feedback, generates improved plan
+```
+
+The planner and implementer work on **separate queues** (e.g. Jira: `Backlog` vs `To Do`, GitHub: `needs-refinement` vs `clancy` label, Linear: `backlog` vs `unstarted` state type). They never compete for the same tickets.
+
 ## Hook Architecture
 
 Four hooks run at different points in the Claude Code lifecycle:

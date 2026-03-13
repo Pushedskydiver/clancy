@@ -60,7 +60,7 @@ Output:
 
 "Chief Wiggum reporting for duty."
 
-Clancy pulls tickets from your Kanban board, implements them, commits, and squash-merges — one ticket per run, fresh context every time.
+Clancy pulls tickets from your Kanban board, plans and implements them, commits, and squash-merges — one ticket per run, fresh context every time.
 
 Let's get you set up.
 ```
@@ -494,5 +494,5 @@ Output:
 - Config: `.clancy/.env`
 - CLAUDE.md: updated
 
-"Clancy's on the beat." — Run /clancy:dry-run to preview, /clancy:once to pick up a ticket, or /clancy:run to process the queue.
+"Clancy's on the beat." — Run /clancy:plan to refine backlog tickets, /clancy:dry-run to preview, or /clancy:once to pick up a ticket.
 ```

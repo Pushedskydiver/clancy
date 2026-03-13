@@ -53,6 +53,9 @@ When in doubt: "Is the primary deliverable a code change committed to this repo?
 Log completed tickets to `.clancy/progress.txt`:
 `YYYY-MM-DD HH:MM | TICKET-KEY | Summary | DONE`
 
+Planning entries use: `YYYY-MM-DD HH:MM | TICKET-KEY | PLAN | S/M/L`
+Approval entries use: `YYYY-MM-DD HH:MM | TICKET-KEY | APPROVE | —`
+
 ### Design context
 When a ticket description contains a Figma URL, fetch design context before implementing.
 Use the three-tier approach in order:
