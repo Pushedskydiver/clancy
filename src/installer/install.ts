@@ -27,6 +27,7 @@ import {
   detectModifiedFiles,
 } from '~/installer/manifest/manifest.js';
 import { ask, choose, closePrompts } from '~/installer/prompts/prompts.js';
+import { loadClancyEnv } from '~/scripts/shared/env-parser/env-parser.js';
 import { blue, bold, cyan, dim, green, red } from '~/utils/ansi/ansi.js';
 
 // ---------------------------------------------------------------------------
@@ -216,15 +217,14 @@ const CORE_ROLES = new Set(['implementer', 'reviewer', 'setup']);
  * empty Set so optional roles are truly opt-in.
  */
 function parseEnabledRoles(): Set<string> | null {
-  const envPath = join(process.cwd(), '.clancy', '.env');
-  if (!existsSync(envPath)) return null;
+  const env = loadClancyEnv(process.cwd());
+  if (!env) return null;
 
-  const content = readFileSync(envPath, 'utf8');
-  const match = content.match(/^CLANCY_ROLES=["']?([^"'\n]+)["']?$/m);
-  if (!match) return new Set();
+  const roles = env.CLANCY_ROLES;
+  if (!roles) return new Set();
 
   return new Set(
-    match[1]
+    roles
       .split(',')
       .map((r) => r.trim().toLowerCase())
       .filter(Boolean),

@@ -297,14 +297,12 @@ Commands: /clancy:plan, /clancy:approve
 
 If enabling:
 - Add `planner` to `CLANCY_ROLES` in `.clancy/.env` (create the key if it doesn't exist, append if other roles are listed)
-- Copy the planner command and workflow files from the Clancy package to `.claude/commands/clancy/` and `.claude/clancy/workflows/`
-- Show `✅ Planner role enabled. Run /clancy:plan to get started.`
+- Show `✅ Planner role enabled. Re-run the installer to apply: npx chief-clancy@latest --local (or --global)`
 
 If disabling:
 - Remove `planner` from `CLANCY_ROLES` in `.clancy/.env` (if empty after removal, remove the line entirely)
-- Remove planner command and workflow files from `.claude/commands/clancy/` and `.claude/clancy/workflows/`
 - Keep planner-specific settings (CLANCY_PLAN_STATUS, etc.) in `.clancy/.env` so re-enabling is frictionless
-- Show `✅ Planner role disabled.`
+- Show `✅ Planner role disabled. Re-run the installer to apply: npx chief-clancy@latest --local (or --global)`
 
 ---
 

@@ -312,11 +312,11 @@ Accept numbers, role names (e.g. "planner"), "all", or Enter to skip.
 
 If any roles are selected:
 - Store as `CLANCY_ROLES="planner"` (comma-separated if multiple) in `.clancy/.env`
-- Only install the selected roles' commands and workflows during scaffold (Step 4)
+- The selected roles' commands and workflows will be installed on the next `npx chief-clancy` run
 
 If skipped (Enter): no `CLANCY_ROLES` line is written — only core roles are installed.
 
-The installer reads `CLANCY_ROLES` from `.clancy/.env` to determine which optional role directories to copy. Core roles (implementer, reviewer, setup) are always copied regardless of this setting.
+The installer reads `CLANCY_ROLES` from `.clancy/.env` to determine which optional role directories to copy. Core roles (implementer, reviewer, setup) are always copied regardless of this setting. After changing `CLANCY_ROLES`, re-run `npx chief-clancy@latest --local` (or `--global`) to apply.
 
 Note: as more roles are added in future versions, they appear as additional numbered options here. The flow scales naturally.
 

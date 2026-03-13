@@ -192,7 +192,7 @@ Continue to the next ticket. **Pass signals:** Anything mentioning code, compone
 
 ### 4b. Check for previous implementation (QA return detection)
 
-Check `.clancy/progress.txt` for any previous `ONCE | complete` entry matching this ticket key (search for `| {KEY} |` followed by `ONCE`). If found, the ticket was previously implemented by Clancy and has returned (likely from QA).
+Check `.clancy/progress.txt` for any previous entry matching this ticket key that ends with `| DONE` (search for `| {KEY} |` on a line ending with `| DONE`). If found, the ticket was previously implemented by Clancy and has returned (likely from QA).
 
 If detected:
 - Flag as "Previously implemented — returned from QA"
