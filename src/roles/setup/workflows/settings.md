@@ -4,6 +4,14 @@
 
 View and change Clancy configuration. Reads `.clancy/.env`, shows current values, and lets the user update any setting interactively. Loops until the user exits. Never modifies anything other than `.clancy/.env`.
 
+### Input handling
+
+This workflow runs inside a Claude Code session. Accept natural language alongside option codes:
+- "G1", "max iterations", "change iterations" → all resolve to the max iterations setting
+- "enable planner", "R1", "planner" → all resolve to the Planner role toggle
+- "switch board", "S" → switch board flow
+- If a response is ambiguous, ask for clarification
+
 ---
 
 ## Step 1 — Preflight
@@ -31,55 +39,72 @@ Source `.clancy/.env` silently. Detect which board is configured:
 
 ## Step 3 — Display settings menu
 
-Show all current values. Board-specific settings only appear when that board is configured.
+Show all current values. Board-specific settings only appear when that board is configured. Use stable letter/number mnemonics so options don't shift when boards change.
 
 ```
 🚨 Clancy — Settings
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-"Welcome to headquarters." — .clancy/.env
+"Welcome to headquarters."
 
 General
-[1] Max iterations    {MAX_ITERATIONS:-5}          tickets per /clancy:run session
-[2] Claude model      {CLANCY_MODEL:-default}     model used for each ticket session
-[3] Base branch       {CLANCY_BASE_BRANCH:-main}
+  [G1] Max iterations    {MAX_ITERATIONS:-5}          tickets per /clancy:run session
+  [G2] Claude model      {CLANCY_MODEL:-default}     model used for each ticket session
+  [G3] Base branch       {CLANCY_BASE_BRANCH:-main}
 
 {If Jira:}
 Jira
-[4] Queue status      {CLANCY_JQL_STATUS:-To Do}
-[5] Sprint filter     {on if CLANCY_JQL_SPRINT set, else off}
-[6] Label filter      {CLANCY_LABEL if set, else off — only pick up tickets with this label}
-[7] Pickup status     {CLANCY_STATUS_IN_PROGRESS if set, else off — move ticket on pickup}
-[8] Done status       {CLANCY_STATUS_DONE if set, else off — move ticket on completion}
+  [B1] Queue status      {CLANCY_JQL_STATUS:-To Do}
+  [B2] Sprint filter     {on if CLANCY_JQL_SPRINT set, else off}
+  [B3] Label filter      {CLANCY_LABEL if set, else off}
+  [B4] Pickup status     {CLANCY_STATUS_IN_PROGRESS if set, else off}
+  [B5] Done status       {CLANCY_STATUS_DONE if set, else off}
+
+{If GitHub:}
+GitHub
+  (No board-specific settings — labels are managed in GitHub directly)
 
 {If Linear:}
 Linear
-[4] Label filter      {CLANCY_LABEL if set, else off — only pick up issues with this label}
-[5] Pickup status     {CLANCY_STATUS_IN_PROGRESS if set, else off — move issue on pickup}
-[6] Done status       {CLANCY_STATUS_DONE if set, else off — move issue on completion}
+  [B1] Label filter      {CLANCY_LABEL if set, else off}
+  [B2] Pickup status     {CLANCY_STATUS_IN_PROGRESS if set, else off}
+  [B3] Done status       {CLANCY_STATUS_DONE if set, else off}
 
-Optional enhancements
-[{N}] Figma MCP       {enabled if FIGMA_API_KEY set, else not set}
-[{N}] Playwright      {enabled if PLAYWRIGHT_ENABLED=true, else off}
-[{N}] Notifications   {configured if CLANCY_NOTIFY_WEBHOOK set, else not set}
+Roles
+  [R1] Planner           {✅ enabled / ─ disabled}
 
-[{N}] Switch board    currently: {Jira / GitHub Issues / Linear}
-[{N}] Exit
+{If Planner enabled:}
+Planner
+{If Jira:}
+  [P1] Plan queue status  {CLANCY_PLAN_STATUS:-Backlog}
+{If GitHub:}
+  [P1] Plan label         {CLANCY_PLAN_LABEL:-needs-refinement}
+{If Linear:}
+  [P1] Plan state type    {CLANCY_PLAN_STATE_TYPE:-backlog}
+
+Integrations
+  [I1] Figma MCP         {enabled if FIGMA_API_KEY set, else not set}
+  [I2] Playwright        {enabled if PLAYWRIGHT_ENABLED=true, else off}
+  [I3] Notifications     {configured if CLANCY_NOTIFY_WEBHOOK set, else not set}
+
+  [S]  Switch board      currently: {Jira / GitHub Issues / Linear}
+  [D]  Save as defaults  save current settings for all future projects
+  [X]  Exit
 
 Which setting would you like to change?
 ```
 
-Number each option sequentially. Show only the board-specific section that matches the configured board. If Jira: show [4] queue status, [5] sprint, [6] label, [7] pickup status, [8] done status. If Linear: show [4] label, [5] pickup status, [6] done status. If GitHub: no board-specific options.
+Accept the user's response as a code (e.g. "G1", "R1"), a setting name (e.g. "max iterations", "model"), or a natural language description (e.g. "change the model", "enable planner"). If ambiguous, clarify. Show only the board-specific section that matches the configured board. The Planner section only appears when the Planner role is enabled.
 
 ---
 
 ## Step 4 — Handle each selection
 
-After the user picks a number, handle it as below. After saving, print `✅ Saved.` and loop back to Step 3 to show the updated menu.
+After the user picks an option (by code, name, or description), handle it as below. After saving, print `✅ Saved.` and loop back to Step 3 to show the updated menu.
 
 ---
 
-### [1] Max iterations
+### [G1] Max iterations
 
 ```
 Max iterations — current: {value}
@@ -89,11 +114,13 @@ How many tickets should /clancy:run process per session?
 [2] Enter a different number
 ```
 
+Validate the input is a positive integer between 1 and 100. If invalid, re-prompt.
+
 Write `MAX_ITERATIONS=<value>` to `.clancy/.env`.
 
 ---
 
-### [2] Claude model
+### [G2] Claude model
 
 ```
 Claude model — current: {value or "default"}
@@ -111,7 +138,7 @@ Otherwise: write `CLANCY_MODEL=<value>` to `.clancy/.env`.
 
 ---
 
-### [3] Base branch
+### [G3] Base branch
 
 ```
 Base branch — current: {value}
@@ -124,7 +151,7 @@ Write `CLANCY_BASE_BRANCH=<value>` to `.clancy/.env`.
 
 ---
 
-### [4] Jira status filter (Jira only)
+### [B1] Jira status filter (Jira only)
 
 ```
 Jira status filter — current: {value}
@@ -139,7 +166,7 @@ Write `CLANCY_JQL_STATUS=<value>` to `.clancy/.env`.
 
 ---
 
-### [5] Jira sprint filter (Jira only)
+### [B2] Jira sprint filter (Jira only)
 
 ```
 Jira sprint filter — current: {on / off}
@@ -154,7 +181,7 @@ If off: remove `CLANCY_JQL_SPRINT` from `.clancy/.env` (or comment it out).
 
 ---
 
-### [6] Jira label filter (Jira only)
+### [B3] Jira label filter (Jira only)
 
 ```
 Jira label filter — current: {label name or "off"}
@@ -171,7 +198,7 @@ If [2]: remove `CLANCY_LABEL` from `.clancy/.env`.
 
 ---
 
-### [7] Jira In Progress status (Jira only)
+### [B4] Jira In Progress status (Jira only)
 
 ```
 Jira In Progress status — current: {value or "off"}
@@ -188,7 +215,7 @@ If [2]: remove `CLANCY_STATUS_IN_PROGRESS` from `.clancy/.env`.
 
 ---
 
-### [8] Jira Done status (Jira only)
+### [B5] Jira Done status (Jira only)
 
 ```
 Jira Done status — current: {value or "off"}
@@ -205,7 +232,7 @@ If [2]: remove `CLANCY_STATUS_DONE` from `.clancy/.env`.
 
 ---
 
-### [4] Linear label filter (Linear only)
+### [B1] Linear label filter (Linear only)
 
 ```
 Linear label filter — current: {label name or "off"}
@@ -222,7 +249,7 @@ If [2]: remove `CLANCY_LABEL` from `.clancy/.env`.
 
 ---
 
-### [5] Linear In Progress status (Linear only)
+### [B2] Linear In Progress status (Linear only)
 
 ```
 Linear In Progress status — current: {value or "off"}
@@ -239,7 +266,7 @@ If [2]: remove `CLANCY_STATUS_IN_PROGRESS` from `.clancy/.env`.
 
 ---
 
-### [6] Linear Done status (Linear only)
+### [B3] Linear Done status (Linear only)
 
 ```
 Linear Done status — current: {value or "off"}
@@ -256,7 +283,79 @@ If [2]: remove `CLANCY_STATUS_DONE` from `.clancy/.env`.
 
 ---
 
-### Figma MCP
+### [R1] Planner role
+
+```
+Planner role — currently: {enabled / disabled}
+The Planner refines vague backlog tickets into structured implementation plans.
+Commands: /clancy:plan, /clancy:approve
+
+[1] Enable
+[2] Disable
+[3] Cancel
+```
+
+If enabling:
+- Add `planner` to `CLANCY_ROLES` in `.clancy/.env` (create the key if it doesn't exist, append if other roles are listed)
+- Show `✅ Planner role enabled. Re-run the installer to apply: npx chief-clancy@latest --local (or --global)`
+
+If disabling:
+- Remove `planner` from `CLANCY_ROLES` in `.clancy/.env` (if empty after removal, remove the line entirely)
+- Keep planner-specific settings (CLANCY_PLAN_STATUS, etc.) in `.clancy/.env` so re-enabling is frictionless
+- Show `✅ Planner role disabled. Re-run the installer to apply: npx chief-clancy@latest --local (or --global)`
+
+---
+
+### [P1] Plan queue status (Jira only)
+
+```
+Plan queue status — current: {value or "Backlog"}
+Which Jira status should /clancy:plan fetch backlog tickets from?
+Common values: Backlog, To Refine, Unrefined
+
+[1] Backlog (default)
+[2] Enter a different value
+```
+
+If [1]: remove `CLANCY_PLAN_STATUS` from `.clancy/.env` (uses default).
+If [2]: prompt `What status name should /clancy:plan fetch from?` then write `CLANCY_PLAN_STATUS=<value>` to `.clancy/.env`.
+
+---
+
+### [P1] Plan label (GitHub only)
+
+```
+Plan label — current: {value or "needs-refinement"}
+Which label marks issues for /clancy:plan to refine?
+Create this label in GitHub first if it doesn't exist.
+
+[1] needs-refinement (default)
+[2] Enter a different label name
+```
+
+If [1]: remove `CLANCY_PLAN_LABEL` from `.clancy/.env` (uses default).
+If [2]: prompt `What label should /clancy:plan filter by?` then write `CLANCY_PLAN_LABEL=<value>` to `.clancy/.env`.
+
+---
+
+### [P1] Plan state type (Linear only)
+
+```
+Plan state type — current: {value or "backlog"}
+Which Linear state type should /clancy:plan fetch issues from?
+
+[1] backlog (default)
+[2] triage
+[3] Enter a different value
+```
+
+If [1]: remove `CLANCY_PLAN_STATE_TYPE` from `.clancy/.env` (uses default).
+If [2]: write `CLANCY_PLAN_STATE_TYPE=triage` to `.clancy/.env`.
+If [3]: prompt `What state type should /clancy:plan fetch from?` then write `CLANCY_PLAN_STATE_TYPE=<value>` to `.clancy/.env`.
+
+---
+
+### [I1] Figma MCP
 
 ```
 Figma MCP — current: {enabled / not set}
@@ -271,7 +370,7 @@ If [2]: remove `FIGMA_API_KEY` from `.clancy/.env`.
 
 ---
 
-### Playwright
+### [I2] Playwright
 
 ```
 Playwright visual checks — current: {enabled / off}
@@ -288,7 +387,7 @@ If [2] Disable: set `PLAYWRIGHT_ENABLED=false` in `.clancy/.env`.
 
 ---
 
-### Notifications
+### [I3] Notifications
 
 ```
 Notifications — current: {configured / not set}
@@ -303,7 +402,7 @@ If [2]: remove `CLANCY_NOTIFY_WEBHOOK` from `.clancy/.env`.
 
 ---
 
-### Switch board
+### [S] Switch board
 
 Show which board is currently active, then offer the other two:
 
@@ -394,7 +493,7 @@ Then loop back to the main settings menu.
 
 ---
 
-### Exit
+### [X] Exit
 
 Print nothing extra. Stop.
 
@@ -411,13 +510,7 @@ When updating a value:
 
 ---
 
-### Save as global defaults
-
-At the bottom of the settings menu (before Exit), show:
-
-```
-[{N}] Save as defaults   save current settings for all future projects
-```
+### [D] Save as global defaults
 
 When selected:
 

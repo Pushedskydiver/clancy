@@ -7,6 +7,45 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.5.0] — 2026-03-13
+
+### ✨ Features
+
+- **Planner role** — new `/clancy:plan` command fetches backlog tickets from the board, explores the codebase, and generates structured implementation plans posted as comments for human review. Supports batch mode (`/clancy:plan 3`), re-planning with feedback (`--force`), feasibility scanning, QA return detection, Figma design context, and parallel codebase exploration for larger tickets.
+- **`/clancy:approve`** — promotes an approved Clancy plan from a ticket comment to the ticket description. Appends below the existing description with a separator — never overwrites.
+- **Board comment write-back** — plans are posted as comments on all 3 boards: Jira (ADF format), GitHub (Markdown), Linear (GraphQL Markdown).
+- **Planner settings** — new board-specific settings for the planning queue: `CLANCY_PLAN_STATUS` (Jira, default: `Backlog`), `CLANCY_PLAN_LABEL` (GitHub, default: `needs-refinement`), `CLANCY_PLAN_STATE_TYPE` (Linear, default: `backlog`). Configurable via `/clancy:settings`.
+
+### 🎨 UX Improvements
+
+- **Optional roles** — init now asks which optional roles to enable (Planner is the first). Stored as `CLANCY_ROLES` in `.clancy/.env`. Core roles (Implementer, Reviewer, Setup) are always installed. Roles can be toggled later via `/clancy:settings`.
+- **Stable settings menu** — settings uses letter mnemonics (`G1`, `B2`, `P1`, `I1`, `S`, `X`) instead of dynamic numbers. Options no longer shift when boards change.
+- **Natural language input** — init and settings workflows now instruct Claude to accept conversational responses ("jira" instead of "1", "yes please" instead of "y").
+- **Progress indicators** — init welcome message now shows step count and estimated time.
+- **Credential escape hatches** — board credential failures now offer `[2] Skip verification` alongside re-enter, instead of requiring Ctrl+C to exit.
+- **Linear team auto-detection** — init auto-detects teams from the API after verifying the key, instead of requiring manual URL hunting.
+- **Max iterations reordered** — moved to first optional enhancement (most universally relevant) with input validation.
+- **Plan feedback instructions** — plan template footer now tells users how to request changes and re-plan.
+- **Per-ticket progress** — `/clancy:plan` now shows progress per ticket during multi-ticket runs with Ctrl+C guidance.
+- **Duplicate plan guard** — `/clancy:approve` checks for existing plans in the description before appending.
+- **Transition guidance** — `/clancy:approve` now reminds users to move tickets to the implementation queue.
+- **Linear exact match** — `/clancy:approve` verifies Linear `issueSearch` results match the provided key exactly.
+- **Logs support new types** — `/clancy:logs` now parses and displays PLAN, APPROVE, and SKIPPED entries.
+- **Update-docs personality** — added banner and Wiggum quote to `/clancy:update-docs`.
+- **Review preflight inlined** — `/clancy:review` preflight is now self-contained instead of referencing status.md.
+- **Update flow polish** — local patches info now shows before the completion banner; changelog format specified; network failure handled gracefully; restart instructions clarified.
+- **Map-codebase interruptibility** — Ctrl+C note added to agent deployment message.
+- **API error handling** — `/clancy:plan` now shows clear error messages when board API calls fail.
+- **GitHub label clarity** — "no tickets" message explains the separate planning label for GitHub users.
+
+### 📝 Documentation
+
+- **Updated help output** — `/clancy:help` and the installer banner now include the Planner section with `plan` and `approve` commands.
+- **Updated .env.example templates** — all 3 board templates include planner queue configuration and optional roles.
+- **Updated settings workflow** — planner queue settings added per board, roles toggle section added.
+
+---
+
 ## [0.4.0] — 2026-03-12
 
 ### ♻️ Refactor

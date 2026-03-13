@@ -90,7 +90,11 @@ Exit.
 curl -s https://raw.githubusercontent.com/Pushedskydiver/clancy/main/CHANGELOG.md
 ```
 
-Extract only the entries between the installed version and the latest version. Display:
+The CHANGELOG uses `## [X.Y.Z]` headings. Extract all content from the `## [{latest}]` heading down to (but not including) the `## [{installed}]` heading.
+
+If the changelog fetch fails (network error, non-200), skip the "What's New" section and show: `Could not fetch changelog. View changes at github.com/Pushedskydiver/clancy/blob/main/CHANGELOG.md`
+
+Display:
 
 ```
 🚨 Clancy — Update
@@ -162,30 +166,7 @@ It never modifies:
 
 ---
 
-## Step 5 — Clear update cache and confirm
-
-Clear the update check cache so the statusline indicator disappears:
-
-```bash
-rm -f "$HOME/.claude/cache/clancy-update-check.json"
-rm -f "./.claude/cache/clancy-update-check.json"
-```
-
-Display completion message:
-
-```
-╔═══════════════════════════════════════════════════════════╗
-║  ✅ Clancy Updated: v{old} → v{new}                     ║
-╚═══════════════════════════════════════════════════════════╝
-
-"New badge, same Chief." — Restart Claude Code to pick up the new commands.
-
-View full changelog: github.com/Pushedskydiver/clancy/blob/main/CHANGELOG.md
-```
-
----
-
-## Step 6 — Check for local patches
+## Step 5 — Check for local patches
 
 After the update completes, check if the installer backed up any locally modified files:
 
@@ -207,6 +188,29 @@ Backed up files:
 ```
 
 **If no patches:** Continue normally (no message needed).
+
+---
+
+## Step 6 — Clear update cache and confirm
+
+Clear the update check cache so the statusline indicator disappears:
+
+```bash
+rm -f "$HOME/.claude/cache/clancy-update-check.json"
+rm -f "./.claude/cache/clancy-update-check.json"
+```
+
+Display completion message:
+
+```
+╔═══════════════════════════════════════════════════════════╗
+║  ✅ Clancy Updated: v{old} → v{new}                     ║
+╚═══════════════════════════════════════════════════════════╝
+
+"New badge, same Chief." — Start a new Claude Code session to pick up the updated commands.
+
+View full changelog: github.com/Pushedskydiver/clancy/blob/main/CHANGELOG.md
+```
 
 ---
 

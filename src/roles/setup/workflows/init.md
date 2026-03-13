@@ -4,6 +4,15 @@
 
 Full wizard for setting up Clancy in a project. Follow every step exactly. Do not skip steps or reorder them.
 
+### Input handling
+
+This workflow runs inside a Claude Code session, not a vanilla terminal. Accept natural language responses alongside numbered options and y/N prompts:
+- Affirmative: "y", "yes", "sure", "go ahead", "yep" → treat as yes
+- Negative: "n", "no", "nah", "skip", "not now" → treat as no
+- Board selection: "jira", "github", "linear" → treat as selecting that board
+- Direct values: if the user types a status name like "Selected for Development" instead of picking option [2], accept it directly
+- If a response is ambiguous, ask for clarification
+
 ---
 
 ## Step 1 — Detect project state
@@ -60,9 +69,9 @@ Output:
 
 "Chief Wiggum reporting for duty."
 
-Clancy pulls tickets from your Kanban board, implements them, commits, and squash-merges — one ticket per run, fresh context every time.
+Clancy pulls tickets from your Kanban board, plans and implements them, commits, and squash-merges — one ticket per run, fresh context every time.
 
-Let's get you set up.
+Let's get you set up. This takes about 3 minutes (4 steps, then optional extras).
 ```
 
 ---
@@ -122,7 +131,10 @@ Add this label to any issue you want Clancy to work on.
 **Linear** — ask in this order:
 
 1. `Paste your Linear API key: (create one at linear.app/settings/api)`
-2. `What's your Linear team ID? (find it at linear.app/settings/teams — click your team, copy the ID from the URL)`
+2. After verifying the API key (Step Q2b), auto-detect teams by querying `{ teams { nodes { id name } } }`.
+   - If exactly 1 team: use it automatically. Show `Using team: {name} ({id})`.
+   - If 2+ teams: show a numbered list and let the user pick.
+   - If the query fails or returns no teams: fall back to asking manually: `What's your Linear team ID? (find it at linear.app/settings/teams — click your team, copy the ID from the URL)`
 3. `What label should Clancy filter by? Create a "clancy" label in your Linear team and apply it to issues you want Clancy to implement. [clancy]`
 
 If a label is entered: store as `CLANCY_LABEL` in `.clancy/.env`. Always wrap the value in double quotes (e.g. `CLANCY_LABEL="clancy"`).
@@ -147,9 +159,11 @@ On failure, show:
 Check your credentials in the values you just entered.
 
 [1] Re-enter credentials
+[2] Skip verification (configure later via /clancy:settings)
 ```
 
-If [1]: go back to Q2 and re-ask all Jira questions. If the user wants to abandon setup entirely, they can Ctrl+C.
+If [1]: go back to Q2 and re-ask all Jira questions.
+If [2]: save the unverified credentials and continue with setup. The user can fix them later.
 
 **GitHub Issues** — call `GET https://api.github.com/repos/{GITHUB_REPO}` with `Authorization: Bearer {GITHUB_TOKEN}` and `X-GitHub-Api-Version: 2022-11-28`.
 
@@ -164,9 +178,11 @@ On failure, show:
 Check your token has `repo` scope and the repo name is correct.
 
 [1] Re-enter credentials
+[2] Skip verification (configure later via /clancy:settings)
 ```
 
-If [1]: go back to Q2 and re-ask all GitHub questions. If the user wants to abandon setup entirely, they can Ctrl+C.
+If [1]: go back to Q2 and re-ask all GitHub questions.
+If [2]: save the unverified credentials and continue with setup.
 
 **Linear** — call `POST https://api.linear.app/graphql` with `Authorization: {LINEAR_API_KEY}` (no Bearer prefix) and body `{"query": "{ viewer { id name } }"}`.
 
@@ -181,11 +197,13 @@ On failure, show:
 Check your API key at linear.app/settings/api.
 
 [1] Re-enter credentials
+[2] Skip verification (configure later via /clancy:settings)
 ```
 
-If [1]: go back to Q2 and re-ask all Linear questions. If the user wants to abandon setup entirely, they can Ctrl+C.
+If [1]: go back to Q2 and re-ask all Linear questions.
+If [2]: save the unverified credentials and continue with setup.
 
-Never silently continue with unverified credentials — the user must fix their credentials or exit with Ctrl+C.
+Never silently continue with unverified credentials — the user must explicitly choose to re-enter, skip, or exit.
 
 ---
 
@@ -277,6 +295,33 @@ If no: skip the commit silently. The user can commit manually later.
 
 ---
 
+## Step 4c — Optional roles
+
+Clancy includes the Implementer, Reviewer, and Setup roles by default. Optional roles add extra capabilities.
+
+```
+Clancy includes the Implementer, Reviewer, and Setup roles by default.
+You can enable additional roles:
+
+  [1] Planner   — Refine vague tickets into structured implementation plans
+
+Enter roles to enable (e.g. 1 or "all") or press Enter to skip:
+```
+
+Accept numbers, role names (e.g. "planner"), "all", or Enter to skip.
+
+If any roles are selected:
+- Store as `CLANCY_ROLES="planner"` (comma-separated if multiple) in `.clancy/.env`
+- The selected roles' commands and workflows will be installed on the next `npx chief-clancy` run
+
+If skipped (Enter): no `CLANCY_ROLES` line is written — only core roles are installed.
+
+The installer reads `CLANCY_ROLES` from `.clancy/.env` to determine which optional role directories to copy. Core roles (implementer, reviewer, setup) are always copied regardless of this setting. After changing `CLANCY_ROLES`, re-run `npx chief-clancy@latest --local` (or `--global`) to apply.
+
+Note: as more roles are added in future versions, they appear as additional numbered options here. The flow scales naturally.
+
+---
+
 ## Step 5 — Optional enhancements
 
 Output:
@@ -284,13 +329,13 @@ Output:
 ```
 Clancy is set up. A few optional enhancements are available:
 
-  1. Figma MCP        — fetch design specs when tickets include a Figma URL
-  2. Playwright       — screenshot and verify UI after implementing tickets
-  3. Notifications    — post to Slack or Teams when a ticket completes or errors
-  4. Max iterations   — set how many tickets /clancy:run processes per session
+  1. Max iterations   — set how many tickets /clancy:run processes per session
+  2. Figma MCP        — fetch design specs when tickets include a Figma URL
+  3. Playwright       — screenshot and verify UI after implementing tickets
+  4. Notifications    — post to Slack or Teams when a ticket completes or errors
 
 Each takes about 2 minutes to configure, or skip any for now.
-You can always add them later by editing .clancy/.env.
+You can always add them later via /clancy:settings.
 
 Set up optional enhancements? [y/N]
 ```
@@ -299,11 +344,26 @@ If no: skip to Step 6.
 
 If yes, walk through each in order. After each enhancement (whether configured or skipped), ask before starting the next one: `Set up [enhancement name]? [y/N]`
 
-### Enhancement 1: Figma MCP
+### Enhancement 1: Max iterations
+
+Output:
+
+```
+How many tickets should /clancy:run process before stopping? [5]
+(You can override this per-session with /clancy:run 20)
+```
+
+Validate the input is a positive integer between 1 and 100. If invalid, re-prompt.
+
+Write `MAX_ITERATIONS=<value>` to `.clancy/.env`.
+
+---
+
+### Enhancement 2: Figma MCP
 
 Output: `Fetch design context from Figma when tickets include a Figma URL. Set up Figma MCP? [y/N]`
 
-If no: skip to Enhancement 2.
+If no: skip to Enhancement 3.
 
 If yes: `Paste your Figma API key: (create one at figma.com/settings → Personal access tokens)`
 
@@ -313,10 +373,7 @@ If a key is entered:
    ```
    ✅ Figma connected: {email}
 
-   Note: Figma's API does not expose plan information.
-   Clancy uses 3 MCP calls per ticket (metadata, design context, screenshot).
-   Check your plan at figma.com/settings to confirm you have enough MCP calls for your usage.
-   Pro plans: 200 calls/day (~66 tickets). Starter: 6 calls/month (not suitable for AFK use).
+   Note: Check your Figma plan limits at figma.com/settings — Clancy uses 3 API calls per ticket.
 
    Figma MCP enabled.
    ```
@@ -329,23 +386,23 @@ Double-check it at figma.com/settings → Personal access tokens.
 [1] Try a different key
 [2] Skip Figma for now
 ```
-Never silently continue with an unverified key. If the user picks [1], re-prompt for the key and repeat the verification. If [2], skip to Enhancement 2.
+Never silently continue with an unverified key. If the user picks [1], re-prompt for the key and repeat the verification. If [2], skip to Enhancement 3.
 
 Write `FIGMA_API_KEY` to `.clancy/.env`. Add usage note to CLAUDE.md Clancy section.
 
 ---
 
-### Enhancement 2: Playwright visual checks
+### Enhancement 3: Playwright visual checks
 
-If Figma was configured in Enhancement 1, output:
+If Figma was configured in Enhancement 2, output:
 `Screenshot and verify UI after implementing tickets — and compare against the Figma design when one was fetched. Set up Playwright visual checks? [y/N]`
 
 Otherwise output:
 `Screenshot and verify UI after implementing tickets. Set up Playwright visual checks? [y/N]`
 
-If no: skip to Enhancement 3.
+If no: skip to Enhancement 4.
 
-If yes, continue:
+If yes, continue. For Storybook users this is about 5 quick questions; without Storybook, 3 questions.
 
 **Step 1: Storybook detection**
 
@@ -431,11 +488,11 @@ Create `.clancy/docs/PLAYWRIGHT.md` — see PLAYWRIGHT.md template in scaffold.m
 
 ---
 
-### Enhancement 3: Slack / Teams notifications
+### Enhancement 4: Slack / Teams notifications
 
 Output: `Post to a channel when a ticket completes or Clancy hits an error. Set up notifications? [y/N]`
 
-If no: skip to Enhancement 4.
+If no: skip to Step 6.
 
 If yes: `Paste your Slack or Teams webhook URL:`
 
@@ -451,19 +508,6 @@ workflow's trigger, not from the old Office 365 Connectors setup (retired April 
 ```
 
 Write `CLANCY_NOTIFY_WEBHOOK=<url>` to `.clancy/.env`.
-
----
-
-### Enhancement 4: Max iterations
-
-Output:
-
-```
-How many tickets should /clancy:run process before stopping? [5]
-(You can override this per-session with /clancy:run 20)
-```
-
-Write `MAX_ITERATIONS=<value>` to `.clancy/.env`.
 
 ---
 
@@ -494,5 +538,5 @@ Output:
 - Config: `.clancy/.env`
 - CLAUDE.md: updated
 
-"Clancy's on the beat." — Run /clancy:dry-run to preview, /clancy:once to pick up a ticket, or /clancy:run to process the queue.
+"Clancy's on the beat." — Run /clancy:plan to refine backlog tickets, /clancy:dry-run to preview, or /clancy:once to pick up a ticket.
 ```

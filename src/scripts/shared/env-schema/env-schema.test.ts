@@ -179,5 +179,24 @@ describe('detectBoard', () => {
       expect(result.env.MAX_ITERATIONS).toBe('10');
       expect(result.env.PLAYWRIGHT_ENABLED).toBe('true');
     });
+
+    it('passes through planner env vars', () => {
+      const result = detectBoard(
+        jiraEnv({
+          CLANCY_ROLES: 'planner',
+          CLANCY_PLAN_STATUS: 'Backlog',
+          CLANCY_PLAN_LABEL: 'needs-refinement',
+          CLANCY_PLAN_STATE_TYPE: 'backlog',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_ROLES).toBe('planner');
+      expect(result.env.CLANCY_PLAN_STATUS).toBe('Backlog');
+      expect(result.env.CLANCY_PLAN_LABEL).toBe('needs-refinement');
+      expect(result.env.CLANCY_PLAN_STATE_TYPE).toBe('backlog');
+    });
   });
 });

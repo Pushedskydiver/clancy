@@ -1,10 +1,7 @@
 # /clancy:approve
 
-Promote an approved plan to the ticket description.
+Promote an approved Clancy plan to the ticket description. Requires a ticket key argument (e.g. `/clancy:approve PROJ-123`).
 
-> This command is a placeholder for v0.5.0. It is not yet implemented.
+@.claude/clancy/workflows/approve.md
 
-Display:
-```
-/clancy:approve is coming in v0.5.0. Stay tuned.
-```
+Follow the approve workflow above. Fetch the plan comment, confirm with the user, and append it to the ticket description.

@@ -2,7 +2,7 @@
 
 **Autonomous, board-driven development for Claude Code.**
 
-[![npm](https://img.shields.io/npm/v/chief-clancy?style=for-the-badge&color=cb3837)](https://www.npmjs.com/package/chief-clancy) [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE) [![Tests](https://img.shields.io/badge/tests-162%20passing-brightgreen?style=for-the-badge)](docs/TESTING.md) [![GitHub Stars](https://img.shields.io/github/stars/Pushedskydiver/clancy?style=for-the-badge)](https://github.com/Pushedskydiver/clancy/stargazers)
+[![npm](https://img.shields.io/npm/v/chief-clancy?style=for-the-badge&color=cb3837)](https://www.npmjs.com/package/chief-clancy) [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE) [![Tests](https://img.shields.io/badge/tests-163%20passing-brightgreen?style=for-the-badge)](docs/TESTING.md) [![GitHub Stars](https://img.shields.io/github/stars/Pushedskydiver/clancy?style=for-the-badge)](https://github.com/Pushedskydiver/clancy/stargazers)
 
 > [!WARNING]
 > Clancy is in early development. Expect bugs, breaking changes, and rough edges. If you hit an issue, please [open a bug report](https://github.com/Pushedskydiver/clancy/issues/new).
@@ -25,11 +25,12 @@ Named after Chief Clancy Wiggum (The Simpsons) — built on the [Ralph technique
 
 ## What it does
 
-Clancy does three things:
+Clancy does four things:
 
 1. **Scaffolds itself** into a project — scripts, docs, CLAUDE.md, .clancy/.env
 2. **Scans your codebase** with 5 parallel specialist agents and writes 10 structured docs that Claude reads before every run
-3. **Runs autonomously** — picking one ticket per loop from your Kanban board, implementing it, committing, squash-merging, and logging progress
+3. **Plans tickets** — fetches backlog tickets, explores the codebase, and generates structured implementation plans posted as comments for human review
+4. **Runs autonomously** — picking one ticket per loop from your Kanban board, implementing it, committing, squash-merging, and logging progress
 
 One ticket per run. Fresh context window every iteration. No context rot.
 
@@ -148,6 +149,9 @@ npx chief-clancy
 
 | Command                | Description                                                              |
 | ---------------------- | ------------------------------------------------------------------------ |
+| `/clancy:plan` ¹       | Refine backlog tickets into structured implementation plans              |
+| `/clancy:plan 3` ¹     | Plan up to 3 tickets in batch mode                                       |
+| `/clancy:approve` ¹    | Promote an approved plan to the ticket description                       |
 | `/clancy:init`         | Wizard — choose board, collect config, scaffold everything               |
 | `/clancy:run`          | Loop mode — processes tickets until queue is empty or MAX_ITERATIONS hit |
 | `/clancy:run 20`       | Same, override MAX_ITERATIONS to 20 for this session                     |
@@ -163,6 +167,8 @@ npx chief-clancy
 | `/clancy:update`       | Update Clancy to latest version                                          |
 | `/clancy:uninstall`    | Remove Clancy commands — optionally remove `.clancy/` too               |
 | `/clancy:help`         | Command reference                                                        |
+
+¹ Planner is an optional role. Enable with `CLANCY_ROLES=planner` in `.clancy/.env` and re-run the installer.
 
 ---
 

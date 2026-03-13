@@ -12,6 +12,15 @@ Named after Chief Clancy Wiggum (Ralph's dad, The Simpsons). Built on the Ralph 
 coined by Geoffrey Huntley (ghuntley.com/ralph/). Clancy extends that foundation with board
 integration, structured codebase docs, and a git workflow built for team development.
 
+### Planner *(optional — enable via `CLANCY_ROLES=planner` in `.clancy/.env`)*
+
+| Command | Description |
+|---|---|
+| `/clancy:plan` | Refine backlog tickets into structured implementation plans |
+| `/clancy:plan 3` | Plan up to 3 tickets in batch mode |
+| `/clancy:plan --force` | Re-plan tickets that already have a plan (reads feedback) |
+| `/clancy:approve` | Promote an approved plan to the ticket description |
+
 ### Implementer
 
 | Command | Description |

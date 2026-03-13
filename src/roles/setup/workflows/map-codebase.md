@@ -46,7 +46,7 @@ Tell the user agents are running:
 🚨 Clancy — Map Codebase
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-"Sending in the task force..." — 5 agents deployed.
+"Sending in the task force..." — 5 agents deployed. Ctrl+C to cancel.
 
   🔍 tech     → STACK.md, INTEGRATIONS.md
   🔍 arch     → ARCHITECTURE.md

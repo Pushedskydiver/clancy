@@ -59,8 +59,10 @@ clancy/
 `src/installer/install.ts` is the entry point for `npx chief-clancy` (compiled to `dist/installer/install.js`):
 
 1. Prompts for global (`~/.claude`) or local (`./.claude`) install
-2. Walks `src/roles/*/commands/` and copies all command files flat → `{dest}/commands/clancy/`
-3. Walks `src/roles/*/workflows/` and copies all workflow files flat → `{dest}/clancy/workflows/`
+2. Walks `src/roles/*/commands/` and copies command files flat → `{dest}/commands/clancy/`
+   - Core roles (implementer, reviewer, setup) are always installed
+   - Optional roles (planner, etc.) are only installed if listed in `CLANCY_ROLES` env var in `.clancy/.env`, or if no `.clancy/.env` exists yet (first install = install all)
+3. Walks `src/roles/*/workflows/` and copies workflow files flat → `{dest}/clancy/workflows/` (same filtering)
 4. Copies `hooks/*.js` → `{dest}/hooks/` (pre-built CommonJS, not compiled from TS)
 5. Copies bundled runtime scripts (`dist/bundle/clancy-once.js`, `clancy-afk.js`) → `.clancy/`
 6. Registers hooks in `settings.json` (PreToolUse, PostToolUse, SessionStart, statusLine)
@@ -79,6 +81,26 @@ Commands are thin wrappers. Each command file references a workflow:
 ```
 
 Commands are user-facing (appear in Claude Code's `/` menu). Workflows contain the actual implementation logic and are never exposed directly.
+
+## Planner Lifecycle
+
+The Planner role (`/clancy:plan` and `/clancy:approve`) operates as a pure workflow — no runtime script, no git operations:
+
+```
+Backlog ticket
+  │
+  ▼
+/clancy:plan ──── preflight → fetch from planning queue → explore codebase → generate plan → post as comment
+  │
+  ▼
+Human reviews plan on the board
+  │
+  ├─ Approves → /clancy:approve {KEY} → plan promoted to ticket description → ready for /clancy:once
+  │
+  └─ Rejects (leaves feedback) → /clancy:plan --force → reads feedback, generates improved plan
+```
+
+The planner and implementer work on **separate queues** (e.g. Jira: `Backlog` vs `To Do`, GitHub: `needs-refinement` vs `clancy` label, Linear: `backlog` vs `unstarted` state type). They never compete for the same tickets.
 
 ## Hook Architecture
 

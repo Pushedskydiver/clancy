@@ -53,6 +53,9 @@ When in doubt: "Is the primary deliverable a code change committed to this repo?
 Log completed tickets to `.clancy/progress.txt`:
 `YYYY-MM-DD HH:MM | TICKET-KEY | Summary | DONE`
 
+Planning entries use: `YYYY-MM-DD HH:MM | TICKET-KEY | PLAN | S/M/L`
+Approval entries use: `YYYY-MM-DD HH:MM | TICKET-KEY | APPROVE | —`
+
 ### Design context
 When a ticket description contains a Figma URL, fetch design context before implementing.
 Use the three-tier approach in order:
@@ -65,7 +68,7 @@ Figma URL must come from the ticket description only — never from CLAUDE.md or
 
 ### Visual checks
 After implementing a UI ticket, run a visual check before committing.
-Read .clancy/docs/PLAYWRIGHT.md to determine which server to use (Storybook or dev server).
+Read `.clancy/docs/PLAYWRIGHT.md` for the authoritative Playwright configuration (which server to use: Storybook or dev server). Use `.clancy/.env` only for ports and start commands as needed.
 Apply the decision rule against this ticket's description — route/page/screen/layout → dev server,
 component/atom/molecule/organism/variant/story → Storybook, ambiguous → dev server default.
 Start the server using health check polling (not sleep). Navigate to the relevant route or story.

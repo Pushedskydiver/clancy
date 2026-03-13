@@ -52,7 +52,7 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 
 ---
 
-## v0.4.0 — Architecture refactor
+## v0.4.0 — Architecture refactor ✅
 
 - Formalize roles: Implementer, Reviewer, Setup & Maintenance (Planner added in v0.5.0)
 - Restructure project source by role (`src/roles/{planner,implementer,reviewer,setup}/`)
@@ -63,7 +63,7 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 
 ---
 
-## v0.5.0 — Planner role
+## v0.5.0 — Planner role + UX improvements ✅
 
 - `/clancy:plan` — fetch backlog tickets, explore codebase, generate structured implementation plans, post as comments to the board
 - `/clancy:approve` — promote an approved plan to the ticket description (with confirmation prompt)
@@ -77,10 +77,28 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 - Dependency detection: blocking tickets, external APIs, unfinished designs, library upgrades
 - Plan template: Summary, Acceptance Criteria, Technical Approach, Affected Files, Edge Cases, Test Plan, Dependencies, Size Estimate (S/M/L)
 - New env vars: `CLANCY_PLAN_STATUS`, `CLANCY_PLAN_LABEL`, `CLANCY_PLAN_STATE_TYPE`
+- Optional roles — core roles (implementer, reviewer, setup) always install; optional roles (planner) opt-in via `CLANCY_ROLES` env var
+- UX improvements across all workflows — natural language input handling, stable menu mnemonics in settings, Linear team auto-detection, self-contained preflight checks, progress indicators, input validation
 
 ---
 
-## v0.6.0 — Visual verification
+## v0.6.0 — Strategist role
+
+- `/clancy:brief` — take a vague idea (from a board ticket, inline text, or local file), research the codebase and web, produce a structured strategic brief with ticket decomposition
+- `/clancy:approve-brief` — create tickets on the board from an approved brief (new capability: ticket creation via Jira, GitHub, Linear APIs)
+- Input sources: board ticket (original becomes epic/parent), inline text, `--from` file, interactive prompt
+- Adaptive research agents (1-4) — scales with idea complexity; codebase exploration + judgement-based web research
+- `--research` flag to force web research; `--force` to re-brief with feedback
+- `--list` flag to show all briefs with age, status, and stale warnings
+- Brief selection via conversational inference, numeric index, or slug match
+- Brief stored locally in `.clancy/briefs/` + as board comment when sourced from a ticket
+- Stale brief detection — extends SessionStart hook to warn on unapproved drafts older than 7 days
+- Dependency linking on ticket creation: Jira issueLinks, Linear issueRelations, GitHub cross-references
+- New env vars: `CLANCY_BRIEF_ISSUE_TYPE`, `CLANCY_BRIEF_EPIC`
+
+---
+
+## v0.7.0 — Visual verification
 
 - Playwright CLI integration — token-efficient alternative to Playwright MCP for visual checks. Init wizard offers CLI (recommended) or MCP mode. CLI uses `playwright-cli` commands (navigate, screenshot) instead of writing test scripts, with session isolation per ticket
 - Lighthouse CI — optional enhancement to audit performance, accessibility, SEO, and best practices after UI ticket implementation. Returns a focused score summary, pairs with Playwright CLI for screenshot + audit in one pass
@@ -88,7 +106,7 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 
 ---
 
-## v0.7.0 — Board ecosystem
+## v0.8.0 — Board ecosystem
 
 - Community board contributions
 - Shortcut (formerly Clubhouse) support
@@ -136,5 +154,4 @@ These have been considered and deliberately excluded:
 
 - **GUI / web dashboard** — Clancy is a CLI tool. The terminal is the UI.
 - **Built-in LLM** — Clancy uses Claude Code. It is not an LLM runtime.
-- **Ticket creation** — Clancy consumes tickets, not creates them. That's the human's job.
 - **Branch protection bypass** — Clancy follows your repo's git conventions as documented in GIT.md. It never bypasses hooks or protection rules.

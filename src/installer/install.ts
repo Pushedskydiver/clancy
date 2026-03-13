@@ -13,6 +13,7 @@ import {
   mkdirSync,
   readFileSync,
   readdirSync,
+  unlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { createRequire } from 'node:module';
@@ -27,6 +28,7 @@ import {
   detectModifiedFiles,
 } from '~/installer/manifest/manifest.js';
 import { ask, choose, closePrompts } from '~/installer/prompts/prompts.js';
+import { loadClancyEnv } from '~/scripts/shared/env-parser/env-parser.js';
 import { blue, bold, cyan, dim, green, red } from '~/utils/ansi/ansi.js';
 
 // ---------------------------------------------------------------------------
@@ -96,7 +98,7 @@ function printBanner(): void {
 /**
  * Print the post-install success message with available commands.
  */
-function printSuccess(): void {
+function printSuccess(enabledRoles: Set<string> | null): void {
   console.log('');
   console.log(green('  ✓ Clancy installed successfully.'));
   console.log('');
@@ -106,7 +108,16 @@ function printSuccess(): void {
   console.log('');
   console.log('  Commands available:');
 
+  const OPTIONAL_GROUPS = new Set(['planner']);
+
   const groups: [string, [string, string][]][] = [
+    [
+      'Planner',
+      [
+        ['/clancy:plan', 'Refine backlog tickets into plans'],
+        ['/clancy:approve', 'Promote plan to ticket description'],
+      ],
+    ],
     [
       'Implementer',
       [
@@ -130,13 +141,23 @@ function printSuccess(): void {
         ['/clancy:map-codebase', 'Scan codebase with 5 parallel agents'],
         ['/clancy:settings', 'View and change configuration'],
         ['/clancy:doctor', 'Diagnose your setup'],
+        ['/clancy:update-docs', 'Refresh codebase documentation'],
         ['/clancy:update', 'Update Clancy to latest version'],
+        ['/clancy:uninstall', 'Remove Clancy from your project'],
         ['/clancy:help', 'Show all commands'],
       ],
     ],
   ];
 
   for (const [group, cmds] of groups) {
+    const key = group.toLowerCase();
+    if (
+      OPTIONAL_GROUPS.has(key) &&
+      enabledRoles !== null &&
+      !enabledRoles.has(key)
+    )
+      continue;
+
     console.log('');
     console.log(`    ${bold(group)}`);
     for (const [cmd, desc] of cmds) {
@@ -186,31 +207,74 @@ function inlineWorkflows(commandsDir: string, workflowsDir: string): void {
 // Role directory copying
 // ---------------------------------------------------------------------------
 
+/** Roles that are always installed regardless of CLANCY_ROLES. */
+const CORE_ROLES = new Set(['implementer', 'reviewer', 'setup']);
+
+/**
+ * Parse the CLANCY_ROLES env var from `.clancy/.env` in the current project.
+ *
+ * Returns a Set of enabled optional role names, or null if no `.clancy/.env`
+ * exists yet (first install — install all roles as a safe default).
+ *
+ * When `.clancy/.env` exists but CLANCY_ROLES is unset or empty, returns an
+ * empty Set so optional roles are truly opt-in.
+ */
+function parseEnabledRoles(): Set<string> | null {
+  const env = loadClancyEnv(process.cwd());
+  if (!env) return null;
+
+  const roles = env.CLANCY_ROLES;
+  if (!roles) return new Set();
+
+  return new Set(
+    roles
+      .split(',')
+      .map((r) => r.trim().toLowerCase())
+      .filter(Boolean),
+  );
+}
+
 /**
  * Copy files from role subdirectories into a flat destination directory.
  *
  * Walks `src/roles/{role}/{subdir}/` for each role and copies all files
- * flat into `dest`. The installed output remains flat (e.g. all command
- * .md files in `.claude/commands/clancy/`) so that slash command names
- * are preserved (`/clancy:once`, not `/clancy:implementer:once`).
+ * flat into `dest`. Core roles (implementer, reviewer, setup) are always
+ * copied. Optional roles (planner, etc.) are only copied if listed in
+ * the CLANCY_ROLES env var, or if no .clancy/.env exists yet (first install).
  *
  * @param rolesDir - The roles source directory (`src/roles/`).
  * @param subdir - The subdirectory within each role (`commands` or `workflows`).
  * @param dest - The flat destination directory.
+ * @param enabledRoles - Set of enabled optional roles, or null to install all (first install).
  */
-/** Roles excluded from installation (not yet implemented). */
-const SKIP_ROLES = new Set(['planner']);
-
-function copyRoleFiles(rolesDir: string, subdir: string, dest: string): void {
+function copyRoleFiles(
+  rolesDir: string,
+  subdir: string,
+  dest: string,
+  enabledRoles: Set<string> | null,
+): void {
   mkdirSync(dest, { recursive: true });
 
-  const roles = readdirSync(rolesDir, { withFileTypes: true }).filter(
-    (d) => d.isDirectory() && !SKIP_ROLES.has(d.name),
+  const roles = readdirSync(rolesDir, { withFileTypes: true }).filter((d) =>
+    d.isDirectory(),
   );
 
   for (const role of roles) {
     const srcDir = join(rolesDir, role.name, subdir);
     if (!existsSync(srcDir)) continue;
+
+    // Core roles always install; optional roles need explicit opt-in
+    if (!CORE_ROLES.has(role.name) && enabledRoles !== null) {
+      if (!enabledRoles.has(role.name)) {
+        // Remove previously-installed files for disabled optional roles
+        for (const file of readdirSync(srcDir)) {
+          const target = join(dest, file);
+          if (existsSync(target)) unlinkSync(target);
+        }
+        continue;
+      }
+    }
+
     copyDir(srcDir, dest);
   }
 }
@@ -375,8 +439,10 @@ async function main(): Promise<void> {
     }
 
     // Copy commands and workflows from role directories (flat output)
-    copyRoleFiles(ROLES_SRC, 'commands', dest);
-    copyRoleFiles(ROLES_SRC, 'workflows', workflowsDest);
+    // Global installs always include all roles (no per-project .env to read)
+    const enabledRoles = dest === GLOBAL_DEST ? null : parseEnabledRoles();
+    copyRoleFiles(ROLES_SRC, 'commands', dest, enabledRoles);
+    copyRoleFiles(ROLES_SRC, 'workflows', workflowsDest, enabledRoles);
 
     // Inline workflows for global installs
     if (dest === GLOBAL_DEST) {
@@ -422,7 +488,7 @@ async function main(): Promise<void> {
       hooksSourceDir: HOOKS_SRC,
     });
 
-    printSuccess();
+    printSuccess(enabledRoles);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(red(`\n  Install failed: ${message}`));
