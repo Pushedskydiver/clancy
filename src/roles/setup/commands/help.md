@@ -12,7 +12,7 @@ Named after Chief Clancy Wiggum (Ralph's dad, The Simpsons). Built on the Ralph 
 coined by Geoffrey Huntley (ghuntley.com/ralph/). Clancy extends that foundation with board
 integration, structured codebase docs, and a git workflow built for team development.
 
-### Planner
+### Planner *(optional — enable via `CLANCY_ROLES=planner` in `.clancy/.env`)*
 
 | Command | Description |
 |---|---|

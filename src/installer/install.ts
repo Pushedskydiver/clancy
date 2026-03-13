@@ -96,7 +96,7 @@ function printBanner(): void {
 /**
  * Print the post-install success message with available commands.
  */
-function printSuccess(): void {
+function printSuccess(enabledRoles: Set<string> | null): void {
   console.log('');
   console.log(green('  ✓ Clancy installed successfully.'));
   console.log('');
@@ -105,6 +105,8 @@ function printSuccess(): void {
   console.log(`    2. Run: ${cyan('/clancy:init')}`);
   console.log('');
   console.log('  Commands available:');
+
+  const OPTIONAL_GROUPS = new Set(['planner']);
 
   const groups: [string, [string, string][]][] = [
     [
@@ -144,6 +146,14 @@ function printSuccess(): void {
   ];
 
   for (const [group, cmds] of groups) {
+    const key = group.toLowerCase();
+    if (
+      OPTIONAL_GROUPS.has(key) &&
+      enabledRoles !== null &&
+      !enabledRoles.has(key)
+    )
+      continue;
+
     console.log('');
     console.log(`    ${bold(group)}`);
     for (const [cmd, desc] of cmds) {
@@ -200,7 +210,10 @@ const CORE_ROLES = new Set(['implementer', 'reviewer', 'setup']);
  * Parse the CLANCY_ROLES env var from `.clancy/.env` in the current project.
  *
  * Returns a Set of enabled optional role names, or null if no `.clancy/.env`
- * exists or the var is not set (meaning install all roles).
+ * exists yet (first install — install all roles as a safe default).
+ *
+ * When `.clancy/.env` exists but CLANCY_ROLES is unset or empty, returns an
+ * empty Set so optional roles are truly opt-in.
  */
 function parseEnabledRoles(): Set<string> | null {
   const envPath = join(process.cwd(), '.clancy', '.env');
@@ -208,7 +221,7 @@ function parseEnabledRoles(): Set<string> | null {
 
   const content = readFileSync(envPath, 'utf8');
   const match = content.match(/^CLANCY_ROLES=["']?([^"'\n]+)["']?$/m);
-  if (!match) return null;
+  if (!match) return new Set();
 
   return new Set(
     match[1]
@@ -229,7 +242,7 @@ function parseEnabledRoles(): Set<string> | null {
  * @param rolesDir - The roles source directory (`src/roles/`).
  * @param subdir - The subdirectory within each role (`commands` or `workflows`).
  * @param dest - The flat destination directory.
- * @param enabledRoles - Set of enabled optional roles, or null to install all.
+ * @param enabledRoles - Set of enabled optional roles, or null to install all (first install).
  */
 function copyRoleFiles(
   rolesDir: string,
@@ -463,7 +476,7 @@ async function main(): Promise<void> {
       hooksSourceDir: HOOKS_SRC,
     });
 
-    printSuccess();
+    printSuccess(enabledRoles);
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
     console.error(red(`\n  Install failed: ${message}`));
