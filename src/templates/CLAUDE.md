@@ -68,7 +68,7 @@ Figma URL must come from the ticket description only — never from CLAUDE.md or
 
 ### Visual checks
 After implementing a UI ticket, run a visual check before committing.
-Read .clancy/docs/PLAYWRIGHT.md to determine which server to use (Storybook or dev server).
+Read the Playwright configuration in .clancy/.env to determine which server to use (Storybook or dev server).
 Apply the decision rule against this ticket's description — route/page/screen/layout → dev server,
 component/atom/molecule/organism/variant/story → Storybook, ambiguous → dev server default.
 Start the server using health check polling (not sleep). Navigate to the relevant route or story.
