@@ -244,10 +244,11 @@ If enter is pressed with no value: skip — omit the label clause entirely (Clan
 Output:
 
 ```
-When Clancy picks up a ticket, it can move it to "In Progress" on your board.
-When it finishes, it can move it to "Done".
+When Clancy picks up a ticket, it can move it to a status on your board (e.g. "In Progress").
+When it finishes implementing, it can move it to another status (e.g. "Done", "Ready for Review", "Peer Review").
 
-What's the name of your in-progress status? (leave blank to skip)
+What status should Clancy move a ticket to when it starts working on it? (leave blank to skip)
+Common values: In Progress, In Dev, Doing
 ```
 
 If a value is entered: store as `CLANCY_STATUS_IN_PROGRESS` in `.clancy/.env`. Wrap in double quotes.
@@ -256,7 +257,8 @@ If enter is pressed with no value: skip — Clancy won't transition tickets on p
 Then ask:
 
 ```
-What's the name of your done status? (leave blank to skip)
+What status should Clancy move a ticket to when implementation is complete? (leave blank to skip)
+Common values: Done, Ready for Review, Peer Review, Ready for QA
 ```
 
 If a value is entered: store as `CLANCY_STATUS_DONE` in `.clancy/.env`. Wrap in double quotes.
