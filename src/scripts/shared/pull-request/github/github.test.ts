@@ -1,6 +1,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { createPullRequest } from './github.js';
+import {
+  checkPrReviewState,
+  createPullRequest,
+  fetchPrReviewComments,
+} from './github.js';
 
 describe('pull-request/github', () => {
   describe('createPullRequest', () => {
@@ -141,6 +145,244 @@ describe('pull-request/github', () => {
         'https://github.acme.com/api/v3/repos/owner/repo/pulls',
         expect.any(Object),
       );
+    });
+  });
+
+  describe('checkPrReviewState', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    });
+
+    it('returns changesRequested: true when latest review has CHANGES_REQUESTED', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                number: 10,
+                html_url: 'https://github.com/owner/repo/pull/10',
+                state: 'open',
+              },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                state: 'CHANGES_REQUESTED',
+                user: { login: 'reviewer1' },
+                submitted_at: '2026-01-01T00:00:00Z',
+              },
+            ]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkPrReviewState(
+        'ghp_test',
+        'owner/repo',
+        'feature/test',
+        'owner',
+      );
+
+      expect(result).toEqual({
+        changesRequested: true,
+        prNumber: 10,
+        prUrl: 'https://github.com/owner/repo/pull/10',
+      });
+    });
+
+    it('returns changesRequested: false when latest review has APPROVED', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                number: 10,
+                html_url: 'https://github.com/owner/repo/pull/10',
+                state: 'open',
+              },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                state: 'APPROVED',
+                user: { login: 'reviewer1' },
+                submitted_at: '2026-01-01T00:00:00Z',
+              },
+            ]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkPrReviewState(
+        'ghp_test',
+        'owner/repo',
+        'feature/test',
+        'owner',
+      );
+
+      expect(result).toEqual({
+        changesRequested: false,
+        prNumber: 10,
+        prUrl: 'https://github.com/owner/repo/pull/10',
+      });
+    });
+
+    it('returns undefined when no open PR for branch', async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve([]),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkPrReviewState(
+        'ghp_test',
+        'owner/repo',
+        'feature/no-pr',
+        'owner',
+      );
+
+      expect(result).toBeUndefined();
+    });
+
+    it('deduplicates reviews — later APPROVED overrides earlier CHANGES_REQUESTED', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                number: 10,
+                html_url: 'https://github.com/owner/repo/pull/10',
+                state: 'open',
+              },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                state: 'CHANGES_REQUESTED',
+                user: { login: 'reviewer1' },
+                submitted_at: '2026-01-01T00:00:00Z',
+              },
+              {
+                state: 'APPROVED',
+                user: { login: 'reviewer1' },
+                submitted_at: '2026-01-02T00:00:00Z',
+              },
+            ]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkPrReviewState(
+        'ghp_test',
+        'owner/repo',
+        'feature/test',
+        'owner',
+      );
+
+      expect(result).toEqual({
+        changesRequested: false,
+        prNumber: 10,
+        prUrl: 'https://github.com/owner/repo/pull/10',
+      });
+    });
+
+    it('returns undefined on API error', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.reject(new Error('Network error'))),
+      );
+
+      const result = await checkPrReviewState(
+        'ghp_test',
+        'owner/repo',
+        'feature/test',
+        'owner',
+      );
+
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe('fetchPrReviewComments', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    });
+
+    it('returns combined inline + conversation comments', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              { body: 'Fix this line', path: 'src/index.ts' },
+              { body: 'Also here', path: 'src/utils.ts' },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                id: 1,
+                body: 'Overall looks good',
+                created_at: '2026-01-01T00:00:00Z',
+              },
+            ]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await fetchPrReviewComments('ghp_test', 'owner/repo', 10);
+
+      expect(result).toEqual([
+        '[src/index.ts] Fix this line',
+        '[src/utils.ts] Also here',
+        'Overall looks good',
+      ]);
+    });
+
+    it('formats inline comments with file path prefix', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([{ body: 'Needs refactor', path: 'lib/core.ts' }]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await fetchPrReviewComments('ghp_test', 'owner/repo', 5);
+
+      expect(result).toEqual(['[lib/core.ts] Needs refactor']);
+    });
+
+    it('returns empty array on error', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.reject(new Error('Network error'))),
+      );
+
+      const result = await fetchPrReviewComments('ghp_test', 'owner/repo', 10);
+
+      expect(result).toEqual([]);
     });
   });
 });

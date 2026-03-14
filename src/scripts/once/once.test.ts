@@ -31,9 +31,14 @@ import { runPreflight } from '~/scripts/shared/preflight/preflight.js';
 import {
   appendProgress,
   countReworkCycles,
+  findEntriesWithStatus,
   findLastEntry,
 } from '~/scripts/shared/progress/progress.js';
-import { createPullRequest as createGitHubPr } from '~/scripts/shared/pull-request/github/github.js';
+import {
+  checkPrReviewState as checkGitHubPrReviewState,
+  createPullRequest as createGitHubPr,
+  fetchPrReviewComments as fetchGitHubPrReviewComments,
+} from '~/scripts/shared/pull-request/github/github.js';
 import { detectRemote } from '~/scripts/shared/remote/remote.js';
 
 import { run } from './once.js';
@@ -70,6 +75,7 @@ vi.mock('~/scripts/board/github/github.js', () => ({
 }));
 
 vi.mock('~/scripts/shared/pull-request/github/github.js', () => ({
+  checkPrReviewState: vi.fn(() => Promise.resolve(undefined)),
   createPullRequest: vi.fn(() =>
     Promise.resolve({
       ok: true,
@@ -77,6 +83,7 @@ vi.mock('~/scripts/shared/pull-request/github/github.js', () => ({
       number: 1,
     }),
   ),
+  fetchPrReviewComments: vi.fn(() => Promise.resolve([])),
 }));
 
 vi.mock('~/scripts/board/linear/linear.js', () => ({
@@ -119,6 +126,7 @@ vi.mock('~/scripts/shared/feedback/feedback.js', () => ({
 vi.mock('~/scripts/shared/progress/progress.js', () => ({
   appendProgress: vi.fn(),
   countReworkCycles: vi.fn(() => 0),
+  findEntriesWithStatus: vi.fn(() => []),
   findLastEntry: vi.fn(),
 }));
 
@@ -138,18 +146,24 @@ vi.mock('~/scripts/shared/remote/remote.js', () => ({
 }));
 
 vi.mock('~/scripts/shared/pull-request/gitlab/gitlab.js', () => ({
+  checkMrReviewState: vi.fn(() => Promise.resolve(undefined)),
   createMergeRequest: vi.fn(() =>
     Promise.resolve({ ok: true, url: 'https://gitlab.com/mr/1', number: 1 }),
   ),
+  fetchMrReviewComments: vi.fn(() => Promise.resolve([])),
 }));
 
 vi.mock('~/scripts/shared/pull-request/bitbucket/bitbucket.js', () => ({
+  checkPrReviewState: vi.fn(() => Promise.resolve(undefined)),
+  checkServerPrReviewState: vi.fn(() => Promise.resolve(undefined)),
   createPullRequest: vi.fn(() =>
     Promise.resolve({ ok: true, url: 'https://bitbucket.org/pr/1', number: 1 }),
   ),
   createServerPullRequest: vi.fn(() =>
     Promise.resolve({ ok: true, url: 'https://bb.acme.com/pr/1', number: 1 }),
   ),
+  fetchPrReviewComments: vi.fn(() => Promise.resolve([])),
+  fetchServerPrReviewComments: vi.fn(() => Promise.resolve([])),
 }));
 
 vi.mock('~/scripts/shared/pull-request/pr-body/pr-body.js', () => ({
@@ -180,6 +194,9 @@ const mockCheckFeasibility = vi.mocked(checkFeasibility);
 const mockPushBranch = vi.mocked(pushBranch);
 const mockDetectRemote = vi.mocked(detectRemote);
 const mockCreateGitHubPr = vi.mocked(createGitHubPr);
+const mockFindEntriesWithStatus = vi.mocked(findEntriesWithStatus);
+const mockCheckGitHubPrReviewState = vi.mocked(checkGitHubPrReviewState);
+const mockFetchGitHubPrReviewComments = vi.mocked(fetchGitHubPrReviewComments);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -832,5 +849,103 @@ describe('run', () => {
       55,
       'needs-changes',
     );
+  });
+
+  it('detects PR-based rework from review state', async () => {
+    setupJiraHappyPath();
+    mockDetectBoard.mockReturnValue({
+      provider: 'jira',
+      env: {
+        JIRA_BASE_URL: 'https://example.atlassian.net',
+        JIRA_USER: 'user@test.com',
+        JIRA_API_TOKEN: 'token',
+        JIRA_PROJECT_KEY: 'PROJ',
+        GITHUB_TOKEN: 'ghp_test',
+      },
+    });
+    // No fresh tickets
+    mockFetchJira.mockResolvedValue(undefined);
+    // PR_CREATED entry in progress
+    mockFindEntriesWithStatus.mockReturnValue([
+      {
+        timestamp: '2026-03-14 10:00',
+        key: 'PROJ-500',
+        summary: 'PR rework from review',
+        status: 'PR_CREATED',
+      },
+    ]);
+    // PR has changes requested
+    mockCheckGitHubPrReviewState.mockResolvedValue({
+      changesRequested: true,
+      prNumber: 99,
+      prUrl: 'https://github.com/o/r/pull/99',
+    });
+    mockFetchGitHubPrReviewComments.mockResolvedValue([
+      'Fix the validation logic',
+      '[src/app.ts] Missing null check',
+    ]);
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run([]);
+    log.mockRestore();
+
+    // Should log PR rework message
+    expect(mockAppendProgress).toHaveBeenCalledWith(
+      expect.any(String),
+      'PROJ-500',
+      'PR rework from review',
+      'REWORK',
+    );
+  });
+
+  it('falls through PR rework when no changes requested', async () => {
+    setupJiraHappyPath();
+    mockFindEntriesWithStatus.mockReturnValue([
+      {
+        timestamp: '2026-03-14 10:00',
+        key: 'PROJ-600',
+        summary: 'Approved PR',
+        status: 'PR_CREATED',
+      },
+    ]);
+    mockCheckGitHubPrReviewState.mockResolvedValue({
+      changesRequested: false,
+      prNumber: 100,
+      prUrl: 'https://github.com/o/r/pull/100',
+    });
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run([]);
+    log.mockRestore();
+
+    // Should fetch fresh ticket instead (Jira happy path has one)
+    expect(mockFetchJira).toHaveBeenCalled();
+  });
+
+  it('falls through PR rework when no PR_CREATED entries', async () => {
+    setupJiraHappyPath();
+    mockFindEntriesWithStatus.mockReturnValue([]);
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run([]);
+    log.mockRestore();
+
+    // Should go straight to fresh ticket
+    expect(mockFetchJira).toHaveBeenCalled();
+    expect(mockCheckGitHubPrReviewState).not.toHaveBeenCalled();
+  });
+
+  it('PR rework errors fall through gracefully', async () => {
+    setupJiraHappyPath();
+    mockFindEntriesWithStatus.mockImplementation(() => {
+      throw new Error('filesystem error');
+    });
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run([]);
+    log.mockRestore();
+
+    // Should still fetch fresh ticket (error caught)
+    expect(mockFetchJira).toHaveBeenCalled();
   });
 });

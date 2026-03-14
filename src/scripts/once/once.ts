@@ -63,6 +63,7 @@ import { runPreflight } from '~/scripts/shared/preflight/preflight.js';
 import {
   appendProgress,
   countReworkCycles,
+  findEntriesWithStatus,
   findLastEntry,
 } from '~/scripts/shared/progress/progress.js';
 import {
@@ -70,11 +71,23 @@ import {
   buildReworkPrompt,
 } from '~/scripts/shared/prompt/prompt.js';
 import {
+  checkPrReviewState as checkBitbucketPrReviewState,
+  checkServerPrReviewState as checkBitbucketServerPrReviewState,
   createPullRequest as createBitbucketPr,
   createServerPullRequest as createBitbucketServerPr,
+  fetchPrReviewComments as fetchBitbucketPrReviewComments,
+  fetchServerPrReviewComments as fetchBitbucketServerPrReviewComments,
 } from '~/scripts/shared/pull-request/bitbucket/bitbucket.js';
-import { createPullRequest as createGitHubPr } from '~/scripts/shared/pull-request/github/github.js';
-import { createMergeRequest as createGitLabMr } from '~/scripts/shared/pull-request/gitlab/gitlab.js';
+import {
+  checkPrReviewState as checkGitHubPrReviewState,
+  createPullRequest as createGitHubPr,
+  fetchPrReviewComments as fetchGitHubPrReviewComments,
+} from '~/scripts/shared/pull-request/github/github.js';
+import {
+  checkMrReviewState as checkGitLabMrReviewState,
+  createMergeRequest as createGitLabMr,
+  fetchMrReviewComments as fetchGitLabMrReviewComments,
+} from '~/scripts/shared/pull-request/gitlab/gitlab.js';
 import { buildPrBody } from '~/scripts/shared/pull-request/pr-body/pr-body.js';
 import {
   buildApiBaseUrl,
@@ -267,6 +280,147 @@ async function fetchReworkTicketFromBoard(
       };
     }
   }
+}
+
+// ─── PR-based rework detection ────────────────────────────────────────────────
+
+/**
+ * Check open PRs for review feedback requesting changes.
+ *
+ * Scans progress.txt for tickets with status PR_CREATED, then checks
+ * the corresponding PR's review state on the detected remote platform.
+ * If a reviewer has requested changes, returns the ticket and feedback.
+ *
+ * This is best-effort — errors are swallowed so the orchestrator
+ * can fall through to board-side rework detection.
+ */
+async function fetchReworkFromPrReview(
+  config: BoardConfig,
+): Promise<
+  { ticket: FetchedTicket; feedback: string[]; prNumber: number } | undefined
+> {
+  const candidates = findEntriesWithStatus(process.cwd(), 'PR_CREATED');
+  if (candidates.length === 0) return undefined;
+
+  const platformOverride = sharedEnv(config).CLANCY_GIT_PLATFORM;
+  const remote = detectRemote(platformOverride);
+
+  if (
+    remote.host === 'none' ||
+    remote.host === 'unknown' ||
+    remote.host === 'azure'
+  ) {
+    return undefined;
+  }
+
+  const creds = resolveGitToken(config, remote);
+  if (!creds) return undefined;
+
+  const apiBase = buildApiBaseUrl(remote, sharedEnv(config).CLANCY_GIT_API_URL);
+  if (!apiBase) return undefined;
+
+  // Limit to first 5 candidates to avoid rate limits
+  const toCheck = candidates.slice(0, 5);
+
+  for (const entry of toCheck) {
+    const branch = computeTicketBranch(config.provider, entry.key);
+
+    let reviewState:
+      | { changesRequested: boolean; prNumber: number; prUrl: string }
+      | undefined;
+
+    switch (remote.host) {
+      case 'github':
+        reviewState = await checkGitHubPrReviewState(
+          creds.token,
+          `${remote.owner}/${remote.repo}`,
+          branch,
+          remote.owner,
+          apiBase,
+        );
+        break;
+      case 'gitlab':
+        reviewState = await checkGitLabMrReviewState(
+          creds.token,
+          apiBase,
+          remote.projectPath,
+          branch,
+        );
+        break;
+      case 'bitbucket':
+        reviewState = await checkBitbucketPrReviewState(
+          creds.username!,
+          creds.token,
+          remote.workspace,
+          remote.repoSlug,
+          branch,
+        );
+        break;
+      case 'bitbucket-server':
+        reviewState = await checkBitbucketServerPrReviewState(
+          creds.token,
+          apiBase,
+          remote.projectKey,
+          remote.repoSlug,
+          branch,
+        );
+        break;
+    }
+
+    if (reviewState?.changesRequested) {
+      // Fetch review comments for the PR
+      let feedback: string[] = [];
+
+      switch (remote.host) {
+        case 'github':
+          feedback = await fetchGitHubPrReviewComments(
+            creds.token,
+            `${remote.owner}/${remote.repo}`,
+            reviewState.prNumber,
+            apiBase,
+          );
+          break;
+        case 'gitlab':
+          feedback = await fetchGitLabMrReviewComments(
+            creds.token,
+            apiBase,
+            remote.projectPath,
+            reviewState.prNumber,
+          );
+          break;
+        case 'bitbucket':
+          feedback = await fetchBitbucketPrReviewComments(
+            creds.username!,
+            creds.token,
+            remote.workspace,
+            remote.repoSlug,
+            reviewState.prNumber,
+          );
+          break;
+        case 'bitbucket-server':
+          feedback = await fetchBitbucketServerPrReviewComments(
+            creds.token,
+            apiBase,
+            remote.projectKey,
+            remote.repoSlug,
+            reviewState.prNumber,
+          );
+          break;
+      }
+
+      const ticket: FetchedTicket = {
+        key: entry.key,
+        title: entry.summary,
+        description: '',
+        parentInfo: 'none',
+        blockers: 'None',
+      };
+
+      return { ticket, feedback, prNumber: reviewState.prNumber };
+    }
+  }
+
+  return undefined;
 }
 
 // ─── Board-specific ping ─────────────────────────────────────────────────────
@@ -729,15 +883,35 @@ export async function run(argv: string[]): Promise<void> {
 
     console.log(green('✅ Preflight passed'));
 
-    // 5. Check rework queue first (priority over fresh tickets)
+    // 5. Check rework — PR-based first, then board-side fallback
     let isRework = false;
-    let ticket = await fetchReworkTicketFromBoard(config);
+    let prFeedback: string[] | undefined;
+    let ticket: FetchedTicket | undefined;
 
-    if (ticket) {
-      isRework = true;
-      console.log(yellow(`  ↻ Rework: [${ticket.key}] ${ticket.title}`));
-    } else {
-      // Normal fetch (existing code)
+    // PR-based rework (automatic, no config needed)
+    try {
+      const prRework = await fetchReworkFromPrReview(config);
+      if (prRework) {
+        isRework = true;
+        ticket = prRework.ticket;
+        prFeedback = prRework.feedback;
+        console.log(yellow(`  ↻ PR rework: [${ticket.key}] ${ticket.title}`));
+      }
+    } catch {
+      // Best-effort — fall through to board-side rework
+    }
+
+    if (!ticket) {
+      // Board-side rework (opt-in fallback)
+      ticket = await fetchReworkTicketFromBoard(config);
+      if (ticket) {
+        isRework = true;
+        console.log(yellow(`  ↻ Rework: [${ticket.key}] ${ticket.title}`));
+      }
+    }
+
+    if (!ticket) {
+      // Fresh ticket
       ticket = await fetchTicket(config);
     }
 
@@ -901,19 +1075,26 @@ export async function run(argv: string[]): Promise<void> {
     let prompt: string;
 
     if (isRework) {
-      const feedback = await fetchFeedback(
-        config,
-        ticket.key,
-        lastEntry?.timestamp,
-        ticket.issueId,
-      );
+      let feedbackComments: string[];
+
+      if (prFeedback) {
+        feedbackComments = prFeedback;
+      } else {
+        const feedback = await fetchFeedback(
+          config,
+          ticket.key,
+          lastEntry?.timestamp,
+          ticket.issueId,
+        );
+        feedbackComments = feedback.comments;
+      }
 
       prompt = buildReworkPrompt({
         key: ticket.key,
         title: ticket.title,
         description: ticket.description,
         provider: config.provider,
-        feedbackComments: feedback.comments,
+        feedbackComments,
         previousContext: undefined, // V1: no diff context yet
       });
     } else {

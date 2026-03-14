@@ -410,6 +410,8 @@ Same storage logic as Jira above.
 
 Only ask this if the board is **Jira** or **Linear**. Skip this step entirely for **GitHub Issues** — GitHub rework is configured separately below.
 
+> **Note:** PR-based rework detection is automatic — when a reviewer clicks "Request Changes" on a PR/MR, Clancy picks it up automatically. The following settings are optional board-side fallbacks for workflows that prefer board-driven rework.
+
 **Jira:** Output:
 
 ```
@@ -444,6 +446,8 @@ Same storage logic as Jira above — store as `CLANCY_STATUS_REWORK`.
 ### Q3e (GitHub only): Rework loop
 
 Only ask this if the board is **GitHub Issues**. Skip for Jira and Linear.
+
+> **Note:** PR-based rework detection is automatic — when a reviewer clicks "Request Changes" on a PR/MR, Clancy picks it up automatically. The following setting is an optional board-side fallback for workflows that prefer board-driven rework via labels.
 
 Output:
 

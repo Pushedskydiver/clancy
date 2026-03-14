@@ -153,3 +153,28 @@ export function countReworkCycles(projectRoot: string, key: string): number {
 
   return count;
 }
+
+/**
+ * Find all ticket keys whose most recent progress entry has the given status.
+ *
+ * Scans progress.txt and returns the latest entry per ticket key,
+ * filtered to only those with the specified status. This is used to find
+ * tickets that have open PRs (status PR_CREATED) that may need rework.
+ *
+ * @param projectRoot - The project root directory.
+ * @param status - The status to filter by (e.g. 'PR_CREATED').
+ * @returns Array of progress entries (latest per key) with the given status.
+ */
+export function findEntriesWithStatus(
+  projectRoot: string,
+  status: string,
+): ProgressEntry[] {
+  const entries = parseProgressFile(projectRoot);
+
+  const latestByKey = new Map<string, ProgressEntry>();
+  for (const entry of entries) {
+    latestByKey.set(entry.key, entry);
+  }
+
+  return [...latestByKey.values()].filter((entry) => entry.status === status);
+}

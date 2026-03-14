@@ -11,7 +11,8 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### ✨ Features
 
-- **QA rework loop** — when a reviewer sends a ticket back for changes (via Jira/Linear status or GitHub label), Clancy picks it up from the rework queue with priority over fresh tickets. Reads reviewer feedback from board comments, builds a focused rework prompt ("fix the flagged issues, don't re-implement"), and pushes fixes to the existing PR branch or squash-merges a `fix/` branch for epic-flow rework.
+- **QA rework loop** — when a reviewer sends a ticket back for changes, Clancy picks it up from the rework queue with priority over fresh tickets. Reads reviewer feedback, builds a focused rework prompt ("fix the flagged issues, don't re-implement"), and pushes fixes to the existing PR branch or squash-merges a `fix/` branch for epic-flow rework.
+- **Automatic PR review detection** — Clancy scans open PRs for "changes requested" review state directly from the git host. Works with GitHub (`CHANGES_REQUESTED`), GitLab (`requested_changes` / `discussions_not_resolved`), Bitbucket Cloud (`changes_requested`), and Bitbucket Server (`NEEDS_WORK`). No configuration needed — just do your normal PR review workflow. Board-side rework (statuses/labels) remains as an optional fallback.
 - **Rework queue per board** — Jira/Linear: configurable rework status (`CLANCY_STATUS_REWORK`). GitHub: configurable rework label (`CLANCY_REWORK_LABEL`, default `needs-changes`). Rework queue checked before fresh tickets.
 - **Board comment fetching** — new `fetchComments()` functions for all 3 boards (Jira REST, GitHub REST, Linear GraphQL). Filtered by timestamp to only include feedback posted after last implementation.
 - **Feedback module** (`src/scripts/shared/feedback/feedback.ts`) — board-agnostic facade that dispatches to the correct board's comment API.
@@ -31,7 +32,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### ✅ Tests
 
-- 65 new tests (270 → 335): schema (2), progress reader (10), Jira rework/comments (12), GitHub rework/comments/removeLabel (8), Linear rework/comments (6), feedback module (11), rework prompt (7), branch rework (3), git fetchRemoteBranch (2), orchestrator rework flows (8, approximate)
+- 101 new tests (270 → 371): schema (2), progress reader (10), Jira rework/comments (12), GitHub rework/comments/removeLabel (8), Linear rework/comments (6), feedback module (11), rework prompt (7), branch rework (3), git fetchRemoteBranch (2), orchestrator rework flows (8, approximate)
 
 ---
 

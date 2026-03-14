@@ -49,6 +49,16 @@ export type PrCreationResult =
   | { ok: true; url: string; number: number }
   | { ok: false; error: string; alreadyExists?: boolean };
 
+/** Result of checking PR/MR review state. */
+export type PrReviewState = {
+  /** Whether changes have been requested by a reviewer. */
+  changesRequested: boolean;
+  /** The PR/MR number/ID (needed to fetch comments). */
+  prNumber: number;
+  /** The PR/MR URL (for logging). */
+  prUrl: string;
+};
+
 /** Progress log status values. */
 export type ProgressStatus =
   | 'DONE'

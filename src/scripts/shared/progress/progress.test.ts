@@ -7,6 +7,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import {
   appendProgress,
   countReworkCycles,
+  findEntriesWithStatus,
   findLastEntry,
   formatTimestamp,
 } from './progress.js';
@@ -179,5 +180,71 @@ describe('countReworkCycles', () => {
     appendProgress(root, 'PROJ-1', 'Rework', 'REWORK');
 
     expect(countReworkCycles(root, 'proj-1')).toBe(1);
+  });
+});
+
+describe('findEntriesWithStatus', () => {
+  const dirs: string[] = [];
+
+  function makeTempRoot(): string {
+    const dir = join(tmpdir(), `clancy-progress-test-${randomUUID()}`);
+    mkdirSync(join(dir, '.clancy'), { recursive: true });
+    dirs.push(dir);
+    return dir;
+  }
+
+  afterEach(() => {
+    for (const dir of dirs) {
+      rmSync(dir, { recursive: true, force: true });
+    }
+    dirs.length = 0;
+  });
+
+  it('returns empty array when file does not exist', () => {
+    const root = makeTempRoot();
+    expect(findEntriesWithStatus(root, 'PR_CREATED')).toEqual([]);
+  });
+
+  it('returns entries with PR_CREATED status', () => {
+    const root = makeTempRoot();
+    appendProgress(root, 'PROJ-1', 'Add login', 'PR_CREATED');
+
+    const result = findEntriesWithStatus(root, 'PR_CREATED');
+    expect(result).toHaveLength(1);
+    expect(result[0]!.key).toBe('PROJ-1');
+    expect(result[0]!.status).toBe('PR_CREATED');
+    expect(result[0]!.summary).toBe('Add login');
+  });
+
+  it('does not return entries where a later entry has a different status', () => {
+    const root = makeTempRoot();
+    appendProgress(root, 'PROJ-1', 'Add login', 'PR_CREATED');
+    appendProgress(root, 'PROJ-1', 'Add login', 'REWORK');
+
+    const result = findEntriesWithStatus(root, 'PR_CREATED');
+    expect(result).toHaveLength(0);
+  });
+
+  it('returns multiple entries for different ticket keys', () => {
+    const root = makeTempRoot();
+    appendProgress(root, 'PROJ-1', 'Add login', 'PR_CREATED');
+    appendProgress(root, 'PROJ-2', 'Fix bug', 'PR_CREATED');
+    appendProgress(root, 'PROJ-3', 'Refactor', 'DONE');
+
+    const result = findEntriesWithStatus(root, 'PR_CREATED');
+    expect(result).toHaveLength(2);
+
+    const keys = result.map((e) => e.key);
+    expect(keys).toContain('PROJ-1');
+    expect(keys).toContain('PROJ-2');
+  });
+
+  it('matches status case-sensitively', () => {
+    const root = makeTempRoot();
+    appendProgress(root, 'PROJ-1', 'Add login', 'PR_CREATED');
+
+    expect(findEntriesWithStatus(root, 'pr_created')).toHaveLength(0);
+    expect(findEntriesWithStatus(root, 'Pr_Created')).toHaveLength(0);
+    expect(findEntriesWithStatus(root, 'PR_CREATED')).toHaveLength(1);
   });
 });

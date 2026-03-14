@@ -94,9 +94,34 @@ When a ticket has a parent epic, the original squash-merge flow applies:
 
 ## Rework flow
 
-When a reviewer sends a ticket back for changes, Clancy can pick it up again with the reviewer's feedback and push fixes. This is opt-in -- configure via `/clancy:init` or `/clancy:settings`.
+When a reviewer sends a ticket back for changes, Clancy can pick it up again with the reviewer's feedback and push fixes. Rework tickets take priority over fresh tickets in the queue -- Clancy checks for rework before fetching new tickets on every run.
 
-### What triggers rework
+### What triggers rework (3-tier priority)
+
+Clancy detects rework through three mechanisms, checked in priority order:
+
+**1. PR review state (automatic -- no configuration needed)**
+
+When a reviewer clicks "Request Changes" on a pull request or merge request, Clancy detects it automatically. This is the primary rework detection method and works out of the box with no env vars required.
+
+How it works:
+- Clancy scans `.clancy/progress.txt` for `PR_CREATED` entries
+- For each PR, it looks up the pull request by branch name on the git host
+- If the PR has a "changes requested" review state, Clancy picks it up as rework
+- Review comments from the PR are fetched and included as feedback context
+
+Supported review states by platform:
+
+| Platform | Review state |
+| --- | --- |
+| GitHub | `CHANGES_REQUESTED` |
+| GitLab | `requested_changes` / `discussions_not_resolved` |
+| Bitbucket Cloud | `changes_requested` |
+| Bitbucket Server | `NEEDS_WORK` |
+
+**2. Board-side rework (opt-in fallback)**
+
+If PR-based detection doesn't apply (e.g. the ticket used epic flow, or you prefer board-driven workflows), Clancy falls back to checking board-side rework statuses/labels:
 
 | Board | Trigger | Env var |
 | --- | --- | --- |
@@ -104,7 +129,11 @@ When a reviewer sends a ticket back for changes, Clancy can pick it up again wit
 | GitHub | Reviewer reopens the issue and adds the rework label | `CLANCY_REWORK_LABEL` |
 | Linear | Reviewer moves issue to the rework state | `CLANCY_STATUS_REWORK` |
 
-Rework tickets take priority over fresh tickets in the queue. Clancy checks the rework queue first on every run.
+These are configured via `/clancy:init` or `/clancy:settings`. If not set, only PR-based rework detection is active.
+
+**3. Fresh tickets**
+
+If no rework is detected from either source, Clancy fetches the next ticket from the normal implementation queue.
 
 ### Two rework paths
 
@@ -112,7 +141,7 @@ Rework tickets take priority over fresh tickets in the queue. Clancy checks the 
 
 1. The feature branch and PR already exist on the remote
 2. Clancy checks out the existing feature branch (`git fetch` + `git checkout`)
-3. Reads reviewer feedback from board comments posted since the last implementation
+3. Reads reviewer feedback from PR review comments and/or board comments posted since the last implementation
 4. Implements fixes on the same branch -- does not re-implement from scratch
 5. Pushes to the same branch -- the PR updates automatically
 6. Transitions the ticket back to the review status (`CLANCY_STATUS_REVIEW`)
@@ -130,15 +159,15 @@ Rework tickets take priority over fresh tickets in the queue. Clancy checks the 
 
 ### Feedback sources
 
-Clancy reads feedback from **board ticket comments** posted after the last progress entry for that ticket. Reviewers should write feedback on the ticket itself. If no comments are found, Clancy still picks up the rework ticket but notes the absence of feedback in the prompt.
+For PR-flow rework detected via PR review state, Clancy reads feedback directly from **PR review comments** on the pull request. This gives precise, contextual feedback tied to specific lines of code.
+
+For board-side rework (or as a supplement), Clancy reads **board ticket comments** posted after the last progress entry for that ticket. Reviewers should write feedback on the ticket itself.
+
+If no comments are found from either source, Clancy still picks up the rework ticket but notes the absence of feedback in the prompt.
 
 ### Max rework guard
 
-After `CLANCY_MAX_REWORK` cycles (default: 3) on the same ticket, Clancy logs `SKIPPED` with reason "max rework cycles reached -- needs human intervention" and moves on. Increase via `/clancy:settings` or resolve the ticket manually.
-
-### Opting in
-
-Rework is inactive by default. To enable it, set `CLANCY_STATUS_REWORK` (Jira/Linear) or `CLANCY_REWORK_LABEL` (GitHub) via `/clancy:init` or `/clancy:settings`. If these env vars are not set, the rework queue is never checked.
+After `CLANCY_MAX_REWORK` cycles (default: 3) on the same ticket, Clancy logs `SKIPPED` with reason "max rework cycles reached -- needs human intervention" and moves on. This limit applies to both PR-based and board-based rework. Increase via `/clancy:settings` or resolve the ticket manually.
 
 ## How the loop works
 

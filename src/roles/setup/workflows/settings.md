@@ -277,6 +277,8 @@ If [2]: remove `CLANCY_STATUS_REVIEW` from `.clancy/.env`.
 
 ### [B7] Jira Rework status (Jira only)
 
+> **Note:** PR-based rework detection is automatic — when a reviewer clicks "Request Changes" on a PR/MR, Clancy picks it up automatically. This setting is an optional board-side fallback for workflows that prefer board-driven rework.
+
 ```
 Jira Rework status — current: {value or "off"}
 When a reviewer sends a ticket back for changes, Clancy picks it up again
@@ -293,6 +295,8 @@ If [2]: remove `CLANCY_STATUS_REWORK` from `.clancy/.env`.
 ---
 
 ### [B1] GitHub Rework label (GitHub only)
+
+> **Note:** PR-based rework detection is automatic — when a reviewer clicks "Request Changes" on a PR/MR, Clancy picks it up automatically. This setting is an optional board-side fallback for workflows that prefer board-driven rework via labels.
 
 ```
 GitHub Rework label — current: {value or "off"}
@@ -378,6 +382,8 @@ If [2]: remove `CLANCY_STATUS_REVIEW` from `.clancy/.env`.
 ---
 
 ### [B5] Linear Rework status (Linear only)
+
+> **Note:** PR-based rework detection is automatic — when a reviewer clicks "Request Changes" on a PR/MR, Clancy picks it up automatically. This setting is an optional board-side fallback for workflows that prefer board-driven rework.
 
 ```
 Linear Rework status — current: {value or "off"}
