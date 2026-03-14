@@ -62,6 +62,63 @@ function parentLabel(provider: BoardProvider): string {
  * });
  * ```
  */
+export type ReworkPromptInput = {
+  key: string;
+  title: string;
+  description: string;
+  provider: BoardProvider;
+  feedbackComments: string[];
+  /** Git diff or git log output from the previous implementation. */
+  previousContext?: string;
+};
+
+/**
+ * Build the Claude prompt for reworking a ticket based on reviewer feedback.
+ *
+ * @param input - The rework ticket data and feedback.
+ * @returns The complete rework prompt string.
+ *
+ * @example
+ * ```ts
+ * const prompt = buildReworkPrompt({
+ *   key: 'PROJ-123',
+ *   title: 'Add login page',
+ *   description: 'Create a login page with email/password fields.',
+ *   provider: 'jira',
+ *   feedbackComments: ['Button colour is wrong', 'Missing validation'],
+ * });
+ * ```
+ */
+export function buildReworkPrompt(input: ReworkPromptInput): string {
+  const feedbackSection =
+    input.feedbackComments.length > 0
+      ? input.feedbackComments.map((c, i) => `${i + 1}. ${c}`).join('\n')
+      : 'No reviewer comments found. Review the existing implementation and fix any issues.';
+
+  const previousSection = input.previousContext
+    ? `\n\n## Previous Implementation\n\n\`\`\`\n${input.previousContext}\n\`\`\``
+    : '';
+
+  return `You are fixing review feedback on [${input.key}] ${input.title}.
+
+Description:
+${input.description}
+
+## Reviewer Feedback
+
+${feedbackSection}${previousSection}
+
+Address the specific feedback above. Don't re-implement unrelated areas. Focus only on what was flagged.
+
+Steps:
+1. Read core docs in .clancy/docs/: STACK.md, ARCHITECTURE.md, CONVENTIONS.md, GIT.md, DEFINITION-OF-DONE.md, CONCERNS.md
+   Also read if relevant to this ticket: INTEGRATIONS.md (external APIs/services/auth), TESTING.md (tests/specs/coverage), DESIGN-SYSTEM.md (UI/components/styles), ACCESSIBILITY.md (accessibility/ARIA/WCAG)
+2. Follow the conventions in GIT.md exactly
+3. Fix the issues identified in the reviewer feedback
+4. Commit your work following the conventions in GIT.md
+5. When done, confirm you are finished.`;
+}
+
 export function buildPrompt(input: PromptInput): string {
   const label = ticketLabel(input.provider);
   const pLabel = parentLabel(input.provider);

@@ -1,7 +1,12 @@
 import { execFileSync } from 'node:child_process';
 import { describe, expect, it, vi } from 'vitest';
 
-import { branchExists, hasUncommittedChanges, pushBranch } from './git-ops.js';
+import {
+  branchExists,
+  fetchRemoteBranch,
+  hasUncommittedChanges,
+  pushBranch,
+} from './git-ops.js';
 
 vi.mock('node:child_process');
 
@@ -37,6 +42,27 @@ describe('git-ops', () => {
       });
 
       expect(branchExists('nonexistent')).toBe(false);
+    });
+  });
+
+  describe('fetchRemoteBranch', () => {
+    it('returns true when fetch succeeds', () => {
+      mockExecFileSync.mockReturnValue(Buffer.from(''));
+
+      expect(fetchRemoteBranch('feature/proj-123')).toBe(true);
+      expect(mockExecFileSync).toHaveBeenCalledWith(
+        'git',
+        ['fetch', 'origin', 'feature/proj-123:feature/proj-123'],
+        expect.objectContaining({ encoding: 'utf8' }),
+      );
+    });
+
+    it('returns false when fetch fails (branch does not exist)', () => {
+      mockExecFileSync.mockImplementation(() => {
+        throw new Error("couldn't find remote ref");
+      });
+
+      expect(fetchRemoteBranch('nonexistent-branch')).toBe(false);
     });
   });
 

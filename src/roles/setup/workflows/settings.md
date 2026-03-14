@@ -51,6 +51,7 @@ General
   [G1] Max iterations    {MAX_ITERATIONS:-5}          tickets per /clancy:run session
   [G2] Claude model      {CLANCY_MODEL:-default}     model used for each ticket session
   [G3] Base branch       {CLANCY_BASE_BRANCH:-main}
+  [G4] Max rework        {CLANCY_MAX_REWORK:-3}
 
 {If Jira:}
 Jira
@@ -61,16 +62,12 @@ Jira
   [B5] Done status       {CLANCY_STATUS_DONE if set, else off}
   [B6] Review status     {CLANCY_STATUS_REVIEW if set, else "uses Done status"}
 
-{If GitHub:}
-GitHub
-  (No board-specific settings — labels are managed in GitHub directly)
-
 {If Linear:}
 Linear
   [B1] Label filter      {CLANCY_LABEL if set, else off}
   [B2] Pickup status     {CLANCY_STATUS_IN_PROGRESS if set, else off}
   [B3] Done status       {CLANCY_STATUS_DONE if set, else off}
-  [B4] Review status     {CLANCY_STATUS_REVIEW if set, else "uses Done status"}
+  [B4] Review status     {CLANCY_STATUS_REVIEW if set, else "uses Done state"}
 
 Roles
   [R1] Planner           {✅ enabled / ─ disabled}
@@ -153,6 +150,24 @@ Enter new value (or press enter to keep current):
 ```
 
 Write `CLANCY_BASE_BRANCH=<value>` to `.clancy/.env`.
+
+---
+
+### [G4] Max rework cycles
+
+```
+Max rework cycles — current: {value or 3}
+After this many rework cycles on a single ticket, Clancy flags it for human intervention.
+
+[1] 3 (default)
+[2] Enter a different number
+[3] Cancel
+```
+
+Validate the input is a positive integer between 1 and 20. If invalid, re-prompt.
+
+If [1]: remove `CLANCY_MAX_REWORK` from `.clancy/.env` (uses default).
+If [2]: prompt `How many rework cycles before human intervention?` then write `CLANCY_MAX_REWORK=<value>` to `.clancy/.env`.
 
 ---
 

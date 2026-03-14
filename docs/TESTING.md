@@ -42,7 +42,8 @@ src/
 │       │   ├── github/github.test.ts                        — GitHub PR creation
 │       │   ├── gitlab/gitlab.test.ts                        — GitLab MR creation
 │       │   ├── post-pr/post-pr.test.ts                      — shared PR utility
-│       │   └── pr-body/pr-body.test.ts                      — PR body builder
+│       │   ├── pr-body/pr-body.test.ts                      — PR body builder
+│       │   └── rework-comment/rework-comment.test.ts        — Rework: prefix detection
 │       └── remote/remote.test.ts                            — git host detection
 ├── installer/
 │   ├── file-ops/file-ops.test.ts                            — file copy operations

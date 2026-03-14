@@ -92,6 +92,48 @@ When a ticket has a parent epic, the original squash-merge flow applies:
 3. Transitions the ticket to the done status (`CLANCY_STATUS_DONE`)
 4. Logs `DONE` to `.clancy/progress.txt`
 
+## Rework flow
+
+When a reviewer sends a ticket back for changes, Clancy picks it up automatically with the reviewer's feedback and pushes fixes. Rework tickets take priority over fresh tickets in the queue -- Clancy checks for rework before fetching new tickets on every run.
+
+### How rework is detected
+
+Clancy detects rework via **comments on the pull request**, not platform review states. No configuration is needed — the PR body includes instructions for reviewers explaining the convention.
+
+How it works:
+- Clancy scans `.clancy/progress.txt` for `PR_CREATED` entries
+- For each PR, it fetches comments from the git host API
+- **Inline code comments** (on specific lines in the diff) always trigger rework — no prefix needed
+- **Conversation comments** (general comments at the bottom of the PR) only trigger rework when prefixed with `Rework:` (e.g. "Rework: this function should handle null inputs")
+- If no rework-triggering comments are found, Clancy fetches the next fresh ticket from the queue
+
+This approach works identically across GitHub, GitLab, and Bitbucket — no platform-specific review states involved.
+
+### Rework process
+
+1. The feature branch and PR already exist on the remote
+2. Clancy checks out the existing feature branch (`git fetch` + `git checkout`)
+3. Reads reviewer feedback from PR comments (inline and `Rework:`-prefixed conversation comments)
+4. Implements fixes on the same branch — does not re-implement from scratch
+5. Pushes to the same branch — the PR updates automatically
+6. Transitions the ticket back to the review status (`CLANCY_STATUS_REVIEW`)
+7. Logs as `REWORK` in `.clancy/progress.txt`
+
+If the feature branch has been deleted from the remote, Clancy creates a fresh branch from the target and treats it as a new implementation.
+
+### Feedback
+
+Clancy reads feedback from two sources on the pull request:
+
+- **Inline code comments** — comments left on specific lines of the diff. These provide precise, contextual feedback tied to exact code locations and always trigger rework.
+- **Conversation comments** — general comments at the bottom of the PR. Only those prefixed with `Rework:` are treated as actionable feedback. Regular discussion comments are ignored to avoid false triggers.
+
+If no actionable comments are found, Clancy moves on to the next fresh ticket in the queue.
+
+### Max rework guard
+
+After `CLANCY_MAX_REWORK` cycles (default: 3) on the same ticket, Clancy logs `SKIPPED` and moves on. The ticket needs human intervention. Increase the limit via `/clancy:settings` or resolve the ticket manually.
+
 ## How the loop works
 
 ```

@@ -406,6 +406,21 @@ Same storage logic as Jira above.
 
 ---
 
+### Q3e (all boards): Max rework cycles
+
+PR-based rework detection is automatic — no configuration needed. This setting controls the safety limit.
+
+Output:
+
+```
+Max rework cycles before flagging for human intervention? [3]
+```
+
+If a number is entered: store as `CLANCY_MAX_REWORK` in `.clancy/.env`.
+If enter is pressed with no value: use default 3 — store `CLANCY_MAX_REWORK=3` in `.clancy/.env`.
+
+---
+
 ### Q4: Base branch (auto-detect)
 
 Silently detect the base branch — do not ask unless detection fails:

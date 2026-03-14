@@ -7,6 +7,32 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.5.5] — 2026-03-14
+
+### ✨ Features
+
+- **QA rework loop** — when a reviewer leaves feedback on a PR, Clancy picks it up automatically on the next run. Inline code comments (on specific diff lines) always trigger rework; conversation comments trigger with a `Rework:` prefix. Reads the feedback, builds a focused rework prompt ("fix the flagged issues, don't re-implement"), and pushes fixes to the existing branch — the PR updates automatically.
+- **Comment-based rework detection** — Clancy scans open PRs for reviewer comments instead of relying on platform review states. Inline code comments always trigger rework. General conversation comments trigger when prefixed with `Rework:`. Works identically across GitHub, GitLab, and Bitbucket. Zero configuration needed — the PR body includes reviewer instructions automatically.
+- **PR review comment fetching** — reads inline code review comments and conversation comments from GitHub, unresolved MR discussions from GitLab, and PR comments from Bitbucket (Cloud + Server). Comments are included in the rework prompt as actionable feedback.
+- **Rework prompt** (`buildReworkPrompt`) — includes reviewer feedback and "address specific feedback" instructions.
+- **Progress reader** — `findLastEntry()`, `countReworkCycles()`, and `findEntriesWithStatus()` for progress history scanning.
+- **Max rework guard** — after N cycles (default 3, configurable via `CLANCY_MAX_REWORK`), ticket is skipped with "needs human intervention".
+
+### 📝 Documentation
+
+- **Init workflow** — added Q3e (max rework cycles)
+- **Settings workflow** — added max rework setting
+- **Scaffold workflow** — added `CLANCY_MAX_REWORK` to `.env.example` templates
+- **Implementer docs** — added automatic PR-based rework flow section
+- **Configuration guide** — added `CLANCY_MAX_REWORK` to table
+- **Troubleshooting guide** — added PR rework scenarios
+
+### ✅ Tests
+
+- 95 new tests (270 → 365): progress reader (15), rework prompt (7), git fetchRemoteBranch (2), GitHub PR review (12), GitLab MR review (12), Bitbucket PR review (18), rework-comment (10), orchestrator PR rework (8), env schema (2), Jira async (8), pr-body rework (1)
+
+---
+
 ## [0.5.4] — 2026-03-14
 
 ### ✨ Features

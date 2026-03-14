@@ -2,6 +2,7 @@ export type { BoardProvider, Ticket } from './board.js';
 export type {
   GitPlatform,
   PrCreationResult,
+  PrReviewState,
   ProgressStatus,
   RemoteInfo,
 } from './remote.js';

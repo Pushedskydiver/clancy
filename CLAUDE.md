@@ -12,8 +12,9 @@ Autonomous, board-driven development for Claude Code. npm package: `chief-clancy
 | `src/scripts/once/once.ts` | Unified once orchestrator (all 3 boards) |
 | `src/scripts/afk/afk.ts` | AFK loop runner |
 | `src/scripts/shared/` | Shared utilities (env-schema, branch, prompt, progress, etc.) |
-| `src/scripts/shared/pull-request/` | PR creation modules (github, gitlab, bitbucket, post-pr, pr-body) |
+| `src/scripts/shared/pull-request/` | PR creation + rework comment detection (github, gitlab, bitbucket, post-pr, pr-body, rework-comment) |
 | `src/scripts/shared/remote/` | Remote git host detection (parseRemote, detectRemote, buildApiBaseUrl) |
+| `src/scripts/shared/format/` | Shared formatters (formatDuration) |
 | `src/scripts/board/` | Board-specific modules (jira, github, linear) |
 | `src/schemas/` | Zod schemas for API responses and env validation |
 | `src/types/` | Shared TypeScript types (board, remote, index) |

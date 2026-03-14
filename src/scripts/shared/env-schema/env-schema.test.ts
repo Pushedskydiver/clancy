@@ -211,5 +211,27 @@ describe('detectBoard', () => {
       expect(result.env.CLANCY_PLAN_LABEL).toBe('needs-refinement');
       expect(result.env.CLANCY_PLAN_STATE_TYPE).toBe('backlog');
     });
+
+    it('passes through rework loop env vars', () => {
+      const result = detectBoard(
+        githubEnv({
+          CLANCY_MAX_REWORK: '3',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_MAX_REWORK).toBe('3');
+    });
+
+    it('rework vars are optional — config parses without them', () => {
+      const result = detectBoard(githubEnv());
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_MAX_REWORK).toBeUndefined();
+    });
   });
 });

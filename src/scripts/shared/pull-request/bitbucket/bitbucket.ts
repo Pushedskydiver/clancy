@@ -1,14 +1,24 @@
 /**
- * Bitbucket pull request creation.
+ * Bitbucket pull request creation and review state checking.
  *
  * Supports both Bitbucket Cloud (api.bitbucket.org/2.0) and
  * Bitbucket Server/Data Center (rest/api/1.0).
  *
  * Auth: Cloud uses HTTP Basic Auth, Server uses Bearer token.
  */
-import type { PrCreationResult } from '~/types/index.js';
+import {
+  bitbucketCommentsSchema,
+  bitbucketPrListSchema,
+  bitbucketServerActivitiesSchema,
+  bitbucketServerPrListSchema,
+} from '~/schemas/bitbucket-pr.js';
+import type { PrCreationResult, PrReviewState } from '~/types/index.js';
 
 import { basicAuth, postPullRequest } from '../post-pr/post-pr.js';
+import {
+  extractReworkContent,
+  isReworkComment,
+} from '../rework-comment/rework-comment.js';
 
 /**
  * Create a pull request on Bitbucket Cloud.
@@ -113,4 +123,234 @@ export async function createServerPullRequest(
     },
     (status, text) => status === 409 && text.includes('already exists'),
   );
+}
+
+// ---------------------------------------------------------------------------
+// Cloud — review state & comments
+// ---------------------------------------------------------------------------
+
+/**
+ * Check the review state of an open PR on Bitbucket Cloud for a given branch.
+ *
+ * Finds the open PR, fetches all comments. Inline comments (with `inline`
+ * property) always trigger rework. General conversation comments only
+ * trigger rework when prefixed with `Rework:`.
+ *
+ * @param since - ISO 8601 timestamp; only comments created after this time trigger rework.
+ * @returns The review state, or `undefined` if no open PR exists.
+ */
+export async function checkPrReviewState(
+  username: string,
+  token: string,
+  workspace: string,
+  repoSlug: string,
+  branch: string,
+  since?: string,
+): Promise<PrReviewState | undefined> {
+  try {
+    const prUrl =
+      `https://api.bitbucket.org/2.0/repositories/${workspace}/${repoSlug}/pullrequests` +
+      `?q=source.branch.name="${branch}"&state=OPEN`;
+
+    const prRes = await fetch(prUrl, {
+      headers: { Authorization: basicAuth(username, token) },
+    });
+    if (!prRes.ok) return undefined;
+
+    const parsed = bitbucketPrListSchema.parse(await prRes.json());
+    if (parsed.values.length === 0) return undefined;
+
+    const pr = parsed.values[0];
+    const htmlUrl = pr.links.html?.href ?? '';
+
+    const commentsUrl =
+      `https://api.bitbucket.org/2.0/repositories/${workspace}/${repoSlug}/pullrequests/${pr.id}/comments` +
+      `?pagelen=100`;
+
+    const commentsRes = await fetch(commentsUrl, {
+      headers: { Authorization: basicAuth(username, token) },
+    });
+
+    if (!commentsRes.ok) return undefined;
+
+    const comments = bitbucketCommentsSchema.parse(await commentsRes.json());
+    const relevant = since
+      ? comments.values.filter((c) => c.created_on > since)
+      : comments.values;
+    const hasInline = relevant.some((c) => c.inline != null);
+    const hasReworkConvo = relevant.some(
+      (c) => c.inline == null && isReworkComment(c.content.raw),
+    );
+    const changesRequested = hasInline || hasReworkConvo;
+
+    return { changesRequested, prNumber: pr.id, prUrl: htmlUrl };
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Fetch feedback comments on a Bitbucket Cloud PR.
+ *
+ * Inline comments (with `inline` property) are always included — they
+ * inherently represent change requests. General conversation comments are
+ * only included when prefixed with `Rework:` (prefix stripped).
+ * Inline comments are prefixed with `[path]`.
+ */
+export async function fetchPrReviewComments(
+  username: string,
+  token: string,
+  workspace: string,
+  repoSlug: string,
+  prId: number,
+  since?: string,
+): Promise<string[]> {
+  try {
+    const url =
+      `https://api.bitbucket.org/2.0/repositories/${workspace}/${repoSlug}/pullrequests/${prId}/comments` +
+      `?pagelen=100`;
+
+    const res = await fetch(url, {
+      headers: { Authorization: basicAuth(username, token) },
+    });
+    if (!res.ok) return [];
+
+    const parsed = bitbucketCommentsSchema.parse(await res.json());
+    const relevant = since
+      ? parsed.values.filter((c) => c.created_on > since)
+      : parsed.values;
+    const comments: string[] = [];
+
+    for (const c of relevant) {
+      if (c.inline != null) {
+        const prefix = c.inline.path ? `[${c.inline.path}] ` : '';
+        comments.push(`${prefix}${c.content.raw}`);
+      } else if (isReworkComment(c.content.raw)) {
+        comments.push(extractReworkContent(c.content.raw));
+      }
+    }
+
+    return comments;
+  } catch {
+    return [];
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Server/DC — review state & comments
+// ---------------------------------------------------------------------------
+
+/**
+ * Check the review state of an open PR on Bitbucket Server/DC for a given branch.
+ *
+ * Finds the open PR, fetches all comments. Inline comments (with `anchor`
+ * property) always trigger rework. General conversation comments only
+ * trigger rework when prefixed with `Rework:`.
+ *
+ * @param since - ISO 8601 timestamp; only comments created after this time trigger rework.
+ * @returns The review state, or `undefined` if no open PR exists.
+ */
+export async function checkServerPrReviewState(
+  token: string,
+  apiBase: string,
+  projectKey: string,
+  repoSlug: string,
+  branch: string,
+  since?: string,
+): Promise<PrReviewState | undefined> {
+  try {
+    const prUrl =
+      `${apiBase}/projects/${projectKey}/repos/${repoSlug}/pull-requests` +
+      `?state=OPEN&at=refs/heads/${branch}`;
+
+    const prRes = await fetch(prUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!prRes.ok) return undefined;
+
+    const parsed = bitbucketServerPrListSchema.parse(await prRes.json());
+    if (parsed.values.length === 0) return undefined;
+
+    const pr = parsed.values[0];
+    const htmlUrl = pr.links.self?.[0]?.href ?? '';
+
+    const activitiesUrl =
+      `${apiBase}/projects/${projectKey}/repos/${repoSlug}/pull-requests/${pr.id}/activities` +
+      `?limit=100`;
+
+    const activitiesRes = await fetch(activitiesUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!activitiesRes.ok) return undefined;
+
+    const activities = bitbucketServerActivitiesSchema.parse(
+      await activitiesRes.json(),
+    );
+    const sinceMs = since ? Date.parse(since) : undefined;
+    const commentActivities = activities.values.filter(
+      (a) =>
+        a.action === 'COMMENTED' &&
+        a.comment &&
+        (sinceMs == null || a.comment.createdDate > sinceMs),
+    );
+    const hasInline = commentActivities.some((a) => a.comment!.anchor != null);
+    const hasReworkConvo = commentActivities.some(
+      (a) => a.comment!.anchor == null && isReworkComment(a.comment!.text),
+    );
+    const changesRequested = hasInline || hasReworkConvo;
+
+    return { changesRequested, prNumber: pr.id, prUrl: htmlUrl };
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Fetch feedback comments on a Bitbucket Server/DC PR.
+ *
+ * Inline comments (with `anchor` property) are always included — they
+ * inherently represent change requests. General conversation comments are
+ * only included when prefixed with `Rework:` (prefix stripped).
+ * Inline comments are prefixed with `[path]`.
+ */
+export async function fetchServerPrReviewComments(
+  token: string,
+  apiBase: string,
+  projectKey: string,
+  repoSlug: string,
+  prId: number,
+  since?: string,
+): Promise<string[]> {
+  try {
+    const url =
+      `${apiBase}/projects/${projectKey}/repos/${repoSlug}/pull-requests/${prId}/activities` +
+      `?limit=100`;
+
+    const res = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    if (!res.ok) return [];
+
+    const parsed = bitbucketServerActivitiesSchema.parse(await res.json());
+    const sinceMs = since ? Date.parse(since) : undefined;
+    const comments: string[] = [];
+
+    for (const a of parsed.values) {
+      if (a.action !== 'COMMENTED' || !a.comment) continue;
+      if (sinceMs != null && a.comment.createdDate <= sinceMs) continue;
+
+      const c = a.comment;
+      if (c.anchor != null) {
+        const prefix = c.anchor.path ? `[${c.anchor.path}] ` : '';
+        comments.push(`${prefix}${c.text}`);
+      } else if (isReworkComment(c.text)) {
+        comments.push(extractReworkContent(c.text));
+      }
+    }
+
+    return comments;
+  } catch {
+    return [];
+  }
 }

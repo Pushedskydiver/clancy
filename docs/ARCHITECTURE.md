@@ -33,7 +33,7 @@ clancy/
 │   │   ├── afk/afk.ts          — AFK loop runner
 │   │   ├── board/              — board-specific modules (jira, github, linear)
 │   │   └── shared/             — env-schema, branch, prompt, progress, etc.
-│   │       ├── pull-request/   — PR creation (github, gitlab, bitbucket, post-pr, pr-body)
+│   │       ├── pull-request/   — PR creation (github, gitlab, bitbucket, post-pr, pr-body, rework-comment)
 │   │       ├── remote/         — git host detection (parseRemote, detectRemote)
 │   │       └── format/         — shared formatters (formatDuration)
 │   ├── schemas/                — Zod schemas for API responses and env vars

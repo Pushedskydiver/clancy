@@ -44,6 +44,19 @@ export function buildPrBody(config: BoardConfig, ticket: Ticket): string {
 
   lines.push('---');
   lines.push('*Created by [Clancy](https://github.com/Pushedskydiver/clancy)*');
+  lines.push('');
+  lines.push('---');
+  lines.push('**Rework instructions:** To request changes:');
+  lines.push(
+    '- **Code comments** — leave inline comments on specific lines. These are always picked up automatically.',
+  );
+  lines.push(
+    '- **General feedback** — reply with a comment starting with `Rework:` followed by what needs fixing. Comments without the `Rework:` prefix are treated as discussion.',
+  );
+  lines.push('');
+  lines.push(
+    "Example: `Rework: The form validation doesn't handle empty passwords`",
+  );
 
   return lines.join('\n');
 }

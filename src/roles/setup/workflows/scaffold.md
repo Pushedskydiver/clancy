@@ -396,6 +396,12 @@ MAX_ITERATIONS=5
 # CLANCY_GIT_PLATFORM=gitlab               # override auto-detection (github/gitlab/bitbucket)
 # CLANCY_GIT_API_URL=https://gitlab.example.com/api/v4  # self-hosted git API base URL
 
+# ─── Optional: Rework loop ──────────────────────────────────────────────────
+# PR-based rework is automatic — when a reviewer leaves inline comments or
+# a conversation comment prefixed with "Rework:", Clancy picks it up on the
+# next run. No configuration needed.
+# CLANCY_MAX_REWORK=3                    # Max rework cycles before human intervention (default: 3)
+
 # ─── Optional: Planner queue ─────────────────────────────────────────────────
 # Status for backlog tickets that /clancy:plan fetches from (default: Backlog)
 # Only used if Planner role is enabled via CLANCY_ROLES
@@ -457,6 +463,12 @@ MAX_ITERATIONS=20
 # PLAYWRIGHT_STORYBOOK_PORT=6006
 # PLAYWRIGHT_STARTUP_WAIT=15
 
+# ─── Optional: Rework loop ──────────────────────────────────────────────────
+# PR-based rework is automatic — when a reviewer leaves inline comments or
+# a conversation comment prefixed with "Rework:", Clancy picks it up on the
+# next run. No configuration needed.
+# CLANCY_MAX_REWORK=3                    # Max rework cycles before human intervention (default: 3)
+
 # ─── Optional: Notifications ──────────────────────────────────────────────────
 # Webhook URL for Slack or Teams notifications on ticket completion
 # CLANCY_NOTIFY_WEBHOOK=https://hooks.slack.com/services/your/webhook/url
@@ -512,6 +524,12 @@ MAX_ITERATIONS=20
 # CLANCY_STATUS_IN_PROGRESS="In Progress"
 # CLANCY_STATUS_DONE="Done"
 # CLANCY_STATUS_REVIEW="In Review"        # used when creating a PR instead of merging locally
+
+# ─── Optional: Rework loop ──────────────────────────────────────────────────
+# PR-based rework is automatic — when a reviewer leaves inline comments or
+# a conversation comment prefixed with "Rework:", Clancy picks it up on the
+# next run. No configuration needed.
+# CLANCY_MAX_REWORK=3                    # Max rework cycles before human intervention (default: 3)
 
 # ─── Optional: Git host (PR creation) ───────────────────────────────────────
 # When an issue has no parent, Clancy pushes the feature branch and creates a
