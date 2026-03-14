@@ -15,7 +15,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### ✅ Tests
 
-- Added 3 tests for `resolveUsername` (success, API failure fallback, network error fallback)
+- Added 4 tests for `resolveUsername` (success, API failure fallback, network error fallback, cache verification)
 
 ---
 
