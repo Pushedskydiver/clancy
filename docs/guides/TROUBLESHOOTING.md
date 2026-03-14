@@ -56,11 +56,11 @@ If Clancy logs `PUSH_FAILED` or `PUSHED` (without a PR URL):
 
 ## Rework issues?
 
-- **PR rework not detecting?** — Check that: (1) the PR was created by Clancy (it must follow Clancy's branch naming convention, e.g. `feature/proj-123` or `feature/issue-42`), (2) the reviewer used "Request Changes" on the PR/MR (a regular comment without requesting changes is not enough), and (3) a git host token is configured in `.clancy/.env` (e.g. `GITHUB_TOKEN`, `GITLAB_TOKEN`, or `BITBUCKET_TOKEN`/`BITBUCKET_USER`). PR-based rework detection requires Clancy to be able to query the git host API.
+- **PR rework not detecting?** — Check that: (1) the PR was created by Clancy (it must follow Clancy's branch naming convention, e.g. `feature/proj-123` or `feature/issue-42`), (2) the reviewer left feedback in the right format — **inline code comments** on specific lines always trigger rework, while **general conversation comments** need a `Rework:` prefix to be detected (e.g. "Rework: this should validate inputs"), and (3) a git host token is configured in `.clancy/.env` (e.g. `GITHUB_TOKEN`, `GITLAB_TOKEN`, or `BITBUCKET_TOKEN`/`BITBUCKET_USER`). PR-based rework detection requires Clancy to be able to query the git host API.
 
 - **Max rework cycles reached** — Clancy logged `SKIPPED` with "max rework cycles reached". Increase `CLANCY_MAX_REWORK` in `.clancy/.env` (default: 3) or resolve the ticket manually. This limit applies to both PR-based and board-based rework.
 
-- **No feedback found** — The reviewer may have sent the ticket back without commenting. Clancy still picks it up but proceeds without specific feedback context. For best results, reviewers should use "Request Changes" with comments on the PR.
+- **No feedback found** — The reviewer may not have left actionable comments. For best results, reviewers should leave inline code comments on specific lines, or prefix general comments with `Rework:` so Clancy can detect and act on them.
 
 - **Feature branch missing for PR rework** — If the feature branch was force-deleted from the remote, Clancy creates a fresh branch and treats it as a new implementation rather than a targeted fix.
 

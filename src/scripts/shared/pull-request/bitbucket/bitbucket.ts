@@ -9,7 +9,7 @@
 import {
   bitbucketCommentsSchema,
   bitbucketPrListSchema,
-  bitbucketServerCommentsSchema,
+  bitbucketServerActivitiesSchema,
   bitbucketServerPrListSchema,
 } from '~/schemas/bitbucket-pr.js';
 import type { PrCreationResult, PrReviewState } from '~/types/index.js';
@@ -263,22 +263,25 @@ export async function checkServerPrReviewState(
     const pr = parsed.values[0];
     const htmlUrl = pr.links.self?.[0]?.href ?? '';
 
-    const commentsUrl =
-      `${apiBase}/projects/${projectKey}/repos/${repoSlug}/pull-requests/${pr.id}/comments` +
+    const activitiesUrl =
+      `${apiBase}/projects/${projectKey}/repos/${repoSlug}/pull-requests/${pr.id}/activities` +
       `?limit=100`;
 
-    const commentsRes = await fetch(commentsUrl, {
+    const activitiesRes = await fetch(activitiesUrl, {
       headers: { Authorization: `Bearer ${token}` },
     });
 
-    if (!commentsRes.ok) return undefined;
+    if (!activitiesRes.ok) return undefined;
 
-    const comments = bitbucketServerCommentsSchema.parse(
-      await commentsRes.json(),
+    const activities = bitbucketServerActivitiesSchema.parse(
+      await activitiesRes.json(),
     );
-    const hasInline = comments.values.some((c) => c.anchor != null);
-    const hasReworkConvo = comments.values.some(
-      (c) => c.anchor == null && isReworkComment(c.text),
+    const commentActivities = activities.values.filter(
+      (a) => a.action === 'COMMENTED' && a.comment,
+    );
+    const hasInline = commentActivities.some((a) => a.comment!.anchor != null);
+    const hasReworkConvo = commentActivities.some(
+      (a) => a.comment!.anchor == null && isReworkComment(a.comment!.text),
     );
     const changesRequested = hasInline || hasReworkConvo;
 
@@ -305,7 +308,7 @@ export async function fetchServerPrReviewComments(
 ): Promise<string[]> {
   try {
     const url =
-      `${apiBase}/projects/${projectKey}/repos/${repoSlug}/pull-requests/${prId}/comments` +
+      `${apiBase}/projects/${projectKey}/repos/${repoSlug}/pull-requests/${prId}/activities` +
       `?limit=100`;
 
     const res = await fetch(url, {
@@ -313,10 +316,13 @@ export async function fetchServerPrReviewComments(
     });
     if (!res.ok) return [];
 
-    const parsed = bitbucketServerCommentsSchema.parse(await res.json());
+    const parsed = bitbucketServerActivitiesSchema.parse(await res.json());
     const comments: string[] = [];
 
-    for (const c of parsed.values) {
+    for (const a of parsed.values) {
+      if (a.action !== 'COMMENTED' || !a.comment) continue;
+
+      const c = a.comment;
       if (c.anchor != null) {
         const prefix = c.anchor.path ? `[${c.anchor.path}] ` : '';
         comments.push(`${prefix}${c.text}`);

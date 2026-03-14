@@ -11,8 +11,8 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### ✨ Features
 
-- **QA rework loop** — when a reviewer clicks "Request Changes" on a PR/MR, Clancy picks it up automatically on the next run. Reads reviewer feedback from PR review comments, builds a focused rework prompt ("fix the flagged issues, don't re-implement"), and pushes fixes to the existing branch — the PR updates automatically.
-- **Automatic PR review detection** — Clancy scans open PRs for "changes requested" review state directly from the git host. Works with GitHub (`CHANGES_REQUESTED`), GitLab (`requested_changes` / `discussions_not_resolved`), Bitbucket Cloud (`changes_requested`), and Bitbucket Server (`NEEDS_WORK`). Zero configuration needed — just do your normal PR review workflow.
+- **QA rework loop** — when a reviewer leaves feedback on a PR, Clancy picks it up automatically on the next run. Inline code comments (on specific diff lines) always trigger rework; conversation comments trigger with a `Rework:` prefix. Reads the feedback, builds a focused rework prompt ("fix the flagged issues, don't re-implement"), and pushes fixes to the existing branch — the PR updates automatically.
+- **Comment-based rework detection** — Clancy scans open PRs for reviewer comments instead of relying on platform review states. Inline code comments always trigger rework. General conversation comments trigger when prefixed with `Rework:`. Works identically across GitHub, GitLab, and Bitbucket. Zero configuration needed — the PR body includes reviewer instructions automatically.
 - **PR review comment fetching** — reads inline code review comments and conversation comments from GitHub, unresolved MR discussions from GitLab, and PR comments from Bitbucket (Cloud + Server). Comments are included in the rework prompt as actionable feedback.
 - **Board comment fetching** — `fetchComments()` functions for all 3 boards (Jira REST, GitHub REST, Linear GraphQL). Filtered by timestamp.
 - **Rework prompt** (`buildReworkPrompt`) — includes reviewer feedback and "address specific feedback" instructions.

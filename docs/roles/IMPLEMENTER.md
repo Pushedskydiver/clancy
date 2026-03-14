@@ -98,31 +98,24 @@ When a reviewer sends a ticket back for changes, Clancy picks it up automaticall
 
 ### How rework is detected
 
-When a reviewer clicks "Request Changes" on a pull request or merge request, Clancy detects it automatically on the next run. No configuration is needed.
+Clancy detects rework via **comments on the pull request**, not platform review states. No configuration is needed — the PR body includes instructions for reviewers explaining the convention.
 
 How it works:
 - Clancy scans `.clancy/progress.txt` for `PR_CREATED` entries
-- For each PR, it looks up the pull request by branch name on the git host
-- If the PR has a "changes requested" review state, Clancy picks it up as rework
-- Review comments from the PR are fetched and included as feedback context
-- If no rework is detected, Clancy fetches the next fresh ticket from the queue
+- For each PR, it fetches comments from the git host API
+- **Inline code comments** (on specific lines in the diff) always trigger rework — no prefix needed
+- **Conversation comments** (general comments at the bottom of the PR) only trigger rework when prefixed with `Rework:` (e.g. "Rework: this function should handle null inputs")
+- If no rework-triggering comments are found, Clancy fetches the next fresh ticket from the queue
 
-Supported review states by platform:
-
-| Platform | Review state |
-| --- | --- |
-| GitHub | `CHANGES_REQUESTED` |
-| GitLab | `requested_changes` / `discussions_not_resolved` |
-| Bitbucket Cloud | `changes_requested` |
-| Bitbucket Server | `NEEDS_WORK` |
+This approach works identically across GitHub, GitLab, and Bitbucket — no platform-specific review states involved.
 
 ### Rework process
 
 1. The feature branch and PR already exist on the remote
 2. Clancy checks out the existing feature branch (`git fetch` + `git checkout`)
-3. Reads reviewer feedback from PR review comments
-4. Implements fixes on the same branch -- does not re-implement from scratch
-5. Pushes to the same branch -- the PR updates automatically
+3. Reads reviewer feedback from PR comments (inline and `Rework:`-prefixed conversation comments)
+4. Implements fixes on the same branch — does not re-implement from scratch
+5. Pushes to the same branch — the PR updates automatically
 6. Transitions the ticket back to the review status (`CLANCY_STATUS_REVIEW`)
 7. Logs as `REWORK` in `.clancy/progress.txt`
 
@@ -130,9 +123,12 @@ If the feature branch has been deleted from the remote, Clancy creates a fresh b
 
 ### Feedback
 
-Clancy reads feedback directly from **PR review comments** on the pull request. This gives precise, contextual feedback tied to specific lines of code.
+Clancy reads feedback from two sources on the pull request:
 
-If no comments are found, Clancy still picks up the rework ticket but notes the absence of feedback in the prompt.
+- **Inline code comments** — comments left on specific lines of the diff. These provide precise, contextual feedback tied to exact code locations and always trigger rework.
+- **Conversation comments** — general comments at the bottom of the PR. Only those prefixed with `Rework:` are treated as actionable feedback. Regular discussion comments are ignored to avoid false triggers.
+
+If no actionable comments are found, Clancy moves on to the next fresh ticket in the queue.
 
 ### Max rework guard
 

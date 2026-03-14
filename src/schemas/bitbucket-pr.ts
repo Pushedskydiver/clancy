@@ -64,7 +64,7 @@ export const bitbucketServerPrListSchema = z.object({
   values: z.array(bitbucketServerPrSchema),
 });
 
-/** A single comment/activity on a Server PR. */
+/** A comment object nested inside a Server activity. */
 export const bitbucketServerCommentSchema = z.object({
   text: z.string(),
   anchor: z.optional(
@@ -75,9 +75,15 @@ export const bitbucketServerCommentSchema = z.object({
   createdDate: z.number(),
 });
 
-/** Response from Server PR comments/activities endpoint (paginated). */
-export const bitbucketServerCommentsSchema = z.object({
-  values: z.array(bitbucketServerCommentSchema),
+/** A single activity on a Server PR (from /activities endpoint). */
+export const bitbucketServerActivitySchema = z.object({
+  action: z.string(),
+  comment: z.optional(bitbucketServerCommentSchema),
+});
+
+/** Response from `GET /rest/api/latest/.../pull-requests/{id}/activities` (paginated). */
+export const bitbucketServerActivitiesSchema = z.object({
+  values: z.array(bitbucketServerActivitySchema),
 });
 
 // ---------------------------------------------------------------------------
@@ -96,6 +102,9 @@ export type BitbucketServerPrList = z.infer<typeof bitbucketServerPrListSchema>;
 export type BitbucketServerComment = z.infer<
   typeof bitbucketServerCommentSchema
 >;
-export type BitbucketServerComments = z.infer<
-  typeof bitbucketServerCommentsSchema
+export type BitbucketServerActivity = z.infer<
+  typeof bitbucketServerActivitySchema
+>;
+export type BitbucketServerActivities = z.infer<
+  typeof bitbucketServerActivitiesSchema
 >;

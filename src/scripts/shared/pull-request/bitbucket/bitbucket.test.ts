@@ -570,9 +570,12 @@ describe('bitbucket', () => {
             Promise.resolve({
               values: [
                 {
-                  text: 'This needs fixing',
-                  anchor: { path: 'src/app.ts' },
-                  createdDate: 1700000000000,
+                  action: 'COMMENTED',
+                  comment: {
+                    text: 'This needs fixing',
+                    anchor: { path: 'src/app.ts' },
+                    createdDate: 1700000000000,
+                  },
                 },
               ],
             }),
@@ -622,8 +625,11 @@ describe('bitbucket', () => {
             Promise.resolve({
               values: [
                 {
-                  text: 'Rework: Fix the error handling',
-                  createdDate: 1700000000000,
+                  action: 'COMMENTED',
+                  comment: {
+                    text: 'Rework: Fix the error handling',
+                    createdDate: 1700000000000,
+                  },
                 },
               ],
             }),
@@ -671,7 +677,15 @@ describe('bitbucket', () => {
           ok: true,
           json: () =>
             Promise.resolve({
-              values: [{ text: 'Nice job', createdDate: 1700000000000 }],
+              values: [
+                {
+                  action: 'COMMENTED',
+                  comment: {
+                    text: 'Nice job',
+                    createdDate: 1700000000000,
+                  },
+                },
+              ],
             }),
         });
       vi.stubGlobal('fetch', mockFetch);
@@ -725,17 +739,29 @@ describe('bitbucket', () => {
               Promise.resolve({
                 values: [
                   {
-                    text: 'This needs fixing',
-                    anchor: { path: 'src/app.ts' },
-                    createdDate: 1700000000000,
+                    action: 'COMMENTED',
+                    comment: {
+                      text: 'This needs fixing',
+                      anchor: { path: 'src/app.ts' },
+                      createdDate: 1700000000000,
+                    },
                   },
                   {
-                    text: 'Rework: Please fix',
-                    createdDate: 1700000001000,
+                    action: 'COMMENTED',
+                    comment: {
+                      text: 'Rework: Please fix',
+                      createdDate: 1700000001000,
+                    },
                   },
                   {
-                    text: 'Looks good',
-                    createdDate: 1700000002000,
+                    action: 'COMMENTED',
+                    comment: {
+                      text: 'Looks good',
+                      createdDate: 1700000002000,
+                    },
+                  },
+                  {
+                    action: 'APPROVED',
                   },
                 ],
               }),
@@ -764,9 +790,12 @@ describe('bitbucket', () => {
               Promise.resolve({
                 values: [
                   {
-                    text: 'Update this line',
-                    anchor: { path: 'src/app.ts' },
-                    createdDate: 1700000000000,
+                    action: 'COMMENTED',
+                    comment: {
+                      text: 'Update this line',
+                      anchor: { path: 'src/app.ts' },
+                      createdDate: 1700000000000,
+                    },
                   },
                 ],
               }),
@@ -795,8 +824,11 @@ describe('bitbucket', () => {
               Promise.resolve({
                 values: [
                   {
-                    text: 'Looks good overall',
-                    createdDate: 1700000000000,
+                    action: 'COMMENTED',
+                    comment: {
+                      text: 'Looks good overall',
+                      createdDate: 1700000000000,
+                    },
                   },
                 ],
               }),
