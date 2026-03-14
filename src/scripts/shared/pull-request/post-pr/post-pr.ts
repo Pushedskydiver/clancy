@@ -49,9 +49,16 @@ export async function postPullRequest(
     }
 
     const json: unknown = await response.json();
-    const { url: prUrl, number } = parseSuccess(json);
+    const parsed = parseSuccess(json);
 
-    return { ok: true, url: prUrl, number };
+    if (!parsed.url && !parsed.number) {
+      return {
+        ok: false,
+        error: 'PR created but response missing URL and number',
+      };
+    }
+
+    return { ok: true, url: parsed.url, number: parsed.number };
   } catch (err) {
     return {
       ok: false,
