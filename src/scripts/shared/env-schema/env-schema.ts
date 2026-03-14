@@ -49,8 +49,9 @@ export function detectBoard(raw: Record<string, string>): BoardConfig | string {
     return { provider: 'jira', env: parsed.data };
   }
 
-  // GitHub — check for GITHUB_TOKEN as the distinguishing key
-  if (raw.GITHUB_TOKEN) {
+  // GitHub — check for GITHUB_TOKEN + GITHUB_REPO (GITHUB_TOKEN alone may be
+  // a git host token for Jira/Linear users, not a GitHub Issues board)
+  if (raw.GITHUB_TOKEN && raw.GITHUB_REPO) {
     const parsed = githubEnvSchema.safeParse(raw);
 
     if (!parsed.success) {

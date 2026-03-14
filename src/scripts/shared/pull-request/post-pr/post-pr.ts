@@ -27,11 +27,17 @@ export async function postPullRequest(
   isAlreadyExists?: (status: number, text: string) => boolean,
 ): Promise<PrCreationResult> {
   try {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 30_000);
+
     const response = await fetch(url, {
       method: 'POST',
       headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
+      signal: controller.signal,
     });
+
+    clearTimeout(timeout);
 
     if (!response.ok) {
       const text = await response.text().catch(() => '');

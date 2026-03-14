@@ -110,7 +110,16 @@ export async function pingLinear(
   }
 
   if (!response.ok) {
-    return { ok: false, error: '✗ Linear auth failed — check LINEAR_API_KEY' };
+    if (response.status === 401 || response.status === 403) {
+      return {
+        ok: false,
+        error: '✗ Linear auth failed — check LINEAR_API_KEY',
+      };
+    }
+    return {
+      ok: false,
+      error: `✗ Linear API returned HTTP ${response.status}`,
+    };
   }
 
   try {

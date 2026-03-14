@@ -15,7 +15,7 @@ import { postPullRequest } from '../post-pr/post-pr.js';
  *
  * @param token - The GitLab personal access token.
  * @param apiBase - The API base URL (e.g. `https://gitlab.com/api/v4`).
- * @param projectPath - The URL-encoded project path (e.g. `group%2Fproject`).
+ * @param projectPath - The raw project path (e.g. `group/subgroup/project`). URL-encoded internally.
  * @param sourceBranch - The source branch name.
  * @param targetBranch - The target branch name.
  * @param title - The MR title.

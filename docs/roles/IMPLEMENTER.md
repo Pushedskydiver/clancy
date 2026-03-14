@@ -73,7 +73,7 @@ When a ticket has no parent epic, Clancy uses a PR-based flow instead of merging
 2. Detects the git host from the remote URL (GitHub, GitLab, Bitbucket — including self-hosted)
 3. Creates a pull request / merge request with a description linking back to the board ticket
 4. Transitions the ticket to the review status (`CLANCY_STATUS_REVIEW`, falls back to `CLANCY_STATUS_DONE`)
-5. Logs `PR_CREATED` with the PR URL to `.clancy/progress.txt`
+5. Logs `PR_CREATED` to `.clancy/progress.txt`
 
 **Fallback ladder** — Clancy never falls back to local merge if the intent is PR creation:
 - Push fails → logs `PUSH_FAILED`, leaves the branch for manual push

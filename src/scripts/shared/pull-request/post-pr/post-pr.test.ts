@@ -157,6 +157,7 @@ describe('post-pr', () => {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({ title: 'PR title' }),
+        signal: expect.any(AbortSignal),
       });
     });
   });
