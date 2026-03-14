@@ -46,7 +46,7 @@ Clancy automatically moves tickets through your board when it picks up and compl
 CLANCY_NOTIFY_WEBHOOK=https://hooks.slack.com/services/your/webhook/url
 ```
 
-Posts to Slack or Teams when a ticket completes or Clancy hits an error. URL is auto-detected.
+Posts to Slack or Teams when a ticket completes. The payload format (Slack vs Teams) is inferred from the webhook URL you provide.
 
 ## Queue filters
 

@@ -5,7 +5,7 @@ The implementer is Clancy's core — it picks up tickets from your board and tur
 ## How it works
 
 1. Fetches the highest-priority ticket assigned to you from the implementation queue
-2. Reads all codebase docs in `.clancy/docs/` for full context
+2. Reads core codebase docs in `.clancy/docs/` (STACK, ARCHITECTURE, CONVENTIONS, GIT, DEFINITION-OF-DONE, CONCERNS) and loads additional docs if relevant to the ticket
 3. Creates a feature branch, implements the ticket, writes tests
 4. Commits, squash-merges to the epic/base branch, transitions the ticket on the board
 5. Logs the result to `.clancy/progress.txt`
@@ -57,7 +57,7 @@ When picking up a ticket, Clancy transitions it to "In Progress" (configurable v
 
 For each ticket, the implementer:
 
-1. Creates a feature branch: `feature/{ticket-key}` (Jira/Linear) or `feature/issue-{number}` (GitHub)
+1. Creates a feature branch: `feature/{ticket-key-lowercase}` (Jira/Linear, e.g. `feature/proj-123`) or `feature/issue-{number}` (GitHub, e.g. `feature/issue-42`)
 2. Implements and commits on the feature branch
 3. Squash-merges to the epic/base branch
 4. Deletes the feature branch locally (never pushes deletes to remote)
