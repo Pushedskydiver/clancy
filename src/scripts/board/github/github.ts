@@ -7,13 +7,28 @@
  * Note: GitHub Issues endpoint returns both issues AND pull requests.
  * This script filters out PRs explicitly.
  */
+import { z } from 'zod/mini';
+
 import { githubIssuesResponseSchema } from '~/schemas/github.js';
 import { githubHeaders, pingEndpoint } from '~/scripts/shared/http/http.js';
 import type { PingResult } from '~/scripts/shared/http/http.js';
 import type { Ticket } from '~/types/index.js';
 
+/** Schema for the `GET /user` response. */
+const githubUserSchema = z.object({
+  login: z.string(),
+});
+
 const SAFE_REPO_PATTERN = /^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/;
 const GITHUB_API = 'https://api.github.com';
+
+/** Cached username to avoid repeated /user calls. */
+let cachedUsername: string | undefined;
+
+/** Reset the cached username. Exported for testing only. */
+export function resetUsernameCache(): void {
+  cachedUsername = undefined;
+}
 
 /**
  * Validate that a GitHub repo string is in `owner/repo` format.
@@ -49,6 +64,55 @@ export async function pingGitHub(
 }
 
 /**
+ * Resolve the authenticated GitHub username from the token.
+ *
+ * Uses `GET /user` and caches the result for the lifetime of the process.
+ * Falls back to `@me` if the API call fails (classic PATs support `@me`).
+ *
+ * Fine-grained PATs do NOT resolve `@me` in the Issues API `assignee` param,
+ * so this function ensures we always have the real username.
+ *
+ * @param token - The GitHub personal access token.
+ * @returns The GitHub username, or `@me` as a fallback.
+ */
+export async function resolveUsername(token: string): Promise<string> {
+  if (cachedUsername) return cachedUsername;
+
+  try {
+    const response = await fetch(`${GITHUB_API}/user`, {
+      headers: githubHeaders(token),
+    });
+
+    if (!response.ok) {
+      const hint =
+        response.status === 401 || response.status === 403
+          ? ' Fine-grained PATs need "Account permissions → read" (or classic PATs need read:user scope).'
+          : '';
+      console.warn(
+        `⚠ GitHub /user returned HTTP ${response.status} — falling back to @me.${hint}`,
+      );
+      return '@me';
+    }
+
+    const json: unknown = await response.json();
+    const parsed = githubUserSchema.safeParse(json);
+
+    if (parsed.success) {
+      cachedUsername = parsed.data.login;
+      return cachedUsername;
+    }
+
+    console.warn('⚠ Unexpected GitHub /user response — falling back to @me');
+  } catch (err) {
+    console.warn(
+      `⚠ GitHub /user request failed: ${err instanceof Error ? err.message : String(err)} — falling back to @me`,
+    );
+  }
+
+  return '@me';
+}
+
+/**
  * Fetch the next available issue from GitHub Issues.
  *
  * Requests extra results to account for PR pollution (GitHub Issues endpoint
@@ -56,18 +120,21 @@ export async function pingGitHub(
  *
  * @param token - The GitHub personal access token.
  * @param repo - The repository in `owner/repo` format.
+ * @param label - Optional label to filter issues.
+ * @param username - The GitHub username for assignee filtering (resolved via {@link resolveUsername}).
  * @returns The fetched ticket with optional milestone, or `undefined` if none available.
  */
 export async function fetchIssue(
   token: string,
   repo: string,
   label?: string,
+  username?: string,
 ): Promise<(Ticket & { milestone?: string }) | undefined> {
   let response: Response;
 
   const params = new URLSearchParams({
     state: 'open',
-    assignee: '@me',
+    assignee: username ?? '@me',
     per_page: '10',
   });
 

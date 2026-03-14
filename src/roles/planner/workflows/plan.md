@@ -73,11 +73,17 @@ Note: include the `comment` field so we can check for existing plans and read fe
 
 ### GitHub Issues
 
+First resolve the authenticated username (don't use `@me` — it breaks with fine-grained PATs):
+```bash
+GITHUB_USERNAME=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/user | jq -r '.login')
+```
+
+Then fetch issues:
 ```bash
 RESPONSE=$(curl -s \
   -H "Authorization: Bearer $GITHUB_TOKEN" \
   -H "X-GitHub-Api-Version: 2022-11-28" \
-  "https://api.github.com/repos/$GITHUB_REPO/issues?state=open&assignee=@me&labels=$CLANCY_PLAN_LABEL&per_page=<N>")
+  "https://api.github.com/repos/$GITHUB_REPO/issues?state=open&assignee=$GITHUB_USERNAME&labels=$CLANCY_PLAN_LABEL&per_page=<N>")
 ```
 
 - `CLANCY_PLAN_LABEL` defaults to `needs-refinement` if not set

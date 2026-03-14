@@ -16,6 +16,7 @@ import {
   fetchIssue as fetchGitHubIssue,
   isValidRepo,
   pingGitHub,
+  resolveUsername,
 } from '~/scripts/board/github/github.js';
 import {
   buildAuthHeader,
@@ -108,10 +109,12 @@ async function fetchTicket(
 
     case 'github': {
       const { env } = config;
+      const username = await resolveUsername(env.GITHUB_TOKEN);
       const ticket = await fetchGitHubIssue(
         env.GITHUB_TOKEN,
         env.GITHUB_REPO,
         env.CLANCY_LABEL,
+        username,
       );
 
       if (!ticket) return undefined;

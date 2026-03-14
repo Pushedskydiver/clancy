@@ -1,7 +1,10 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { fetchIssue as fetchGitHubIssue } from '~/scripts/board/github/github.js';
-import { closeIssue } from '~/scripts/board/github/github.js';
+import {
+  closeIssue,
+  fetchIssue as fetchGitHubIssue,
+  resolveUsername,
+} from '~/scripts/board/github/github.js';
 import { fetchTicket as fetchJiraTicket } from '~/scripts/board/jira/jira.js';
 import { invokeClaudeSession } from '~/scripts/shared/claude-cli/claude-cli.js';
 import { detectBoard } from '~/scripts/shared/env-schema/env-schema.js';
@@ -45,6 +48,7 @@ vi.mock('~/scripts/board/github/github.js', () => ({
   fetchIssue: vi.fn(),
   isValidRepo: vi.fn(() => true),
   pingGitHub: vi.fn(() => Promise.resolve({ ok: true })),
+  resolveUsername: vi.fn(() => Promise.resolve('testuser')),
 }));
 
 vi.mock('~/scripts/board/linear/linear.js', () => ({
@@ -95,6 +99,7 @@ const mockDeleteBranch = vi.mocked(deleteBranch);
 const mockAppendProgress = vi.mocked(appendProgress);
 const mockSendNotification = vi.mocked(sendNotification);
 const mockCloseIssue = vi.mocked(closeIssue);
+const mockResolveUsername = vi.mocked(resolveUsername);
 const mockCheckFeasibility = vi.mocked(checkFeasibility);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -247,6 +252,15 @@ describe('run', () => {
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     await run([]);
     log.mockRestore();
+
+    // Username resolved
+    expect(mockResolveUsername).toHaveBeenCalledWith('ghp_abc123');
+    expect(mockFetchGitHub).toHaveBeenCalledWith(
+      'ghp_abc123',
+      'acme/app',
+      undefined,
+      'testuser',
+    );
 
     // Branches use milestone
     expect(mockEnsureBranch).toHaveBeenCalledWith('milestone/sprint-3', 'main');
