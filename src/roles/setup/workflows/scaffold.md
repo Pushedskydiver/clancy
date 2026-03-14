@@ -412,7 +412,7 @@ GITHUB_REPO=owner/repo-name
 
 # ─── Planner Queue (optional — requires CLANCY_ROLES to include "planner") ───
 # Label for backlog issues that /clancy:plan fetches from (default: needs-refinement)
-# CLANCY_PLAN_LABEL=needs-refinement
+# CLANCY_PLAN_LABEL="needs-refinement"
 
 # ─── Git ──────────────────────────────────────────────────────────────────────
 # Base integration branch. Clancy branches from here when an issue has no milestone.
