@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   closeIssue,
-  createPullRequest as createGitHubPr,
   fetchIssue as fetchGitHubIssue,
   resolveUsername,
 } from '~/scripts/board/github/github.js';
@@ -22,6 +21,7 @@ import { sendNotification } from '~/scripts/shared/notify/notify.js';
 
 import { runPreflight } from '~/scripts/shared/preflight/preflight.js';
 import { appendProgress } from '~/scripts/shared/progress/progress.js';
+import { createPullRequest as createGitHubPr } from '~/scripts/shared/pull-request/github.js';
 import { detectRemote } from '~/scripts/shared/remote/remote.js';
 
 import { run } from './once.js';
@@ -48,6 +48,13 @@ vi.mock('~/scripts/board/jira/jira.js', () => ({
 
 vi.mock('~/scripts/board/github/github.js', () => ({
   closeIssue: vi.fn(() => Promise.resolve(true)),
+  fetchIssue: vi.fn(),
+  isValidRepo: vi.fn(() => true),
+  pingGitHub: vi.fn(() => Promise.resolve({ ok: true })),
+  resolveUsername: vi.fn(() => Promise.resolve('testuser')),
+}));
+
+vi.mock('~/scripts/shared/pull-request/github.js', () => ({
   createPullRequest: vi.fn(() =>
     Promise.resolve({
       ok: true,
@@ -55,10 +62,6 @@ vi.mock('~/scripts/board/github/github.js', () => ({
       number: 1,
     }),
   ),
-  fetchIssue: vi.fn(),
-  isValidRepo: vi.fn(() => true),
-  pingGitHub: vi.fn(() => Promise.resolve({ ok: true })),
-  resolveUsername: vi.fn(() => Promise.resolve('testuser')),
 }));
 
 vi.mock('~/scripts/board/linear/linear.js', () => ({
@@ -108,13 +111,13 @@ vi.mock('~/scripts/shared/remote/remote.js', () => ({
   })),
 }));
 
-vi.mock('~/scripts/shared/remote/gitlab.js', () => ({
+vi.mock('~/scripts/shared/pull-request/gitlab.js', () => ({
   createMergeRequest: vi.fn(() =>
     Promise.resolve({ ok: true, url: 'https://gitlab.com/mr/1', number: 1 }),
   ),
 }));
 
-vi.mock('~/scripts/shared/remote/bitbucket.js', () => ({
+vi.mock('~/scripts/shared/pull-request/bitbucket.js', () => ({
   createPullRequest: vi.fn(() =>
     Promise.resolve({ ok: true, url: 'https://bitbucket.org/pr/1', number: 1 }),
   ),
@@ -123,7 +126,7 @@ vi.mock('~/scripts/shared/remote/bitbucket.js', () => ({
   ),
 }));
 
-vi.mock('~/scripts/shared/remote/pr-body.js', () => ({
+vi.mock('~/scripts/shared/pull-request/pr-body.js', () => ({
   buildPrBody: vi.fn(() => 'PR body'),
 }));
 

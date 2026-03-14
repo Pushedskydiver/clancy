@@ -71,3 +71,9 @@ See [docs/GIT.md](docs/GIT.md) for full details. Summary:
 - Path aliases (`~/`) are resolved by `tsc-alias` at build time
 - Runtime scripts (`clancy-once.js`, `clancy-afk.js`) are esbuild bundles — self-contained, zero runtime dependency on the npm package
 - `dist/bundle/` contains the bundled scripts; the installer copies them to `.clancy/` during install
+- PR-based flow: when a ticket has no parent (epic/milestone), Clancy pushes the feature branch and creates a PR instead of squash-merging locally
+- Remote detection: `parseRemote()` handles GitHub, GitLab, Bitbucket Cloud/Server, Azure DevOps, GHE, and self-hosted instances
+- Git host auth: GitHub uses Bearer token, GitLab uses PRIVATE-TOKEN header, Bitbucket uses Basic Auth
+- `CLANCY_GIT_PLATFORM` and `CLANCY_GIT_API_URL` override auto-detection for custom domains
+- `CLANCY_STATUS_REVIEW` is used when creating a PR (falls back to `CLANCY_STATUS_DONE`)
+- GitHub Issues reuse `GITHUB_TOKEN` for PR creation; Jira/Linear users configure a separate git host token

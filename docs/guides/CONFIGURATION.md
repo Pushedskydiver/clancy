@@ -32,9 +32,12 @@ After implementing a UI ticket, Clancy starts the dev server or Storybook, scree
 ```
 CLANCY_STATUS_IN_PROGRESS="In Progress"
 CLANCY_STATUS_DONE="Ready for Review"
+CLANCY_STATUS_REVIEW="In Review"
 ```
 
 Clancy moves tickets on your board when it picks up and completes implementation. Best-effort — a failed transition never stops the run. Configurable via `/clancy:settings`.
+
+`CLANCY_STATUS_REVIEW` is used when Clancy creates a PR (no-parent flow) instead of merging locally. If not set, falls back to `CLANCY_STATUS_DONE`.
 
 **Jira:** Set these to the Jira **transition name** (the action label, e.g. "In Progress", "Done"). Note: in some Jira workflows the transition name differs from the destination column name (e.g. transition "Start Progress" moves to column "In Progress"). Check your Jira workflow if transitions aren't working — the value must match the transition action name, not the column header. `CLANCY_STATUS_DONE` doesn't have to mean "Done" — set it to whatever transition moves tickets to your post-implementation column.
 
@@ -96,6 +99,12 @@ Posts to Slack or Teams when a ticket completes. The payload format (Slack vs Te
 | `CLANCY_PLAN_STATE_TYPE` | Linear | No | `backlog` | Planning queue state type |
 | `CLANCY_STATUS_IN_PROGRESS` | Jira/Linear | No | — | Status when picking up a ticket |
 | `CLANCY_STATUS_DONE` | Jira/Linear | No | — | Status when completing a ticket |
+| `CLANCY_STATUS_REVIEW` | Jira/Linear | No | — | Status when creating a PR (falls back to `CLANCY_STATUS_DONE`) |
+| `GITLAB_TOKEN` | All | No | — | GitLab personal access token (for PR creation) |
+| `BITBUCKET_USER` | All | No | — | Bitbucket username (for PR creation) |
+| `BITBUCKET_TOKEN` | All | No | — | Bitbucket app password (for PR creation) |
+| `CLANCY_GIT_PLATFORM` | All | No | — | Override git host detection (`github`/`gitlab`/`bitbucket`) |
+| `CLANCY_GIT_API_URL` | All | No | — | Self-hosted git instance API base URL |
 | `CLANCY_NOTIFY_WEBHOOK` | All | No | — | Slack/Teams webhook URL |
 | `CLANCY_ROLES` | All | No | — | Comma-separated optional roles |
 | `CLANCY_MODEL` | All | No | — | Claude model for ticket sessions |

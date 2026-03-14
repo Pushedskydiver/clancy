@@ -12,7 +12,7 @@ import { z } from 'zod/mini';
 import { githubIssuesResponseSchema } from '~/schemas/github.js';
 import { githubHeaders, pingEndpoint } from '~/scripts/shared/http/http.js';
 import type { PingResult } from '~/scripts/shared/http/http.js';
-import type { PrCreationResult, Ticket } from '~/types/index.js';
+import type { Ticket } from '~/types/index.js';
 
 /** Schema for the `GET /user` response. */
 const githubUserSchema = z.object({
@@ -219,65 +219,5 @@ export async function closeIssue(
     return response.ok;
   } catch {
     return false;
-  }
-}
-
-/**
- * Create a pull request on GitHub.
- *
- * @param token - The GitHub personal access token.
- * @param repo - The repository in `owner/repo` format.
- * @param head - The source branch name.
- * @param base - The target branch name.
- * @param title - The PR title.
- * @param body - The PR body (markdown).
- * @param apiBase - The API base URL (defaults to `https://api.github.com`).
- * @returns A result with the PR URL and number on success, or an error message.
- */
-export async function createPullRequest(
-  token: string,
-  repo: string,
-  head: string,
-  base: string,
-  title: string,
-  body: string,
-  apiBase = GITHUB_API,
-): Promise<PrCreationResult> {
-  try {
-    const response = await fetch(`${apiBase}/repos/${repo}/pulls`, {
-      method: 'POST',
-      headers: {
-        ...githubHeaders(token),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ title, head, base, body }),
-    });
-
-    if (!response.ok) {
-      const text = await response.text().catch(() => '');
-      const alreadyExists =
-        response.status === 422 && text.includes('already exists');
-      return {
-        ok: false,
-        error: `HTTP ${response.status}${text ? `: ${text.slice(0, 200)}` : ''}`,
-        alreadyExists,
-      };
-    }
-
-    const json = (await response.json()) as {
-      html_url?: string;
-      number?: number;
-    };
-
-    return {
-      ok: true,
-      url: json.html_url ?? '',
-      number: json.number ?? 0,
-    };
-  } catch (err) {
-    return {
-      ok: false,
-      error: err instanceof Error ? err.message : String(err),
-    };
   }
 }

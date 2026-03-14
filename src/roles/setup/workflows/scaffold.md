@@ -383,6 +383,18 @@ MAX_ITERATIONS=5
 # "Done" can be any transition to a post-implementation status.
 # CLANCY_STATUS_IN_PROGRESS="In Progress"
 # CLANCY_STATUS_DONE="Done"
+# CLANCY_STATUS_REVIEW="In Review"        # used when creating a PR instead of merging locally
+
+# ─── Optional: Git host (PR creation) ───────────────────────────────────────
+# When a ticket has no parent epic, Clancy pushes the feature branch and creates
+# a pull request instead of squash-merging locally. Requires a git host token.
+# GitHub Issues users already have GITHUB_TOKEN above — no extra config needed.
+# GITHUB_TOKEN=ghp_your-token              # if your git host is GitHub
+# GITLAB_TOKEN=glpat-your-token            # if your git host is GitLab
+# BITBUCKET_USER=your-username             # if your git host is Bitbucket
+# BITBUCKET_TOKEN=your-app-password        # if your git host is Bitbucket
+# CLANCY_GIT_PLATFORM=gitlab               # override auto-detection (github/gitlab/bitbucket)
+# CLANCY_GIT_API_URL=https://gitlab.example.com  # self-hosted git instance API base
 
 # ─── Optional: Planner queue ─────────────────────────────────────────────────
 # Status for backlog tickets that /clancy:plan fetches from (default: Backlog)
@@ -418,6 +430,10 @@ GITHUB_REPO=owner/repo-name
 # Base integration branch. Clancy branches from here when an issue has no milestone.
 # When an issue has a milestone, Clancy auto-creates milestone/{slug} from this branch.
 CLANCY_BASE_BRANCH=main
+
+# ─── PR creation ─────────────────────────────────────────────────────────────
+# When an issue has no milestone, Clancy pushes the feature branch and creates a
+# PR using your GITHUB_TOKEN above. No extra config needed for GitHub Issues users.
 
 # ─── Loop ─────────────────────────────────────────────────────────────────────
 # Max tickets to process per /clancy:run session (default: 20)
@@ -495,6 +511,17 @@ MAX_ITERATIONS=20
 # "Done" can be any post-implementation state (e.g. "Ready for Review", "In Review").
 # CLANCY_STATUS_IN_PROGRESS="In Progress"
 # CLANCY_STATUS_DONE="Done"
+# CLANCY_STATUS_REVIEW="In Review"        # used when creating a PR instead of merging locally
+
+# ─── Optional: Git host (PR creation) ───────────────────────────────────────
+# When an issue has no parent, Clancy pushes the feature branch and creates a
+# pull request instead of squash-merging locally. Requires a git host token.
+# GITHUB_TOKEN=ghp_your-token              # if your git host is GitHub
+# GITLAB_TOKEN=glpat-your-token            # if your git host is GitLab
+# BITBUCKET_USER=your-username             # if your git host is Bitbucket
+# BITBUCKET_TOKEN=your-app-password        # if your git host is Bitbucket
+# CLANCY_GIT_PLATFORM=gitlab               # override auto-detection (github/gitlab/bitbucket)
+# CLANCY_GIT_API_URL=https://gitlab.example.com  # self-hosted git instance API base
 
 # ─── Optional: Notifications ──────────────────────────────────────────────────
 # Webhook URL for Slack or Teams notifications on ticket completion

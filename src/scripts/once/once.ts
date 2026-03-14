@@ -13,7 +13,6 @@ import { fileURLToPath } from 'node:url';
 
 import {
   closeIssue,
-  createPullRequest as createGitHubPr,
   fetchIssue as fetchGitHubIssue,
   isValidRepo,
   pingGitHub,
@@ -55,9 +54,10 @@ import { buildPrompt } from '~/scripts/shared/prompt/prompt.js';
 import {
   createPullRequest as createBitbucketPr,
   createServerPullRequest as createBitbucketServerPr,
-} from '~/scripts/shared/remote/bitbucket.js';
-import { createMergeRequest as createGitLabMr } from '~/scripts/shared/remote/gitlab.js';
-import { buildPrBody } from '~/scripts/shared/remote/pr-body.js';
+} from '~/scripts/shared/pull-request/bitbucket.js';
+import { createPullRequest as createGitHubPr } from '~/scripts/shared/pull-request/github.js';
+import { createMergeRequest as createGitLabMr } from '~/scripts/shared/pull-request/gitlab.js';
+import { buildPrBody } from '~/scripts/shared/pull-request/pr-body.js';
 import {
   buildApiBaseUrl,
   detectRemote,
