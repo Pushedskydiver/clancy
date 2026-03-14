@@ -14,7 +14,7 @@ export type ProgressEntry = {
   timestamp: string;
   key: string;
   summary: string;
-  status: string;
+  status: ProgressStatus;
 };
 
 /**
@@ -96,7 +96,7 @@ function parseProgressFile(projectRoot: string): ProgressEntry[] {
       timestamp: parts[0]!,
       key: parts[1]!,
       summary: parts.slice(2, -1).join(' | '),
-      status: parts[parts.length - 1]!,
+      status: parts[parts.length - 1]! as ProgressStatus,
     });
   }
 

@@ -818,10 +818,8 @@ export async function run(argv: string[]): Promise<void> {
 
     // 5a. Max rework guard
     if (isRework) {
-      const maxRework = parseInt(
-        sharedEnv(config).CLANCY_MAX_REWORK ?? '3',
-        10,
-      );
+      const parsed = parseInt(sharedEnv(config).CLANCY_MAX_REWORK ?? '3', 10);
+      const maxRework = Number.isFinite(parsed) && parsed > 0 ? parsed : 3;
       const cycles = countReworkCycles(process.cwd(), ticket.key);
 
       if (cycles >= maxRework) {
@@ -914,13 +912,13 @@ export async function run(argv: string[]): Promise<void> {
 
     if (isRework) {
       // PR-flow rework: try to fetch the existing feature branch from remote
+      ensureBranch(targetBranch, baseBranch);
       const fetched = fetchRemoteBranch(ticketBranch);
 
       if (fetched) {
         checkout(ticketBranch);
       } else {
         // Branch missing from remote — create fresh branch from target
-        ensureBranch(targetBranch, baseBranch);
         checkout(targetBranch);
         checkout(ticketBranch, true);
       }

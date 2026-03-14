@@ -13,9 +13,9 @@ import {
 import { fetchComments as fetchLinearComments } from '~/scripts/board/linear/linear.js';
 
 /** Result of fetching reviewer feedback from the board. */
-export interface FeedbackResult {
+export type FeedbackResult = {
   comments: string[];
-}
+};
 
 /**
  * Fetch reviewer feedback comments from the board.
