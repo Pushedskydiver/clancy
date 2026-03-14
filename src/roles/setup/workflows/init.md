@@ -244,27 +244,35 @@ If enter is pressed with no value: skip — omit the label clause entirely (Clan
 Output:
 
 ```
-When Clancy picks up a ticket, it can move it to a status on your board (e.g. "In Progress").
-When it finishes implementing, it can move it to another status (e.g. "Done", "Ready for Review", "Peer Review").
+When Clancy picks up a ticket, it can move it to a status on your board.
+When it finishes implementing, it can move it to another status.
 
 What status should Clancy move a ticket to when it starts working on it?
-Common values: In Progress, In Dev, Doing
-(leave blank to skip — the ticket will stay in its current column)
+
+[1] In Progress (most common)
+[2] Enter a different value
+[3] Skip — don't transition on pickup (ticket stays in its current column)
 ```
 
-If a value is entered: store as `CLANCY_STATUS_IN_PROGRESS` in `.clancy/.env`. Wrap in double quotes.
-If enter is pressed with no value: skip — Clancy won't transition tickets on pickup. The ticket stays in its current column and the user manages it manually.
+If [1]: store `CLANCY_STATUS_IN_PROGRESS="In Progress"` in `.clancy/.env`.
+If [2]: prompt for the value, store as `CLANCY_STATUS_IN_PROGRESS` in `.clancy/.env`. Wrap in double quotes.
+If [3] or the user says "skip"/"none": skip — no `CLANCY_STATUS_IN_PROGRESS` line written.
 
 Then ask:
 
 ```
-What status should Clancy move a ticket to when implementation is complete?
-Common values: Done, Ready for Review, Peer Review, Ready for QA
-(leave blank to skip — the ticket will stay in its current column)
+What status should Clancy move a ticket to after implementation is complete?
+
+[1] Done
+[2] Ready for Review
+[3] Enter a different value
+[4] Skip — don't transition on completion (ticket stays in its current column)
 ```
 
-If a value is entered: store as `CLANCY_STATUS_DONE` in `.clancy/.env`. Wrap in double quotes.
-If enter is pressed with no value: skip — Clancy won't transition tickets on completion. The ticket stays in its current column and the user manages it manually.
+If [1]: store `CLANCY_STATUS_DONE="Done"` in `.clancy/.env`.
+If [2]: store `CLANCY_STATUS_DONE="Ready for Review"` in `.clancy/.env`.
+If [3]: prompt for the value, store as `CLANCY_STATUS_DONE` in `.clancy/.env`. Wrap in double quotes.
+If [4] or the user says "skip"/"none": skip — no `CLANCY_STATUS_DONE` line written.
 
 You can always configure these later via `/clancy:settings`.
 
