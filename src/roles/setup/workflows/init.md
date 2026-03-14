@@ -239,6 +239,55 @@ If enter is pressed with no value: skip — omit the label clause entirely (Clan
 
 ---
 
+### Q3d (Jira and Linear only): Status transitions
+
+Output:
+
+```
+When Clancy picks up a ticket, it can move it to "In Progress" on your board.
+When it finishes, it can move it to "Done".
+
+What's the name of your in-progress status? (leave blank to skip)
+```
+
+If a value is entered: store as `CLANCY_STATUS_IN_PROGRESS` in `.clancy/.env`. Wrap in double quotes.
+If enter is pressed with no value: skip — Clancy won't transition tickets on pickup.
+
+Then ask:
+
+```
+What's the name of your done status? (leave blank to skip)
+```
+
+If a value is entered: store as `CLANCY_STATUS_DONE` in `.clancy/.env`. Wrap in double quotes.
+If enter is pressed with no value: skip — Clancy won't transition tickets on completion.
+
+**GitHub:** Skip this step entirely — GitHub Issues use `open`/`closed`, not status columns. Clancy closes issues automatically on completion.
+
+---
+
+### Q3e (Jira only, if Planner role enabled): Planning queue status
+
+Only ask this if `CLANCY_ROLES` includes `planner` (set in Step 4c in a previous init, or if the user is re-running init).
+
+If the planner role is not enabled, skip this step entirely.
+
+Output:
+
+```
+The Planner role picks tickets from a separate queue for planning.
+
+Which Jira status should Clancy pick planning tickets from?
+Common values: Backlog, To Refine, Draft
+
+[1] Backlog (default)
+[2] Enter a different value
+```
+
+Store as `CLANCY_PLAN_STATUS` in `.clancy/.env`. Always wrap in double quotes.
+
+---
+
 ### Q4: Base branch (auto-detect)
 
 Silently detect the base branch — do not ask unless detection fails:
