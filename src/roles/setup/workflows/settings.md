@@ -410,7 +410,7 @@ Clancy pushes feature branches and creates PRs on your git host.
 ```
 
 If [1]: prompt `Paste your GitHub personal access token:` then write `GITHUB_TOKEN=<value>` to `.clancy/.env`. Remove any existing `GITLAB_TOKEN`, `BITBUCKET_USER`, `BITBUCKET_TOKEN`.
-If [2]: prompt `Paste your GitLab personal access token:` then write `GITLAB_TOKEN=<value>` to `.clancy/.env`. Optionally ask for a self-hosted instance URL and write `CLANCY_GIT_API_URL` and `CLANCY_GIT_PLATFORM="gitlab"`. Remove any existing `GITHUB_TOKEN` (only if board is not GitHub), `BITBUCKET_USER`, `BITBUCKET_TOKEN`.
+If [2]: prompt `Paste your GitLab personal access token:` then write `GITLAB_TOKEN=<value>` to `.clancy/.env`. Optionally ask for a self-hosted API base URL (e.g. `https://gitlab.example.com/api/v4`) and write `CLANCY_GIT_API_URL` and `CLANCY_GIT_PLATFORM="gitlab"`. If the user enters just a hostname or instance URL without `/api/v4`, append `/api/v4` automatically. Remove any existing `GITHUB_TOKEN` (only if board is not GitHub), `BITBUCKET_USER`, `BITBUCKET_TOKEN`.
 If [3]: prompt for `Bitbucket username` and `Bitbucket app password`, write `BITBUCKET_USER` and `BITBUCKET_TOKEN` to `.clancy/.env`. Remove any existing `GITHUB_TOKEN` (only if board is not GitHub), `GITLAB_TOKEN`.
 If [4]: remove all git host token vars (`GITLAB_TOKEN`, `BITBUCKET_USER`, `BITBUCKET_TOKEN`, `CLANCY_GIT_PLATFORM`, `CLANCY_GIT_API_URL`). Keep `GITHUB_TOKEN` only if board is GitHub Issues.
 

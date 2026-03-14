@@ -53,6 +53,7 @@ export async function createPullRequest(
         number: data.id ?? 0,
       };
     },
+    (status, text) => status === 409 && text.includes('already exists'),
   );
 }
 
@@ -110,5 +111,6 @@ export async function createServerPullRequest(
         number: data.id ?? 0,
       };
     },
+    (status, text) => status === 409 && text.includes('already exists'),
   );
 }

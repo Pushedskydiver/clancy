@@ -394,7 +394,7 @@ MAX_ITERATIONS=5
 # BITBUCKET_USER=your-username             # if your git host is Bitbucket
 # BITBUCKET_TOKEN=your-app-password        # if your git host is Bitbucket
 # CLANCY_GIT_PLATFORM=gitlab               # override auto-detection (github/gitlab/bitbucket)
-# CLANCY_GIT_API_URL=https://gitlab.example.com  # self-hosted git instance API base
+# CLANCY_GIT_API_URL=https://gitlab.example.com/api/v4  # self-hosted git API base URL
 
 # ─── Optional: Planner queue ─────────────────────────────────────────────────
 # Status for backlog tickets that /clancy:plan fetches from (default: Backlog)
@@ -521,7 +521,7 @@ MAX_ITERATIONS=20
 # BITBUCKET_USER=your-username             # if your git host is Bitbucket
 # BITBUCKET_TOKEN=your-app-password        # if your git host is Bitbucket
 # CLANCY_GIT_PLATFORM=gitlab               # override auto-detection (github/gitlab/bitbucket)
-# CLANCY_GIT_API_URL=https://gitlab.example.com  # self-hosted git instance API base
+# CLANCY_GIT_API_URL=https://gitlab.example.com/api/v4  # self-hosted git API base URL
 
 # ─── Optional: Notifications ──────────────────────────────────────────────────
 # Webhook URL for Slack or Teams notifications on ticket completion

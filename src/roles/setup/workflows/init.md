@@ -241,9 +241,10 @@ On failure: offer re-enter or skip (same pattern as Q2b).
 Store as `GITLAB_TOKEN` in `.clancy/.env`.
 
 If the user is using a self-hosted GitLab instance, also ask:
-`What's your GitLab instance URL? (press Enter for gitlab.com)`
+`What's your GitLab API base URL? (e.g. https://gitlab.example.com/api/v4 — press Enter for gitlab.com)`
 
 If a URL is entered, store as `CLANCY_GIT_API_URL` in `.clancy/.env` and `CLANCY_GIT_PLATFORM="gitlab"`.
+If the user enters just a hostname or instance URL without `/api/v4`, append `/api/v4` automatically.
 
 **If [3] Bitbucket:**
 

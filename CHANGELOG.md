@@ -13,7 +13,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 - **PR-based flow when ticket has no epic/parent** — when a ticket has no parent (epic, milestone, or Linear parent), Clancy now pushes the feature branch and creates a pull request instead of squash-merging locally. Supports GitHub, GitLab (including self-hosted), and Bitbucket (Cloud and Server/DC). Falls back gracefully: push failure → leaves branch, PR failure → logs manual URL, no token → logs pushed status, no remote → leaves branch locally.
 - **Remote detection** (`src/scripts/shared/remote/remote.ts`) — `parseRemote()` and `detectRemote()` parse git remote URLs and detect the git platform (GitHub, GitLab, Bitbucket, Azure DevOps, GHE, self-hosted). `buildApiBaseUrl()` constructs the correct API base for each platform.
-- **PR body builder** (`src/scripts/shared/remote/pr-body.ts`) — `buildPrBody()` generates a PR description with a link back to the board ticket.
+- **PR body builder** (`src/scripts/shared/pull-request/pr-body/pr-body.ts`) — `buildPrBody()` generates a PR description with a link back to the board ticket.
 - **New env vars** — `CLANCY_STATUS_REVIEW` (transition status when creating a PR, falls back to `CLANCY_STATUS_DONE`), `GITHUB_TOKEN` (shared, for Jira/Linear users on GitHub), `GITLAB_TOKEN`, `BITBUCKET_USER`, `BITBUCKET_TOKEN`, `CLANCY_GIT_PLATFORM` (override auto-detection), `CLANCY_GIT_API_URL` (self-hosted API base).
 
 ### ♻️ Refactor

@@ -37,8 +37,12 @@ import {
 } from '~/scripts/shared/branch/branch.js';
 import { invokeClaudeSession } from '~/scripts/shared/claude-cli/claude-cli.js';
 import { detectBoard } from '~/scripts/shared/env-schema/env-schema.js';
-import type { BoardConfig } from '~/scripts/shared/env-schema/env-schema.js';
+import type {
+  BoardConfig,
+  SharedEnv,
+} from '~/scripts/shared/env-schema/env-schema.js';
 import { checkFeasibility } from '~/scripts/shared/feasibility/feasibility.js';
+import { formatDuration } from '~/scripts/shared/format/format.js';
 import {
   checkout,
   currentBranch,
@@ -67,12 +71,9 @@ import { bold, dim, green, red, yellow } from '~/utils/ansi/ansi.js';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-function formatDuration(ms: number): string {
-  const secs = Math.floor(ms / 1000);
-  if (secs < 60) return `${secs}s`;
-  const mins = Math.floor(secs / 60);
-  const remSecs = secs % 60;
-  return remSecs > 0 ? `${mins}m ${remSecs}s` : `${mins}m`;
+/** Type-safe access to shared env vars across all board configs. */
+function sharedEnv(config: BoardConfig): SharedEnv {
+  return config.env;
 }
 
 // ─── Types ───────────────────────────────────────────────────────────────────
@@ -272,7 +273,7 @@ function resolveGitToken(
   config: BoardConfig,
   remote: RemoteInfo,
 ): { token: string; username?: string } | undefined {
-  const env = config.env as Record<string, string | undefined>;
+  const env = sharedEnv(config);
 
   switch (remote.host) {
     case 'github':
@@ -306,10 +307,7 @@ async function attemptPrCreation(
   const creds = resolveGitToken(config, remote);
   if (!creds) return undefined;
 
-  const apiBase = buildApiBaseUrl(
-    remote,
-    (config.env as Record<string, string | undefined>).CLANCY_GIT_API_URL,
-  );
+  const apiBase = buildApiBaseUrl(remote, sharedEnv(config).CLANCY_GIT_API_URL);
   if (!apiBase) return undefined;
 
   switch (remote.host) {
@@ -418,7 +416,11 @@ async function deliverViaEpicMerge(
   if (config.provider === 'github') {
     const issueNumber = parseInt(ticket.key.replace('#', ''), 10);
 
-    if (!Number.isNaN(issueNumber)) {
+    if (Number.isNaN(issueNumber)) {
+      console.log(
+        `⚠ Could not parse issue number from ${ticket.key}. Close it manually on GitHub.`,
+      );
+    } else {
       const closed = await closeIssue(
         config.env.GITHUB_TOKEN,
         config.env.GITHUB_REPO,
@@ -470,8 +472,7 @@ async function deliverViaPullRequest(
   console.log(green(`  ✓ Pushed ${ticketBranch}`));
 
   // Attempt PR/MR creation
-  const platformOverride = (config.env as Record<string, string | undefined>)
-    .CLANCY_GIT_PLATFORM;
+  const platformOverride = sharedEnv(config).CLANCY_GIT_PLATFORM;
   const remote = detectRemote(platformOverride);
   const prTitle = `feat(${ticket.key}): ${ticket.title}`;
   const prBody = buildPrBody(config, {

@@ -68,7 +68,7 @@ describe('linear', () => {
       const result = await pingLinear('lin_key');
       expect(result).toEqual({
         ok: false,
-        error: '✗ Linear auth failed — check LINEAR_API_KEY',
+        error: '✗ Could not reach Linear — check network',
       });
     });
   });

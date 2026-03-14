@@ -202,6 +202,16 @@ function overrideRemotePlatform(rawUrl: string, platform: string): RemoteInfo {
       return { host: 'unknown', url: rawUrl };
     }
     case 'bitbucket-server': {
+      // Strip leading scm/ prefix used in Bitbucket Server URLs
+      const scmMatch = path.match(/^scm\/([^/]+)\/(.+)$/);
+      if (scmMatch) {
+        return {
+          host: 'bitbucket-server',
+          projectKey: scmMatch[1],
+          repoSlug: scmMatch[2],
+          hostname,
+        };
+      }
       const parts = path.split('/');
       if (parts.length >= 2) {
         return {
