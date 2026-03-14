@@ -349,17 +349,6 @@ CLANCY_JQL_STATUS="To Do"
 # Create the label in Jira first, then add it to any ticket you want Clancy to pick up.
 # CLANCY_LABEL="clancy"
 
-# ─── Status Transitions ──────────────────────────────────────────────────────
-# Set to the exact status name shown in your Jira board.
-# "Done" can be any post-implementation column (e.g. "Ready for Review", "Peer Review").
-# Leave commented out to skip transitions — tickets stay in their current column.
-# CLANCY_STATUS_IN_PROGRESS="In Progress"
-# CLANCY_STATUS_DONE="Done"
-
-# ─── Planner Queue (optional — requires CLANCY_ROLES to include "planner") ───
-# Status for backlog tickets that /clancy:plan fetches from (default: Backlog)
-# CLANCY_PLAN_STATUS="Backlog"
-
 # ─── Git ──────────────────────────────────────────────────────────────────────
 # Base integration branch. Clancy branches from here when a ticket has no parent epic.
 # When a ticket has a parent epic, Clancy auto-creates epic/{key} from this branch.
@@ -390,8 +379,14 @@ MAX_ITERATIONS=5
 # ─── Optional: Status transitions ────────────────────────────────────────────
 # Move tickets automatically when Clancy picks up or completes them.
 # Set to the exact status name shown in your Jira board column header.
+# "Done" can be any post-implementation column (e.g. "Ready for Review", "Peer Review").
 # CLANCY_STATUS_IN_PROGRESS="In Progress"
 # CLANCY_STATUS_DONE="Done"
+
+# ─── Optional: Planner queue ─────────────────────────────────────────────────
+# Status for backlog tickets that /clancy:plan fetches from (default: Backlog)
+# Only used if Planner role is enabled via CLANCY_ROLES
+# CLANCY_PLAN_STATUS="Backlog"
 
 # ─── Optional: Notifications ──────────────────────────────────────────────────
 # Webhook URL for Slack or Teams notifications on ticket completion
@@ -409,8 +404,8 @@ MAX_ITERATIONS=5
 GITHUB_TOKEN=ghp_your-personal-access-token
 GITHUB_REPO=owner/repo-name
 
-# Optional: only pick up issues with this label.
-# Useful for mixed backlogs where not every issue is suitable for autonomous implementation.
+# Recommended: only pick up issues with this label.
+# Without this, Clancy picks up all open issues assigned to you.
 # Create the label in GitHub first, then add it to any issue you want Clancy to pick up.
 # CLANCY_LABEL=clancy
 
@@ -466,13 +461,6 @@ LINEAR_TEAM_ID=your-team-uuid
 # Create the label in Linear first, then add it to any issue you want Clancy to pick up.
 # CLANCY_LABEL=clancy
 
-# ─── Status Transitions ──────────────────────────────────────────────────────
-# Set to the exact workflow state name shown in your Linear team settings.
-# "Done" can be any post-implementation state (e.g. "Ready for Review", "In Review").
-# Leave commented out to skip transitions — issues stay in their current state.
-# CLANCY_STATUS_IN_PROGRESS="In Progress"
-# CLANCY_STATUS_DONE="Done"
-
 # ─── Git ──────────────────────────────────────────────────────────────────────
 # Base integration branch. Clancy branches from here when an issue has no parent.
 # When an issue has a parent, Clancy auto-creates epic/{key} from this branch.
@@ -502,7 +490,8 @@ MAX_ITERATIONS=20
 
 # ─── Optional: Status transitions ────────────────────────────────────────────
 # Move issues automatically when Clancy picks up or completes them.
-# Set to the exact workflow state name shown in your Linear board column header.
+# Set to the exact workflow state name shown in your Linear team settings.
+# "Done" can be any post-implementation state (e.g. "Ready for Review", "In Review").
 # CLANCY_STATUS_IN_PROGRESS="In Progress"
 # CLANCY_STATUS_DONE="Done"
 

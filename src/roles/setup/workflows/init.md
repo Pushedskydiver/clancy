@@ -280,28 +280,6 @@ You can always configure these later via `/clancy:settings`.
 
 ---
 
-### Q3e (Jira only, if Planner role enabled): Planning queue status
-
-Only ask this if `CLANCY_ROLES` includes `planner` (set in Step 4c in a previous init, or if the user is re-running init).
-
-If the planner role is not enabled, skip this step entirely.
-
-Output:
-
-```
-The Planner role picks tickets from a separate queue for planning.
-
-Which Jira status should Clancy pick planning tickets from?
-Common values: Backlog, To Refine, Draft
-
-[1] Backlog (default)
-[2] Enter a different value
-```
-
-Store as `CLANCY_PLAN_STATUS` in `.clancy/.env`. Always wrap in double quotes.
-
----
-
 ### Q4: Base branch (auto-detect)
 
 Silently detect the base branch — do not ask unless detection fails:
@@ -382,6 +360,28 @@ If skipped (Enter): no `CLANCY_ROLES` line is written — only core roles are in
 The installer reads `CLANCY_ROLES` from `.clancy/.env` to determine which optional role directories to copy. Core roles (implementer, reviewer, setup) are always copied regardless of this setting. After changing `CLANCY_ROLES`, re-run `npx chief-clancy@latest --local` (or `--global`) to apply.
 
 Note: as more roles are added in future versions, they appear as additional numbered options here. The flow scales naturally.
+
+---
+
+## Step 4d (Jira only, if Planner role selected): Planning queue status
+
+Only ask this if the user selected Planner in Step 4c above (or if re-running init and `CLANCY_ROLES` already includes `planner`).
+
+If the planner role is not enabled, skip this step entirely.
+
+Output:
+
+```
+The Planner role picks tickets from a separate queue for planning.
+
+Which Jira status should Clancy pick planning tickets from?
+
+[1] Backlog (default)
+[2] Enter a different value
+```
+
+If [1]: store `CLANCY_PLAN_STATUS="Backlog"` in `.clancy/.env`.
+If [2]: prompt for the value, store as `CLANCY_PLAN_STATUS` in `.clancy/.env`. Wrap in double quotes.
 
 ---
 
