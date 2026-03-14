@@ -193,6 +193,13 @@ npx chief-clancy@latest --local   # or --global
 
 You can also toggle roles from within Claude Code using `/clancy:settings`.
 
+Each role has detailed documentation:
+
+- [Implementer](docs/roles/IMPLEMENTER.md) — picks up tickets, implements, commits, merges (AFK loop support)
+- [Reviewer](docs/roles/REVIEWER.md) — scores ticket readiness, tracks progress
+- [Setup & Maintenance](docs/roles/SETUP.md) — init wizard, settings, diagnostics, codebase mapping
+- [Planner](docs/roles/PLANNER.md) — refines backlog tickets into structured implementation plans
+
 ---
 
 ## What gets created
@@ -221,75 +228,11 @@ Clancy also merges a section into your `CLAUDE.md` (or creates one) that tells C
 
 ---
 
-## Optional enhancements
+## Configuration
 
-Set during `/clancy:init` advanced setup, or by editing `.clancy/.env` directly. Use `/clancy:settings` → "Save as defaults" to save non-credential settings to `~/.clancy/defaults.json` — new projects created with `/clancy:init` will inherit them automatically.
+Clancy supports optional enhancements — Figma design specs, Playwright visual checks, status transitions, and Slack/Teams notifications. All are configured via `.clancy/.env` or `/clancy:settings`.
 
-### Figma MCP
-
-```
-FIGMA_API_KEY=your-key
-```
-
-When a ticket description contains a Figma URL, Clancy fetches design specs automatically:
-
-1. Figma MCP: `get_metadata` → `get_design_context` → `get_screenshot` (3 calls)
-2. Figma REST API image export (fallback)
-3. Ticket image attachment (fallback)
-
-### Playwright visual checks
-
-```
-PLAYWRIGHT_ENABLED=true
-PLAYWRIGHT_DEV_COMMAND="yarn dev"
-PLAYWRIGHT_DEV_PORT=5173
-PLAYWRIGHT_STORYBOOK_COMMAND="yarn storybook"  # if applicable
-PLAYWRIGHT_STORYBOOK_PORT=6006                 # if applicable
-PLAYWRIGHT_STARTUP_WAIT=15
-```
-
-After implementing a UI ticket, Clancy starts the dev server or Storybook, screenshots, assesses visually, checks the console, and fixes anything wrong before committing.
-
-### Status transitions
-
-```
-CLANCY_STATUS_IN_PROGRESS="In Progress"
-CLANCY_STATUS_DONE="Done"
-```
-
-Clancy automatically moves tickets through your board when it picks up and completes them. Set these to the exact column name shown in your Jira or Linear board. Best-effort — a failed transition never stops the run. Configurable via `/clancy:settings`.
-
-### Notifications
-
-```
-CLANCY_NOTIFY_WEBHOOK=https://hooks.slack.com/services/your/webhook/url
-```
-
-Posts to Slack or Teams when a ticket completes or Clancy hits an error. URL is auto-detected.
-
----
-
-## How the loop works
-
-```
-clancy-afk.js
-  └─ while i < MAX_ITERATIONS:
-       node clancy-once.js
-         1. Preflight checks (credentials, git state, board reachability)
-         2. Fetch next ticket from board (maxResults=1)
-         3. git checkout $EPIC_BRANCH
-         4. git checkout -b feature/{ticket-key}
-         5. Read .clancy/docs/* (especially GIT.md)
-         6. echo "$PROMPT" | claude --dangerously-skip-permissions
-         7. git checkout $EPIC_BRANCH
-         8. git merge --squash feature/{ticket-key}
-         9. git commit -m "feat(TICKET): summary"
-        10. git branch -D feature/{ticket-key}
-        11. Append to .clancy/progress.txt
-       if "No tickets found": break
-```
-
-Clancy reads `GIT.md` before every run and follows whatever conventions are documented there. The defaults above apply on greenfield projects or when GIT.md is silent.
+See [Configuration guide](docs/guides/CONFIGURATION.md) for full details and all environment variables.
 
 ---
 
@@ -311,80 +254,9 @@ Clancy is what happens when you take that idea seriously for team development. S
 
 ## Security
 
-### Permissions model
+Clancy runs Claude with `--dangerously-skip-permissions` for unattended operation. It includes a credential guard hook, recommended permission deny lists, and token scope guidance.
 
-Clancy runs Claude with `--dangerously-skip-permissions`, which suppresses all permission prompts so it can work unattended. This means Claude has full read/write access to your file system and can execute shell commands without asking.
-
-**Only run Clancy on codebases you own and trust.** Review the scripts in `.clancy/` before your first run if you want to see exactly what executes.
-
-**Alternative — granular permissions:** if you run Claude Code without `--dangerously-skip-permissions` by default, you can pre-approve only the commands Clancy needs. Add this to `.claude/settings.json` in your project (or `~/.claude/settings.json` globally):
-
-```json
-{
-  "permissions": {
-    "allow": [
-      "Bash(git:*)",
-      "Bash(bash:*)",
-      "Bash(node:*)",
-      "Bash(npm:*)",
-      "Bash(mkdir:*)",
-      "Bash(cat:*)",
-      "Bash(cp:*)",
-      "Bash(echo:*)",
-      "Bash(ls:*)",
-      "Bash(grep:*)",
-      "Bash(wc:*)",
-      "Bash(sort:*)",
-      "Bash(tr:*)",
-      "Bash(head:*)",
-      "Bash(tail:*)",
-      "Bash(lsof:*)",
-      "Bash(command:*)"
-    ]
-  }
-}
-```
-
-### Protect your credentials from Claude
-
-Your board tokens and API keys live in `.clancy/.env`. Although Claude doesn't need to read this file during a run (the JS shim loads it before invoking Claude), adding it to Claude Code's deny list is good defence-in-depth. Add it to `.claude/settings.json` in your project, or `~/.claude/settings.json` globally:
-
-```json
-{
-  "permissions": {
-    "deny": [
-      "Read(.clancy/.env)",
-      "Read(.env)",
-      "Read(.env.*)",
-      "Read(**/*.pem)",
-      "Read(**/*.key)"
-    ]
-  }
-}
-```
-
-This prevents Claude from reading these files regardless of what commands run. Clancy automatically adds `.clancy/.env` to `.gitignore` during init, but the deny list is an additional layer.
-
-### Credential guard
-
-Clancy installs a `PreToolUse` hook (`clancy-credential-guard.js`) that scans every Write, Edit, and MultiEdit operation for credential patterns — API keys, tokens, passwords, private keys, and connection strings. If a match is found, the operation is blocked with a message telling Claude to move the credential to `.clancy/.env` instead. Files that are expected to contain credentials (`.clancy/.env`, `.env.example`, etc.) are exempt.
-
-This is best-effort — it won't catch every possible credential format, but it prevents the most common accidental leaks.
-
-### Token scopes
-
-Use the minimum permissions each integration requires:
-
-| Integration | Recommended scope |
-|---|---|
-| GitHub PAT | `repo` — read/write issues and contents for your repo only |
-| Jira API token | Standard user — no admin rights needed |
-| Linear API key | Personal API key — read/write to your assigned issues |
-| Figma API key | Read-only access is sufficient |
-
-### Webhook URLs
-
-If you configure Slack or Teams notifications, treat the webhook URL as a secret — anyone who has it can post to your channel. Keep `.clancy/.env` gitignored (Clancy does this automatically during init) and never share the URL.
+See [Security guide](docs/guides/SECURITY.md) for full details — permissions model, credential protection, token scopes, and webhook security.
 
 ---
 
@@ -392,70 +264,7 @@ If you configure Slack or Teams notifications, treat the webhook URL as a secret
 
 **Start here:** run `/clancy:doctor` — it tests every integration and tells you exactly what's broken and how to fix it.
 
----
-
-**Commands not found after install?**
-
-Restart Claude Code to reload commands, then verify the files exist:
-
-```bash
-ls ~/.claude/commands/clancy/    # global install
-ls .claude/commands/clancy/      # local install
-```
-
-If missing, re-run `npx chief-clancy`.
-
----
-
-**Board connection fails?**
-
-Run `/clancy:doctor` to test your credentials. If it reports a failure, open `.clancy/.env` and check your tokens — they're the most common cause. You can also run `/clancy:settings` → Switch board to re-enter credentials without re-running full init.
-
----
-
-**No tickets showing up?**
-
-Run `/clancy:status` to see what Clancy would pick up. If the queue is empty:
-
-- Check that tickets are assigned to you on the board
-- For Jira: verify the status filter in `/clancy:settings` matches your board's status name exactly (e.g. `To Do` vs `TODO`)
-- For Linear: Clancy filters by `state.type: unstarted` — ensure your backlog state maps to this type
-
----
-
-**`.clancy/clancy-once.js` not found?**
-
-Re-run `/clancy:init` — it will detect the existing setup and offer to re-scaffold without asking for credentials again.
-
----
-
-**Playwright port already in use?**
-
-```bash
-lsof -ti:5173 | xargs kill -9   # replace 5173 with your PLAYWRIGHT_DEV_PORT
-```
-
----
-
-**Updating Clancy?**
-
-```bash
-/clancy:update
-```
-
-Or directly: `npx chief-clancy@latest`
-
-The update workflow shows what's changed (changelog diff) and asks for confirmation before overwriting. If you've customised any command or workflow files, they're automatically backed up to `.claude/clancy/local-patches/` before the update — check there to reapply your changes afterwards.
-
----
-
-**Uninstalling?**
-
-```
-/clancy:uninstall
-```
-
-Removes slash commands from your chosen location. Cleans up the `<!-- clancy:start -->` / `<!-- clancy:end -->` block from `CLAUDE.md` (or deletes it entirely if Clancy created it) and removes the `.clancy/.env` entry from `.gitignore`. Optionally removes `.clancy/` (credentials and docs).
+See [Troubleshooting guide](docs/guides/TROUBLESHOOTING.md) for common issues and solutions.
 
 ---
 
