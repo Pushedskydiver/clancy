@@ -235,8 +235,9 @@ async function fetchReworkFromPrReview(
     // Convert progress timestamp (YYYY-MM-DD HH:MM) to ISO 8601 for API filtering.
     // Only comments created AFTER this timestamp should trigger rework,
     // preventing stale inline comments from causing infinite rework loops.
+    // Parse local timestamp (YYYY-MM-DD HH:MM) and convert to ISO 8601
     const since = entry.timestamp
-      ? `${entry.timestamp.replace(' ', 'T')}:00Z`
+      ? new Date(entry.timestamp.replace(' ', 'T')).toISOString()
       : undefined;
 
     let reviewState:
