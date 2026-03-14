@@ -62,13 +62,13 @@ Posts to Slack or Teams when a ticket completes or Clancy hits an error. URL is 
 | GitHub | Label: `needs-refinement` | `CLANCY_PLAN_LABEL` |
 | Linear | `state.type: "backlog"` | `CLANCY_PLAN_STATE_TYPE` |
 
-### Shared filters (apply to both queues)
+### Additional filters
 
-| Filter | Env var | Notes |
-| --- | --- | --- |
-| Sprint filter (Jira) | `CLANCY_JQL_SPRINT` | Adds `AND sprint in openSprints()` |
-| Label filter | `CLANCY_LABEL` | Optional label to narrow the queue |
-| Assignment | — | Always `assignee = currentUser()` |
+| Filter | Env var | Applies to | Notes |
+| --- | --- | --- | --- |
+| Sprint filter | `CLANCY_JQL_SPRINT` | Jira (both queues) | Adds `AND sprint in openSprints()` |
+| Label filter | `CLANCY_LABEL` | Jira (both queues), GitHub (implementation only) | GitHub planning uses `CLANCY_PLAN_LABEL` instead |
+| Assignment | — | All boards (both queues) | Always `assignee = currentUser()` |
 
 ## All environment variables
 

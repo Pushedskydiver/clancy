@@ -42,7 +42,11 @@ The planner fetches from a **separate queue** to the implementer, targeting earl
 | GitHub | Label: `needs-refinement` | `CLANCY_PLAN_LABEL` |
 | Linear | `state.type: "backlog"` | `CLANCY_PLAN_STATE_TYPE` |
 
-Shared filters (`CLANCY_LABEL`, `CLANCY_JQL_SPRINT`, `assignee=currentUser()`) still apply on top of these.
+Additional filters vary by board:
+- **Jira:** `CLANCY_LABEL` and `CLANCY_JQL_SPRINT` apply on top of the planning queue filter
+- **GitHub:** Uses `CLANCY_PLAN_LABEL` only (not `CLANCY_LABEL`)
+- **Linear:** No additional label filter
+- **All boards:** `assignee = currentUser()` always applies
 
 ## The workflow
 
