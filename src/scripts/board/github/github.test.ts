@@ -76,5 +76,22 @@ describe('github', () => {
       const username = await resolveUsername('ghp_bad');
       expect(username).toBe('@me');
     });
+
+    it('caches username and only calls fetch once', async () => {
+      const mockFetch = vi.fn(() =>
+        Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ login: 'cached-user' }),
+        }),
+      );
+      vi.stubGlobal('fetch', mockFetch);
+
+      const first = await resolveUsername('ghp_cache');
+      const second = await resolveUsername('ghp_cache');
+
+      expect(first).toBe('cached-user');
+      expect(second).toBe('cached-user');
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
   });
 });

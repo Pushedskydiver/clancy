@@ -7,10 +7,17 @@
  * Note: GitHub Issues endpoint returns both issues AND pull requests.
  * This script filters out PRs explicitly.
  */
+import { z } from 'zod/mini';
+
 import { githubIssuesResponseSchema } from '~/schemas/github.js';
 import { githubHeaders, pingEndpoint } from '~/scripts/shared/http/http.js';
 import type { PingResult } from '~/scripts/shared/http/http.js';
 import type { Ticket } from '~/types/index.js';
+
+/** Schema for the `GET /user` response. */
+const githubUserSchema = z.object({
+  login: z.string(),
+});
 
 const SAFE_REPO_PATTERN = /^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/;
 const GITHUB_API = 'https://api.github.com';
@@ -76,16 +83,26 @@ export async function resolveUsername(token: string): Promise<string> {
       headers: githubHeaders(token),
     });
 
-    if (!response.ok) return '@me';
+    if (!response.ok) {
+      console.warn(
+        `⚠ GitHub /user returned HTTP ${response.status} — falling back to @me. Fine-grained PATs may need read:user permission.`,
+      );
+      return '@me';
+    }
 
-    const json = (await response.json()) as { login?: string };
+    const json: unknown = await response.json();
+    const parsed = githubUserSchema.safeParse(json);
 
-    if (json.login) {
-      cachedUsername = json.login;
+    if (parsed.success) {
+      cachedUsername = parsed.data.login;
       return cachedUsername;
     }
-  } catch {
-    // Fall back to @me — works with classic PATs
+
+    console.warn('⚠ Unexpected GitHub /user response — falling back to @me');
+  } catch (err) {
+    console.warn(
+      `⚠ GitHub /user request failed: ${err instanceof Error ? err.message : String(err)} — falling back to @me`,
+    );
   }
 
   return '@me';

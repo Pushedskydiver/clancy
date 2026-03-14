@@ -73,6 +73,12 @@ Note: include the `comment` field so we can check for existing plans and read fe
 
 ### GitHub Issues
 
+First resolve the authenticated username (don't use `@me` — it breaks with fine-grained PATs):
+```bash
+GITHUB_USERNAME=$(curl -s -H "Authorization: Bearer $GITHUB_TOKEN" https://api.github.com/user | jq -r '.login')
+```
+
+Then fetch issues:
 ```bash
 RESPONSE=$(curl -s \
   -H "Authorization: Bearer $GITHUB_TOKEN" \
