@@ -45,6 +45,7 @@ describe('github', () => {
 
     afterEach(() => {
       vi.restoreAllMocks();
+      vi.unstubAllGlobals();
     });
 
     it('resolves username from GET /user', async () => {
