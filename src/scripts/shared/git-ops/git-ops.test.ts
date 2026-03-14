@@ -1,7 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { describe, expect, it, vi } from 'vitest';
 
-import { branchExists, hasUncommittedChanges } from './git-ops.js';
+import { branchExists, hasUncommittedChanges, pushBranch } from './git-ops.js';
 
 vi.mock('node:child_process');
 
@@ -37,6 +37,27 @@ describe('git-ops', () => {
       });
 
       expect(branchExists('nonexistent')).toBe(false);
+    });
+  });
+
+  describe('pushBranch', () => {
+    it('returns true when push succeeds', () => {
+      mockExecFileSync.mockReturnValue(Buffer.from(''));
+
+      expect(pushBranch('feature/proj-123')).toBe(true);
+      expect(mockExecFileSync).toHaveBeenCalledWith(
+        'git',
+        ['push', '-u', 'origin', 'feature/proj-123'],
+        expect.objectContaining({ encoding: 'utf8' }),
+      );
+    });
+
+    it('returns false when push fails', () => {
+      mockExecFileSync.mockImplementation(() => {
+        throw new Error('permission denied');
+      });
+
+      expect(pushBranch('feature/proj-123')).toBe(false);
     });
   });
 });
