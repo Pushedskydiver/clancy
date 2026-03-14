@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   closeIssue,
+  createPullRequest as createGitHubPr,
   fetchIssue as fetchGitHubIssue,
   resolveUsername,
 } from '~/scripts/board/github/github.js';
@@ -13,6 +14,7 @@ import {
   checkout,
   deleteBranch,
   ensureBranch,
+  pushBranch,
   squashMerge,
 } from '~/scripts/shared/git-ops/git-ops.js';
 import { sendNotification } from '~/scripts/shared/notify/notify.js';
@@ -20,6 +22,7 @@ import { sendNotification } from '~/scripts/shared/notify/notify.js';
 
 import { runPreflight } from '~/scripts/shared/preflight/preflight.js';
 import { appendProgress } from '~/scripts/shared/progress/progress.js';
+import { detectRemote } from '~/scripts/shared/remote/remote.js';
 
 import { run } from './once.js';
 
@@ -45,6 +48,13 @@ vi.mock('~/scripts/board/jira/jira.js', () => ({
 
 vi.mock('~/scripts/board/github/github.js', () => ({
   closeIssue: vi.fn(() => Promise.resolve(true)),
+  createPullRequest: vi.fn(() =>
+    Promise.resolve({
+      ok: true,
+      url: 'https://github.com/o/r/pull/1',
+      number: 1,
+    }),
+  ),
   fetchIssue: vi.fn(),
   isValidRepo: vi.fn(() => true),
   pingGitHub: vi.fn(() => Promise.resolve({ ok: true })),
@@ -64,6 +74,7 @@ vi.mock('~/scripts/shared/git-ops/git-ops.js', () => ({
   currentBranch: vi.fn(() => 'main'),
   deleteBranch: vi.fn(),
   ensureBranch: vi.fn(),
+  pushBranch: vi.fn(() => true),
   squashMerge: vi.fn(() => true),
 }));
 
@@ -87,6 +98,35 @@ vi.mock('~/scripts/shared/prompt/prompt.js', () => ({
   buildPrompt: vi.fn(() => 'test prompt'),
 }));
 
+vi.mock('~/scripts/shared/remote/remote.js', () => ({
+  buildApiBaseUrl: vi.fn(() => 'https://api.github.com'),
+  detectRemote: vi.fn(() => ({
+    host: 'github',
+    owner: 'owner',
+    repo: 'repo',
+    hostname: 'github.com',
+  })),
+}));
+
+vi.mock('~/scripts/shared/remote/gitlab.js', () => ({
+  createMergeRequest: vi.fn(() =>
+    Promise.resolve({ ok: true, url: 'https://gitlab.com/mr/1', number: 1 }),
+  ),
+}));
+
+vi.mock('~/scripts/shared/remote/bitbucket.js', () => ({
+  createPullRequest: vi.fn(() =>
+    Promise.resolve({ ok: true, url: 'https://bitbucket.org/pr/1', number: 1 }),
+  ),
+  createServerPullRequest: vi.fn(() =>
+    Promise.resolve({ ok: true, url: 'https://bb.acme.com/pr/1', number: 1 }),
+  ),
+}));
+
+vi.mock('~/scripts/shared/remote/pr-body.js', () => ({
+  buildPrBody: vi.fn(() => 'PR body'),
+}));
+
 const mockPreflight = vi.mocked(runPreflight);
 const mockDetectBoard = vi.mocked(detectBoard);
 const mockFetchJira = vi.mocked(fetchJiraTicket);
@@ -101,6 +141,9 @@ const mockSendNotification = vi.mocked(sendNotification);
 const mockCloseIssue = vi.mocked(closeIssue);
 const mockResolveUsername = vi.mocked(resolveUsername);
 const mockCheckFeasibility = vi.mocked(checkFeasibility);
+const mockPushBranch = vi.mocked(pushBranch);
+const mockDetectRemote = vi.mocked(detectRemote);
+const mockCreateGitHubPr = vi.mocked(createGitHubPr);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -166,6 +209,20 @@ function setupGitHubHappyPath() {
 describe('run', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Restore default return values cleared by clearAllMocks
+    mockPushBranch.mockReturnValue(true);
+    mockSquashMerge.mockReturnValue(true);
+    mockDetectRemote.mockReturnValue({
+      host: 'github',
+      owner: 'owner',
+      repo: 'repo',
+      hostname: 'github.com',
+    });
+    mockCreateGitHubPr.mockResolvedValue({
+      ok: true,
+      url: 'https://github.com/o/r/pull/1',
+      number: 1,
+    });
   });
 
   it('stops when preflight fails', async () => {
@@ -311,8 +368,18 @@ describe('run', () => {
     expect(mockSendNotification).not.toHaveBeenCalled();
   });
 
-  it('falls back to baseBranch when no epic', async () => {
+  it('uses PR flow when ticket has no epic (push + create PR)', async () => {
     setupJiraHappyPath();
+    mockDetectBoard.mockReturnValue({
+      provider: 'jira',
+      env: {
+        JIRA_BASE_URL: 'https://example.atlassian.net',
+        JIRA_USER: 'user@test.com',
+        JIRA_API_TOKEN: 'token',
+        JIRA_PROJECT_KEY: 'PROJ',
+        GITHUB_TOKEN: 'ghp_test',
+      },
+    });
     mockFetchJira.mockResolvedValue({
       key: 'PROJ-456',
       title: 'Standalone task',
@@ -325,7 +392,86 @@ describe('run', () => {
     await run([]);
     log.mockRestore();
 
+    // Target branch is base branch (no epic)
     expect(mockEnsureBranch).toHaveBeenCalledWith('main', 'main');
+
+    // PR flow: push, no squash merge, no delete branch
+    expect(mockPushBranch).toHaveBeenCalledWith('feature/proj-456');
+    expect(mockSquashMerge).not.toHaveBeenCalled();
+    expect(mockDeleteBranch).not.toHaveBeenCalled();
+
+    // Progress logged as PR_CREATED
+    expect(mockAppendProgress).toHaveBeenCalledWith(
+      expect.any(String),
+      'PROJ-456',
+      'Standalone task',
+      'PR_CREATED',
+    );
+  });
+
+  it('uses epic flow when ticket has parent (squash merge)', async () => {
+    setupJiraHappyPath();
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run([]);
+    log.mockRestore();
+
+    // Epic flow: squash merge + delete branch
+    expect(mockSquashMerge).toHaveBeenCalled();
+    expect(mockDeleteBranch).toHaveBeenCalled();
+    expect(mockPushBranch).not.toHaveBeenCalled();
+  });
+
+  it('logs PUSH_FAILED when push fails', async () => {
+    setupJiraHappyPath();
+    mockFetchJira.mockResolvedValue({
+      key: 'PROJ-789',
+      title: 'Push fail test',
+      description: 'Test',
+      provider: 'jira',
+      blockers: [],
+    });
+    mockPushBranch.mockReturnValue(false);
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run([]);
+    log.mockRestore();
+
+    expect(mockAppendProgress).toHaveBeenCalledWith(
+      expect.any(String),
+      'PROJ-789',
+      'Push fail test',
+      'PUSH_FAILED',
+    );
+  });
+
+  it('GitHub PR flow: push + create PR, do not close issue', async () => {
+    setupGitHubHappyPath();
+    // No milestone = no parent = PR flow
+    mockFetchGitHub.mockResolvedValue({
+      key: '#99',
+      title: 'No milestone',
+      description: 'Test',
+      provider: 'github',
+    });
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run([]);
+    log.mockRestore();
+
+    // PR flow
+    expect(mockPushBranch).toHaveBeenCalledWith('feature/issue-99');
+    expect(mockSquashMerge).not.toHaveBeenCalled();
+
+    // Do NOT close issue (PR body has Closes #99)
+    expect(mockCloseIssue).not.toHaveBeenCalled();
+
+    expect(mockAppendProgress).toHaveBeenCalledWith(
+      expect.any(String),
+      '#99',
+      'No milestone',
+      'PR_CREATED',
+    );
   });
 
   it('skips ticket when feasibility check fails', async () => {

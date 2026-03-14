@@ -13,6 +13,7 @@ import { fileURLToPath } from 'node:url';
 
 import {
   closeIssue,
+  createPullRequest as createGitHubPr,
   fetchIssue as fetchGitHubIssue,
   isValidRepo,
   pingGitHub,
@@ -44,12 +45,24 @@ import {
   currentBranch,
   deleteBranch,
   ensureBranch,
+  pushBranch,
   squashMerge,
 } from '~/scripts/shared/git-ops/git-ops.js';
 import { sendNotification } from '~/scripts/shared/notify/notify.js';
 import { runPreflight } from '~/scripts/shared/preflight/preflight.js';
 import { appendProgress } from '~/scripts/shared/progress/progress.js';
 import { buildPrompt } from '~/scripts/shared/prompt/prompt.js';
+import {
+  createPullRequest as createBitbucketPr,
+  createServerPullRequest as createBitbucketServerPr,
+} from '~/scripts/shared/remote/bitbucket.js';
+import { createMergeRequest as createGitLabMr } from '~/scripts/shared/remote/gitlab.js';
+import { buildPrBody } from '~/scripts/shared/remote/pr-body.js';
+import {
+  buildApiBaseUrl,
+  detectRemote,
+} from '~/scripts/shared/remote/remote.js';
+import type { PrCreationResult, RemoteInfo } from '~/types/index.js';
 import { bold, dim, green, red, yellow } from '~/utils/ansi/ansi.js';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
@@ -247,6 +260,130 @@ async function transitionToStatus(
   }
 }
 
+// ─── PR/MR creation ──────────────────────────────────────────────────────────
+
+/**
+ * Resolve a git host token from the board config's env.
+ *
+ * For GitHub boards, `GITHUB_TOKEN` is always present.
+ * For Jira/Linear boards, check the shared optional vars.
+ */
+function resolveGitToken(
+  config: BoardConfig,
+  remote: RemoteInfo,
+): { token: string; username?: string } | undefined {
+  const env = config.env as Record<string, string | undefined>;
+
+  switch (remote.host) {
+    case 'github':
+      if (env.GITHUB_TOKEN) return { token: env.GITHUB_TOKEN };
+      break;
+    case 'gitlab':
+      if (env.GITLAB_TOKEN) return { token: env.GITLAB_TOKEN };
+      break;
+    case 'bitbucket':
+      if (env.BITBUCKET_USER && env.BITBUCKET_TOKEN)
+        return { token: env.BITBUCKET_TOKEN, username: env.BITBUCKET_USER };
+      break;
+    case 'bitbucket-server':
+      if (env.BITBUCKET_TOKEN) return { token: env.BITBUCKET_TOKEN };
+      break;
+  }
+  return undefined;
+}
+
+/**
+ * Attempt to create a PR/MR on the detected remote platform.
+ */
+async function attemptPrCreation(
+  config: BoardConfig,
+  remote: RemoteInfo,
+  ticketBranch: string,
+  targetBranch: string,
+  title: string,
+  body: string,
+): Promise<PrCreationResult | undefined> {
+  const creds = resolveGitToken(config, remote);
+  if (!creds) return undefined;
+
+  const apiBase = buildApiBaseUrl(
+    remote,
+    (config.env as Record<string, string | undefined>).CLANCY_GIT_API_URL,
+  );
+  if (!apiBase) return undefined;
+
+  switch (remote.host) {
+    case 'github':
+      return createGitHubPr(
+        creds.token,
+        `${remote.owner}/${remote.repo}`,
+        ticketBranch,
+        targetBranch,
+        title,
+        body,
+        apiBase,
+      );
+
+    case 'gitlab':
+      return createGitLabMr(
+        creds.token,
+        apiBase,
+        remote.projectPath,
+        ticketBranch,
+        targetBranch,
+        title,
+        body,
+      );
+
+    case 'bitbucket':
+      return createBitbucketPr(
+        creds.username!,
+        creds.token,
+        remote.workspace,
+        remote.repoSlug,
+        ticketBranch,
+        targetBranch,
+        title,
+        body,
+      );
+
+    case 'bitbucket-server':
+      return createBitbucketServerPr(
+        creds.token,
+        apiBase,
+        remote.projectKey,
+        remote.repoSlug,
+        ticketBranch,
+        targetBranch,
+        title,
+        body,
+      );
+
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Build a manual PR/MR URL for the user to click.
+ */
+function buildManualPrUrl(
+  remote: RemoteInfo,
+  ticketBranch: string,
+  targetBranch: string,
+): string | undefined {
+  if (remote.host === 'github') {
+    return `https://${remote.hostname}/${remote.owner}/${remote.repo}/compare/${targetBranch}...${ticketBranch}`;
+  }
+  if (remote.host === 'gitlab') {
+    return `https://${remote.hostname}/${remote.projectPath}/-/merge_requests/new?merge_request[source_branch]=${ticketBranch}&merge_request[target_branch]=${targetBranch}`;
+  }
+  if (remote.host === 'bitbucket') {
+    return `https://${remote.hostname}/${remote.workspace}/${remote.repoSlug}/pull-requests/new?source=${ticketBranch}&dest=${targetBranch}`;
+  }
+  return undefined;
+}
+
 // ─── Main orchestrator ───────────────────────────────────────────────────────
 
 /**
@@ -429,50 +566,169 @@ export async function run(argv: string[]): Promise<void> {
       return;
     }
 
-    // 13. Squash merge
-    checkout(targetBranch);
-    const commitMsg = `feat(${ticket.key}): ${ticket.title}`;
-    const hadChanges = squashMerge(ticketBranch, commitMsg);
+    // 13. Deliver — epic merge or PR flow
+    const hasParent = ticket.parentInfo !== 'none';
 
-    if (!hadChanges) {
-      console.log(
-        yellow(
-          '⚠ No changes staged after squash merge. Claude may not have committed any work.',
-        ),
-      );
-    }
+    if (hasParent) {
+      // ── Epic flow: squash merge locally (unchanged) ──
+      checkout(targetBranch);
+      const commitMsg = `feat(${ticket.key}): ${ticket.title}`;
+      const hadChanges = squashMerge(ticketBranch, commitMsg);
 
-    // 14. Delete feature branch
-    deleteBranch(ticketBranch);
-
-    // 15. Transition to Done / close issue (best-effort)
-    const statusDone = config.env.CLANCY_STATUS_DONE;
-
-    if (config.provider === 'github') {
-      const issueNumber = parseInt(ticket.key.replace('#', ''), 10);
-
-      if (Number.isNaN(issueNumber)) {
+      if (!hadChanges) {
         console.log(
-          `⚠ Could not parse issue number from ${ticket.key}. Close it manually on GitHub.`,
+          yellow(
+            '⚠ No changes staged after squash merge. Claude may not have committed any work.',
+          ),
         );
-      } else {
-        const closed = await closeIssue(
-          config.env.GITHUB_TOKEN,
-          config.env.GITHUB_REPO,
-          issueNumber,
-        );
-        if (!closed) {
-          console.log(
-            `⚠ Could not close issue ${ticket.key}. Close it manually on GitHub.`,
+      }
+
+      // 14a. Delete feature branch
+      deleteBranch(ticketBranch);
+
+      // 15a. Transition to Done / close issue (best-effort)
+      const statusDone = config.env.CLANCY_STATUS_DONE;
+
+      if (config.provider === 'github') {
+        const issueNumber = parseInt(ticket.key.replace('#', ''), 10);
+
+        if (!Number.isNaN(issueNumber)) {
+          const closed = await closeIssue(
+            config.env.GITHUB_TOKEN,
+            config.env.GITHUB_REPO,
+            issueNumber,
           );
+          if (!closed) {
+            console.log(
+              `⚠ Could not close issue ${ticket.key}. Close it manually on GitHub.`,
+            );
+          }
+        }
+      } else if (statusDone) {
+        await transitionToStatus(config, ticket, statusDone);
+      }
+
+      // 16a. Log progress
+      appendProgress(process.cwd(), ticket.key, ticket.title, 'DONE');
+    } else {
+      // ── PR flow: push branch + create PR/MR ──
+
+      // 14b. Push feature branch to remote
+      const pushed = pushBranch(ticketBranch);
+
+      if (!pushed) {
+        console.log(yellow(`⚠ Could not push ${ticketBranch} to origin.`));
+        console.log(
+          dim('  The branch is still available locally. Push manually:'),
+        );
+        console.log(dim(`  git push -u origin ${ticketBranch}`));
+        appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSH_FAILED');
+        checkout(targetBranch);
+
+        // Still log completion time
+        const elapsed = formatDuration(Date.now() - startTime);
+        console.log('');
+        console.log(
+          yellow(`⚠ ${ticket.key} implemented but push failed`) +
+            dim(` (${elapsed})`),
+        );
+        return;
+      }
+
+      console.log(green(`  ✓ Pushed ${ticketBranch}`));
+
+      // 15b. Attempt PR/MR creation
+      const platformOverride = (
+        config.env as Record<string, string | undefined>
+      ).CLANCY_GIT_PLATFORM;
+      const remote = detectRemote(platformOverride);
+      const prTitle = `feat(${ticket.key}): ${ticket.title}`;
+      const prBody = buildPrBody(config, {
+        key: ticket.key,
+        title: ticket.title,
+        description: ticket.description,
+        provider: config.provider,
+      });
+
+      if (
+        remote.host !== 'none' &&
+        remote.host !== 'unknown' &&
+        remote.host !== 'azure'
+      ) {
+        const pr = await attemptPrCreation(
+          config,
+          remote,
+          ticketBranch,
+          targetBranch,
+          prTitle,
+          prBody,
+        );
+
+        if (pr?.ok) {
+          console.log(green(`  ✓ PR created: ${pr.url}`));
+          appendProgress(process.cwd(), ticket.key, ticket.title, 'PR_CREATED');
+        } else if (pr && !pr.ok && pr.alreadyExists) {
+          console.log(
+            yellow(
+              `  ⚠ A PR/MR already exists for ${ticketBranch}. Branch pushed.`,
+            ),
+          );
+          appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSHED');
+        } else if (pr && !pr.ok) {
+          console.log(yellow(`  ⚠ PR/MR creation failed: ${pr.error}`));
+          const manualUrl = buildManualPrUrl(
+            remote,
+            ticketBranch,
+            targetBranch,
+          );
+          if (manualUrl) {
+            console.log(dim(`  Create one manually: ${manualUrl}`));
+          } else {
+            console.log(dim('  Branch pushed — create a PR/MR manually.'));
+          }
+          appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSHED');
+        } else {
+          // No token available for this platform
+          const manualUrl = buildManualPrUrl(
+            remote,
+            ticketBranch,
+            targetBranch,
+          );
+          if (manualUrl) {
+            console.log(dim(`  Create a PR: ${manualUrl}`));
+          } else {
+            console.log(
+              dim('  Branch pushed to remote. Create a PR/MR manually.'),
+            );
+          }
+          appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSHED');
+        }
+      } else if (remote.host === 'none') {
+        console.log(
+          yellow(
+            `⚠ No git remote configured. Branch available locally: ${ticketBranch}`,
+          ),
+        );
+        appendProgress(process.cwd(), ticket.key, ticket.title, 'LOCAL');
+      } else {
+        // Unknown or Azure remote — just note the push
+        console.log(dim('  Branch pushed to remote. Create a PR/MR manually.'));
+        appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSHED');
+      }
+
+      // 16b. Transition to In Review (not Done — PR hasn't been merged yet)
+      // For GitHub Issues: do NOT close — PR body has "Closes #N" for auto-close on merge
+      if (config.provider !== 'github') {
+        const statusReview =
+          config.env.CLANCY_STATUS_REVIEW ?? config.env.CLANCY_STATUS_DONE;
+        if (statusReview) {
+          await transitionToStatus(config, ticket, statusReview);
         }
       }
-    } else if (statusDone) {
-      await transitionToStatus(config, ticket, statusDone);
-    }
 
-    // 16. Log progress
-    appendProgress(process.cwd(), ticket.key, ticket.title, 'DONE');
+      // Switch back to target branch
+      checkout(targetBranch);
+    }
 
     const elapsed = formatDuration(Date.now() - startTime);
     console.log('');
