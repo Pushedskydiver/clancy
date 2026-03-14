@@ -18,7 +18,16 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### ♻️ Refactor
 
-- **PR creation functions consolidated** — extracted GitHub PR creation from `board/github/github.ts` and moved GitLab/Bitbucket PR creation from `shared/remote/` into a new `shared/pull-request/` folder. All three git host PR creation functions now live together with a shared `postPullRequest()` utility that DRYs up the common POST + error-handling pattern.
+- **PR creation functions consolidated** — extracted GitHub PR creation from `board/github/github.ts` and moved GitLab/Bitbucket PR creation from `shared/remote/` into a new `shared/pull-request/` folder with co-located subfolders. All three git host PR creation functions now live together with a shared `postPullRequest()` utility that DRYs up the common POST + error-handling pattern.
+- **`run()` function decomposed** — extracted `deliverViaEpicMerge()` and `deliverViaPullRequest()` from the 365-line `run()` function in `once.ts` for readability and testability.
+- **DRY improvements** — extracted shared `formatDuration()` utility (was duplicated in once.ts and afk.ts), deduplicated `GITHUB_API` constant into `http.ts`, extracted `extractHostAndPath()` helper in `remote.ts` (was duplicated regex), removed local `LinearEnv` type in favour of schema-derived import.
+
+### 🐛 Fixes
+
+- **Bitbucket duplicate PR detection** — both Cloud and Server PR creation now detect HTTP 409 "already exists" responses (was returning generic error instead of `alreadyExists: true`).
+- **`CLANCY_GIT_PLATFORM` override always applies** — user override now takes precedence even when auto-detection returns a known platform (previously only applied when auto-detection returned `unknown`/`none`).
+- **URL-encode branch names in manual PR URLs** — `buildManualPrUrl` now uses `encodeURIComponent()` to handle special characters in branch names.
+- **Type-safe shared env access** — replaced unsafe `as Record<string, string | undefined>` casts with a typed `sharedEnv()` helper.
 
 ### 📝 Documentation
 
@@ -33,7 +42,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### ✅ Tests
 
-- 70 new tests (167 → 237): remote detection (35), shared `postPullRequest` utility (7), GitHub PR creation (5), GitLab MR creation (6), Bitbucket PR creation (7), git push (2), PR body builder (5), once orchestrator PR/epic/push-fail flows (3)
+- 102 new tests (167 → 269): remote detection (35+4), shared `postPullRequest` utility (7), GitHub PR creation (5), GitLab MR creation (6), Bitbucket PR creation (7+2), git push (2), PR body builder (5), once orchestrator flows (3), `formatDuration` (5), `pingEndpoint` (5), Jira async functions (8), Linear async functions (6), `sendNotification` (3), `yellow` ANSI (1)
 
 ---
 

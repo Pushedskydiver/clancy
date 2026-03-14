@@ -9,15 +9,17 @@ import { execFileSync } from 'node:child_process';
 import type { GitPlatform, RemoteInfo } from '~/types/index.js';
 
 /**
- * Parse a git remote URL into platform-specific info.
+ * Extract hostname and path from a raw git remote URL.
  *
- * Supports HTTPS, SSH, and SSH-URL formats for GitHub, GitLab, Bitbucket
- * (Cloud and Server), Azure DevOps, and self-hosted instances.
+ * Strips `.git` suffix, then tries SSH (`git@host:path`) and
+ * HTTPS/SSH-URL (`https://host/path`, `ssh://git@host/path`) formats.
  *
  * @param rawUrl - The raw git remote URL.
- * @returns Parsed remote info with platform and path details.
+ * @returns The extracted hostname and path, or `undefined` if unparseable.
  */
-export function parseRemote(rawUrl: string): RemoteInfo {
+function extractHostAndPath(
+  rawUrl: string,
+): { hostname: string; path: string } | undefined {
   const url = rawUrl.trim().replace(/\.git$/, '');
 
   // SSH format: git@<host>:<path>
@@ -31,9 +33,28 @@ export function parseRemote(rawUrl: string): RemoteInfo {
   const hostname = sshMatch?.[1] ?? httpsMatch?.[1];
   const path = sshMatch?.[2] ?? httpsMatch?.[2];
 
-  if (!hostname || !path) {
+  if (!hostname || !path) return undefined;
+
+  return { hostname, path };
+}
+
+/**
+ * Parse a git remote URL into platform-specific info.
+ *
+ * Supports HTTPS, SSH, and SSH-URL formats for GitHub, GitLab, Bitbucket
+ * (Cloud and Server), Azure DevOps, and self-hosted instances.
+ *
+ * @param rawUrl - The raw git remote URL.
+ * @returns Parsed remote info with platform and path details.
+ */
+export function parseRemote(rawUrl: string): RemoteInfo {
+  const extracted = extractHostAndPath(rawUrl);
+
+  if (!extracted) {
     return { host: 'unknown', url: rawUrl };
   }
+
+  const { hostname, path } = extracted;
 
   const platform = detectPlatformFromHostname(hostname);
 
@@ -137,16 +158,9 @@ export function detectRemote(platformOverride?: string): RemoteInfo {
 
   if (!rawUrl) return { host: 'none' };
 
-  // If user overrides the platform, re-parse with that platform
+  // If user explicitly overrides the platform, always use it — they know better
   if (platformOverride) {
-    const info = parseRemote(rawUrl);
-
-    // Only override if the auto-detection was wrong/unknown
-    if (info.host === 'unknown' || info.host === 'none') {
-      return overrideRemotePlatform(rawUrl, platformOverride);
-    }
-
-    return info;
+    return overrideRemotePlatform(rawUrl, platformOverride);
   }
 
   return parseRemote(rawUrl);
@@ -159,16 +173,11 @@ export function detectRemote(platformOverride?: string): RemoteInfo {
  * and the user sets `CLANCY_GIT_PLATFORM`.
  */
 function overrideRemotePlatform(rawUrl: string, platform: string): RemoteInfo {
-  const url = rawUrl.trim().replace(/\.git$/, '');
-  const sshMatch = url.match(/^git@([^:]+):(.+)$/);
-  const httpsMatch = url.match(
-    /^(?:https?|ssh):\/\/(?:[^@]+@)?([^/:]+)(?::\d+)?\/(.+)$/,
-  );
+  const extracted = extractHostAndPath(rawUrl);
 
-  const hostname = sshMatch?.[1] ?? httpsMatch?.[1];
-  const path = sshMatch?.[2] ?? httpsMatch?.[2];
+  if (!extracted) return { host: 'unknown', url: rawUrl };
 
-  if (!hostname || !path) return { host: 'unknown', url: rawUrl };
+  const { hostname, path } = extracted;
 
   switch (platform.toLowerCase()) {
     case 'github': {

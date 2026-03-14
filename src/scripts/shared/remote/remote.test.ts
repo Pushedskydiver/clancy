@@ -1,10 +1,18 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import {
   buildApiBaseUrl,
   detectPlatformFromHostname,
+  detectRemote,
   parseRemote,
 } from './remote.js';
+
+// Single vi.mock with a mutable implementation ref so each test can swap behaviour.
+let execImpl: (...args: unknown[]) => string = () => '';
+
+vi.mock('node:child_process', () => ({
+  execFileSync: (...args: unknown[]) => execImpl(...args),
+}));
 
 describe('remote', () => {
   describe('parseRemote', () => {
@@ -219,6 +227,55 @@ describe('remote', () => {
 
     it('returns unknown for custom domain', () => {
       expect(detectPlatformFromHostname('git.acme.com')).toBe('unknown');
+    });
+  });
+
+  describe('detectRemote', () => {
+    it('returns host none when execFileSync throws', () => {
+      execImpl = () => {
+        throw new Error('not a git repo');
+      };
+
+      const result = detectRemote();
+      expect(result).toEqual({ host: 'none' });
+    });
+
+    it('returns parsed remote when execFileSync returns a valid URL', () => {
+      execImpl = () => 'https://github.com/owner/repo.git\n';
+
+      const result = detectRemote();
+
+      expect(result).toEqual({
+        host: 'github',
+        owner: 'owner',
+        repo: 'repo',
+        hostname: 'github.com',
+      });
+    });
+
+    it('applies platform override when auto-detection returns unknown', () => {
+      execImpl = () => 'https://git.acme.com/team/project.git\n';
+
+      const result = detectRemote('github');
+
+      expect(result).toEqual({
+        host: 'github',
+        owner: 'team',
+        repo: 'project',
+        hostname: 'git.acme.com',
+      });
+    });
+
+    it('applies platform override even when auto-detection returns a known platform', () => {
+      execImpl = () => 'https://github.com/owner/repo.git\n';
+
+      const result = detectRemote('gitlab');
+
+      expect(result).toEqual({
+        host: 'gitlab',
+        projectPath: 'owner/repo',
+        hostname: 'github.com',
+      });
     });
   });
 

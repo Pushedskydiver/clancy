@@ -5,6 +5,9 @@
  * boilerplate across Jira, GitHub, and Linear integrations.
  */
 
+/** Default GitHub API base URL. */
+export const GITHUB_API = 'https://api.github.com';
+
 /** Standard error messages mapped to HTTP status codes. */
 type StatusErrorMap = Record<number, string>;
 

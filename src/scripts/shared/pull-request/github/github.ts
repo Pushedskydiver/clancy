@@ -6,12 +6,10 @@
  *
  * Auth: `Authorization: Bearer` header (personal access token with `repo` scope).
  */
-import { githubHeaders } from '~/scripts/shared/http/http.js';
+import { GITHUB_API, githubHeaders } from '~/scripts/shared/http/http.js';
 import type { PrCreationResult } from '~/types/index.js';
 
 import { postPullRequest } from '../post-pr/post-pr.js';
-
-const GITHUB_API = 'https://api.github.com';
 
 /**
  * Create a pull request on GitHub.

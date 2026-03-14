@@ -10,7 +10,11 @@
 import { z } from 'zod/mini';
 
 import { githubIssuesResponseSchema } from '~/schemas/github.js';
-import { githubHeaders, pingEndpoint } from '~/scripts/shared/http/http.js';
+import {
+  GITHUB_API,
+  githubHeaders,
+  pingEndpoint,
+} from '~/scripts/shared/http/http.js';
 import type { PingResult } from '~/scripts/shared/http/http.js';
 import type { Ticket } from '~/types/index.js';
 
@@ -20,7 +24,6 @@ const githubUserSchema = z.object({
 });
 
 const SAFE_REPO_PATTERN = /^[a-zA-Z0-9_.-]+\/[a-zA-Z0-9_.-]+$/;
-const GITHUB_API = 'https://api.github.com';
 
 /** Cached username to avoid repeated /user calls. */
 let cachedUsername: string | undefined;

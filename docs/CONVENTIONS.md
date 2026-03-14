@@ -54,7 +54,7 @@
 - Commands and workflows organised by role in `src/roles/{planner,implementer,reviewer,setup}/`
 - One command per file in `src/roles/{role}/commands/`
 - One workflow per file in `src/roles/{role}/workflows/`
-- Commands and workflows are 1:1 (command references workflow)
+- Commands reference workflows, except `help` (standalone command) and `scaffold` (internal workflow used by `init`)
 - Agent prompts in `src/agents/` — one per specialist
 - Board modules and shared utilities in `src/scripts/`
 - All hooks in `hooks/` at the project root

@@ -372,16 +372,184 @@ function buildManualPrUrl(
   ticketBranch: string,
   targetBranch: string,
 ): string | undefined {
+  const encodedTicket = encodeURIComponent(ticketBranch);
+  const encodedTarget = encodeURIComponent(targetBranch);
+
   if (remote.host === 'github') {
-    return `https://${remote.hostname}/${remote.owner}/${remote.repo}/compare/${targetBranch}...${ticketBranch}`;
+    return `https://${remote.hostname}/${remote.owner}/${remote.repo}/compare/${encodedTarget}...${encodedTicket}`;
   }
   if (remote.host === 'gitlab') {
-    return `https://${remote.hostname}/${remote.projectPath}/-/merge_requests/new?merge_request[source_branch]=${ticketBranch}&merge_request[target_branch]=${targetBranch}`;
+    return `https://${remote.hostname}/${remote.projectPath}/-/merge_requests/new?merge_request[source_branch]=${encodedTicket}&merge_request[target_branch]=${encodedTarget}`;
   }
   if (remote.host === 'bitbucket') {
-    return `https://${remote.hostname}/${remote.workspace}/${remote.repoSlug}/pull-requests/new?source=${ticketBranch}&dest=${targetBranch}`;
+    return `https://${remote.hostname}/${remote.workspace}/${remote.repoSlug}/pull-requests/new?source=${encodedTicket}&dest=${encodedTarget}`;
   }
   return undefined;
+}
+
+// ─── Delivery paths ──────────────────────────────────────────────────────────
+
+/**
+ * Epic/parent flow: squash merge locally, delete branch, transition to Done.
+ */
+async function deliverViaEpicMerge(
+  config: BoardConfig,
+  ticket: FetchedTicket,
+  ticketBranch: string,
+  targetBranch: string,
+): Promise<void> {
+  checkout(targetBranch);
+  const commitMsg = `feat(${ticket.key}): ${ticket.title}`;
+  const hadChanges = squashMerge(ticketBranch, commitMsg);
+
+  if (!hadChanges) {
+    console.log(
+      yellow(
+        '⚠ No changes staged after squash merge. Claude may not have committed any work.',
+      ),
+    );
+  }
+
+  deleteBranch(ticketBranch);
+
+  // Transition to Done / close issue (best-effort)
+  const statusDone = config.env.CLANCY_STATUS_DONE;
+
+  if (config.provider === 'github') {
+    const issueNumber = parseInt(ticket.key.replace('#', ''), 10);
+
+    if (!Number.isNaN(issueNumber)) {
+      const closed = await closeIssue(
+        config.env.GITHUB_TOKEN,
+        config.env.GITHUB_REPO,
+        issueNumber,
+      );
+      if (!closed) {
+        console.log(
+          `⚠ Could not close issue ${ticket.key}. Close it manually on GitHub.`,
+        );
+      }
+    }
+  } else if (statusDone) {
+    await transitionToStatus(config, ticket, statusDone);
+  }
+
+  appendProgress(process.cwd(), ticket.key, ticket.title, 'DONE');
+}
+
+/**
+ * PR flow: push branch to remote, create PR/MR, transition to In Review.
+ *
+ * @returns `false` if the push failed (caller should handle early return).
+ */
+async function deliverViaPullRequest(
+  config: BoardConfig,
+  ticket: FetchedTicket,
+  ticketBranch: string,
+  targetBranch: string,
+  startTime: number,
+): Promise<boolean> {
+  const pushed = pushBranch(ticketBranch);
+
+  if (!pushed) {
+    console.log(yellow(`⚠ Could not push ${ticketBranch} to origin.`));
+    console.log(dim('  The branch is still available locally. Push manually:'));
+    console.log(dim(`  git push -u origin ${ticketBranch}`));
+    appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSH_FAILED');
+    checkout(targetBranch);
+
+    const elapsed = formatDuration(Date.now() - startTime);
+    console.log('');
+    console.log(
+      yellow(`⚠ ${ticket.key} implemented but push failed`) +
+        dim(` (${elapsed})`),
+    );
+    return false;
+  }
+
+  console.log(green(`  ✓ Pushed ${ticketBranch}`));
+
+  // Attempt PR/MR creation
+  const platformOverride = (config.env as Record<string, string | undefined>)
+    .CLANCY_GIT_PLATFORM;
+  const remote = detectRemote(platformOverride);
+  const prTitle = `feat(${ticket.key}): ${ticket.title}`;
+  const prBody = buildPrBody(config, {
+    key: ticket.key,
+    title: ticket.title,
+    description: ticket.description,
+    provider: config.provider,
+  });
+
+  if (
+    remote.host !== 'none' &&
+    remote.host !== 'unknown' &&
+    remote.host !== 'azure'
+  ) {
+    const pr = await attemptPrCreation(
+      config,
+      remote,
+      ticketBranch,
+      targetBranch,
+      prTitle,
+      prBody,
+    );
+
+    if (pr?.ok) {
+      console.log(green(`  ✓ PR created: ${pr.url}`));
+      appendProgress(process.cwd(), ticket.key, ticket.title, 'PR_CREATED');
+    } else if (pr && !pr.ok && pr.alreadyExists) {
+      console.log(
+        yellow(
+          `  ⚠ A PR/MR already exists for ${ticketBranch}. Branch pushed.`,
+        ),
+      );
+      appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSHED');
+    } else if (pr && !pr.ok) {
+      console.log(yellow(`  ⚠ PR/MR creation failed: ${pr.error}`));
+      const manualUrl = buildManualPrUrl(remote, ticketBranch, targetBranch);
+      if (manualUrl) {
+        console.log(dim(`  Create one manually: ${manualUrl}`));
+      } else {
+        console.log(dim('  Branch pushed — create a PR/MR manually.'));
+      }
+      appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSHED');
+    } else {
+      // No token available for this platform
+      const manualUrl = buildManualPrUrl(remote, ticketBranch, targetBranch);
+      if (manualUrl) {
+        console.log(dim(`  Create a PR: ${manualUrl}`));
+      } else {
+        console.log(dim('  Branch pushed to remote. Create a PR/MR manually.'));
+      }
+      appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSHED');
+    }
+  } else if (remote.host === 'none') {
+    console.log(
+      yellow(
+        `⚠ No git remote configured. Branch available locally: ${ticketBranch}`,
+      ),
+    );
+    appendProgress(process.cwd(), ticket.key, ticket.title, 'LOCAL');
+  } else {
+    // Unknown or Azure remote — just note the push
+    console.log(dim('  Branch pushed to remote. Create a PR/MR manually.'));
+    appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSHED');
+  }
+
+  // Transition to In Review (not Done — PR hasn't been merged yet)
+  // For GitHub Issues: do NOT close — PR body has "Closes #N" for auto-close on merge
+  if (config.provider !== 'github') {
+    const statusReview =
+      config.env.CLANCY_STATUS_REVIEW ?? config.env.CLANCY_STATUS_DONE;
+    if (statusReview) {
+      await transitionToStatus(config, ticket, statusReview);
+    }
+  }
+
+  // Switch back to target branch
+  checkout(targetBranch);
+  return true;
 }
 
 // ─── Main orchestrator ───────────────────────────────────────────────────────
@@ -570,164 +738,16 @@ export async function run(argv: string[]): Promise<void> {
     const hasParent = ticket.parentInfo !== 'none';
 
     if (hasParent) {
-      // ── Epic flow: squash merge locally (unchanged) ──
-      checkout(targetBranch);
-      const commitMsg = `feat(${ticket.key}): ${ticket.title}`;
-      const hadChanges = squashMerge(ticketBranch, commitMsg);
-
-      if (!hadChanges) {
-        console.log(
-          yellow(
-            '⚠ No changes staged after squash merge. Claude may not have committed any work.',
-          ),
-        );
-      }
-
-      // 14a. Delete feature branch
-      deleteBranch(ticketBranch);
-
-      // 15a. Transition to Done / close issue (best-effort)
-      const statusDone = config.env.CLANCY_STATUS_DONE;
-
-      if (config.provider === 'github') {
-        const issueNumber = parseInt(ticket.key.replace('#', ''), 10);
-
-        if (!Number.isNaN(issueNumber)) {
-          const closed = await closeIssue(
-            config.env.GITHUB_TOKEN,
-            config.env.GITHUB_REPO,
-            issueNumber,
-          );
-          if (!closed) {
-            console.log(
-              `⚠ Could not close issue ${ticket.key}. Close it manually on GitHub.`,
-            );
-          }
-        }
-      } else if (statusDone) {
-        await transitionToStatus(config, ticket, statusDone);
-      }
-
-      // 16a. Log progress
-      appendProgress(process.cwd(), ticket.key, ticket.title, 'DONE');
+      await deliverViaEpicMerge(config, ticket, ticketBranch, targetBranch);
     } else {
-      // ── PR flow: push branch + create PR/MR ──
-
-      // 14b. Push feature branch to remote
-      const pushed = pushBranch(ticketBranch);
-
-      if (!pushed) {
-        console.log(yellow(`⚠ Could not push ${ticketBranch} to origin.`));
-        console.log(
-          dim('  The branch is still available locally. Push manually:'),
-        );
-        console.log(dim(`  git push -u origin ${ticketBranch}`));
-        appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSH_FAILED');
-        checkout(targetBranch);
-
-        // Still log completion time
-        const elapsed = formatDuration(Date.now() - startTime);
-        console.log('');
-        console.log(
-          yellow(`⚠ ${ticket.key} implemented but push failed`) +
-            dim(` (${elapsed})`),
-        );
-        return;
-      }
-
-      console.log(green(`  ✓ Pushed ${ticketBranch}`));
-
-      // 15b. Attempt PR/MR creation
-      const platformOverride = (
-        config.env as Record<string, string | undefined>
-      ).CLANCY_GIT_PLATFORM;
-      const remote = detectRemote(platformOverride);
-      const prTitle = `feat(${ticket.key}): ${ticket.title}`;
-      const prBody = buildPrBody(config, {
-        key: ticket.key,
-        title: ticket.title,
-        description: ticket.description,
-        provider: config.provider,
-      });
-
-      if (
-        remote.host !== 'none' &&
-        remote.host !== 'unknown' &&
-        remote.host !== 'azure'
-      ) {
-        const pr = await attemptPrCreation(
-          config,
-          remote,
-          ticketBranch,
-          targetBranch,
-          prTitle,
-          prBody,
-        );
-
-        if (pr?.ok) {
-          console.log(green(`  ✓ PR created: ${pr.url}`));
-          appendProgress(process.cwd(), ticket.key, ticket.title, 'PR_CREATED');
-        } else if (pr && !pr.ok && pr.alreadyExists) {
-          console.log(
-            yellow(
-              `  ⚠ A PR/MR already exists for ${ticketBranch}. Branch pushed.`,
-            ),
-          );
-          appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSHED');
-        } else if (pr && !pr.ok) {
-          console.log(yellow(`  ⚠ PR/MR creation failed: ${pr.error}`));
-          const manualUrl = buildManualPrUrl(
-            remote,
-            ticketBranch,
-            targetBranch,
-          );
-          if (manualUrl) {
-            console.log(dim(`  Create one manually: ${manualUrl}`));
-          } else {
-            console.log(dim('  Branch pushed — create a PR/MR manually.'));
-          }
-          appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSHED');
-        } else {
-          // No token available for this platform
-          const manualUrl = buildManualPrUrl(
-            remote,
-            ticketBranch,
-            targetBranch,
-          );
-          if (manualUrl) {
-            console.log(dim(`  Create a PR: ${manualUrl}`));
-          } else {
-            console.log(
-              dim('  Branch pushed to remote. Create a PR/MR manually.'),
-            );
-          }
-          appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSHED');
-        }
-      } else if (remote.host === 'none') {
-        console.log(
-          yellow(
-            `⚠ No git remote configured. Branch available locally: ${ticketBranch}`,
-          ),
-        );
-        appendProgress(process.cwd(), ticket.key, ticket.title, 'LOCAL');
-      } else {
-        // Unknown or Azure remote — just note the push
-        console.log(dim('  Branch pushed to remote. Create a PR/MR manually.'));
-        appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSHED');
-      }
-
-      // 16b. Transition to In Review (not Done — PR hasn't been merged yet)
-      // For GitHub Issues: do NOT close — PR body has "Closes #N" for auto-close on merge
-      if (config.provider !== 'github') {
-        const statusReview =
-          config.env.CLANCY_STATUS_REVIEW ?? config.env.CLANCY_STATUS_DONE;
-        if (statusReview) {
-          await transitionToStatus(config, ticket, statusReview);
-        }
-      }
-
-      // Switch back to target branch
-      checkout(targetBranch);
+      const delivered = await deliverViaPullRequest(
+        config,
+        ticket,
+        ticketBranch,
+        targetBranch,
+        startTime,
+      );
+      if (!delivered) return;
     }
 
     const elapsed = formatDuration(Date.now() - startTime);
@@ -735,7 +755,7 @@ export async function run(argv: string[]): Promise<void> {
     console.log(green(`🏁 ${ticket.key} complete`) + dim(` (${elapsed})`));
     console.log(dim('  "Bake \'em away, toys."'));
 
-    // 17. Send notification (best-effort)
+    // 14. Send notification (best-effort)
     const webhook = config.env.CLANCY_NOTIFY_WEBHOOK;
 
     if (webhook) {
