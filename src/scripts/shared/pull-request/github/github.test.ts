@@ -154,7 +154,7 @@ describe('pull-request/github', () => {
       vi.unstubAllGlobals();
     });
 
-    it('returns changesRequested: true when latest review has CHANGES_REQUESTED', async () => {
+    it('returns changesRequested: true when inline comments exist (no Rework: prefix needed)', async () => {
       const mockFetch = vi
         .fn()
         .mockResolvedValueOnce({
@@ -173,9 +173,57 @@ describe('pull-request/github', () => {
           json: () =>
             Promise.resolve([
               {
-                state: 'CHANGES_REQUESTED',
-                user: { login: 'reviewer1' },
-                submitted_at: '2026-01-01T00:00:00Z',
+                body: 'This function needs error handling',
+                path: 'src/index.ts',
+              },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkPrReviewState(
+        'ghp_test',
+        'owner/repo',
+        'feature/test',
+        'owner',
+      );
+
+      expect(result).toEqual({
+        changesRequested: true,
+        prNumber: 10,
+        prUrl: 'https://github.com/owner/repo/pull/10',
+      });
+    });
+
+    it('returns changesRequested: true when a Rework: conversation comment exists', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                number: 10,
+                html_url: 'https://github.com/owner/repo/pull/10',
+                state: 'open',
+              },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                id: 1,
+                body: 'Rework: Fix the validation logic',
+                created_at: '2026-01-01T00:00:00Z',
               },
             ]),
         });
@@ -195,7 +243,7 @@ describe('pull-request/github', () => {
       });
     });
 
-    it('returns changesRequested: false when latest review has APPROVED', async () => {
+    it('returns changesRequested: false when only non-Rework: conversation comments exist and no inline comments', async () => {
       const mockFetch = vi
         .fn()
         .mockResolvedValueOnce({
@@ -211,12 +259,16 @@ describe('pull-request/github', () => {
         })
         .mockResolvedValueOnce({
           ok: true,
+          json: () => Promise.resolve([]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
           json: () =>
             Promise.resolve([
               {
-                state: 'APPROVED',
-                user: { login: 'reviewer1' },
-                submitted_at: '2026-01-01T00:00:00Z',
+                id: 1,
+                body: 'Nice work!',
+                created_at: '2026-01-01T00:00:00Z',
               },
             ]),
         });
@@ -234,6 +286,93 @@ describe('pull-request/github', () => {
         prNumber: 10,
         prUrl: 'https://github.com/owner/repo/pull/10',
       });
+    });
+
+    it('conversation comments without Rework: prefix do not trigger rework', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                number: 10,
+                html_url: 'https://github.com/owner/repo/pull/10',
+                state: 'open',
+              },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                id: 1,
+                body: 'Please rework this part',
+                created_at: '2026-01-01T00:00:00Z',
+              },
+              {
+                id: 2,
+                body: 'Looks good to me',
+                created_at: '2026-01-02T00:00:00Z',
+              },
+            ]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkPrReviewState(
+        'ghp_test',
+        'owner/repo',
+        'feature/test',
+        'owner',
+      );
+
+      expect(result?.changesRequested).toBe(false);
+    });
+
+    it('is case-insensitive for Rework: prefix on conversation comments', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                number: 10,
+                html_url: 'https://github.com/owner/repo/pull/10',
+                state: 'open',
+              },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                id: 1,
+                body: 'rework: lowercase prefix',
+                created_at: '2026-01-01T00:00:00Z',
+              },
+            ]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkPrReviewState(
+        'ghp_test',
+        'owner/repo',
+        'feature/test',
+        'owner',
+      );
+
+      expect(result?.changesRequested).toBe(true);
     });
 
     it('returns undefined when no open PR for branch', async () => {
@@ -251,52 +390,6 @@ describe('pull-request/github', () => {
       );
 
       expect(result).toBeUndefined();
-    });
-
-    it('deduplicates reviews — later APPROVED overrides earlier CHANGES_REQUESTED', async () => {
-      const mockFetch = vi
-        .fn()
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () =>
-            Promise.resolve([
-              {
-                number: 10,
-                html_url: 'https://github.com/owner/repo/pull/10',
-                state: 'open',
-              },
-            ]),
-        })
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () =>
-            Promise.resolve([
-              {
-                state: 'CHANGES_REQUESTED',
-                user: { login: 'reviewer1' },
-                submitted_at: '2026-01-01T00:00:00Z',
-              },
-              {
-                state: 'APPROVED',
-                user: { login: 'reviewer1' },
-                submitted_at: '2026-01-02T00:00:00Z',
-              },
-            ]),
-        });
-      vi.stubGlobal('fetch', mockFetch);
-
-      const result = await checkPrReviewState(
-        'ghp_test',
-        'owner/repo',
-        'feature/test',
-        'owner',
-      );
-
-      expect(result).toEqual({
-        changesRequested: false,
-        prNumber: 10,
-        prUrl: 'https://github.com/owner/repo/pull/10',
-      });
     });
 
     it('returns undefined on API error', async () => {
@@ -322,15 +415,21 @@ describe('pull-request/github', () => {
       vi.unstubAllGlobals();
     });
 
-    it('returns combined inline + conversation comments', async () => {
+    it('returns all inline comments and only Rework: conversation comments', async () => {
       const mockFetch = vi
         .fn()
         .mockResolvedValueOnce({
           ok: true,
           json: () =>
             Promise.resolve([
-              { body: 'Fix this line', path: 'src/index.ts' },
-              { body: 'Also here', path: 'src/utils.ts' },
+              {
+                body: 'This needs error handling',
+                path: 'src/index.ts',
+              },
+              {
+                body: 'Looks good',
+                path: 'src/utils.ts',
+              },
             ]),
         })
         .mockResolvedValueOnce({
@@ -339,8 +438,13 @@ describe('pull-request/github', () => {
             Promise.resolve([
               {
                 id: 1,
-                body: 'Overall looks good',
+                body: 'Rework: Overall validation is wrong',
                 created_at: '2026-01-01T00:00:00Z',
+              },
+              {
+                id: 2,
+                body: 'Nice work on the tests',
+                created_at: '2026-01-02T00:00:00Z',
               },
             ]),
         });
@@ -349,13 +453,13 @@ describe('pull-request/github', () => {
       const result = await fetchPrReviewComments('ghp_test', 'owner/repo', 10);
 
       expect(result).toEqual([
-        '[src/index.ts] Fix this line',
-        '[src/utils.ts] Also here',
-        'Overall looks good',
+        '[src/index.ts] This needs error handling',
+        '[src/utils.ts] Looks good',
+        'Overall validation is wrong',
       ]);
     });
 
-    it('formats inline comments with file path prefix', async () => {
+    it('includes inline comments without Rework: prefix', async () => {
       const mockFetch = vi
         .fn()
         .mockResolvedValueOnce({
@@ -372,6 +476,31 @@ describe('pull-request/github', () => {
       const result = await fetchPrReviewComments('ghp_test', 'owner/repo', 5);
 
       expect(result).toEqual(['[lib/core.ts] Needs refactor']);
+    });
+
+    it('excludes non-Rework: conversation comments', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                id: 1,
+                body: 'Please rework this part',
+                created_at: '2026-01-01T00:00:00Z',
+              },
+            ]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await fetchPrReviewComments('ghp_test', 'owner/repo', 10);
+
+      expect(result).toEqual([]);
     });
 
     it('returns empty array on error', async () => {

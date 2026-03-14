@@ -79,4 +79,20 @@ describe('buildPrBody', () => {
     expect(body).toContain('Clancy');
     expect(body).toContain('github.com/Pushedskydiver/clancy');
   });
+
+  it('includes rework instructions section with inline and general guidance', () => {
+    const config: BoardConfig = {
+      provider: 'github',
+      env: { GITHUB_TOKEN: 'ghp_test', GITHUB_REPO: 'owner/repo' },
+    };
+    const ticket: Ticket = { ...baseTicket, key: '#1' };
+
+    const body = buildPrBody(config, ticket);
+    expect(body).toContain('**Rework instructions:**');
+    expect(body).toContain('**Code comments**');
+    expect(body).toContain('always picked up automatically');
+    expect(body).toContain('**General feedback**');
+    expect(body).toContain('`Rework:`');
+    expect(body).toContain("doesn't handle empty passwords");
+  });
 });

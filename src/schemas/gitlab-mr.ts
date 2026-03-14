@@ -19,6 +19,7 @@ export const gitlabNoteSchema = z.object({
   resolvable: z.boolean(),
   resolved: z.optional(z.boolean()),
   system: z.boolean(),
+  type: z.optional(z.nullable(z.string())),
   position: z.optional(
     z.object({
       new_path: z.optional(z.string()),

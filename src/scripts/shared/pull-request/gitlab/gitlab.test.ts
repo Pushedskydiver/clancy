@@ -185,23 +185,38 @@ describe('gitlab', () => {
       vi.unstubAllGlobals();
     });
 
-    it('returns changesRequested: true when detailed_merge_status is requested_changes', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(() =>
-          Promise.resolve({
-            ok: true,
-            json: () =>
-              Promise.resolve([
-                {
-                  iid: 42,
-                  web_url: 'https://gitlab.com/g/p/-/merge_requests/42',
-                  detailed_merge_status: 'requested_changes',
-                },
-              ]),
-          }),
-        ),
-      );
+    it('returns changesRequested: true when an inline DiffNote exists (no Rework: prefix needed)', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                iid: 42,
+                web_url: 'https://gitlab.com/g/p/-/merge_requests/42',
+              },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                notes: [
+                  {
+                    body: 'This needs error handling',
+                    resolvable: true,
+                    resolved: false,
+                    system: false,
+                    type: 'DiffNote',
+                    position: { new_path: 'src/main.ts' },
+                  },
+                ],
+              },
+            ]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
 
       const result = await checkMrReviewState(
         'token',
@@ -217,55 +232,81 @@ describe('gitlab', () => {
       });
     });
 
-    it('returns changesRequested: true when detailed_merge_status is discussions_not_resolved', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(() =>
-          Promise.resolve({
-            ok: true,
-            json: () =>
-              Promise.resolve([
-                {
-                  iid: 10,
-                  web_url: 'https://gitlab.com/g/p/-/merge_requests/10',
-                  detailed_merge_status: 'discussions_not_resolved',
-                },
-              ]),
-          }),
-        ),
-      );
+    it('returns changesRequested: true when a Rework: conversation comment exists', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                iid: 42,
+                web_url: 'https://gitlab.com/g/p/-/merge_requests/42',
+              },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                notes: [
+                  {
+                    body: 'Rework: Fix the error handling',
+                    resolvable: true,
+                    resolved: false,
+                    system: false,
+                  },
+                ],
+              },
+            ]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
 
       const result = await checkMrReviewState(
         'token',
         'https://gitlab.com/api/v4',
-        'g/p',
-        'feature/branch',
+        'group/project',
+        'feature/test',
       );
 
       expect(result).toEqual({
         changesRequested: true,
-        prNumber: 10,
-        prUrl: 'https://gitlab.com/g/p/-/merge_requests/10',
+        prNumber: 42,
+        prUrl: 'https://gitlab.com/g/p/-/merge_requests/42',
       });
     });
 
-    it('returns changesRequested: false when detailed_merge_status is mergeable', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(() =>
-          Promise.resolve({
-            ok: true,
-            json: () =>
-              Promise.resolve([
-                {
-                  iid: 5,
-                  web_url: 'https://gitlab.com/g/p/-/merge_requests/5',
-                  detailed_merge_status: 'mergeable',
-                },
-              ]),
-          }),
-        ),
-      );
+    it('returns changesRequested: false when only non-Rework: conversation notes exist', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                iid: 5,
+                web_url: 'https://gitlab.com/g/p/-/merge_requests/5',
+              },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                notes: [
+                  {
+                    body: 'Looks good to me',
+                    resolvable: true,
+                    resolved: false,
+                    system: false,
+                  },
+                ],
+              },
+            ]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
 
       const result = await checkMrReviewState(
         'token',
@@ -279,6 +320,93 @@ describe('gitlab', () => {
         prNumber: 5,
         prUrl: 'https://gitlab.com/g/p/-/merge_requests/5',
       });
+    });
+
+    it('ignores system notes when checking for rework', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                iid: 5,
+                web_url: 'https://gitlab.com/g/p/-/merge_requests/5',
+              },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                notes: [
+                  {
+                    body: 'Rework: system generated',
+                    resolvable: false,
+                    resolved: false,
+                    system: true,
+                    type: 'DiffNote',
+                  },
+                ],
+              },
+            ]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkMrReviewState(
+        'token',
+        'https://gitlab.com/api/v4',
+        'g/p',
+        'feature/sys',
+      );
+
+      expect(result).toEqual({
+        changesRequested: false,
+        prNumber: 5,
+        prUrl: 'https://gitlab.com/g/p/-/merge_requests/5',
+      });
+    });
+
+    it('is case-insensitive for Rework: prefix on conversation notes', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                iid: 5,
+                web_url: 'https://gitlab.com/g/p/-/merge_requests/5',
+              },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                notes: [
+                  {
+                    body: 'rework: lowercase prefix',
+                    resolvable: true,
+                    resolved: false,
+                    system: false,
+                  },
+                ],
+              },
+            ]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkMrReviewState(
+        'token',
+        'https://gitlab.com/api/v4',
+        'g/p',
+        'feature/case',
+      );
+
+      expect(result?.changesRequested).toBe(true);
     });
 
     it('returns undefined when no open MR for branch', async () => {
@@ -331,7 +459,7 @@ describe('gitlab', () => {
       vi.unstubAllGlobals();
     });
 
-    it('returns unresolved discussion note bodies', async () => {
+    it('returns all DiffNote comments and only Rework: conversation comments', async () => {
       vi.stubGlobal(
         'fetch',
         vi.fn(() =>
@@ -342,7 +470,19 @@ describe('gitlab', () => {
                 {
                   notes: [
                     {
-                      body: 'Please fix this',
+                      body: 'This needs fixing',
+                      resolvable: true,
+                      resolved: false,
+                      system: false,
+                      type: 'DiffNote',
+                      position: { new_path: 'src/main.ts' },
+                    },
+                  ],
+                },
+                {
+                  notes: [
+                    {
+                      body: 'Looks good to me',
                       resolvable: true,
                       resolved: false,
                       system: false,
@@ -352,7 +492,7 @@ describe('gitlab', () => {
                 {
                   notes: [
                     {
-                      body: 'Also this',
+                      body: 'Rework: Also fix the validation',
                       resolvable: true,
                       resolved: false,
                       system: false,
@@ -371,10 +511,13 @@ describe('gitlab', () => {
         42,
       );
 
-      expect(comments).toEqual(['Please fix this', 'Also this']);
+      expect(comments).toEqual([
+        '[src/main.ts] This needs fixing',
+        'Also fix the validation',
+      ]);
     });
 
-    it('prefixes notes with file path when available', async () => {
+    it('includes DiffNote comments with file path prefix', async () => {
       vi.stubGlobal(
         'fetch',
         vi.fn(() =>
@@ -389,6 +532,7 @@ describe('gitlab', () => {
                       resolvable: true,
                       resolved: false,
                       system: false,
+                      type: 'DiffNote',
                       position: { new_path: 'src/main.ts' },
                     },
                   ],
@@ -408,7 +552,7 @@ describe('gitlab', () => {
       expect(comments).toEqual(['[src/main.ts] Needs refactor']);
     });
 
-    it('filters out system notes and resolved discussions', async () => {
+    it('filters out system notes and non-Rework: conversation comments', async () => {
       vi.stubGlobal(
         'fetch',
         vi.fn(() =>
@@ -419,28 +563,19 @@ describe('gitlab', () => {
                 {
                   notes: [
                     {
-                      body: 'System note',
+                      body: 'System DiffNote',
                       resolvable: true,
                       resolved: false,
                       system: true,
+                      type: 'DiffNote',
                     },
                   ],
                 },
                 {
                   notes: [
                     {
-                      body: 'Resolved comment',
+                      body: 'Regular discussion comment',
                       resolvable: true,
-                      resolved: true,
-                      system: false,
-                    },
-                  ],
-                },
-                {
-                  notes: [
-                    {
-                      body: 'Non-resolvable',
-                      resolvable: false,
                       resolved: false,
                       system: false,
                     },
@@ -449,7 +584,7 @@ describe('gitlab', () => {
                 {
                   notes: [
                     {
-                      body: 'Valid comment',
+                      body: 'Rework: Valid comment',
                       resolvable: true,
                       resolved: false,
                       system: false,

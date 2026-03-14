@@ -15,6 +15,10 @@ import {
 import type { PrCreationResult, PrReviewState } from '~/types/index.js';
 
 import { basicAuth, postPullRequest } from '../post-pr/post-pr.js';
+import {
+  extractReworkContent,
+  isReworkComment,
+} from '../rework-comment/rework-comment.js';
 
 /**
  * Create a pull request on Bitbucket Cloud.
@@ -128,6 +132,10 @@ export async function createServerPullRequest(
 /**
  * Check the review state of an open PR on Bitbucket Cloud for a given branch.
  *
+ * Finds the open PR, fetches all comments. Inline comments (with `inline`
+ * property) always trigger rework. General conversation comments only
+ * trigger rework when prefixed with `Rework:`.
+ *
  * @returns The review state, or `undefined` if no open PR exists.
  */
 export async function checkPrReviewState(
@@ -138,33 +146,50 @@ export async function checkPrReviewState(
   branch: string,
 ): Promise<PrReviewState | undefined> {
   try {
-    const url =
+    const prUrl =
       `https://api.bitbucket.org/2.0/repositories/${workspace}/${repoSlug}/pullrequests` +
       `?q=source.branch.name="${branch}"&state=OPEN`;
 
-    const res = await fetch(url, {
+    const prRes = await fetch(prUrl, {
       headers: { Authorization: basicAuth(username, token) },
     });
-    if (!res.ok) return undefined;
+    if (!prRes.ok) return undefined;
 
-    const parsed = bitbucketPrListSchema.parse(await res.json());
+    const parsed = bitbucketPrListSchema.parse(await prRes.json());
     if (parsed.values.length === 0) return undefined;
 
     const pr = parsed.values[0];
-    const changesRequested = pr.participants.some(
-      (p) => p.state === 'changes_requested',
-    );
-    const prUrl = pr.links.html?.href ?? '';
+    const htmlUrl = pr.links.html?.href ?? '';
 
-    return { changesRequested, prNumber: pr.id, prUrl };
+    const commentsUrl =
+      `https://api.bitbucket.org/2.0/repositories/${workspace}/${repoSlug}/pullrequests/${pr.id}/comments` +
+      `?pagelen=100`;
+
+    const commentsRes = await fetch(commentsUrl, {
+      headers: { Authorization: basicAuth(username, token) },
+    });
+
+    if (!commentsRes.ok) return undefined;
+
+    const comments = bitbucketCommentsSchema.parse(await commentsRes.json());
+    const hasInline = comments.values.some((c) => c.inline != null);
+    const hasReworkConvo = comments.values.some(
+      (c) => c.inline == null && isReworkComment(c.content.raw),
+    );
+    const changesRequested = hasInline || hasReworkConvo;
+
+    return { changesRequested, prNumber: pr.id, prUrl: htmlUrl };
   } catch {
     return undefined;
   }
 }
 
 /**
- * Fetch review comments on a Bitbucket Cloud PR.
+ * Fetch feedback comments on a Bitbucket Cloud PR.
  *
+ * Inline comments (with `inline` property) are always included — they
+ * inherently represent change requests. General conversation comments are
+ * only included when prefixed with `Rework:` (prefix stripped).
  * Inline comments are prefixed with `[path]`.
  */
 export async function fetchPrReviewComments(
@@ -185,10 +210,18 @@ export async function fetchPrReviewComments(
     if (!res.ok) return [];
 
     const parsed = bitbucketCommentsSchema.parse(await res.json());
-    return parsed.values.map((c) => {
-      const prefix = c.inline?.path ? `[${c.inline.path}] ` : '';
-      return `${prefix}${c.content.raw}`;
-    });
+    const comments: string[] = [];
+
+    for (const c of parsed.values) {
+      if (c.inline != null) {
+        const prefix = c.inline.path ? `[${c.inline.path}] ` : '';
+        comments.push(`${prefix}${c.content.raw}`);
+      } else if (isReworkComment(c.content.raw)) {
+        comments.push(extractReworkContent(c.content.raw));
+      }
+    }
+
+    return comments;
   } catch {
     return [];
   }
@@ -201,6 +234,10 @@ export async function fetchPrReviewComments(
 /**
  * Check the review state of an open PR on Bitbucket Server/DC for a given branch.
  *
+ * Finds the open PR, fetches all comments. Inline comments (with `anchor`
+ * property) always trigger rework. General conversation comments only
+ * trigger rework when prefixed with `Rework:`.
+ *
  * @returns The review state, or `undefined` if no open PR exists.
  */
 export async function checkServerPrReviewState(
@@ -211,34 +248,53 @@ export async function checkServerPrReviewState(
   branch: string,
 ): Promise<PrReviewState | undefined> {
   try {
-    const url =
+    const prUrl =
       `${apiBase}/projects/${projectKey}/repos/${repoSlug}/pull-requests` +
       `?state=OPEN&at=refs/heads/${branch}`;
 
-    const res = await fetch(url, {
+    const prRes = await fetch(prUrl, {
       headers: { Authorization: `Bearer ${token}` },
     });
-    if (!res.ok) return undefined;
+    if (!prRes.ok) return undefined;
 
-    const parsed = bitbucketServerPrListSchema.parse(await res.json());
+    const parsed = bitbucketServerPrListSchema.parse(await prRes.json());
     if (parsed.values.length === 0) return undefined;
 
     const pr = parsed.values[0];
-    const changesRequested = pr.reviewers.some(
-      (r) => r.status === 'NEEDS_WORK',
-    );
-    const prUrl = pr.links.self?.[0]?.href ?? '';
+    const htmlUrl = pr.links.self?.[0]?.href ?? '';
 
-    return { changesRequested, prNumber: pr.id, prUrl };
+    const commentsUrl =
+      `${apiBase}/projects/${projectKey}/repos/${repoSlug}/pull-requests/${pr.id}/comments` +
+      `?limit=100`;
+
+    const commentsRes = await fetch(commentsUrl, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+
+    if (!commentsRes.ok) return undefined;
+
+    const comments = bitbucketServerCommentsSchema.parse(
+      await commentsRes.json(),
+    );
+    const hasInline = comments.values.some((c) => c.anchor != null);
+    const hasReworkConvo = comments.values.some(
+      (c) => c.anchor == null && isReworkComment(c.text),
+    );
+    const changesRequested = hasInline || hasReworkConvo;
+
+    return { changesRequested, prNumber: pr.id, prUrl: htmlUrl };
   } catch {
     return undefined;
   }
 }
 
 /**
- * Fetch review comments on a Bitbucket Server/DC PR.
+ * Fetch feedback comments on a Bitbucket Server/DC PR.
  *
- * Comments on specific files are prefixed with `[path]`.
+ * Inline comments (with `anchor` property) are always included — they
+ * inherently represent change requests. General conversation comments are
+ * only included when prefixed with `Rework:` (prefix stripped).
+ * Inline comments are prefixed with `[path]`.
  */
 export async function fetchServerPrReviewComments(
   token: string,
@@ -258,10 +314,18 @@ export async function fetchServerPrReviewComments(
     if (!res.ok) return [];
 
     const parsed = bitbucketServerCommentsSchema.parse(await res.json());
-    return parsed.values.map((c) => {
-      const prefix = c.anchor?.path ? `[${c.anchor.path}] ` : '';
-      return `${prefix}${c.text}`;
-    });
+    const comments: string[] = [];
+
+    for (const c of parsed.values) {
+      if (c.anchor != null) {
+        const prefix = c.anchor.path ? `[${c.anchor.path}] ` : '';
+        comments.push(`${prefix}${c.text}`);
+      } else if (isReworkComment(c.text)) {
+        comments.push(extractReworkContent(c.text));
+      }
+    }
+
+    return comments;
   } catch {
     return [];
   }

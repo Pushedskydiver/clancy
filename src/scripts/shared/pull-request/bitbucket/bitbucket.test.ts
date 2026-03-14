@@ -244,32 +244,40 @@ describe('bitbucket', () => {
   // -------------------------------------------------------------------------
 
   describe('checkPrReviewState (Cloud)', () => {
-    it('returns changesRequested: true when participant has changes_requested state', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(() =>
-          Promise.resolve({
-            ok: true,
-            json: () =>
-              Promise.resolve({
-                values: [
-                  {
-                    id: 10,
-                    links: {
-                      html: {
-                        href: 'https://bitbucket.org/ws/repo/pull-requests/10',
-                      },
+    it('returns changesRequested: true when inline comments exist (no Rework: prefix needed)', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              values: [
+                {
+                  id: 10,
+                  links: {
+                    html: {
+                      href: 'https://bitbucket.org/ws/repo/pull-requests/10',
                     },
-                    participants: [
-                      { state: 'approved', role: 'REVIEWER' },
-                      { state: 'changes_requested', role: 'REVIEWER' },
-                    ],
                   },
-                ],
-              }),
-          }),
-        ),
-      );
+                  participants: [{ state: 'approved', role: 'REVIEWER' }],
+                },
+              ],
+            }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              values: [
+                {
+                  content: { raw: 'This needs fixing' },
+                  inline: { path: 'src/index.ts' },
+                  created_on: '2026-01-01T00:00:00Z',
+                },
+              ],
+            }),
+        });
+      vi.stubGlobal('fetch', mockFetch);
 
       const result = await checkPrReviewState(
         'user',
@@ -286,29 +294,88 @@ describe('bitbucket', () => {
       });
     });
 
-    it('returns changesRequested: false when all participants approved', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(() =>
-          Promise.resolve({
-            ok: true,
-            json: () =>
-              Promise.resolve({
-                values: [
-                  {
-                    id: 11,
-                    links: {
-                      html: {
-                        href: 'https://bitbucket.org/ws/repo/pull-requests/11',
-                      },
+    it('returns changesRequested: true when a Rework: conversation comment exists', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              values: [
+                {
+                  id: 10,
+                  links: {
+                    html: {
+                      href: 'https://bitbucket.org/ws/repo/pull-requests/10',
                     },
-                    participants: [{ state: 'approved', role: 'REVIEWER' }],
                   },
-                ],
-              }),
-          }),
-        ),
+                  participants: [{ state: 'approved', role: 'REVIEWER' }],
+                },
+              ],
+            }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              values: [
+                {
+                  content: { raw: 'Rework: Fix the validation' },
+                  created_on: '2026-01-01T00:00:00Z',
+                },
+              ],
+            }),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkPrReviewState(
+        'user',
+        'token',
+        'ws',
+        'repo',
+        'feature/test',
       );
+
+      expect(result).toEqual({
+        changesRequested: true,
+        prNumber: 10,
+        prUrl: 'https://bitbucket.org/ws/repo/pull-requests/10',
+      });
+    });
+
+    it('returns changesRequested: false when only non-Rework: conversation comments exist', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              values: [
+                {
+                  id: 11,
+                  links: {
+                    html: {
+                      href: 'https://bitbucket.org/ws/repo/pull-requests/11',
+                    },
+                  },
+                  participants: [{ state: 'approved', role: 'REVIEWER' }],
+                },
+              ],
+            }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              values: [
+                {
+                  content: { raw: 'Nice work!' },
+                  created_on: '2026-01-01T00:00:00Z',
+                },
+              ],
+            }),
+        });
+      vi.stubGlobal('fetch', mockFetch);
 
       const result = await checkPrReviewState(
         'user',
@@ -349,7 +416,7 @@ describe('bitbucket', () => {
   });
 
   describe('fetchPrReviewComments (Cloud)', () => {
-    it('returns comment bodies', async () => {
+    it('returns all inline comments and only Rework: conversation comments', async () => {
       vi.stubGlobal(
         'fetch',
         vi.fn(() =>
@@ -359,12 +426,17 @@ describe('bitbucket', () => {
               Promise.resolve({
                 values: [
                   {
-                    content: { raw: 'Looks good' },
+                    content: { raw: 'This needs fixing' },
+                    inline: { path: 'src/index.ts' },
                     created_on: '2026-01-01T00:00:00Z',
                   },
                   {
-                    content: { raw: 'Fix this' },
+                    content: { raw: 'Rework: Fix the validation' },
                     created_on: '2026-01-02T00:00:00Z',
+                  },
+                  {
+                    content: { raw: 'Looks good' },
+                    created_on: '2026-01-03T00:00:00Z',
                   },
                 ],
               }),
@@ -380,10 +452,13 @@ describe('bitbucket', () => {
         10,
       );
 
-      expect(result).toEqual(['Looks good', 'Fix this']);
+      expect(result).toEqual([
+        '[src/index.ts] This needs fixing',
+        'Fix the validation',
+      ]);
     });
 
-    it('prefixes inline comments with path', async () => {
+    it('includes inline comments without Rework: prefix', async () => {
       vi.stubGlobal(
         'fetch',
         vi.fn(() =>
@@ -393,7 +468,7 @@ describe('bitbucket', () => {
               Promise.resolve({
                 values: [
                   {
-                    content: { raw: 'Rename this' },
+                    content: { raw: 'Rename this variable' },
                     inline: { path: 'src/index.ts' },
                     created_on: '2026-01-01T00:00:00Z',
                   },
@@ -411,7 +486,37 @@ describe('bitbucket', () => {
         10,
       );
 
-      expect(result).toEqual(['[src/index.ts] Rename this']);
+      expect(result).toEqual(['[src/index.ts] Rename this variable']);
+    });
+
+    it('excludes non-Rework: conversation comments', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                values: [
+                  {
+                    content: { raw: 'Looks good' },
+                    created_on: '2026-01-01T00:00:00Z',
+                  },
+                ],
+              }),
+          }),
+        ),
+      );
+
+      const result = await fetchPrReviewComments(
+        'user',
+        'token',
+        'ws',
+        'repo',
+        10,
+      );
+
+      expect(result).toEqual([]);
     });
 
     it('returns empty array on error', async () => {
@@ -437,34 +542,42 @@ describe('bitbucket', () => {
   // -------------------------------------------------------------------------
 
   describe('checkServerPrReviewState', () => {
-    it('returns changesRequested: true when reviewer has NEEDS_WORK status', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(() =>
-          Promise.resolve({
-            ok: true,
-            json: () =>
-              Promise.resolve({
-                values: [
-                  {
-                    id: 20,
-                    links: {
-                      self: [
-                        {
-                          href: 'https://bb.acme.com/projects/PROJ/repos/repo/pull-requests/20',
-                        },
-                      ],
-                    },
-                    reviewers: [
-                      { status: 'APPROVED' },
-                      { status: 'NEEDS_WORK' },
+    it('returns changesRequested: true when inline comments exist (no Rework: prefix needed)', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              values: [
+                {
+                  id: 20,
+                  links: {
+                    self: [
+                      {
+                        href: 'https://bb.acme.com/projects/PROJ/repos/repo/pull-requests/20',
+                      },
                     ],
                   },
-                ],
-              }),
-          }),
-        ),
-      );
+                  reviewers: [{ status: 'APPROVED' }],
+                },
+              ],
+            }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              values: [
+                {
+                  text: 'This needs fixing',
+                  anchor: { path: 'src/app.ts' },
+                  createdDate: 1700000000000,
+                },
+              ],
+            }),
+        });
+      vi.stubGlobal('fetch', mockFetch);
 
       const result = await checkServerPrReviewState(
         'token',
@@ -476,6 +589,103 @@ describe('bitbucket', () => {
 
       expect(result).toEqual({
         changesRequested: true,
+        prNumber: 20,
+        prUrl: 'https://bb.acme.com/projects/PROJ/repos/repo/pull-requests/20',
+      });
+    });
+
+    it('returns changesRequested: true when a Rework: conversation comment exists', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              values: [
+                {
+                  id: 20,
+                  links: {
+                    self: [
+                      {
+                        href: 'https://bb.acme.com/projects/PROJ/repos/repo/pull-requests/20',
+                      },
+                    ],
+                  },
+                  reviewers: [{ status: 'APPROVED' }],
+                },
+              ],
+            }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              values: [
+                {
+                  text: 'Rework: Fix the error handling',
+                  createdDate: 1700000000000,
+                },
+              ],
+            }),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkServerPrReviewState(
+        'token',
+        'https://bb.acme.com/rest/api/1.0',
+        'PROJ',
+        'repo',
+        'feature/test',
+      );
+
+      expect(result).toEqual({
+        changesRequested: true,
+        prNumber: 20,
+        prUrl: 'https://bb.acme.com/projects/PROJ/repos/repo/pull-requests/20',
+      });
+    });
+
+    it('returns changesRequested: false when only non-Rework: conversation comments exist', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              values: [
+                {
+                  id: 20,
+                  links: {
+                    self: [
+                      {
+                        href: 'https://bb.acme.com/projects/PROJ/repos/repo/pull-requests/20',
+                      },
+                    ],
+                  },
+                  reviewers: [{ status: 'APPROVED' }],
+                },
+              ],
+            }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              values: [{ text: 'Nice job', createdDate: 1700000000000 }],
+            }),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkServerPrReviewState(
+        'token',
+        'https://bb.acme.com/rest/api/1.0',
+        'PROJ',
+        'repo',
+        'feature/ok',
+      );
+
+      expect(result).toEqual({
+        changesRequested: false,
         prNumber: 20,
         prUrl: 'https://bb.acme.com/projects/PROJ/repos/repo/pull-requests/20',
       });
@@ -505,7 +715,7 @@ describe('bitbucket', () => {
   });
 
   describe('fetchServerPrReviewComments', () => {
-    it('returns comment text', async () => {
+    it('returns all inline comments and only Rework: conversation comments', async () => {
       vi.stubGlobal(
         'fetch',
         vi.fn(() =>
@@ -514,11 +724,18 @@ describe('bitbucket', () => {
             json: () =>
               Promise.resolve({
                 values: [
-                  { text: 'Please fix', createdDate: 1700000000000 },
                   {
-                    text: 'Update this line',
+                    text: 'This needs fixing',
                     anchor: { path: 'src/app.ts' },
+                    createdDate: 1700000000000,
+                  },
+                  {
+                    text: 'Rework: Please fix',
                     createdDate: 1700000001000,
+                  },
+                  {
+                    text: 'Looks good',
+                    createdDate: 1700000002000,
                   },
                 ],
               }),
@@ -534,7 +751,68 @@ describe('bitbucket', () => {
         20,
       );
 
-      expect(result).toEqual(['Please fix', '[src/app.ts] Update this line']);
+      expect(result).toEqual(['[src/app.ts] This needs fixing', 'Please fix']);
+    });
+
+    it('includes inline comments without Rework: prefix', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                values: [
+                  {
+                    text: 'Update this line',
+                    anchor: { path: 'src/app.ts' },
+                    createdDate: 1700000000000,
+                  },
+                ],
+              }),
+          }),
+        ),
+      );
+
+      const result = await fetchServerPrReviewComments(
+        'token',
+        'https://bb.acme.com/rest/api/1.0',
+        'PROJ',
+        'repo',
+        20,
+      );
+
+      expect(result).toEqual(['[src/app.ts] Update this line']);
+    });
+
+    it('excludes non-Rework: conversation comments', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                values: [
+                  {
+                    text: 'Looks good overall',
+                    createdDate: 1700000000000,
+                  },
+                ],
+              }),
+          }),
+        ),
+      );
+
+      const result = await fetchServerPrReviewComments(
+        'token',
+        'https://bb.acme.com/rest/api/1.0',
+        'PROJ',
+        'repo',
+        20,
+      );
+
+      expect(result).toEqual([]);
     });
 
     it('returns empty array on error', async () => {
