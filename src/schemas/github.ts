@@ -55,6 +55,7 @@ export const githubReviewListSchema = z.array(githubReviewSchema);
 export const githubPrCommentSchema = z.object({
   body: z.optional(z.nullable(z.string())),
   path: z.optional(z.string()),
+  created_at: z.optional(z.string()),
 });
 
 /** Response from `GET /repos/{owner}/{repo}/pulls/{number}/comments` (array). */

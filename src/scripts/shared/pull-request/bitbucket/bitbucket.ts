@@ -136,6 +136,7 @@ export async function createServerPullRequest(
  * property) always trigger rework. General conversation comments only
  * trigger rework when prefixed with `Rework:`.
  *
+ * @param since - ISO 8601 timestamp; only comments created after this time trigger rework.
  * @returns The review state, or `undefined` if no open PR exists.
  */
 export async function checkPrReviewState(
@@ -144,6 +145,7 @@ export async function checkPrReviewState(
   workspace: string,
   repoSlug: string,
   branch: string,
+  since?: string,
 ): Promise<PrReviewState | undefined> {
   try {
     const prUrl =
@@ -172,8 +174,11 @@ export async function checkPrReviewState(
     if (!commentsRes.ok) return undefined;
 
     const comments = bitbucketCommentsSchema.parse(await commentsRes.json());
-    const hasInline = comments.values.some((c) => c.inline != null);
-    const hasReworkConvo = comments.values.some(
+    const relevant = since
+      ? comments.values.filter((c) => c.created_on > since)
+      : comments.values;
+    const hasInline = relevant.some((c) => c.inline != null);
+    const hasReworkConvo = relevant.some(
       (c) => c.inline == null && isReworkComment(c.content.raw),
     );
     const changesRequested = hasInline || hasReworkConvo;
@@ -198,6 +203,7 @@ export async function fetchPrReviewComments(
   workspace: string,
   repoSlug: string,
   prId: number,
+  since?: string,
 ): Promise<string[]> {
   try {
     const url =
@@ -210,9 +216,12 @@ export async function fetchPrReviewComments(
     if (!res.ok) return [];
 
     const parsed = bitbucketCommentsSchema.parse(await res.json());
+    const relevant = since
+      ? parsed.values.filter((c) => c.created_on > since)
+      : parsed.values;
     const comments: string[] = [];
 
-    for (const c of parsed.values) {
+    for (const c of relevant) {
       if (c.inline != null) {
         const prefix = c.inline.path ? `[${c.inline.path}] ` : '';
         comments.push(`${prefix}${c.content.raw}`);
@@ -238,6 +247,7 @@ export async function fetchPrReviewComments(
  * property) always trigger rework. General conversation comments only
  * trigger rework when prefixed with `Rework:`.
  *
+ * @param since - ISO 8601 timestamp; only comments created after this time trigger rework.
  * @returns The review state, or `undefined` if no open PR exists.
  */
 export async function checkServerPrReviewState(
@@ -246,6 +256,7 @@ export async function checkServerPrReviewState(
   projectKey: string,
   repoSlug: string,
   branch: string,
+  since?: string,
 ): Promise<PrReviewState | undefined> {
   try {
     const prUrl =
@@ -276,8 +287,12 @@ export async function checkServerPrReviewState(
     const activities = bitbucketServerActivitiesSchema.parse(
       await activitiesRes.json(),
     );
+    const sinceMs = since ? Date.parse(since) : undefined;
     const commentActivities = activities.values.filter(
-      (a) => a.action === 'COMMENTED' && a.comment,
+      (a) =>
+        a.action === 'COMMENTED' &&
+        a.comment &&
+        (sinceMs == null || a.comment.createdDate > sinceMs),
     );
     const hasInline = commentActivities.some((a) => a.comment!.anchor != null);
     const hasReworkConvo = commentActivities.some(
@@ -305,6 +320,7 @@ export async function fetchServerPrReviewComments(
   projectKey: string,
   repoSlug: string,
   prId: number,
+  since?: string,
 ): Promise<string[]> {
   try {
     const url =
@@ -317,10 +333,12 @@ export async function fetchServerPrReviewComments(
     if (!res.ok) return [];
 
     const parsed = bitbucketServerActivitiesSchema.parse(await res.json());
+    const sinceMs = since ? Date.parse(since) : undefined;
     const comments: string[] = [];
 
     for (const a of parsed.values) {
       if (a.action !== 'COMMENTED' || !a.comment) continue;
+      if (sinceMs != null && a.comment.createdDate <= sinceMs) continue;
 
       const c = a.comment;
       if (c.anchor != null) {

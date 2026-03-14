@@ -451,6 +451,140 @@ describe('gitlab', () => {
 
       expect(result).toBeUndefined();
     });
+
+    it('old DiffNote before since does not trigger rework', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                iid: 42,
+                web_url: 'https://gitlab.com/g/p/-/merge_requests/42',
+              },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                notes: [
+                  {
+                    body: 'Old inline comment',
+                    resolvable: true,
+                    resolved: false,
+                    system: false,
+                    type: 'DiffNote',
+                    created_at: '2026-03-14T08:00:00Z',
+                    position: { new_path: 'src/main.ts' },
+                  },
+                ],
+              },
+            ]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkMrReviewState(
+        'token',
+        'https://gitlab.com/api/v4',
+        'g/p',
+        'feature/test',
+        '2026-03-14T10:00:00Z',
+      );
+
+      expect(result?.changesRequested).toBe(false);
+    });
+
+    it('new DiffNote after since triggers rework', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                iid: 42,
+                web_url: 'https://gitlab.com/g/p/-/merge_requests/42',
+              },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                notes: [
+                  {
+                    body: 'New inline comment',
+                    resolvable: true,
+                    resolved: false,
+                    system: false,
+                    type: 'DiffNote',
+                    created_at: '2026-03-14T12:00:00Z',
+                    position: { new_path: 'src/main.ts' },
+                  },
+                ],
+              },
+            ]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkMrReviewState(
+        'token',
+        'https://gitlab.com/api/v4',
+        'g/p',
+        'feature/test',
+        '2026-03-14T10:00:00Z',
+      );
+
+      expect(result?.changesRequested).toBe(true);
+    });
+
+    it('without since, all notes trigger rework (backward compat)', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                iid: 42,
+                web_url: 'https://gitlab.com/g/p/-/merge_requests/42',
+              },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                notes: [
+                  {
+                    body: 'Old inline comment',
+                    resolvable: true,
+                    resolved: false,
+                    system: false,
+                    type: 'DiffNote',
+                    created_at: '2026-01-01T00:00:00Z',
+                    position: { new_path: 'src/main.ts' },
+                  },
+                ],
+              },
+            ]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkMrReviewState(
+        'token',
+        'https://gitlab.com/api/v4',
+        'g/p',
+        'feature/test',
+      );
+
+      expect(result?.changesRequested).toBe(true);
+    });
   });
 
   describe('fetchMrReviewComments', () => {

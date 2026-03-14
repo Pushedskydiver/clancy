@@ -407,6 +407,167 @@ describe('pull-request/github', () => {
 
       expect(result).toBeUndefined();
     });
+
+    it('passes since parameter to API URLs when provided', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                number: 10,
+                html_url: 'https://github.com/owner/repo/pull/10',
+                state: 'open',
+              },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await checkPrReviewState(
+        'ghp_test',
+        'owner/repo',
+        'feature/test',
+        'owner',
+        'https://api.github.com',
+        '2026-03-14T10:00:00Z',
+      );
+
+      // Inline comments URL should include since
+      expect(mockFetch.mock.calls[1]![0]).toContain(
+        '&since=2026-03-14T10:00:00Z',
+      );
+      // Conversation comments URL should include since
+      expect(mockFetch.mock.calls[2]![0]).toContain(
+        '&since=2026-03-14T10:00:00Z',
+      );
+    });
+
+    it('old comments before since do not trigger rework (GitHub filters server-side)', async () => {
+      // When since is provided, GitHub API filters server-side.
+      // Simulate: API returns no comments after since (all old).
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                number: 10,
+                html_url: 'https://github.com/owner/repo/pull/10',
+                state: 'open',
+              },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkPrReviewState(
+        'ghp_test',
+        'owner/repo',
+        'feature/test',
+        'owner',
+        'https://api.github.com',
+        '2026-03-14T10:00:00Z',
+      );
+
+      expect(result?.changesRequested).toBe(false);
+    });
+
+    it('new comments after since trigger rework', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                number: 10,
+                html_url: 'https://github.com/owner/repo/pull/10',
+                state: 'open',
+              },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                body: 'New inline comment',
+                path: 'src/index.ts',
+                created_at: '2026-03-14T12:00:00Z',
+              },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkPrReviewState(
+        'ghp_test',
+        'owner/repo',
+        'feature/test',
+        'owner',
+        'https://api.github.com',
+        '2026-03-14T10:00:00Z',
+      );
+
+      expect(result?.changesRequested).toBe(true);
+    });
+
+    it('without since, all comments trigger rework (backward compat)', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                number: 10,
+                html_url: 'https://github.com/owner/repo/pull/10',
+                state: 'open',
+              },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([{ body: 'Inline comment', path: 'src/index.ts' }]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkPrReviewState(
+        'ghp_test',
+        'owner/repo',
+        'feature/test',
+        'owner',
+      );
+
+      expect(result?.changesRequested).toBe(true);
+      // Should NOT include since parameter
+      expect(mockFetch.mock.calls[1]![0]).not.toContain('&since=');
+    });
   });
 
   describe('fetchPrReviewComments', () => {

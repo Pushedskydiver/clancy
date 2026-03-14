@@ -30,7 +30,6 @@ src/
 │       ├── env-parser/env-parser.test.ts                    — .env file parsing
 │       ├── env-schema/env-schema.test.ts                    — board detection + validation
 │       ├── feasibility/feasibility.test.ts                  — ticket feasibility check
-│       ├── feedback/feedback.test.ts                        — reviewer comment fetching
 │       ├── format/format.test.ts                            — shared formatters
 │       ├── git-ops/git-ops.test.ts                          — git operations
 │       ├── http/http.test.ts                                — HTTP helpers + pingEndpoint

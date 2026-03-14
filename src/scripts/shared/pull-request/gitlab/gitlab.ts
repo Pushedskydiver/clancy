@@ -71,6 +71,7 @@ export async function createMergeRequest(
  * @param apiBase - The API base URL (e.g. `https://gitlab.com/api/v4`).
  * @param projectPath - The raw project path (e.g. `group/subgroup/project`). URL-encoded internally.
  * @param branch - The source branch to look up.
+ * @param since - ISO 8601 timestamp; only notes created after this time trigger rework.
  * @returns The review state if an open MR exists, otherwise `undefined`.
  */
 export async function checkMrReviewState(
@@ -78,6 +79,7 @@ export async function checkMrReviewState(
   apiBase: string,
   projectPath: string,
   branch: string,
+  since?: string,
 ): Promise<PrReviewState | undefined> {
   try {
     const encodedPath = encodeURIComponent(projectPath);
@@ -110,6 +112,7 @@ export async function checkMrReviewState(
     for (const discussion of discussions) {
       for (const note of discussion.notes) {
         if (note.system) continue;
+        if (since && note.created_at && note.created_at <= since) continue;
         if (note.type === 'DiffNote') {
           hasRework = true;
           break;
@@ -144,6 +147,7 @@ export async function checkMrReviewState(
  * @param apiBase - The API base URL (e.g. `https://gitlab.com/api/v4`).
  * @param projectPath - The raw project path. URL-encoded internally.
  * @param mrIid - The MR internal ID (iid).
+ * @param since - ISO 8601 timestamp; only notes created after this time are returned.
  * @returns An array of feedback descriptions.
  */
 export async function fetchMrReviewComments(
@@ -151,6 +155,7 @@ export async function fetchMrReviewComments(
   apiBase: string,
   projectPath: string,
   mrIid: number,
+  since?: string,
 ): Promise<string[]> {
   try {
     const encodedPath = encodeURIComponent(projectPath);
@@ -168,6 +173,7 @@ export async function fetchMrReviewComments(
     for (const discussion of discussions) {
       for (const note of discussion.notes) {
         if (note.system) continue;
+        if (since && note.created_at && note.created_at <= since) continue;
 
         if (note.type === 'DiffNote') {
           const prefix = note.position?.new_path

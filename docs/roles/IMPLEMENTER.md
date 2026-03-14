@@ -132,7 +132,7 @@ If no actionable comments are found, Clancy moves on to the next fresh ticket in
 
 ### Max rework guard
 
-After `CLANCY_MAX_REWORK` cycles (default: 3) on the same ticket, Clancy logs `SKIPPED` with reason "max rework cycles reached -- needs human intervention" and moves on. Increase via `/clancy:settings` or resolve the ticket manually.
+After `CLANCY_MAX_REWORK` cycles (default: 3) on the same ticket, Clancy logs `SKIPPED` and moves on. The ticket needs human intervention. Increase the limit via `/clancy:settings` or resolve the ticket manually.
 
 ## How the loop works
 

@@ -33,6 +33,7 @@ import {
  * @param branch - The source branch name.
  * @param owner - The repository owner (used for `head` filter).
  * @param apiBase - The API base URL (defaults to `https://api.github.com`).
+ * @param since - ISO 8601 timestamp; only comments created after this time trigger rework.
  * @returns The review state, or `undefined` if no open PR or on error.
  */
 export async function checkPrReviewState(
@@ -41,6 +42,7 @@ export async function checkPrReviewState(
   branch: string,
   owner: string,
   apiBase = GITHUB_API,
+  since?: string,
 ): Promise<PrReviewState | undefined> {
   try {
     const headers = githubHeaders(token);
@@ -56,15 +58,16 @@ export async function checkPrReviewState(
 
     const pr = prs[0];
 
+    const sinceParam = since ? `&since=${since}` : '';
     const [inlineRes, convoRes] = await Promise.all([
       fetch(
-        `${apiBase}/repos/${repo}/pulls/${pr.number}/comments?per_page=100`,
+        `${apiBase}/repos/${repo}/pulls/${pr.number}/comments?per_page=100${sinceParam}`,
         {
           headers,
         },
       ),
       fetch(
-        `${apiBase}/repos/${repo}/issues/${pr.number}/comments?per_page=100`,
+        `${apiBase}/repos/${repo}/issues/${pr.number}/comments?per_page=100${sinceParam}`,
         {
           headers,
         },
@@ -107,6 +110,7 @@ export async function checkPrReviewState(
  * @param repo - The repository in `owner/repo` format.
  * @param prNumber - The PR number.
  * @param apiBase - The API base URL (defaults to `https://api.github.com`).
+ * @param since - ISO 8601 timestamp; only comments created after this time are returned.
  * @returns An array of feedback descriptions, or `[]` on error.
  */
 export async function fetchPrReviewComments(
@@ -114,19 +118,21 @@ export async function fetchPrReviewComments(
   repo: string,
   prNumber: number,
   apiBase = GITHUB_API,
+  since?: string,
 ): Promise<string[]> {
   try {
     const headers = githubHeaders(token);
 
+    const sinceParam = since ? `&since=${since}` : '';
     const [inlineRes, convoRes] = await Promise.all([
       fetch(
-        `${apiBase}/repos/${repo}/pulls/${prNumber}/comments?per_page=100`,
+        `${apiBase}/repos/${repo}/pulls/${prNumber}/comments?per_page=100${sinceParam}`,
         {
           headers,
         },
       ),
       fetch(
-        `${apiBase}/repos/${repo}/issues/${prNumber}/comments?per_page=100`,
+        `${apiBase}/repos/${repo}/issues/${prNumber}/comments?per_page=100${sinceParam}`,
         {
           headers,
         },

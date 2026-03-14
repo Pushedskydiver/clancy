@@ -232,6 +232,13 @@ async function fetchReworkFromPrReview(
   for (const entry of toCheck) {
     const branch = computeTicketBranch(config.provider, entry.key);
 
+    // Convert progress timestamp (YYYY-MM-DD HH:MM) to ISO 8601 for API filtering.
+    // Only comments created AFTER this timestamp should trigger rework,
+    // preventing stale inline comments from causing infinite rework loops.
+    const since = entry.timestamp
+      ? `${entry.timestamp.replace(' ', 'T')}:00Z`
+      : undefined;
+
     let reviewState:
       | { changesRequested: boolean; prNumber: number; prUrl: string }
       | undefined;
@@ -244,6 +251,7 @@ async function fetchReworkFromPrReview(
           branch,
           remote.owner,
           apiBase,
+          since,
         );
         break;
       case 'gitlab':
@@ -252,6 +260,7 @@ async function fetchReworkFromPrReview(
           apiBase,
           remote.projectPath,
           branch,
+          since,
         );
         break;
       case 'bitbucket':
@@ -261,6 +270,7 @@ async function fetchReworkFromPrReview(
           remote.workspace,
           remote.repoSlug,
           branch,
+          since,
         );
         break;
       case 'bitbucket-server':
@@ -270,6 +280,7 @@ async function fetchReworkFromPrReview(
           remote.projectKey,
           remote.repoSlug,
           branch,
+          since,
         );
         break;
     }
@@ -285,6 +296,7 @@ async function fetchReworkFromPrReview(
             `${remote.owner}/${remote.repo}`,
             reviewState.prNumber,
             apiBase,
+            since,
           );
           break;
         case 'gitlab':
@@ -293,6 +305,7 @@ async function fetchReworkFromPrReview(
             apiBase,
             remote.projectPath,
             reviewState.prNumber,
+            since,
           );
           break;
         case 'bitbucket':
@@ -302,6 +315,7 @@ async function fetchReworkFromPrReview(
             remote.workspace,
             remote.repoSlug,
             reviewState.prNumber,
+            since,
           );
           break;
         case 'bitbucket-server':
@@ -311,6 +325,7 @@ async function fetchReworkFromPrReview(
             remote.projectKey,
             remote.repoSlug,
             reviewState.prNumber,
+            since,
           );
           break;
       }

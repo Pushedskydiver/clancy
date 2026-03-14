@@ -413,6 +413,146 @@ describe('bitbucket', () => {
 
       expect(result).toBeUndefined();
     });
+
+    it('old inline comments before since do not trigger rework', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              values: [
+                {
+                  id: 10,
+                  links: {
+                    html: {
+                      href: 'https://bitbucket.org/ws/repo/pull-requests/10',
+                    },
+                  },
+                  participants: [],
+                },
+              ],
+            }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              values: [
+                {
+                  content: { raw: 'Old inline comment' },
+                  inline: { path: 'src/index.ts' },
+                  created_on: '2026-03-14T08:00:00Z',
+                },
+              ],
+            }),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkPrReviewState(
+        'user',
+        'token',
+        'ws',
+        'repo',
+        'feature/test',
+        '2026-03-14T10:00:00Z',
+      );
+
+      expect(result?.changesRequested).toBe(false);
+    });
+
+    it('new inline comments after since trigger rework', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              values: [
+                {
+                  id: 10,
+                  links: {
+                    html: {
+                      href: 'https://bitbucket.org/ws/repo/pull-requests/10',
+                    },
+                  },
+                  participants: [],
+                },
+              ],
+            }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              values: [
+                {
+                  content: { raw: 'New inline comment' },
+                  inline: { path: 'src/index.ts' },
+                  created_on: '2026-03-14T12:00:00Z',
+                },
+              ],
+            }),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkPrReviewState(
+        'user',
+        'token',
+        'ws',
+        'repo',
+        'feature/test',
+        '2026-03-14T10:00:00Z',
+      );
+
+      expect(result?.changesRequested).toBe(true);
+    });
+
+    it('without since, all comments trigger rework (backward compat)', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              values: [
+                {
+                  id: 10,
+                  links: {
+                    html: {
+                      href: 'https://bitbucket.org/ws/repo/pull-requests/10',
+                    },
+                  },
+                  participants: [],
+                },
+              ],
+            }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              values: [
+                {
+                  content: { raw: 'Inline comment' },
+                  inline: { path: 'src/index.ts' },
+                  created_on: '2026-01-01T00:00:00Z',
+                },
+              ],
+            }),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkPrReviewState(
+        'user',
+        'token',
+        'ws',
+        'repo',
+        'feature/test',
+      );
+
+      expect(result?.changesRequested).toBe(true);
+    });
   });
 
   describe('fetchPrReviewComments (Cloud)', () => {
@@ -725,6 +865,165 @@ describe('bitbucket', () => {
       );
 
       expect(result).toBeUndefined();
+    });
+
+    it('old comments before since do not trigger rework', async () => {
+      const sinceTs = '2026-03-14T10:00:00Z';
+      const oldEpoch = Date.parse('2026-03-14T08:00:00Z');
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              values: [
+                {
+                  id: 20,
+                  links: {
+                    self: [
+                      {
+                        href: 'https://bb.acme.com/projects/PROJ/repos/repo/pull-requests/20',
+                      },
+                    ],
+                  },
+                  reviewers: [],
+                },
+              ],
+            }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              values: [
+                {
+                  action: 'COMMENTED',
+                  comment: {
+                    text: 'Old inline comment',
+                    anchor: { path: 'src/app.ts' },
+                    createdDate: oldEpoch,
+                  },
+                },
+              ],
+            }),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkServerPrReviewState(
+        'token',
+        'https://bb.acme.com/rest/api/1.0',
+        'PROJ',
+        'repo',
+        'feature/test',
+        sinceTs,
+      );
+
+      expect(result?.changesRequested).toBe(false);
+    });
+
+    it('new comments after since trigger rework', async () => {
+      const sinceTs = '2026-03-14T10:00:00Z';
+      const newEpoch = Date.parse('2026-03-14T12:00:00Z');
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              values: [
+                {
+                  id: 20,
+                  links: {
+                    self: [
+                      {
+                        href: 'https://bb.acme.com/projects/PROJ/repos/repo/pull-requests/20',
+                      },
+                    ],
+                  },
+                  reviewers: [],
+                },
+              ],
+            }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              values: [
+                {
+                  action: 'COMMENTED',
+                  comment: {
+                    text: 'New inline comment',
+                    anchor: { path: 'src/app.ts' },
+                    createdDate: newEpoch,
+                  },
+                },
+              ],
+            }),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkServerPrReviewState(
+        'token',
+        'https://bb.acme.com/rest/api/1.0',
+        'PROJ',
+        'repo',
+        'feature/test',
+        sinceTs,
+      );
+
+      expect(result?.changesRequested).toBe(true);
+    });
+
+    it('without since, all comments trigger rework (backward compat)', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              values: [
+                {
+                  id: 20,
+                  links: {
+                    self: [
+                      {
+                        href: 'https://bb.acme.com/projects/PROJ/repos/repo/pull-requests/20',
+                      },
+                    ],
+                  },
+                  reviewers: [],
+                },
+              ],
+            }),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              values: [
+                {
+                  action: 'COMMENTED',
+                  comment: {
+                    text: 'Old inline comment',
+                    anchor: { path: 'src/app.ts' },
+                    createdDate: 1700000000000,
+                  },
+                },
+              ],
+            }),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkServerPrReviewState(
+        'token',
+        'https://bb.acme.com/rest/api/1.0',
+        'PROJ',
+        'repo',
+        'feature/test',
+      );
+
+      expect(result?.changesRequested).toBe(true);
     });
   });
 
