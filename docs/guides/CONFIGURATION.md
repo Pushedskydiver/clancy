@@ -56,7 +56,7 @@ Posts to Slack or Teams when a ticket completes. The payload format (Slack vs Te
 | --- | --- | --- |
 | Jira | `status = "To Do"` | `CLANCY_JQL_STATUS` |
 | GitHub | No label filter by default (all open issues assigned to you). Set `CLANCY_LABEL=clancy` for a dedicated queue | `CLANCY_LABEL` |
-| Linear | `state.type: "unstarted"` | (hardcoded) |
+| Linear | `state.type: "unstarted"` | (hardcoded — not customisable) |
 
 ### Planning queue
 
