@@ -20,6 +20,7 @@ export const sharedEnvSchema = z.object({
   CLANCY_NOTIFY_WEBHOOK: z.optional(z.string()),
   CLANCY_STATUS_IN_PROGRESS: z.optional(z.string()),
   CLANCY_STATUS_DONE: z.optional(z.string()),
+  CLANCY_STATUS_REVIEW: z.optional(z.string()),
   MAX_ITERATIONS: z.optional(z.string()),
   PLAYWRIGHT_ENABLED: z.optional(z.string()),
   PLAYWRIGHT_DEV_PORT: z.optional(z.string()),
@@ -27,6 +28,14 @@ export const sharedEnvSchema = z.object({
   CLANCY_PLAN_STATUS: z.optional(z.string()),
   CLANCY_PLAN_LABEL: z.optional(z.string()),
   CLANCY_PLAN_STATE_TYPE: z.optional(z.string()),
+
+  // Git host integration (for PR creation on non-GitHub boards)
+  GITHUB_TOKEN: z.optional(z.string()),
+  GITLAB_TOKEN: z.optional(z.string()),
+  BITBUCKET_USER: z.optional(z.string()),
+  BITBUCKET_TOKEN: z.optional(z.string()),
+  CLANCY_GIT_PLATFORM: z.optional(z.string()),
+  CLANCY_GIT_API_URL: z.optional(z.string()),
 });
 
 // ─── Board-specific schemas ──────────────────────────────────────────────────

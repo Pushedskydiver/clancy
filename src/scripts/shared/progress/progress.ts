@@ -7,6 +7,8 @@
 import { appendFileSync, mkdirSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
+import type { ProgressStatus } from '~/types/index.js';
+
 /**
  * Format a date as `YYYY-MM-DD HH:MM`.
  *
@@ -31,7 +33,7 @@ export function formatTimestamp(date: Date): string {
  * @param projectRoot - The root directory of the project.
  * @param key - The ticket key (e.g., `'PROJ-123'`, `'#42'`).
  * @param summary - The ticket summary/title.
- * @param status - The completion status (`'DONE'` or `'SKIPPED'`).
+ * @param status - The completion status.
  *
  * @example
  * ```ts
@@ -43,7 +45,7 @@ export function appendProgress(
   projectRoot: string,
   key: string,
   summary: string,
-  status: 'DONE' | 'SKIPPED',
+  status: ProgressStatus,
 ): void {
   const filePath = join(projectRoot, '.clancy', 'progress.txt');
 
