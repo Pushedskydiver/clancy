@@ -75,39 +75,6 @@ export const linearIssueUpdateResponseSchema = z.object({
   ),
 });
 
-/** A single Linear issue node from the rework issues query (includes state name). */
-const linearReworkIssueNodeSchema = z.object({
-  id: z.string(),
-  identifier: z.string(),
-  title: z.string(),
-  description: z.optional(z.nullable(z.string())),
-  state: z.object({ name: z.string() }),
-  parent: z.optional(
-    z.nullable(
-      z.object({
-        identifier: z.string(),
-      }),
-    ),
-  ),
-});
-
-/** Response from the rework `viewer.assignedIssues` GraphQL query. */
-export const linearReworkIssuesResponseSchema = z.object({
-  data: z.optional(
-    z.object({
-      viewer: z.optional(
-        z.object({
-          assignedIssues: z.optional(
-            z.object({
-              nodes: z.array(linearReworkIssueNodeSchema),
-            }),
-          ),
-        }),
-      ),
-    }),
-  ),
-});
-
 /** A single comment node from an issue comments query. */
 const linearCommentNodeSchema = z.object({
   body: z.string(),
@@ -139,10 +106,6 @@ export type LinearWorkflowStatesResponse = z.infer<
 >;
 export type LinearIssueUpdateResponse = z.infer<
   typeof linearIssueUpdateResponseSchema
->;
-export type LinearReworkIssueNode = z.infer<typeof linearReworkIssueNodeSchema>;
-export type LinearReworkIssuesResponse = z.infer<
-  typeof linearReworkIssuesResponseSchema
 >;
 export type LinearCommentNode = z.infer<typeof linearCommentNodeSchema>;
 export type LinearCommentsResponse = z.infer<

@@ -2,9 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   fetchComments,
-  fetchReworkIssue,
   isValidRepo,
-  removeLabel,
   resetUsernameCache,
   resolveUsername,
 } from './github.js';
@@ -103,97 +101,6 @@ describe('github', () => {
     });
   });
 
-  describe('fetchReworkIssue', () => {
-    afterEach(() => {
-      vi.restoreAllMocks();
-      vi.unstubAllGlobals();
-    });
-
-    it('returns issue with rework label', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(() =>
-          Promise.resolve({
-            ok: true,
-            json: () =>
-              Promise.resolve([
-                {
-                  number: 42,
-                  title: 'Fix the bug',
-                  body: 'Needs rework',
-                },
-              ]),
-          }),
-        ),
-      );
-
-      const result = await fetchReworkIssue(
-        'ghp_test',
-        'owner/repo',
-        'clancy:rework',
-        'testuser',
-      );
-
-      expect(result).toEqual({
-        key: '#42',
-        title: 'Fix the bug',
-        description: 'Needs rework',
-        provider: 'github',
-        milestone: undefined,
-      });
-    });
-
-    it('returns undefined when no issues', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(() =>
-          Promise.resolve({
-            ok: true,
-            json: () => Promise.resolve([]),
-          }),
-        ),
-      );
-
-      const result = await fetchReworkIssue(
-        'ghp_test',
-        'owner/repo',
-        'clancy:rework',
-        'testuser',
-      );
-
-      expect(result).toBeUndefined();
-    });
-
-    it('filters out pull requests', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(() =>
-          Promise.resolve({
-            ok: true,
-            json: () =>
-              Promise.resolve([
-                {
-                  number: 10,
-                  title: 'PR not an issue',
-                  body: 'This is a PR',
-                  pull_request: { url: 'https://api.github.com/...' },
-                },
-              ]),
-          }),
-        ),
-      );
-
-      const result = await fetchReworkIssue(
-        'ghp_test',
-        'owner/repo',
-        'clancy:rework',
-        'testuser',
-      );
-
-      expect(result).toBeUndefined();
-    });
-  });
-
   describe('fetchComments', () => {
     afterEach(() => {
       vi.restoreAllMocks();
@@ -266,45 +173,6 @@ describe('github', () => {
       const comments = await fetchComments('ghp_test', 'owner/repo', 42);
 
       expect(comments).toEqual([]);
-    });
-  });
-
-  describe('removeLabel', () => {
-    afterEach(() => {
-      vi.restoreAllMocks();
-      vi.unstubAllGlobals();
-    });
-
-    it('returns true on success', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(() => Promise.resolve({ ok: true })),
-      );
-
-      const result = await removeLabel(
-        'ghp_test',
-        'owner/repo',
-        42,
-        'clancy:rework',
-      );
-
-      expect(result).toBe(true);
-    });
-
-    it('returns false on error', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(() => Promise.reject(new Error('Network error'))),
-      );
-
-      const result = await removeLabel(
-        'ghp_test',
-        'owner/repo',
-        42,
-        'clancy:rework',
-      );
-
-      expect(result).toBe(false);
     });
   });
 });

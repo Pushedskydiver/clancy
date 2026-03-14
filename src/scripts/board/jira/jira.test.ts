@@ -5,7 +5,6 @@ import {
   buildJql,
   extractAdfText,
   fetchComments,
-  fetchReworkTicket,
   fetchTicket,
   isSafeJqlValue,
   pingJira,
@@ -252,87 +251,6 @@ describe('jira', () => {
         'base64auth',
         'PROJ',
         'To Do',
-      );
-
-      expect(result).toBeUndefined();
-    });
-  });
-
-  describe('fetchReworkTicket', () => {
-    afterEach(() => {
-      vi.unstubAllGlobals();
-    });
-
-    it('returns ticket when rework tickets exist', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              issues: [
-                {
-                  key: 'PROJ-456',
-                  fields: {
-                    summary: 'Fix alignment issue',
-                    description: null,
-                    issuelinks: [],
-                    parent: { key: 'PROJ-10' },
-                    customfield_10014: null,
-                  },
-                },
-              ],
-            }),
-        }),
-      );
-
-      const result = await fetchReworkTicket(
-        'https://example.atlassian.net',
-        'base64auth',
-        'PROJ',
-        'Rework',
-      );
-
-      expect(result).toEqual({
-        key: 'PROJ-456',
-        title: 'Fix alignment issue',
-        description: '',
-        provider: 'jira',
-        epicKey: 'PROJ-10',
-        blockers: [],
-      });
-    });
-
-    it('returns undefined when no rework tickets', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () => Promise.resolve({ issues: [] }),
-        }),
-      );
-
-      const result = await fetchReworkTicket(
-        'https://example.atlassian.net',
-        'base64auth',
-        'PROJ',
-        'Rework',
-      );
-
-      expect(result).toBeUndefined();
-    });
-
-    it('returns undefined on API error', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({ ok: false, status: 500 }),
-      );
-
-      const result = await fetchReworkTicket(
-        'https://example.atlassian.net',
-        'base64auth',
-        'PROJ',
-        'Rework',
       );
 
       expect(result).toBeUndefined();

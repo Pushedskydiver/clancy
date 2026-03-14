@@ -1,10 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  computeReworkBranch,
-  computeTargetBranch,
-  computeTicketBranch,
-} from './branch.js';
+import { computeTargetBranch, computeTicketBranch } from './branch.js';
 
 describe('computeTicketBranch', () => {
   it('returns feature/{key-lowercase} for Jira', () => {
@@ -17,20 +13,6 @@ describe('computeTicketBranch', () => {
 
   it('returns feature/{key-lowercase} for Linear', () => {
     expect(computeTicketBranch('linear', 'ENG-123')).toBe('feature/eng-123');
-  });
-});
-
-describe('computeReworkBranch', () => {
-  it('returns fix/{key-lowercase} for Jira', () => {
-    expect(computeReworkBranch('jira', 'PROJ-123')).toBe('fix/proj-123');
-  });
-
-  it('returns fix/issue-{number} for GitHub', () => {
-    expect(computeReworkBranch('github', '#42')).toBe('fix/issue-42');
-  });
-
-  it('returns fix/{key-lowercase} for Linear', () => {
-    expect(computeReworkBranch('linear', 'ENG-123')).toBe('fix/eng-123');
   });
 });
 

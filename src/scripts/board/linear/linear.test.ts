@@ -3,7 +3,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import {
   fetchComments,
   fetchIssue,
-  fetchReworkIssue,
   isValidTeamId,
   pingLinear,
 } from './linear.js';
@@ -171,103 +170,6 @@ describe('linear', () => {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = await fetchIssue(env as any);
-      expect(result).toBeUndefined();
-    });
-  });
-
-  describe('fetchReworkIssue', () => {
-    afterEach(() => {
-      vi.unstubAllGlobals();
-    });
-
-    it('returns issue in rework state', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              data: {
-                viewer: {
-                  assignedIssues: {
-                    nodes: [
-                      {
-                        id: 'issue-id-2',
-                        identifier: 'TEAM-55',
-                        title: 'Rework the widget',
-                        description: 'Needs changes',
-                        state: { name: 'Rework' },
-                        parent: { identifier: 'TEAM-10' },
-                      },
-                    ],
-                  },
-                },
-              },
-            }),
-        }),
-      );
-
-      const env = {
-        LINEAR_API_KEY: 'lin_key',
-        LINEAR_TEAM_ID: 'team-1',
-      };
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result = await fetchReworkIssue(env as any, 'Rework');
-      expect(result).toEqual({
-        key: 'TEAM-55',
-        title: 'Rework the widget',
-        description: 'Needs changes',
-        provider: 'linear',
-        issueId: 'issue-id-2',
-        parentIdentifier: 'TEAM-10',
-      });
-    });
-
-    it('returns undefined when no issues found', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              data: {
-                viewer: {
-                  assignedIssues: {
-                    nodes: [],
-                  },
-                },
-              },
-            }),
-        }),
-      );
-
-      const env = {
-        LINEAR_API_KEY: 'lin_key',
-        LINEAR_TEAM_ID: 'team-1',
-      };
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result = await fetchReworkIssue(env as any, 'Rework');
-      expect(result).toBeUndefined();
-    });
-
-    it('returns undefined on API error', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: false,
-          status: 500,
-        }),
-      );
-
-      const env = {
-        LINEAR_API_KEY: 'lin_key',
-        LINEAR_TEAM_ID: 'team-1',
-      };
-
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result = await fetchReworkIssue(env as any, 'Rework');
       expect(result).toBeUndefined();
     });
   });

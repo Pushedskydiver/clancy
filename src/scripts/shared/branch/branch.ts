@@ -58,35 +58,6 @@ export function computeTicketBranch(
  * computeTargetBranch('jira', 'main');                   // 'main'
  * ```
  */
-/**
- * Compute the rework (fix) branch name for a ticket.
- *
- * - Jira/Linear: `fix/{key-lowercase}` (e.g., `fix/proj-123`)
- * - GitHub: `fix/issue-{number}` (e.g., `fix/issue-42`)
- *
- * @param provider - The board provider.
- * @param key - The ticket key (e.g., `'PROJ-123'`, `'#42'`, `'ENG-123'`).
- * @returns The rework branch name.
- *
- * @example
- * ```ts
- * computeReworkBranch('jira', 'PROJ-123');   // 'fix/proj-123'
- * computeReworkBranch('github', '#42');       // 'fix/issue-42'
- * computeReworkBranch('linear', 'ENG-123');   // 'fix/eng-123'
- * ```
- */
-export function computeReworkBranch(
-  provider: BoardProvider,
-  key: string,
-): string {
-  if (provider === 'github') {
-    const number = key.replace('#', '');
-    return `fix/issue-${number}`;
-  }
-
-  return `fix/${key.toLowerCase()}`;
-}
-
 export function computeTargetBranch(
   provider: BoardProvider,
   baseBranch: string,

@@ -60,11 +60,9 @@ If Clancy logs `PUSH_FAILED` or `PUSHED` (without a PR URL):
 
 - **Max rework cycles reached** — Clancy logged `SKIPPED` with "max rework cycles reached". Increase `CLANCY_MAX_REWORK` in `.clancy/.env` (default: 3) or resolve the ticket manually. This limit applies to both PR-based and board-based rework.
 
-- **No feedback found** — The reviewer may have sent the ticket back without commenting. Clancy still picks it up but proceeds without specific feedback context. For best results, reviewers should use "Request Changes" with comments on the PR, or leave comments on the board ticket describing what needs to change.
+- **No feedback found** — The reviewer may have sent the ticket back without commenting. Clancy still picks it up but proceeds without specific feedback context. For best results, reviewers should use "Request Changes" with comments on the PR.
 
 - **Feature branch missing for PR rework** — If the feature branch was force-deleted from the remote, Clancy creates a fresh branch and treats it as a new implementation rather than a targeted fix.
-
-- **Board-side rework not picking up** — Check that `CLANCY_STATUS_REWORK` (Jira/Linear) or `CLANCY_REWORK_LABEL` (GitHub) in `.clancy/.env` matches your board exactly. For Jira, this must be the status name; for Linear, the workflow state name; for GitHub, the label name. Use `/clancy:settings` to view or change the value. Note: board-side rework is an optional fallback -- PR-based rework detection works automatically without these settings.
 
 ---
 

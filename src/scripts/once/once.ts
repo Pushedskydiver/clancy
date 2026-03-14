@@ -14,15 +14,12 @@ import { fileURLToPath } from 'node:url';
 import {
   closeIssue,
   fetchIssue as fetchGitHubIssue,
-  fetchReworkIssue as fetchGitHubReworkIssue,
   isValidRepo,
   pingGitHub,
-  removeLabel,
   resolveUsername,
 } from '~/scripts/board/github/github.js';
 import {
   buildAuthHeader,
-  fetchReworkTicket as fetchJiraReworkTicket,
   fetchTicket as fetchJiraTicket,
   isSafeJqlValue,
   pingJira,
@@ -30,13 +27,11 @@ import {
 } from '~/scripts/board/jira/jira.js';
 import {
   fetchIssue as fetchLinearIssue,
-  fetchReworkIssue as fetchLinearReworkIssue,
   isValidTeamId,
   pingLinear,
   transitionIssue as transitionLinearIssue,
 } from '~/scripts/board/linear/linear.js';
 import {
-  computeReworkBranch,
   computeTargetBranch,
   computeTicketBranch,
 } from '~/scripts/shared/branch/branch.js';
@@ -47,7 +42,6 @@ import type {
   SharedEnv,
 } from '~/scripts/shared/env-schema/env-schema.js';
 import { checkFeasibility } from '~/scripts/shared/feasibility/feasibility.js';
-import { fetchFeedback } from '~/scripts/shared/feedback/feedback.js';
 import { formatDuration } from '~/scripts/shared/format/format.js';
 import {
   checkout,
@@ -64,7 +58,6 @@ import {
   appendProgress,
   countReworkCycles,
   findEntriesWithStatus,
-  findLastEntry,
 } from '~/scripts/shared/progress/progress.js';
 import {
   buildPrompt,
@@ -178,94 +171,6 @@ async function fetchTicket(
         LINEAR_TEAM_ID: env.LINEAR_TEAM_ID,
         CLANCY_LABEL: env.CLANCY_LABEL,
       });
-
-      if (!ticket) return undefined;
-
-      return {
-        key: ticket.key,
-        title: ticket.title,
-        description: ticket.description,
-        parentInfo: ticket.parentIdentifier ?? 'none',
-        blockers: 'None',
-        linearIssueId: ticket.issueId,
-        issueId: ticket.issueId,
-      };
-    }
-  }
-}
-
-// ─── Rework queue fetch ──────────────────────────────────────────────────────
-
-/**
- * Fetch a rework ticket from the board's rework queue.
- *
- * Returns `undefined` if rework is not configured (opt-in) or no rework
- * tickets are available.
- */
-async function fetchReworkTicketFromBoard(
-  config: BoardConfig,
-): Promise<FetchedTicket | undefined> {
-  switch (config.provider) {
-    case 'jira': {
-      const { env } = config;
-      const reworkStatus = sharedEnv(config).CLANCY_STATUS_REWORK;
-      if (!reworkStatus) return undefined;
-
-      const auth = buildAuthHeader(env.JIRA_USER, env.JIRA_API_TOKEN);
-      const ticket = await fetchJiraReworkTicket(
-        env.JIRA_BASE_URL,
-        auth,
-        env.JIRA_PROJECT_KEY,
-        reworkStatus,
-        env.CLANCY_LABEL,
-        env.CLANCY_JQL_SPRINT,
-      );
-
-      if (!ticket) return undefined;
-
-      const blockerStr = ticket.blockers.length
-        ? `Blocked by: ${ticket.blockers.join(', ')}`
-        : 'None';
-
-      return {
-        key: ticket.key,
-        title: ticket.title,
-        description: ticket.description,
-        parentInfo: ticket.epicKey ?? 'none',
-        blockers: blockerStr,
-      };
-    }
-
-    case 'github': {
-      const { env } = config;
-      const reworkLabel = sharedEnv(config).CLANCY_REWORK_LABEL;
-      if (!reworkLabel) return undefined;
-
-      const username = await resolveUsername(env.GITHUB_TOKEN);
-      const ticket = await fetchGitHubReworkIssue(
-        env.GITHUB_TOKEN,
-        env.GITHUB_REPO,
-        reworkLabel,
-        username,
-      );
-
-      if (!ticket) return undefined;
-
-      return {
-        key: ticket.key,
-        title: ticket.title,
-        description: ticket.description,
-        parentInfo: ticket.milestone ?? 'none',
-        blockers: 'None',
-      };
-    }
-
-    case 'linear': {
-      const { env } = config;
-      const reworkStatus = sharedEnv(config).CLANCY_STATUS_REWORK;
-      if (!reworkStatus) return undefined;
-
-      const ticket = await fetchLinearReworkIssue(env, reworkStatus);
 
       if (!ticket) return undefined;
 
@@ -883,7 +788,7 @@ export async function run(argv: string[]): Promise<void> {
 
     console.log(green('✅ Preflight passed'));
 
-    // 5. Check rework — PR-based first, then board-side fallback
+    // 5. Check rework — PR-based detection, then fresh ticket
     let isRework = false;
     let prFeedback: string[] | undefined;
     let ticket: FetchedTicket | undefined;
@@ -898,16 +803,7 @@ export async function run(argv: string[]): Promise<void> {
         console.log(yellow(`  ↻ PR rework: [${ticket.key}] ${ticket.title}`));
       }
     } catch {
-      // Best-effort — fall through to board-side rework
-    }
-
-    if (!ticket) {
-      // Board-side rework (opt-in fallback)
-      ticket = await fetchReworkTicketFromBoard(config);
-      if (ticket) {
-        isRework = true;
-        console.log(yellow(`  ↻ Rework: [${ticket.key}] ${ticket.title}`));
-      }
+      // Best-effort — fall through to fresh ticket
     }
 
     if (!ticket) {
@@ -1016,53 +912,23 @@ export async function run(argv: string[]): Promise<void> {
     // 10. Git: set up branches
     originalBranch = currentBranch();
 
-    // Rework branch setup
-    const lastEntry = isRework
-      ? findLastEntry(process.cwd(), ticket.key)
-      : undefined;
-
-    if (isRework && lastEntry?.status === 'PR_CREATED') {
+    if (isRework) {
       // PR-flow rework: try to fetch the existing feature branch from remote
       const fetched = fetchRemoteBranch(ticketBranch);
 
       if (fetched) {
         checkout(ticketBranch);
       } else {
-        // Branch missing from remote — fall through to fresh rework branch
-        const reworkBranch = computeReworkBranch(config.provider, ticket.key);
+        // Branch missing from remote — create fresh branch from target
         ensureBranch(targetBranch, baseBranch);
         checkout(targetBranch);
-        checkout(reworkBranch, true);
+        checkout(ticketBranch, true);
       }
-    } else if (isRework) {
-      // Epic-flow rework: create fix/ branch from the target branch
-      const reworkBranch = computeReworkBranch(config.provider, ticket.key);
-      ensureBranch(targetBranch, baseBranch);
-      checkout(targetBranch);
-      checkout(reworkBranch, true);
     } else {
       // Normal flow
       ensureBranch(targetBranch, baseBranch);
       checkout(targetBranch);
       checkout(ticketBranch, true);
-    }
-
-    // 10a. For GitHub rework: remove the rework label after pickup
-    if (isRework && config.provider === 'github') {
-      const reworkLabel = sharedEnv(config).CLANCY_REWORK_LABEL;
-
-      if (reworkLabel) {
-        const issueNumber = parseInt(ticket.key.replace('#', ''), 10);
-
-        if (!Number.isNaN(issueNumber)) {
-          await removeLabel(
-            config.env.GITHUB_TOKEN,
-            config.env.GITHUB_REPO,
-            issueNumber,
-            reworkLabel,
-          );
-        }
-      }
     }
 
     // 11. Transition to In Progress (best-effort)
@@ -1075,26 +941,12 @@ export async function run(argv: string[]): Promise<void> {
     let prompt: string;
 
     if (isRework) {
-      let feedbackComments: string[];
-
-      if (prFeedback) {
-        feedbackComments = prFeedback;
-      } else {
-        const feedback = await fetchFeedback(
-          config,
-          ticket.key,
-          lastEntry?.timestamp,
-          ticket.issueId,
-        );
-        feedbackComments = feedback.comments;
-      }
-
       prompt = buildReworkPrompt({
         key: ticket.key,
         title: ticket.title,
         description: ticket.description,
         provider: config.provider,
-        feedbackComments,
+        feedbackComments: prFeedback ?? [],
         previousContext: undefined, // V1: no diff context yet
       });
     } else {
@@ -1120,7 +972,7 @@ export async function run(argv: string[]): Promise<void> {
     // 13. Deliver — epic merge or PR flow
     const hasParent = ticket.parentInfo !== 'none';
 
-    if (isRework && lastEntry?.status === 'PR_CREATED') {
+    if (isRework) {
       // PR-flow rework: push to existing branch, PR updates automatically
       const delivered = await deliverViaPullRequest(
         config,
@@ -1132,13 +984,6 @@ export async function run(argv: string[]): Promise<void> {
       if (!delivered) return;
 
       // Override progress to REWORK (deliverViaPullRequest logs PR_CREATED/PUSHED)
-      appendProgress(process.cwd(), ticket.key, ticket.title, 'REWORK');
-    } else if (isRework) {
-      // Epic-flow rework: squash merge fix/ branch, then clean up
-      const reworkBranch = computeReworkBranch(config.provider, ticket.key);
-      await deliverViaEpicMerge(config, ticket, reworkBranch, targetBranch);
-
-      // Override progress to REWORK (deliverViaEpicMerge logs DONE)
       appendProgress(process.cwd(), ticket.key, ticket.title, 'REWORK');
     } else if (hasParent) {
       await deliverViaEpicMerge(config, ticket, ticketBranch, targetBranch);

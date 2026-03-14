@@ -215,8 +215,6 @@ describe('detectBoard', () => {
     it('passes through rework loop env vars', () => {
       const result = detectBoard(
         githubEnv({
-          CLANCY_STATUS_REWORK: 'Rework',
-          CLANCY_REWORK_LABEL: 'rework',
           CLANCY_MAX_REWORK: '3',
         }),
       );
@@ -224,8 +222,6 @@ describe('detectBoard', () => {
       expect(typeof result).not.toBe('string');
       if (typeof result === 'string') return;
 
-      expect(result.env.CLANCY_STATUS_REWORK).toBe('Rework');
-      expect(result.env.CLANCY_REWORK_LABEL).toBe('rework');
       expect(result.env.CLANCY_MAX_REWORK).toBe('3');
     });
 
@@ -235,8 +231,6 @@ describe('detectBoard', () => {
       expect(typeof result).not.toBe('string');
       if (typeof result === 'string') return;
 
-      expect(result.env.CLANCY_STATUS_REWORK).toBeUndefined();
-      expect(result.env.CLANCY_REWORK_LABEL).toBeUndefined();
       expect(result.env.CLANCY_MAX_REWORK).toBeUndefined();
     });
   });

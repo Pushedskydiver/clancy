@@ -406,69 +406,9 @@ Same storage logic as Jira above.
 
 ---
 
-### Q3e (Jira and Linear only): Rework loop
+### Q3e (all boards): Max rework cycles
 
-Only ask this if the board is **Jira** or **Linear**. Skip this step entirely for **GitHub Issues** — GitHub rework is configured separately below.
-
-> **Note:** PR-based rework detection is automatic — when a reviewer clicks "Request Changes" on a PR/MR, Clancy picks it up automatically on the next run. You don't need to configure anything for this to work.
->
-> The board-status rework below is an **optional fallback** for workflows where you want to signal rework by moving the ticket to a specific status, instead of (or in addition to) using PR reviews.
-
-**Jira:** Output:
-
-```
-Clancy automatically detects "Request Changes" on PRs — no setup needed.
-
-Optionally, you can also trigger rework by moving a ticket to a specific status.
-Enable status-based rework as a fallback? [y/N]
-```
-
-If no: skip — no `CLANCY_STATUS_REWORK` line written. PR-based rework still works.
-If yes: `What Jira status represents "sent back for changes"? (e.g. Rework, Changes Requested)`
-Store as `CLANCY_STATUS_REWORK` in `.clancy/.env`. Wrap in double quotes.
-
-**Linear:** Output:
-
-```
-Clancy automatically detects "Request Changes" on PRs — no setup needed.
-
-Optionally, you can also trigger rework by moving an issue to a specific state.
-Enable state-based rework as a fallback? [y/N]
-```
-
-If no: skip — no `CLANCY_STATUS_REWORK` line written. PR-based rework still works.
-If yes: `What Linear state represents "sent back for changes"? (e.g. Rework, Changes Requested)`
-Same storage logic as Jira above — store as `CLANCY_STATUS_REWORK`.
-
----
-
-### Q3e (GitHub only): Rework label (optional fallback)
-
-Only ask this if the board is **GitHub Issues**. Skip for Jira and Linear.
-
-> **Note:** PR-based rework detection is automatic — when a reviewer clicks "Request Changes" on a PR, Clancy picks it up automatically on the next run. You don't need to configure anything for this to work.
->
-> The label-based rework below is an **optional fallback** for workflows where you want to signal rework by reopening the issue and adding a label, instead of (or in addition to) using PR reviews.
-
-Output:
-
-```
-Clancy automatically detects "Request Changes" on PRs — no setup needed.
-
-Optionally, you can also trigger rework by reopening an issue with a label.
-Enable label-based rework as a fallback? [y/N]
-```
-
-If no: skip — no `CLANCY_REWORK_LABEL` line written. PR-based rework still works.
-If yes: `What label should signal rework? [needs-changes]`
-If a label is entered: store as `CLANCY_REWORK_LABEL` in `.clancy/.env`. Wrap in double quotes.
-If enter pressed with no value: store `CLANCY_REWORK_LABEL="needs-changes"`.
-
----
-
-### Q3f (all boards): Max rework cycles
-
-Always ask this — it applies to both PR-based and board-based rework.
+PR-based rework detection is automatic — no configuration needed. This setting controls the safety limit.
 
 Output:
 

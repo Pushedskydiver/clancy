@@ -397,9 +397,8 @@ MAX_ITERATIONS=5
 # CLANCY_GIT_API_URL=https://gitlab.example.com/api/v4  # self-hosted git API base URL
 
 # ─── Optional: Rework loop ──────────────────────────────────────────────────
-# When a reviewer sends a ticket back for changes, Clancy picks it up again
-# with feedback context. Opt-in — set the rework status to enable.
-# CLANCY_STATUS_REWORK="Rework"          # Jira: status name for rework queue
+# PR-based rework is automatic — when a reviewer clicks "Request Changes",
+# Clancy picks it up on the next run. No configuration needed.
 # CLANCY_MAX_REWORK=3                    # Max rework cycles before human intervention (default: 3)
 
 # ─── Optional: Planner queue ─────────────────────────────────────────────────
@@ -464,9 +463,8 @@ MAX_ITERATIONS=20
 # PLAYWRIGHT_STARTUP_WAIT=15
 
 # ─── Optional: Rework loop ──────────────────────────────────────────────────
-# When a reviewer sends an issue back for changes, Clancy picks it up again
-# with feedback context. Opt-in — set the rework label to enable.
-# CLANCY_REWORK_LABEL="needs-changes"    # GitHub: label for rework issues
+# PR-based rework is automatic — when a reviewer clicks "Request Changes",
+# Clancy picks it up on the next run. No configuration needed.
 # CLANCY_MAX_REWORK=3                    # Max rework cycles before human intervention (default: 3)
 
 # ─── Optional: Notifications ──────────────────────────────────────────────────
@@ -526,9 +524,8 @@ MAX_ITERATIONS=20
 # CLANCY_STATUS_REVIEW="In Review"        # used when creating a PR instead of merging locally
 
 # ─── Optional: Rework loop ──────────────────────────────────────────────────
-# When a reviewer sends an issue back for changes, Clancy picks it up again
-# with feedback context. Opt-in — set the rework status to enable.
-# CLANCY_STATUS_REWORK="Rework"          # Linear: state name for rework queue
+# PR-based rework is automatic — when a reviewer clicks "Request Changes",
+# Clancy picks it up on the next run. No configuration needed.
 # CLANCY_MAX_REWORK=3                    # Max rework cycles before human intervention (default: 3)
 
 # ─── Optional: Git host (PR creation) ───────────────────────────────────────

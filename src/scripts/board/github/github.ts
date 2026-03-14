@@ -195,81 +195,6 @@ export async function fetchIssue(
 }
 
 /**
- * Fetch the next available rework issue from GitHub Issues.
- *
- * Same pattern as {@link fetchIssue} but uses a rework-specific label
- * to find issues that need rework after QA review.
- *
- * @param token - The GitHub personal access token.
- * @param repo - The repository in `owner/repo` format.
- * @param reworkLabel - The label identifying rework issues.
- * @param username - The GitHub username for assignee filtering.
- * @returns The fetched ticket with optional milestone, or `undefined` if none available.
- */
-export async function fetchReworkIssue(
-  token: string,
-  repo: string,
-  reworkLabel: string,
-  username?: string,
-): Promise<(Ticket & { milestone?: string }) | undefined> {
-  let response: Response;
-
-  const params = new URLSearchParams({
-    state: 'open',
-    assignee: username ?? '@me',
-    labels: reworkLabel,
-    per_page: '10',
-  });
-
-  try {
-    response = await fetch(`${GITHUB_API}/repos/${repo}/issues?${params}`, {
-      headers: githubHeaders(token),
-    });
-  } catch (err) {
-    console.warn(
-      `⚠ GitHub API request failed: ${err instanceof Error ? err.message : String(err)}`,
-    );
-    return undefined;
-  }
-
-  if (!response.ok) {
-    console.warn(`⚠ GitHub API returned HTTP ${response.status}`);
-    return undefined;
-  }
-
-  let json: unknown;
-
-  try {
-    json = await response.json();
-  } catch {
-    console.warn('⚠ GitHub API returned invalid JSON');
-    return undefined;
-  }
-
-  const parsed = githubIssuesResponseSchema.safeParse(json);
-
-  if (!parsed.success) {
-    console.warn(`⚠ Unexpected GitHub response shape: ${parsed.error.message}`);
-    return undefined;
-  }
-
-  // Filter out pull requests
-  const issues = parsed.data.filter((item) => !item.pull_request);
-
-  if (!issues.length) return undefined;
-
-  const issue = issues[0];
-
-  return {
-    key: `#${issue.number}`,
-    title: issue.title,
-    description: issue.body ?? '',
-    provider: 'github',
-    milestone: issue.milestone?.title,
-  };
-}
-
-/**
  * Fetch comments on a GitHub issue.
  *
  * Best-effort — returns an empty array on any error.
@@ -310,38 +235,6 @@ export async function fetchComments(
       .filter((body) => body.length > 0);
   } catch {
     return [];
-  }
-}
-
-/**
- * Remove a label from a GitHub issue.
- *
- * Best-effort — never throws.
- *
- * @param token - The GitHub personal access token.
- * @param repo - The repository in `owner/repo` format.
- * @param issueNumber - The issue number to remove the label from.
- * @param label - The label name to remove.
- * @returns `true` if the label was removed successfully.
- */
-export async function removeLabel(
-  token: string,
-  repo: string,
-  issueNumber: number,
-  label: string,
-): Promise<boolean> {
-  try {
-    const response = await fetch(
-      `${GITHUB_API}/repos/${repo}/issues/${issueNumber}/labels/${encodeURIComponent(label)}`,
-      {
-        method: 'DELETE',
-        headers: githubHeaders(token),
-      },
-    );
-
-    return response.ok;
-  } catch {
-    return false;
   }
 }
 

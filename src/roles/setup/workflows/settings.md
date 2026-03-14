@@ -61,11 +61,6 @@ Jira
   [B4] Pickup status     {CLANCY_STATUS_IN_PROGRESS if set, else off}
   [B5] Done status       {CLANCY_STATUS_DONE if set, else off}
   [B6] Review status     {CLANCY_STATUS_REVIEW if set, else "uses Done status"}
-  [B7] Rework status     {CLANCY_STATUS_REWORK if set, else off}
-
-{If GitHub:}
-GitHub
-  [B1] Rework label      {CLANCY_REWORK_LABEL if set, else off}
 
 {If Linear:}
 Linear
@@ -73,7 +68,6 @@ Linear
   [B2] Pickup status     {CLANCY_STATUS_IN_PROGRESS if set, else off}
   [B3] Done status       {CLANCY_STATUS_DONE if set, else off}
   [B4] Review status     {CLANCY_STATUS_REVIEW if set, else "uses Done state"}
-  [B5] Rework status     {CLANCY_STATUS_REWORK if set, else off}
 
 Roles
   [R1] Planner           {✅ enabled / ─ disabled}
@@ -275,44 +269,6 @@ If [2]: remove `CLANCY_STATUS_REVIEW` from `.clancy/.env`.
 
 ---
 
-### [B7] Jira Rework status (Jira only)
-
-> **Note:** PR-based rework detection is automatic — when a reviewer clicks "Request Changes" on a PR/MR, Clancy picks it up automatically. This setting is an optional board-side fallback for workflows that prefer board-driven rework.
-
-```
-Jira Rework status — current: {value or "off"}
-When a reviewer sends a ticket back for changes, Clancy picks it up again
-with feedback context. Set to the Jira status name for rework tickets.
-
-[1] Set status name
-[2] Off (disable rework loop)
-[3] Cancel
-```
-
-If [1]: prompt `What status name represents "sent back for changes"? (e.g. Rework, Changes Requested)` then write `CLANCY_STATUS_REWORK=<value>` to `.clancy/.env`. Wrap in double quotes.
-If [2]: remove `CLANCY_STATUS_REWORK` from `.clancy/.env`.
-
----
-
-### [B1] GitHub Rework label (GitHub only)
-
-> **Note:** PR-based rework detection is automatic — when a reviewer clicks "Request Changes" on a PR/MR, Clancy picks it up automatically. This setting is an optional board-side fallback for workflows that prefer board-driven rework via labels.
-
-```
-GitHub Rework label — current: {value or "off"}
-When a reviewer sends an issue back for changes, Clancy picks it up again
-with feedback context. Requires a label on the issue.
-
-[1] Set label name
-[2] Off (disable rework loop)
-[3] Cancel
-```
-
-If [1]: prompt `What label marks issues for rework? (e.g. needs-changes)` then write `CLANCY_REWORK_LABEL=<value>` to `.clancy/.env`. Wrap in double quotes.
-If [2]: remove `CLANCY_REWORK_LABEL` from `.clancy/.env`.
-
----
-
 ### [B1] Linear label filter (Linear only)
 
 ```
@@ -378,25 +334,6 @@ the issue to this state. Falls back to CLANCY_STATUS_DONE if not set.
 
 If [1]: prompt `What workflow state name should Clancy use for In Review? (e.g. In Review, Ready for Review, Code Review)` then write `CLANCY_STATUS_REVIEW=<value>` to `.clancy/.env`.
 If [2]: remove `CLANCY_STATUS_REVIEW` from `.clancy/.env`.
-
----
-
-### [B5] Linear Rework status (Linear only)
-
-> **Note:** PR-based rework detection is automatic — when a reviewer clicks "Request Changes" on a PR/MR, Clancy picks it up automatically. This setting is an optional board-side fallback for workflows that prefer board-driven rework.
-
-```
-Linear Rework status — current: {value or "off"}
-When a reviewer sends an issue back for changes, Clancy picks it up again
-with feedback context. Set to the Linear workflow state name for rework issues.
-
-[1] Set state name
-[2] Off (disable rework loop)
-[3] Cancel
-```
-
-If [1]: prompt `What workflow state name represents "sent back for changes"? (e.g. Rework, Changes Requested)` then write `CLANCY_STATUS_REWORK=<value>` to `.clancy/.env`. Wrap in double quotes.
-If [2]: remove `CLANCY_STATUS_REWORK` from `.clancy/.env`.
 
 ---
 

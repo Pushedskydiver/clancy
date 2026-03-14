@@ -341,37 +341,6 @@ export async function transitionIssue(
 }
 
 /**
- * Fetch the next available rework ticket from Jira.
- *
- * Same as `fetchTicket` but uses `reworkStatus` instead of the normal queue
- * status in the JQL query.
- *
- * @param baseUrl - The Jira Cloud base URL.
- * @param auth - The Base64-encoded Basic auth string.
- * @param projectKey - The Jira project key.
- * @param reworkStatus - The JQL status for rework tickets.
- * @param label - Optional label filter.
- * @param sprint - Optional sprint filter.
- * @returns The fetched rework ticket, or `undefined` if none are available.
- */
-export async function fetchReworkTicket(
-  baseUrl: string,
-  auth: string,
-  projectKey: string,
-  reworkStatus: string,
-  label?: string,
-  sprint?: string,
-): Promise<
-  | (Ticket & {
-      epicKey?: string;
-      blockers: string[];
-    })
-  | undefined
-> {
-  return fetchTicket(baseUrl, auth, projectKey, reworkStatus, sprint, label);
-}
-
-/**
  * Fetch comments from a Jira issue.
  *
  * Best-effort — returns an empty array on any error.

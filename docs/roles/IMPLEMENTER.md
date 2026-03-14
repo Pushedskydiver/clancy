@@ -94,21 +94,18 @@ When a ticket has a parent epic, the original squash-merge flow applies:
 
 ## Rework flow
 
-When a reviewer sends a ticket back for changes, Clancy can pick it up again with the reviewer's feedback and push fixes. Rework tickets take priority over fresh tickets in the queue -- Clancy checks for rework before fetching new tickets on every run.
+When a reviewer sends a ticket back for changes, Clancy picks it up automatically with the reviewer's feedback and pushes fixes. Rework tickets take priority over fresh tickets in the queue -- Clancy checks for rework before fetching new tickets on every run.
 
-### What triggers rework (3-tier priority)
+### How rework is detected
 
-Clancy detects rework through three mechanisms, checked in priority order:
-
-**1. PR review state (automatic -- no configuration needed)**
-
-When a reviewer clicks "Request Changes" on a pull request or merge request, Clancy detects it automatically. This is the primary rework detection method and works out of the box with no env vars required.
+When a reviewer clicks "Request Changes" on a pull request or merge request, Clancy detects it automatically on the next run. No configuration is needed.
 
 How it works:
 - Clancy scans `.clancy/progress.txt` for `PR_CREATED` entries
 - For each PR, it looks up the pull request by branch name on the git host
 - If the PR has a "changes requested" review state, Clancy picks it up as rework
 - Review comments from the PR are fetched and included as feedback context
+- If no rework is detected, Clancy fetches the next fresh ticket from the queue
 
 Supported review states by platform:
 
@@ -119,55 +116,27 @@ Supported review states by platform:
 | Bitbucket Cloud | `changes_requested` |
 | Bitbucket Server | `NEEDS_WORK` |
 
-**2. Board-side rework (opt-in fallback)**
-
-If PR-based detection doesn't apply (e.g. the ticket used epic flow, or you prefer board-driven workflows), Clancy falls back to checking board-side rework statuses/labels:
-
-| Board | Trigger | Env var |
-| --- | --- | --- |
-| Jira | Reviewer moves ticket to the rework status | `CLANCY_STATUS_REWORK` |
-| GitHub | Reviewer reopens the issue and adds the rework label | `CLANCY_REWORK_LABEL` |
-| Linear | Reviewer moves issue to the rework state | `CLANCY_STATUS_REWORK` |
-
-These are configured via `/clancy:init` or `/clancy:settings`. If not set, only PR-based rework detection is active.
-
-**3. Fresh tickets**
-
-If no rework is detected from either source, Clancy fetches the next ticket from the normal implementation queue.
-
-### Two rework paths
-
-**PR-flow rework (ticket had no parent -- PR exists):**
+### Rework process
 
 1. The feature branch and PR already exist on the remote
 2. Clancy checks out the existing feature branch (`git fetch` + `git checkout`)
-3. Reads reviewer feedback from PR review comments and/or board comments posted since the last implementation
+3. Reads reviewer feedback from PR review comments
 4. Implements fixes on the same branch -- does not re-implement from scratch
 5. Pushes to the same branch -- the PR updates automatically
 6. Transitions the ticket back to the review status (`CLANCY_STATUS_REVIEW`)
 7. Logs as `REWORK` in `.clancy/progress.txt`
 
-**Epic-flow rework (ticket had parent -- original branch deleted after squash merge):**
+If the feature branch has been deleted from the remote, Clancy creates a fresh branch from the target and treats it as a new implementation.
 
-1. The original feature branch is gone (deleted after squash merge)
-2. Clancy creates a new branch from the epic/base branch: `fix/{ticket-key}`
-3. Reads reviewer feedback from board comments
-4. Implements fixes, using `git log` on the epic branch for context on the previous implementation
-5. Squash-merges to the epic branch (same as the original flow)
-6. Transitions the ticket to Done (`CLANCY_STATUS_DONE`)
-7. Logs as `REWORK` in `.clancy/progress.txt`
+### Feedback
 
-### Feedback sources
+Clancy reads feedback directly from **PR review comments** on the pull request. This gives precise, contextual feedback tied to specific lines of code.
 
-For PR-flow rework detected via PR review state, Clancy reads feedback directly from **PR review comments** on the pull request. This gives precise, contextual feedback tied to specific lines of code.
-
-For board-side rework (or as a supplement), Clancy reads **board ticket comments** posted after the last progress entry for that ticket. Reviewers should write feedback on the ticket itself.
-
-If no comments are found from either source, Clancy still picks up the rework ticket but notes the absence of feedback in the prompt.
+If no comments are found, Clancy still picks up the rework ticket but notes the absence of feedback in the prompt.
 
 ### Max rework guard
 
-After `CLANCY_MAX_REWORK` cycles (default: 3) on the same ticket, Clancy logs `SKIPPED` with reason "max rework cycles reached -- needs human intervention" and moves on. This limit applies to both PR-based and board-based rework. Increase via `/clancy:settings` or resolve the ticket manually.
+After `CLANCY_MAX_REWORK` cycles (default: 3) on the same ticket, Clancy logs `SKIPPED` with reason "max rework cycles reached -- needs human intervention" and moves on. Increase via `/clancy:settings` or resolve the ticket manually.
 
 ## How the loop works
 
