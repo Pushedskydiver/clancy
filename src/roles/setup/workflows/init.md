@@ -410,64 +410,65 @@ Same storage logic as Jira above.
 
 Only ask this if the board is **Jira** or **Linear**. Skip this step entirely for **GitHub Issues** — GitHub rework is configured separately below.
 
-> **Note:** PR-based rework detection is automatic — when a reviewer clicks "Request Changes" on a PR/MR, Clancy picks it up automatically. The following settings are optional board-side fallbacks for workflows that prefer board-driven rework.
+> **Note:** PR-based rework detection is automatic — when a reviewer clicks "Request Changes" on a PR/MR, Clancy picks it up automatically on the next run. You don't need to configure anything for this to work.
+>
+> The board-status rework below is an **optional fallback** for workflows where you want to signal rework by moving the ticket to a specific status, instead of (or in addition to) using PR reviews.
 
 **Jira:** Output:
 
 ```
-When a reviewer sends a ticket back for changes, Clancy can pick it up
-again with the review feedback.
+Clancy automatically detects "Request Changes" on PRs — no setup needed.
 
-What status represents "sent back for changes"?
-
-[1] Enter a value (e.g. Rework, Changes Requested)
-[2] Skip — don't enable rework loop
+Optionally, you can also trigger rework by moving a ticket to a specific status.
+Enable status-based rework as a fallback? [y/N]
 ```
 
-If [1]: prompt for the value, store as `CLANCY_STATUS_REWORK` in `.clancy/.env`. Wrap in double quotes.
-If [2]: skip — no `CLANCY_STATUS_REWORK` line written (rework loop inactive).
+If no: skip — no `CLANCY_STATUS_REWORK` line written. PR-based rework still works.
+If yes: `What Jira status represents "sent back for changes"? (e.g. Rework, Changes Requested)`
+Store as `CLANCY_STATUS_REWORK` in `.clancy/.env`. Wrap in double quotes.
 
 **Linear:** Output:
 
 ```
-When a reviewer sends an issue back for changes, Clancy can pick it up
-again with the review feedback.
+Clancy automatically detects "Request Changes" on PRs — no setup needed.
 
-What state represents "sent back for changes"?
-
-[1] Enter a value (e.g. Rework, Changes Requested)
-[2] Skip — don't enable rework loop
+Optionally, you can also trigger rework by moving an issue to a specific state.
+Enable state-based rework as a fallback? [y/N]
 ```
 
+If no: skip — no `CLANCY_STATUS_REWORK` line written. PR-based rework still works.
+If yes: `What Linear state represents "sent back for changes"? (e.g. Rework, Changes Requested)`
 Same storage logic as Jira above — store as `CLANCY_STATUS_REWORK`.
 
 ---
 
-### Q3e (GitHub only): Rework loop
+### Q3e (GitHub only): Rework label (optional fallback)
 
 Only ask this if the board is **GitHub Issues**. Skip for Jira and Linear.
 
-> **Note:** PR-based rework detection is automatic — when a reviewer clicks "Request Changes" on a PR/MR, Clancy picks it up automatically. The following setting is an optional board-side fallback for workflows that prefer board-driven rework via labels.
+> **Note:** PR-based rework detection is automatic — when a reviewer clicks "Request Changes" on a PR, Clancy picks it up automatically on the next run. You don't need to configure anything for this to work.
+>
+> The label-based rework below is an **optional fallback** for workflows where you want to signal rework by reopening the issue and adding a label, instead of (or in addition to) using PR reviews.
 
 Output:
 
 ```
-Should Clancy pick up issues sent back for changes? (requires a rework label)
+Clancy automatically detects "Request Changes" on PRs — no setup needed.
 
-[1] Yes — use "needs-changes" label (default)
-[2] Yes — enter a different label name
-[3] Skip — don't enable rework loop
+Optionally, you can also trigger rework by reopening an issue with a label.
+Enable label-based rework as a fallback? [y/N]
 ```
 
-If [1]: store `CLANCY_REWORK_LABEL="needs-changes"` in `.clancy/.env`.
-If [2]: prompt for the label name, store as `CLANCY_REWORK_LABEL` in `.clancy/.env`. Wrap in double quotes.
-If [3]: skip — no `CLANCY_REWORK_LABEL` line written (rework loop inactive).
+If no: skip — no `CLANCY_REWORK_LABEL` line written. PR-based rework still works.
+If yes: `What label should signal rework? [needs-changes]`
+If a label is entered: store as `CLANCY_REWORK_LABEL` in `.clancy/.env`. Wrap in double quotes.
+If enter pressed with no value: store `CLANCY_REWORK_LABEL="needs-changes"`.
 
 ---
 
 ### Q3f (all boards): Max rework cycles
 
-Only ask this if rework was enabled in Q3e above. If rework was skipped, skip this step too.
+Always ask this — it applies to both PR-based and board-based rework.
 
 Output:
 
