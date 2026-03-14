@@ -41,7 +41,7 @@ RESPONSE=$(curl -s \
   -d '{"jql": "<jql as above>", "maxResults": 1, "fields": ["summary", "description", "issuelinks", "parent", "customfield_10014"]}')
 ```
 
-**GitHub Issues:** `GET /repos/$GITHUB_REPO/issues?state=open&assignee=@me&labels=clancy&per_page=1` — filter out PRs (entries with `pull_request` key)
+**GitHub Issues:** `GET /repos/$GITHUB_REPO/issues?state=open&assignee=$GITHUB_USERNAME&labels=clancy&per_page=1` — filter out PRs (entries with `pull_request` key). Resolve `$GITHUB_USERNAME` via `GET /user` (don't use `@me` — it doesn't work with fine-grained PATs).
 
 **Linear:** GraphQL `viewer.assignedIssues` with `filter: { state: { type: { eq: "unstarted" } }, team: { id: { eq: "$LINEAR_TEAM_ID" } }[, labels: { name: { eq: "$CLANCY_LABEL" } }] }` (label clause only if `CLANCY_LABEL` is set), `first: 1`, `orderBy: priority`
 

@@ -45,6 +45,7 @@ vi.mock('~/scripts/board/github/github.js', () => ({
   fetchIssue: vi.fn(),
   isValidRepo: vi.fn(() => true),
   pingGitHub: vi.fn(() => Promise.resolve({ ok: true })),
+  resolveUsername: vi.fn(() => Promise.resolve('testuser')),
 }));
 
 vi.mock('~/scripts/board/linear/linear.js', () => ({

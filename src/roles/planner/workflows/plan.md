@@ -77,7 +77,7 @@ Note: include the `comment` field so we can check for existing plans and read fe
 RESPONSE=$(curl -s \
   -H "Authorization: Bearer $GITHUB_TOKEN" \
   -H "X-GitHub-Api-Version: 2022-11-28" \
-  "https://api.github.com/repos/$GITHUB_REPO/issues?state=open&assignee=@me&labels=$CLANCY_PLAN_LABEL&per_page=<N>")
+  "https://api.github.com/repos/$GITHUB_REPO/issues?state=open&assignee=$GITHUB_USERNAME&labels=$CLANCY_PLAN_LABEL&per_page=<N>")
 ```
 
 - `CLANCY_PLAN_LABEL` defaults to `needs-refinement` if not set

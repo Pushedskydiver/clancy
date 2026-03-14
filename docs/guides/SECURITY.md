@@ -66,7 +66,7 @@ Use the minimum permissions each integration requires:
 
 | Integration | Recommended scope |
 |---|---|
-| GitHub PAT | `repo` — read/write issues and contents for your repo only |
+| GitHub PAT | `repo` scope (classic PATs) or Issues + Contents read/write (fine-grained PATs). Both types are supported. |
 | Jira API token | Standard user — no admin rights needed |
 | Linear API key | Personal API key — read/write to your assigned issues |
 | Figma API key | Read-only access is sufficient |

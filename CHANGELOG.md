@@ -7,6 +7,18 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.5.3] — 2026-03-14
+
+### 🐛 Fixes
+
+- **GitHub `@me` assignee bug** — Fine-grained PATs don't resolve `@me` in the Issues API. Clancy now resolves the authenticated username via `GET /user` and caches it for the session. Falls back to `@me` for classic PATs that support it.
+
+### ✅ Tests
+
+- Added 3 tests for `resolveUsername` (success, API failure fallback, network error fallback)
+
+---
+
 ## [0.5.2] — 2026-03-14
 
 ### 🐛 Fixes

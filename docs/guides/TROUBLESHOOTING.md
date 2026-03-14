@@ -28,6 +28,7 @@ Run `/clancy:doctor` to test your credentials. If it reports a failure, open `.c
 Run `/clancy:status` to see what Clancy would pick up. If the queue is empty:
 
 - Check that tickets are assigned to you on the board
+- For GitHub: both classic PATs and fine-grained PATs are supported. Clancy auto-resolves your username via the API.
 - For Jira: verify the status filter in `/clancy:settings` matches your board's status name exactly (e.g. `To Do` vs `TODO`)
 - For Linear: Clancy filters by `state.type: "unstarted"` — ensure your backlog state maps to this type
 
