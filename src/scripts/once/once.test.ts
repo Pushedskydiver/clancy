@@ -6,7 +6,6 @@ import {
   resolveUsername,
 } from '~/scripts/board/github/github.js';
 import { fetchTicket as fetchJiraTicket } from '~/scripts/board/jira/jira.js';
-import '~/scripts/board/linear/linear.js';
 import { invokeClaudeSession } from '~/scripts/shared/claude-cli/claude-cli.js';
 import { detectBoard } from '~/scripts/shared/env-schema/env-schema.js';
 import { checkFeasibility } from '~/scripts/shared/feasibility/feasibility.js';
