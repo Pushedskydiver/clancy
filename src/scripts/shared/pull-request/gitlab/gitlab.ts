@@ -113,7 +113,11 @@ export async function checkMrReviewState(
       for (const note of discussion.notes) {
         if (note.system) continue;
         if (since && note.created_at && note.created_at <= since) continue;
-        if (note.type === 'DiffNote') {
+        if (
+          note.type === 'DiffNote' &&
+          note.resolvable !== false &&
+          note.resolved !== true
+        ) {
           hasRework = true;
           break;
         }
@@ -175,7 +179,11 @@ export async function fetchMrReviewComments(
         if (note.system) continue;
         if (since && note.created_at && note.created_at <= since) continue;
 
-        if (note.type === 'DiffNote') {
+        if (
+          note.type === 'DiffNote' &&
+          note.resolvable !== false &&
+          note.resolved !== true
+        ) {
           const prefix = note.position?.new_path
             ? `[${note.position.new_path}] `
             : '';
