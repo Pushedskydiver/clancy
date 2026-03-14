@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   buildSlackPayload,
   buildTeamsPayload,
   isSlackWebhook,
+  sendNotification,
 } from './notify.js';
 
 describe('notify', () => {
@@ -38,6 +39,60 @@ describe('notify', () => {
         'application/vnd.microsoft.card.adaptive',
       );
       expect(payload.attachments[0].content.body[0].text).toBe('hello');
+    });
+  });
+
+  describe('sendNotification', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('sends Slack payload for slack.com webhooks', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await sendNotification(
+        'https://hooks.slack.com/services/T00/B00/xxx',
+        'hello',
+      );
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://hooks.slack.com/services/T00/B00/xxx',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ text: 'hello' }),
+        }),
+      );
+    });
+
+    it('sends Teams payload for office.com webhooks', async () => {
+      const mockFetch = vi.fn().mockResolvedValue({ ok: true });
+      vi.stubGlobal('fetch', mockFetch);
+
+      await sendNotification(
+        'https://example.webhook.office.com/webhook/xxx',
+        'hello',
+      );
+
+      const callBody = JSON.parse(mockFetch.mock.calls[0][1].body as string);
+      expect(callBody.type).toBe('message');
+      expect(callBody.attachments[0].contentType).toBe(
+        'application/vnd.microsoft.card.adaptive',
+      );
+    });
+
+    it('does not throw on fetch failure', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockRejectedValue(new Error('ECONNREFUSED')),
+      );
+
+      await expect(
+        sendNotification(
+          'https://hooks.slack.com/services/T00/B00/xxx',
+          'hello',
+        ),
+      ).resolves.toBeUndefined();
     });
   });
 });

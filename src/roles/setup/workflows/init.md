@@ -207,6 +207,56 @@ Never silently continue with unverified credentials — the user must explicitly
 
 ---
 
+### Q2c (Jira and Linear only): Git host token
+
+When the board is **Jira** or **Linear**, Clancy needs a git host token to create pull requests after implementation. Skip this step entirely for **GitHub Issues** — the `GITHUB_TOKEN` collected in Q2 already covers PR creation.
+
+Output:
+
+```
+Clancy can push your feature branch and create a pull request automatically.
+Which git host does this project use?
+
+[1] GitHub
+[2] GitLab
+[3] Bitbucket
+[4] Skip — I'll push and create PRs manually
+```
+
+**If [1] GitHub:**
+
+`Paste your GitHub personal access token: (needs repo scope — create at github.com/settings/tokens)`
+
+Store as `GITHUB_TOKEN` in `.clancy/.env`.
+
+Verify by calling `GET https://api.github.com/user` with `Authorization: Bearer {token}` and `X-GitHub-Api-Version: 2022-11-28`.
+
+On success: `✅ GitHub connected — {login}`
+On failure: offer re-enter or skip (same pattern as Q2b).
+
+**If [2] GitLab:**
+
+`Paste your GitLab personal access token: (needs api scope — create at gitlab.com/-/user_settings/personal_access_tokens)`
+
+Store as `GITLAB_TOKEN` in `.clancy/.env`.
+
+If the user is using a self-hosted GitLab instance, also ask:
+`What's your GitLab API base URL? (e.g. https://gitlab.example.com/api/v4 — press Enter for gitlab.com)`
+
+If a URL is entered, store as `CLANCY_GIT_API_URL` in `.clancy/.env` and `CLANCY_GIT_PLATFORM="gitlab"`.
+If the user enters just a hostname or instance URL without `/api/v4`, append `/api/v4` automatically.
+
+**If [3] Bitbucket:**
+
+1. `What's your Bitbucket username? (your Atlassian account username)`
+2. `Paste your Bitbucket app password: (needs repository:write scope — create at bitbucket.org/account/settings/app-passwords)`
+
+Store as `BITBUCKET_USER` and `BITBUCKET_TOKEN` in `.clancy/.env`.
+
+**If [4] Skip:** no git host token is written. Clancy will still implement tickets but leave the feature branch for the user to push and create PRs manually.
+
+---
+
 ### Q3 (Jira only): Status name
 
 Output:
@@ -312,6 +362,47 @@ If [3]: prompt for the value, store as `CLANCY_STATUS_DONE` in `.clancy/.env`. W
 If [4] or the user says "skip"/"none": skip — no `CLANCY_STATUS_DONE` line written.
 
 You can always configure these later via `/clancy:settings`.
+
+---
+
+### Q3d-2 (Jira and Linear only): Review status
+
+Only ask this if a git host token was configured in Q2c (i.e. the user didn't skip PR creation).
+
+**GitHub:** Skip entirely — not applicable (GitHub Issues don't have workflow states).
+
+**Jira:** Output:
+
+```
+When Clancy creates a pull request, it can transition the ticket to a review status.
+
+What transition should Clancy use after creating a PR?
+
+[1] In Review
+[2] Ready for Review
+[3] Enter a different value
+[4] Skip — use the same status as completion (CLANCY_STATUS_DONE)
+```
+
+If [1]: store `CLANCY_STATUS_REVIEW="In Review"` in `.clancy/.env`.
+If [2]: store `CLANCY_STATUS_REVIEW="Ready for Review"` in `.clancy/.env`.
+If [3]: prompt for the value, store as `CLANCY_STATUS_REVIEW` in `.clancy/.env`. Wrap in double quotes.
+If [4] or the user says "skip"/"none": skip — no `CLANCY_STATUS_REVIEW` line written (falls back to `CLANCY_STATUS_DONE`).
+
+**Linear:** Output:
+
+```
+When Clancy creates a pull request, it can move the issue to a review state.
+
+What state should Clancy move an issue to after creating a PR?
+
+[1] In Review
+[2] Ready for Review
+[3] Enter a different value
+[4] Skip — use the same state as completion (CLANCY_STATUS_DONE)
+```
+
+Same storage logic as Jira above.
 
 ---
 

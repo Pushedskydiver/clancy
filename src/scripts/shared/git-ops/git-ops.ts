@@ -117,3 +117,23 @@ export function squashMerge(
 export function deleteBranch(branch: string): void {
   git('branch', '-D', branch);
 }
+
+/**
+ * Push a branch to the remote origin.
+ *
+ * Uses `-u` to set up upstream tracking.
+ *
+ * @param branch - The branch name to push.
+ * @returns `true` if the push succeeded, `false` on failure.
+ */
+export function pushBranch(branch: string): boolean {
+  try {
+    execFileSync('git', ['push', '-u', 'origin', branch], {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}

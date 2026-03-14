@@ -7,6 +7,45 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.5.4] — 2026-03-14
+
+### ✨ Features
+
+- **PR-based flow when ticket has no epic/parent** — when a ticket has no parent (epic, milestone, or Linear parent), Clancy now pushes the feature branch and creates a pull request instead of squash-merging locally. Supports GitHub, GitLab (including self-hosted), and Bitbucket (Cloud and Server/DC). Falls back gracefully: push failure → leaves branch, PR failure → logs manual URL, no token → logs pushed status, no remote → leaves branch locally.
+- **Remote detection** (`src/scripts/shared/remote/remote.ts`) — `parseRemote()` and `detectRemote()` parse git remote URLs and detect the git platform (GitHub, GitLab, Bitbucket, Azure DevOps, GHE, self-hosted). `buildApiBaseUrl()` constructs the correct API base for each platform.
+- **PR body builder** (`src/scripts/shared/pull-request/pr-body/pr-body.ts`) — `buildPrBody()` generates a PR description with a link back to the board ticket.
+- **New env vars** — `CLANCY_STATUS_REVIEW` (transition status when creating a PR, falls back to `CLANCY_STATUS_DONE`), `GITHUB_TOKEN` (shared, for Jira/Linear users on GitHub), `GITLAB_TOKEN`, `BITBUCKET_USER`, `BITBUCKET_TOKEN`, `CLANCY_GIT_PLATFORM` (override auto-detection), `CLANCY_GIT_API_URL` (self-hosted API base).
+
+### ♻️ Refactor
+
+- **PR creation functions consolidated** — extracted GitHub PR creation from `board/github/github.ts` and moved GitLab/Bitbucket PR creation from `shared/remote/` into a new `shared/pull-request/` folder with co-located subfolders. All three git host PR creation functions now live together with a shared `postPullRequest()` utility that DRYs up the common POST + error-handling pattern.
+- **`run()` function decomposed** — extracted `deliverViaEpicMerge()` and `deliverViaPullRequest()` from the 365-line `run()` function in `once.ts` for readability and testability.
+- **DRY improvements** — extracted shared `formatDuration()` utility (was duplicated in once.ts and afk.ts), deduplicated `GITHUB_API` constant into `http.ts`, extracted `extractHostAndPath()` helper in `remote.ts` (was duplicated regex), removed local `LinearEnv` type in favour of schema-derived import.
+
+### 🐛 Fixes
+
+- **Bitbucket duplicate PR detection** — both Cloud and Server PR creation now detect HTTP 409 "already exists" responses (was returning generic error instead of `alreadyExists: true`).
+- **`CLANCY_GIT_PLATFORM` override always applies** — user override now takes precedence even when auto-detection returns a known platform (previously only applied when auto-detection returned `unknown`/`none`).
+- **URL-encode branch names in manual PR URLs** — `buildManualPrUrl` now uses `encodeURIComponent()` to handle special characters in branch names.
+- **Type-safe shared env access** — replaced unsafe `as Record<string, string | undefined>` casts with a typed `sharedEnv()` helper.
+
+### 📝 Documentation
+
+- **Init workflow** — added Q2c (git host token for Jira/Linear) and Q3d-2 (review status)
+- **Settings workflow** — added review status (B6/B4), git host token (H1) settings
+- **Scaffold workflow** — added new env vars to all 3 `.env.example` templates
+- **Implementer docs** — documented PR flow vs epic merge, updated loop diagram
+- **Configuration guide** — added all new env vars to the table
+- **Security guide** — added GitLab and Bitbucket token scope recommendations
+- **Troubleshooting guide** — added push/PR failure scenarios
+- **CLAUDE.md** — added PR-based flow technical decisions
+
+### ✅ Tests
+
+- 103 new tests (167 → 270): remote detection (35+4), shared `postPullRequest` utility (7), GitHub PR creation (5), GitLab MR creation (6), Bitbucket PR creation (7+2), git push (2), PR body builder (5), once orchestrator flows (3), `formatDuration` (5), `pingEndpoint` (5), Jira async functions (8), Linear async functions (6), `sendNotification` (3), `yellow` ANSI (1)
+
+---
+
 ## [0.5.3] — 2026-03-14
 
 ### 🐛 Fixes

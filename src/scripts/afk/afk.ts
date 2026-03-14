@@ -11,15 +11,8 @@ import { dirname, join, resolve } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 
+import { formatDuration } from '~/scripts/shared/format/format.js';
 import { bold, dim, green, red } from '~/utils/ansi/ansi.js';
-
-function formatDuration(ms: number): string {
-  const secs = Math.floor(ms / 1000);
-  if (secs < 60) return `${secs}s`;
-  const mins = Math.floor(secs / 60);
-  const remSecs = secs % 60;
-  return remSecs > 0 ? `${mins}m ${remSecs}s` : `${mins}m`;
-}
 
 /** Stop condition patterns matched against script output. */
 const STOP_PATTERNS = {

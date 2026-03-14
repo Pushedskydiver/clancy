@@ -59,6 +59,7 @@ Jira
   [B3] Label filter      {CLANCY_LABEL if set, else off}
   [B4] Pickup status     {CLANCY_STATUS_IN_PROGRESS if set, else off}
   [B5] Done status       {CLANCY_STATUS_DONE if set, else off}
+  [B6] Review status     {CLANCY_STATUS_REVIEW if set, else "uses Done status"}
 
 {If GitHub:}
 GitHub
@@ -69,6 +70,7 @@ Linear
   [B1] Label filter      {CLANCY_LABEL if set, else off}
   [B2] Pickup status     {CLANCY_STATUS_IN_PROGRESS if set, else off}
   [B3] Done status       {CLANCY_STATUS_DONE if set, else off}
+  [B4] Review status     {CLANCY_STATUS_REVIEW if set, else "uses Done status"}
 
 Roles
   [R1] Planner           {✅ enabled / ─ disabled}
@@ -81,6 +83,9 @@ Planner
   [P1] Plan label         {CLANCY_PLAN_LABEL:-needs-refinement}
 {If Linear:}
   [P1] Plan state type    {CLANCY_PLAN_STATE_TYPE:-backlog}
+
+Git Host (PR creation)
+  [H1] Git host token    {platform: GitHub/GitLab/Bitbucket or "not set"}
 
 Integrations
   [I1] Figma MCP         {enabled if FIGMA_API_KEY set, else not set}
@@ -232,6 +237,23 @@ If [2]: remove `CLANCY_STATUS_DONE` from `.clancy/.env`.
 
 ---
 
+### [B6] Jira Review status (Jira only)
+
+```
+Jira Review status — current: {value or "uses Done status"}
+When Clancy creates a pull request (instead of merging locally), it transitions
+the ticket to this status. Falls back to CLANCY_STATUS_DONE if not set.
+
+[1] Set status name
+[2] Off (use Done status for PR flow too)
+[3] Cancel
+```
+
+If [1]: prompt `What status name should Clancy use for In Review? (e.g. In Review, Ready for Review, Code Review)` then write `CLANCY_STATUS_REVIEW=<value>` to `.clancy/.env`.
+If [2]: remove `CLANCY_STATUS_REVIEW` from `.clancy/.env`.
+
+---
+
 ### [B1] Linear label filter (Linear only)
 
 ```
@@ -280,6 +302,23 @@ Must match the exact state name shown in your Linear board column header.
 
 If [1]: prompt `What workflow state name should Clancy use for Done? (e.g. Done, Complete, Closed)` then write `CLANCY_STATUS_DONE=<value>` to `.clancy/.env`.
 If [2]: remove `CLANCY_STATUS_DONE` from `.clancy/.env`.
+
+---
+
+### [B4] Linear Review status (Linear only)
+
+```
+Linear Review status — current: {value or "uses Done state"}
+When Clancy creates a pull request (instead of merging locally), it moves
+the issue to this state. Falls back to CLANCY_STATUS_DONE if not set.
+
+[1] Set state name
+[2] Off (use Done state for PR flow too)
+[3] Cancel
+```
+
+If [1]: prompt `What workflow state name should Clancy use for In Review? (e.g. In Review, Ready for Review, Code Review)` then write `CLANCY_STATUS_REVIEW=<value>` to `.clancy/.env`.
+If [2]: remove `CLANCY_STATUS_REVIEW` from `.clancy/.env`.
 
 ---
 
@@ -352,6 +391,28 @@ Which Linear state type should /clancy:plan fetch issues from?
 If [1]: remove `CLANCY_PLAN_STATE_TYPE` from `.clancy/.env` (uses default).
 If [2]: write `CLANCY_PLAN_STATE_TYPE=triage` to `.clancy/.env`.
 If [3]: prompt `What state type should /clancy:plan fetch from?` then write `CLANCY_PLAN_STATE_TYPE=<value>` to `.clancy/.env`.
+
+---
+
+### [H1] Git host token
+
+Only shown for Jira and Linear boards. GitHub Issues users already have `GITHUB_TOKEN` for PR creation.
+
+```
+Git host — current: {GitHub / GitLab / Bitbucket / not set}
+Clancy pushes feature branches and creates PRs on your git host.
+
+[1] GitHub
+[2] GitLab
+[3] Bitbucket
+[4] Remove (push and create PRs manually)
+[5] Cancel
+```
+
+If [1]: prompt `Paste your GitHub personal access token:` then write `GITHUB_TOKEN=<value>` to `.clancy/.env`. Remove any existing `GITLAB_TOKEN`, `BITBUCKET_USER`, `BITBUCKET_TOKEN`.
+If [2]: prompt `Paste your GitLab personal access token:` then write `GITLAB_TOKEN=<value>` to `.clancy/.env`. Optionally ask for a self-hosted API base URL (e.g. `https://gitlab.example.com/api/v4`) and write `CLANCY_GIT_API_URL` and `CLANCY_GIT_PLATFORM="gitlab"`. If the user enters just a hostname or instance URL without `/api/v4`, append `/api/v4` automatically. Remove any existing `GITHUB_TOKEN` (only if board is not GitHub), `BITBUCKET_USER`, `BITBUCKET_TOKEN`.
+If [3]: prompt for `Bitbucket username` and `Bitbucket app password`, write `BITBUCKET_USER` and `BITBUCKET_TOKEN` to `.clancy/.env`. Remove any existing `GITHUB_TOKEN` (only if board is not GitHub), `GITLAB_TOKEN`.
+If [4]: remove all git host token vars (`GITLAB_TOKEN`, `BITBUCKET_USER`, `BITBUCKET_TOKEN`, `CLANCY_GIT_PLATFORM`, `CLANCY_GIT_API_URL`). Keep `GITHUB_TOKEN` only if board is GitHub Issues.
 
 ---
 
@@ -479,6 +540,7 @@ If no: print `Cancelled. No changes made.` and loop back to the menu.
    - Jira: `JIRA_BASE_URL`, `JIRA_USER`, `JIRA_API_TOKEN`, `JIRA_PROJECT_KEY`, `CLANCY_JQL_STATUS`, `CLANCY_JQL_SPRINT`
    - GitHub: `GITHUB_TOKEN`, `GITHUB_REPO`
    - Linear: `LINEAR_API_KEY`, `LINEAR_TEAM_ID`
+   - Git host (all boards): `GITLAB_TOKEN`, `BITBUCKET_USER`, `BITBUCKET_TOKEN`, `CLANCY_GIT_PLATFORM`, `CLANCY_GIT_API_URL`, `CLANCY_STATUS_REVIEW`
 2. Write the new board credentials to `.clancy/.env`
 3. If switching to Jira: also ask the status filter question (same as init Q3) and write `CLANCY_JQL_STATUS` to `.clancy/.env`
 4. No script replacement needed — the bundled runtime scripts are board-agnostic (board detection happens at runtime from `.clancy/.env`)

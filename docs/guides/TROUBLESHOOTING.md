@@ -34,6 +34,26 @@ Run `/clancy:status` to see what Clancy would pick up. If the queue is empty:
 
 ---
 
+## Push or PR creation failed?
+
+If Clancy logs `PUSH_FAILED` or `PUSHED` (without a PR URL):
+
+- **PUSH_FAILED** — the `git push` command failed. Common causes:
+  - No remote configured (`git remote -v` is empty)
+  - Authentication failed — check your git credentials or SSH key
+  - Branch protection rules preventing direct push — ensure feature branches are allowed
+  - The feature branch is left intact for you to push manually
+
+- **PUSHED but no PR** — the branch was pushed successfully but PR creation failed:
+  - Missing git host token — configure one via `/clancy:settings` → Git host token
+  - Token lacks permissions — GitHub needs `repo` scope, GitLab needs `api` scope, Bitbucket needs `repository:write`
+  - Self-hosted instance not detected — set `CLANCY_GIT_PLATFORM` and `CLANCY_GIT_API_URL` in `.clancy/.env`
+  - The log includes a manual URL you can use to create the PR yourself
+
+- **LOCAL** — no git remote detected. Add a remote: `git remote add origin <url>`
+
+---
+
 ## `.clancy/clancy-once.js` not found?
 
 Re-run `/clancy:init` — it will detect the existing setup and offer to re-scaffold without asking for credentials again.

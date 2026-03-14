@@ -66,9 +66,11 @@ Use the minimum permissions each integration requires:
 
 | Integration | Recommended scope |
 |---|---|
-| GitHub PAT | `repo` + `read:user` scope (classic PATs) or Metadata read + Issues read/write + Account permissions read (fine-grained PATs). Both types are supported. |
+| GitHub PAT | `repo` + `read:user` scope (classic PATs) or Metadata read + Issues read/write + Pull requests read/write + Account permissions read (fine-grained PATs). Both types are supported. |
 | Jira API token | Standard user — no admin rights needed |
 | Linear API key | Personal API key — read/write to your assigned issues |
+| GitLab PAT | `api` scope — needed for creating merge requests and pushing branches |
+| Bitbucket app password | `repository:write` scope — needed for creating pull requests and pushing branches |
 | Figma API key | Read-only access is sufficient |
 
 ## Webhook URLs

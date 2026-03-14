@@ -94,10 +94,41 @@ export async function linearGraphql(
 export async function pingLinear(
   apiKey: string,
 ): Promise<{ ok: boolean; error?: string }> {
-  const raw = await linearGraphql(apiKey, '{ viewer { id } }');
-  const parsed = linearViewerResponseSchema.safeParse(raw);
+  let response: Response;
 
-  if (parsed.success && parsed.data.data?.viewer?.id) return { ok: true };
+  try {
+    response = await fetch(LINEAR_API_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: apiKey,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ query: '{ viewer { id } }' }),
+    });
+  } catch {
+    return { ok: false, error: '✗ Could not reach Linear — check network' };
+  }
+
+  if (!response.ok) {
+    if (response.status === 401 || response.status === 403) {
+      return {
+        ok: false,
+        error: '✗ Linear auth failed — check LINEAR_API_KEY',
+      };
+    }
+    return {
+      ok: false,
+      error: `✗ Linear API returned HTTP ${response.status}`,
+    };
+  }
+
+  try {
+    const json: unknown = await response.json();
+    const parsed = linearViewerResponseSchema.safeParse(json);
+    if (parsed.success && parsed.data.data?.viewer?.id) return { ok: true };
+  } catch {
+    // Invalid JSON — treat as auth issue
+  }
 
   return { ok: false, error: '✗ Linear auth failed — check LINEAR_API_KEY' };
 }

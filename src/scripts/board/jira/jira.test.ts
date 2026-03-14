@@ -1,10 +1,13 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
   buildAuthHeader,
   buildJql,
   extractAdfText,
+  fetchTicket,
   isSafeJqlValue,
+  pingJira,
+  transitionIssue,
 } from './jira.js';
 
 describe('jira', () => {
@@ -118,6 +121,201 @@ describe('jira', () => {
 
     it('returns empty string for non-object', () => {
       expect(extractAdfText('string')).toBe('');
+    });
+  });
+
+  describe('pingJira', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('returns ok true on successful response', async () => {
+      vi.stubGlobal('fetch', vi.fn().mockResolvedValue({ ok: true }));
+
+      const result = await pingJira(
+        'https://example.atlassian.net',
+        'PROJ',
+        'base64auth',
+      );
+      expect(result).toEqual({ ok: true });
+    });
+
+    it('returns error on auth failure', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({ ok: false, status: 401 }),
+      );
+
+      const result = await pingJira(
+        'https://example.atlassian.net',
+        'PROJ',
+        'bad_auth',
+      );
+      expect(result).toEqual({
+        ok: false,
+        error: '✗ Jira auth failed — check credentials',
+      });
+    });
+
+    it('returns error on network failure', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockRejectedValue(new Error('ECONNREFUSED')),
+      );
+
+      const result = await pingJira(
+        'https://example.atlassian.net',
+        'PROJ',
+        'auth',
+      );
+      expect(result).toEqual({
+        ok: false,
+        error: '✗ Could not reach Jira — check network',
+      });
+    });
+  });
+
+  describe('fetchTicket', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('returns ticket on success', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              issues: [
+                {
+                  key: 'PROJ-123',
+                  fields: {
+                    summary: 'Add login page',
+                    description: null,
+                    issuelinks: [],
+                    parent: { key: 'PROJ-10' },
+                    customfield_10014: null,
+                  },
+                },
+              ],
+            }),
+        }),
+      );
+
+      const result = await fetchTicket(
+        'https://example.atlassian.net',
+        'base64auth',
+        'PROJ',
+        'To Do',
+      );
+
+      expect(result).toEqual({
+        key: 'PROJ-123',
+        title: 'Add login page',
+        description: '',
+        provider: 'jira',
+        epicKey: 'PROJ-10',
+        blockers: [],
+      });
+    });
+
+    it('returns undefined on empty results', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve({ issues: [] }),
+        }),
+      );
+
+      const result = await fetchTicket(
+        'https://example.atlassian.net',
+        'base64auth',
+        'PROJ',
+        'To Do',
+      );
+
+      expect(result).toBeUndefined();
+    });
+
+    it('returns undefined on API error', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({ ok: false, status: 500 }),
+      );
+
+      const result = await fetchTicket(
+        'https://example.atlassian.net',
+        'base64auth',
+        'PROJ',
+        'To Do',
+      );
+
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe('transitionIssue', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('returns true on successful transition', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          // First call: lookupTransitionId
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                transitions: [
+                  { id: '31', name: 'In Progress' },
+                  { id: '41', name: 'Done' },
+                ],
+              }),
+          })
+          // Second call: POST transition
+          .mockResolvedValueOnce({ ok: true }),
+      );
+
+      const result = await transitionIssue(
+        'https://example.atlassian.net',
+        'base64auth',
+        'PROJ-123',
+        'In Progress',
+      );
+
+      expect(result).toBe(true);
+    });
+
+    it('returns false on HTTP error during transition', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          // First call: lookupTransitionId
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                transitions: [{ id: '31', name: 'In Progress' }],
+              }),
+          })
+          // Second call: POST transition fails
+          .mockResolvedValueOnce({ ok: false, status: 400 }),
+      );
+
+      const result = await transitionIssue(
+        'https://example.atlassian.net',
+        'base64auth',
+        'PROJ-123',
+        'In Progress',
+      );
+
+      expect(result).toBe(false);
     });
   });
 });

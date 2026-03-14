@@ -18,26 +18,39 @@ Tests are co-located with their modules:
 ```
 src/
 ├── scripts/
-│   ├── once/once.test.ts                     — orchestrator tests
-│   ├── shared/
-│   │   ├── env-schema/env-schema.test.ts     — board detection + env validation
-│   │   ├── branch/branch.test.ts             — branch computation
-│   │   ├── prompt/prompt.test.ts             — prompt builder
-│   │   ├── progress/progress.test.ts         — progress logging
-│   │   ├── claude-cli/claude-cli.test.ts     — Claude CLI invocation
-│   │   └── ...
-│   └── board/
-│       ├── jira/jira.test.ts                 — Jira API parsing
-│       ├── github/github.test.ts             — GitHub API parsing
-│       └── linear/linear.test.ts             — Linear API parsing
-├── schemas/                                  — (tested via board module tests)
+│   ├── once/once.test.ts                                    — orchestrator lifecycle
+│   ├── afk/afk.test.ts                                      — AFK loop runner
+│   ├── board/
+│   │   ├── jira/jira.test.ts                                — Jira API (sync + async)
+│   │   ├── github/github.test.ts                            — GitHub Issues API
+│   │   └── linear/linear.test.ts                            — Linear GraphQL API
+│   └── shared/
+│       ├── branch/branch.test.ts                            — branch computation
+│       ├── claude-cli/claude-cli.test.ts                    — Claude CLI invocation
+│       ├── env-parser/env-parser.test.ts                    — .env file parsing
+│       ├── env-schema/env-schema.test.ts                    — board detection + validation
+│       ├── feasibility/feasibility.test.ts                  — ticket feasibility check
+│       ├── format/format.test.ts                            — shared formatters
+│       ├── git-ops/git-ops.test.ts                          — git operations
+│       ├── http/http.test.ts                                — HTTP helpers + pingEndpoint
+│       ├── notify/notify.test.ts                            — Slack/Teams notifications
+│       ├── preflight/preflight.test.ts                      — binary + git checks
+│       ├── progress/progress.test.ts                        — progress logging
+│       ├── prompt/prompt.test.ts                            — prompt builder
+│       ├── pull-request/
+│       │   ├── bitbucket/bitbucket.test.ts                  — Bitbucket Cloud + Server PR
+│       │   ├── github/github.test.ts                        — GitHub PR creation
+│       │   ├── gitlab/gitlab.test.ts                        — GitLab MR creation
+│       │   ├── post-pr/post-pr.test.ts                      — shared PR utility
+│       │   └── pr-body/pr-body.test.ts                      — PR body builder
+│       └── remote/remote.test.ts                            — git host detection
 ├── installer/
-│   ├── file-ops/file-ops.test.ts             — file copy operations
-│   ├── hook-installer/hook-installer.test.ts — hook registration
-│   └── manifest/manifest.test.ts             — SHA-256 manifest generation
+│   ├── file-ops/file-ops.test.ts                            — file copy operations
+│   ├── hook-installer/hook-installer.test.ts                — hook registration
+│   └── manifest/manifest.test.ts                            — SHA-256 manifest generation
 └── utils/
-    ├── ansi/ansi.test.ts
-    └── parse-json/parse-json.test.ts
+    ├── ansi/ansi.test.ts                                    — ANSI colour helpers
+    └── parse-json/parse-json.test.ts                        — safe JSON parsing
 ```
 
 ## How Tests Work

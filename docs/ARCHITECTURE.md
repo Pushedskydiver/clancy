@@ -33,6 +33,9 @@ clancy/
 │   │   ├── afk/afk.ts          — AFK loop runner
 │   │   ├── board/              — board-specific modules (jira, github, linear)
 │   │   └── shared/             — env-schema, branch, prompt, progress, etc.
+│   │       ├── pull-request/   — PR creation (github, gitlab, bitbucket, post-pr, pr-body)
+│   │       ├── remote/         — git host detection (parseRemote, detectRemote)
+│   │       └── format/         — shared formatters (formatDuration)
 │   ├── schemas/                — Zod schemas for API responses and env vars
 │   ├── templates/
 │   │   ├── CLAUDE.md           — template injected into user's CLAUDE.md
@@ -136,11 +139,10 @@ clancy-afk.js (loop runner — bundled, self-contained)
               6. Transition ticket to In Progress
               7. Create feature branch
               8. Pipe prompt to: claude --dangerously-skip-permissions
-              9. Squash merge back to parent branch
-             10. Delete ticket branch
-             11. Transition ticket to Done / close issue
-             12. Log to .clancy/progress.txt
-             13. Send notification (if configured)
+              9a. [Has parent] Squash merge → delete branch → transition Done → close issue (GitHub)
+              9b. [No parent]  Push branch → detect remote → create PR/MR → transition In Review
+             10. Log to .clancy/progress.txt
+             11. Send notification (if configured)
             if "No tickets found": break
 ```
 

@@ -80,7 +80,7 @@ describe('detectBoard', () => {
   });
 
   describe('github', () => {
-    it('detects GitHub from GITHUB_TOKEN', () => {
+    it('detects GitHub from GITHUB_TOKEN + GITHUB_REPO', () => {
       const result = detectBoard(githubEnv());
 
       expect(typeof result).not.toBe('string');
@@ -91,11 +91,24 @@ describe('detectBoard', () => {
       expect(result.env.GITHUB_REPO).toBe('acme/app');
     });
 
-    it('returns error when GITHUB_REPO is missing', () => {
+    it('does not detect GitHub when GITHUB_REPO is missing', () => {
       const result = detectBoard({ GITHUB_TOKEN: 'ghp_abc123' });
 
       expect(typeof result).toBe('string');
-      expect(result).toContain('GitHub env validation failed');
+      expect(result).toContain('No board detected');
+    });
+
+    it('does not mis-detect Linear as GitHub when GITHUB_TOKEN is a shared git host token', () => {
+      const result = detectBoard({
+        LINEAR_API_KEY: 'lin_api_abc123',
+        LINEAR_TEAM_ID: 'team-uuid-123',
+        GITHUB_TOKEN: 'ghp_for_pr_creation',
+      });
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.provider).toBe('linear');
     });
   });
 
