@@ -92,6 +92,7 @@ Posts to Slack or Teams when a ticket completes or Clancy hits an error. URL is 
 | `CLANCY_STATUS_DONE` | Jira/Linear | No | — | Status when completing a ticket |
 | `CLANCY_NOTIFY_WEBHOOK` | All | No | — | Slack/Teams webhook URL |
 | `CLANCY_ROLES` | All | No | — | Comma-separated optional roles |
+| `CLANCY_MODEL` | All | No | — | Claude model for ticket sessions |
 | `CLANCY_BASE_BRANCH` | All | No | `main` | Base branch for merges |
 | `MAX_ITERATIONS` | All | No | `5` | Max tickets per `/clancy:run` |
 | `FIGMA_API_KEY` | All | No | — | Figma API key for design specs |

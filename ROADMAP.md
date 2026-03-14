@@ -4,7 +4,7 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 
 ---
 
-## v0.1.x — Foundation (current)
+## v0.1.x — Foundation ✅
 
 - `npx chief-clancy` installer
 - Jira, GitHub Issues, Linear board support
@@ -27,7 +27,7 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 
 ---
 
-## v0.2.0 — Stability and DX
+## v0.2.0 — Stability and DX ✅
 
 - Jira/Linear ticket status transitions — move ticket to In Progress on pickup, Done on completion
 - `/clancy:dry-run` command — dedicated dropdown command to preview the next ticket without making any changes (no git ops, no Claude call)
@@ -40,7 +40,7 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 
 ---
 
-## v0.3.0 — TypeScript rewrite
+## v0.3.0 — TypeScript rewrite ✅
 
 - Rewrite all Node.js code (installer, hooks) from CommonJS JavaScript to TypeScript
 - Replace all bash shell scripts with TypeScript equivalents — removes bash/jq/curl as runtime dependencies
@@ -82,7 +82,7 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 
 ---
 
-## v0.6.0 — Strategist role
+## v0.6.0 — Strategist role (next)
 
 - `/clancy:brief` — take a vague idea (from a board ticket, inline text, or local file), research the codebase and web, produce a structured strategic brief with ticket decomposition
 - `/clancy:approve-brief` — create tickets on the board from an approved brief (new capability: ticket creation via Jira, GitHub, Linear APIs)
