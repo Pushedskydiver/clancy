@@ -84,8 +84,12 @@ export async function resolveUsername(token: string): Promise<string> {
     });
 
     if (!response.ok) {
+      const hint =
+        response.status === 401 || response.status === 403
+          ? ' Fine-grained PATs need "Account permissions → read" (or classic PATs need read:user scope).'
+          : '';
       console.warn(
-        `⚠ GitHub /user returned HTTP ${response.status} — falling back to @me. Fine-grained PATs need "Account permissions → read" (or classic PATs need read:user scope).`,
+        `⚠ GitHub /user returned HTTP ${response.status} — falling back to @me.${hint}`,
       );
       return '@me';
     }
