@@ -36,7 +36,9 @@ CLANCY_STATUS_DONE="Ready for Review"
 
 Clancy moves tickets on your board when it picks up and completes implementation. Best-effort — a failed transition never stops the run. Configurable via `/clancy:settings`.
 
-**Jira / Linear:** Set these to the exact column name shown in your board. `CLANCY_STATUS_DONE` doesn't have to mean "Done" — set it to wherever tickets should go after implementation (e.g. "Ready for Review", "Peer Review", "Ready for QA"). Clancy calls the board API to transition the ticket status.
+**Jira:** Set these to the Jira **transition name** (the action label, e.g. "In Progress", "Done"). Note: in some Jira workflows the transition name differs from the destination column name (e.g. transition "Start Progress" moves to column "In Progress"). Check your Jira workflow if transitions aren't working — the value must match the transition action name, not the column header. `CLANCY_STATUS_DONE` doesn't have to mean "Done" — set it to whatever transition moves tickets to your post-implementation column.
+
+**Linear:** Set these to the exact workflow state name shown in your Linear team settings (e.g. "In Progress", "Done", "Ready for Review").
 
 **GitHub:** Issues don't have status columns — they're `open` or `closed`. Clancy uses **labels as queues** (e.g. `needs-refinement` → `clancy`) and closes issues on completion. Status transition env vars are ignored for GitHub.
 

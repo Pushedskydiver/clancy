@@ -378,8 +378,9 @@ MAX_ITERATIONS=5
 
 # ─── Optional: Status transitions ────────────────────────────────────────────
 # Move tickets automatically when Clancy picks up or completes them.
-# Set to the exact status name shown in your Jira board column header.
-# "Done" can be any post-implementation column (e.g. "Ready for Review", "Peer Review").
+# Set to the Jira transition name (the action label, not the column header).
+# In many workflows these match, but check your Jira workflow if transitions fail.
+# "Done" can be any transition to a post-implementation status.
 # CLANCY_STATUS_IN_PROGRESS="In Progress"
 # CLANCY_STATUS_DONE="Done"
 
@@ -407,7 +408,7 @@ GITHUB_REPO=owner/repo-name
 # Recommended: only pick up issues with this label.
 # Without this, Clancy picks up all open issues assigned to you.
 # Create the label in GitHub first, then add it to any issue you want Clancy to pick up.
-# CLANCY_LABEL=clancy
+# CLANCY_LABEL="clancy"
 
 # ─── Planner Queue (optional — requires CLANCY_ROLES to include "planner") ───
 # Label for backlog issues that /clancy:plan fetches from (default: needs-refinement)
