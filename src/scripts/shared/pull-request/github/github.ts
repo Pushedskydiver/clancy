@@ -9,7 +9,7 @@
 import { githubHeaders } from '~/scripts/shared/http/http.js';
 import type { PrCreationResult } from '~/types/index.js';
 
-import { postPullRequest } from './post-pr.js';
+import { postPullRequest } from '../post-pr/post-pr.js';
 
 const GITHUB_API = 'https://api.github.com';
 

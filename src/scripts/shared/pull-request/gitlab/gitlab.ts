@@ -8,7 +8,7 @@
  */
 import type { PrCreationResult } from '~/types/index.js';
 
-import { postPullRequest } from './post-pr.js';
+import { postPullRequest } from '../post-pr/post-pr.js';
 
 /**
  * Create a merge request on GitLab.

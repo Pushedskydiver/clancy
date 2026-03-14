@@ -8,7 +8,7 @@
  */
 import type { PrCreationResult } from '~/types/index.js';
 
-import { basicAuth, postPullRequest } from './post-pr.js';
+import { basicAuth, postPullRequest } from '../post-pr/post-pr.js';
 
 /**
  * Create a pull request on Bitbucket Cloud.

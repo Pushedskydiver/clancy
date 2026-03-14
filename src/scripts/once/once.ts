@@ -54,10 +54,10 @@ import { buildPrompt } from '~/scripts/shared/prompt/prompt.js';
 import {
   createPullRequest as createBitbucketPr,
   createServerPullRequest as createBitbucketServerPr,
-} from '~/scripts/shared/pull-request/bitbucket.js';
-import { createPullRequest as createGitHubPr } from '~/scripts/shared/pull-request/github.js';
-import { createMergeRequest as createGitLabMr } from '~/scripts/shared/pull-request/gitlab.js';
-import { buildPrBody } from '~/scripts/shared/pull-request/pr-body.js';
+} from '~/scripts/shared/pull-request/bitbucket/bitbucket.js';
+import { createPullRequest as createGitHubPr } from '~/scripts/shared/pull-request/github/github.js';
+import { createMergeRequest as createGitLabMr } from '~/scripts/shared/pull-request/gitlab/gitlab.js';
+import { buildPrBody } from '~/scripts/shared/pull-request/pr-body/pr-body.js';
 import {
   buildApiBaseUrl,
   detectRemote,

@@ -21,7 +21,7 @@ import { sendNotification } from '~/scripts/shared/notify/notify.js';
 
 import { runPreflight } from '~/scripts/shared/preflight/preflight.js';
 import { appendProgress } from '~/scripts/shared/progress/progress.js';
-import { createPullRequest as createGitHubPr } from '~/scripts/shared/pull-request/github.js';
+import { createPullRequest as createGitHubPr } from '~/scripts/shared/pull-request/github/github.js';
 import { detectRemote } from '~/scripts/shared/remote/remote.js';
 
 import { run } from './once.js';
@@ -54,7 +54,7 @@ vi.mock('~/scripts/board/github/github.js', () => ({
   resolveUsername: vi.fn(() => Promise.resolve('testuser')),
 }));
 
-vi.mock('~/scripts/shared/pull-request/github.js', () => ({
+vi.mock('~/scripts/shared/pull-request/github/github.js', () => ({
   createPullRequest: vi.fn(() =>
     Promise.resolve({
       ok: true,
@@ -111,13 +111,13 @@ vi.mock('~/scripts/shared/remote/remote.js', () => ({
   })),
 }));
 
-vi.mock('~/scripts/shared/pull-request/gitlab.js', () => ({
+vi.mock('~/scripts/shared/pull-request/gitlab/gitlab.js', () => ({
   createMergeRequest: vi.fn(() =>
     Promise.resolve({ ok: true, url: 'https://gitlab.com/mr/1', number: 1 }),
   ),
 }));
 
-vi.mock('~/scripts/shared/pull-request/bitbucket.js', () => ({
+vi.mock('~/scripts/shared/pull-request/bitbucket/bitbucket.js', () => ({
   createPullRequest: vi.fn(() =>
     Promise.resolve({ ok: true, url: 'https://bitbucket.org/pr/1', number: 1 }),
   ),
@@ -126,7 +126,7 @@ vi.mock('~/scripts/shared/pull-request/bitbucket.js', () => ({
   ),
 }));
 
-vi.mock('~/scripts/shared/pull-request/pr-body.js', () => ({
+vi.mock('~/scripts/shared/pull-request/pr-body/pr-body.js', () => ({
   buildPrBody: vi.fn(() => 'PR body'),
 }));
 
