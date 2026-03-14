@@ -34,7 +34,11 @@ CLANCY_STATUS_IN_PROGRESS="In Progress"
 CLANCY_STATUS_DONE="Done"
 ```
 
-Clancy automatically moves tickets through your board when it picks up and completes them. Set these to the exact column name shown in your Jira or Linear board. Best-effort — a failed transition never stops the run. Configurable via `/clancy:settings`.
+Clancy automatically moves tickets through your board when it picks up and completes them. Best-effort — a failed transition never stops the run. Configurable via `/clancy:settings`.
+
+**Jira / Linear:** Set these to the exact column name shown in your board (e.g. "In Progress", "Done"). Clancy calls the board API to transition the ticket status.
+
+**GitHub:** Issues don't have status columns — they're `open` or `closed`. Clancy uses **labels as queues** (e.g. `needs-refinement` → `clancy`) and closes issues on completion. Status transition env vars are ignored for GitHub.
 
 ## Notifications
 

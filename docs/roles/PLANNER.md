@@ -48,6 +48,20 @@ Additional filters vary by board:
 - **Linear:** No additional label filter
 - **All boards:** `assignee = currentUser()` always applies
 
+### How transitions work per board
+
+**Jira / Linear:** Transitions use native status columns. `/clancy:approve` moves the ticket from the planning status (e.g. "Backlog") to the implementation status (e.g. "To Do").
+
+**GitHub:** Issues don't have status columns — they're either `open` or `closed`. Clancy uses **labels as queues** instead:
+
+1. **You** add the `needs-refinement` label to issues you want planned (this is a manual step)
+2. `/clancy:plan` picks up issues with that label
+3. `/clancy:approve` removes `needs-refinement` and adds `clancy` (the implementation queue label)
+4. `/clancy:once` picks up issues with the `clancy` label
+5. On completion, Clancy closes the issue
+
+No GitHub Projects integration — Clancy works with the Issues REST API only.
+
 ## The workflow
 
 ```
