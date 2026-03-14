@@ -26,7 +26,7 @@ The implementer uses the **implementation queue** — tickets that are ready to 
 | Board | Default filter | Env var to customise |
 | --- | --- | --- |
 | Jira | `status = "To Do"` | `CLANCY_JQL_STATUS` |
-| GitHub | Label: `clancy` | `CLANCY_LABEL` |
+| GitHub | No label filter (all open issues assigned to you). Set `CLANCY_LABEL=clancy` for a dedicated queue | `CLANCY_LABEL` |
 | Linear | `state.type: "unstarted"` | (hardcoded to unstarted) |
 
 Additional shared filters (apply to all boards):

@@ -67,4 +67,4 @@ These docs are read by the implementer before every run, giving it full codebase
 
 ## Update
 
-`/clancy:update` checks npm for a newer version of `chief-clancy`, shows what's new from the changelog, and re-runs the installer to update commands, workflows, and runtime scripts. It detects and backs up any user-modified files before overwriting.
+`/clancy:update` checks npm for a newer version of `chief-clancy`, shows what's new from the changelog, and re-runs the installer to update commands, workflows, and runtime scripts. It detects and backs up any user-modified command and workflow files (under `.claude/commands/clancy/` and `.claude/clancy/workflows/`) before overwriting. Runtime scripts in `.clancy/` are always overwritten without backup.
