@@ -42,7 +42,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### ✅ Tests
 
-- 102 new tests (167 → 269): remote detection (35+4), shared `postPullRequest` utility (7), GitHub PR creation (5), GitLab MR creation (6), Bitbucket PR creation (7+2), git push (2), PR body builder (5), once orchestrator flows (3), `formatDuration` (5), `pingEndpoint` (5), Jira async functions (8), Linear async functions (6), `sendNotification` (3), `yellow` ANSI (1)
+- 103 new tests (167 → 270): remote detection (35+4), shared `postPullRequest` utility (7), GitHub PR creation (5), GitLab MR creation (6), Bitbucket PR creation (7+2), git push (2), PR body builder (5), once orchestrator flows (3), `formatDuration` (5), `pingEndpoint` (5), Jira async functions (8), Linear async functions (6), `sendNotification` (3), `yellow` ANSI (1)
 
 ---
 

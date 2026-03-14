@@ -26,18 +26,16 @@ export async function postPullRequest(
   parseSuccess: (json: unknown) => { url: string; number: number },
   isAlreadyExists?: (status: number, text: string) => boolean,
 ): Promise<PrCreationResult> {
-  try {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 30_000);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30_000);
 
+  try {
     const response = await fetch(url, {
       method: 'POST',
       headers: { ...headers, 'Content-Type': 'application/json' },
       body: JSON.stringify(body),
       signal: controller.signal,
     });
-
-    clearTimeout(timeout);
 
     if (!response.ok) {
       const text = await response.text().catch(() => '');
@@ -59,6 +57,8 @@ export async function postPullRequest(
       ok: false,
       error: err instanceof Error ? err.message : String(err),
     };
+  } finally {
+    clearTimeout(timeout);
   }
 }
 
