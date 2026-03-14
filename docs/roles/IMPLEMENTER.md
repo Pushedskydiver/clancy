@@ -27,7 +27,7 @@ The implementer uses the **implementation queue** — tickets that are ready to 
 | --- | --- | --- |
 | Jira | `status = "To Do"` | `CLANCY_JQL_STATUS` |
 | GitHub | Label: `clancy` | `CLANCY_LABEL` |
-| Linear | `state.type = "unstarted"` | (hardcoded to unstarted) |
+| Linear | `state.type: "unstarted"` | (hardcoded to unstarted) |
 
 Additional shared filters (apply to all boards):
 

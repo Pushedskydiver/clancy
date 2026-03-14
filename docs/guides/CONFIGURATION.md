@@ -52,7 +52,7 @@ Posts to Slack or Teams when a ticket completes or Clancy hits an error. URL is 
 | --- | --- | --- |
 | Jira | `status = "To Do"` | `CLANCY_JQL_STATUS` |
 | GitHub | Label: `clancy` | `CLANCY_LABEL` |
-| Linear | `state.type = "unstarted"` | (hardcoded) |
+| Linear | `state.type: "unstarted"` | (hardcoded) |
 
 ### Planning queue
 

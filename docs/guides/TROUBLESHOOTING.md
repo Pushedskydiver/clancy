@@ -29,7 +29,7 @@ Run `/clancy:status` to see what Clancy would pick up. If the queue is empty:
 
 - Check that tickets are assigned to you on the board
 - For Jira: verify the status filter in `/clancy:settings` matches your board's status name exactly (e.g. `To Do` vs `TODO`)
-- For Linear: Clancy filters by `state.type: unstarted` — ensure your backlog state maps to this type
+- For Linear: Clancy filters by `state.type: "unstarted"` — ensure your backlog state maps to this type
 
 ---
 
