@@ -57,12 +57,18 @@ export async function checkPrReviewState(
     const pr = prs[0];
 
     const [inlineRes, convoRes] = await Promise.all([
-      fetch(`${apiBase}/repos/${repo}/pulls/${pr.number}/comments`, {
-        headers,
-      }),
-      fetch(`${apiBase}/repos/${repo}/issues/${pr.number}/comments`, {
-        headers,
-      }),
+      fetch(
+        `${apiBase}/repos/${repo}/pulls/${pr.number}/comments?per_page=100`,
+        {
+          headers,
+        },
+      ),
+      fetch(
+        `${apiBase}/repos/${repo}/issues/${pr.number}/comments?per_page=100`,
+        {
+          headers,
+        },
+      ),
     ]);
 
     if (!inlineRes.ok || !convoRes.ok) return undefined;
@@ -113,12 +119,18 @@ export async function fetchPrReviewComments(
     const headers = githubHeaders(token);
 
     const [inlineRes, convoRes] = await Promise.all([
-      fetch(`${apiBase}/repos/${repo}/pulls/${prNumber}/comments`, {
-        headers,
-      }),
-      fetch(`${apiBase}/repos/${repo}/issues/${prNumber}/comments`, {
-        headers,
-      }),
+      fetch(
+        `${apiBase}/repos/${repo}/pulls/${prNumber}/comments?per_page=100`,
+        {
+          headers,
+        },
+      ),
+      fetch(
+        `${apiBase}/repos/${repo}/issues/${prNumber}/comments?per_page=100`,
+        {
+          headers,
+        },
+      ),
     ]);
 
     if (!inlineRes.ok || !convoRes.ok) return [];

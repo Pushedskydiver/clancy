@@ -119,14 +119,6 @@ export function deleteBranch(branch: string): void {
 }
 
 /**
- * Push a branch to the remote origin.
- *
- * Uses `-u` to set up upstream tracking.
- *
- * @param branch - The branch name to push.
- * @returns `true` if the push succeeded, `false` on failure.
- */
-/**
  * Fetch a remote branch into a local branch of the same name.
  *
  * Runs `git fetch origin {branch}:{branch}`.
@@ -146,6 +138,14 @@ export function fetchRemoteBranch(branch: string): boolean {
   }
 }
 
+/**
+ * Push a branch to the remote origin.
+ *
+ * Uses `-u` to set up upstream tracking.
+ *
+ * @param branch - The branch name to push.
+ * @returns `true` if the push succeeded, `false` on failure.
+ */
 export function pushBranch(branch: string): boolean {
   try {
     execFileSync('git', ['push', '-u', 'origin', branch], {

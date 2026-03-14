@@ -94,7 +94,7 @@ export async function checkMrReviewState(
 
     const mr = data[0];
 
-    const discussionsUrl = `${apiBase}/projects/${encodedPath}/merge_requests/${mr.iid}/discussions`;
+    const discussionsUrl = `${apiBase}/projects/${encodedPath}/merge_requests/${mr.iid}/discussions?per_page=100`;
     const discussionsRes = await fetch(discussionsUrl, {
       headers: { 'PRIVATE-TOKEN': token },
     });
@@ -154,7 +154,7 @@ export async function fetchMrReviewComments(
 ): Promise<string[]> {
   try {
     const encodedPath = encodeURIComponent(projectPath);
-    const url = `${apiBase}/projects/${encodedPath}/merge_requests/${mrIid}/discussions`;
+    const url = `${apiBase}/projects/${encodedPath}/merge_requests/${mrIid}/discussions?per_page=100`;
 
     const res = await fetch(url, {
       headers: { 'PRIVATE-TOKEN': token },

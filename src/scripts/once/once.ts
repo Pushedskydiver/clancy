@@ -197,14 +197,16 @@ async function fetchTicket(
  * If a reviewer has requested changes, returns the ticket and feedback.
  *
  * This is best-effort — errors are swallowed so the orchestrator
- * can fall through to board-side rework detection.
+ * can fall through to fresh ticket fetch.
  */
 async function fetchReworkFromPrReview(
   config: BoardConfig,
 ): Promise<
   { ticket: FetchedTicket; feedback: string[]; prNumber: number } | undefined
 > {
-  const candidates = findEntriesWithStatus(process.cwd(), 'PR_CREATED');
+  const prCreated = findEntriesWithStatus(process.cwd(), 'PR_CREATED');
+  const reworked = findEntriesWithStatus(process.cwd(), 'REWORK');
+  const candidates = [...prCreated, ...reworked];
   if (candidates.length === 0) return undefined;
 
   const platformOverride = sharedEnv(config).CLANCY_GIT_PLATFORM;
