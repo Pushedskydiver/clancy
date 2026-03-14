@@ -239,6 +239,82 @@ If enter is pressed with no value: skip — omit the label clause entirely (Clan
 
 ---
 
+### Q3d (Jira and Linear only): Status transitions
+
+Output:
+
+**GitHub:** Skip this step entirely — GitHub Issues use `open`/`closed`, not status columns. Clancy closes issues automatically on completion.
+
+**Jira:** Output:
+
+```
+When Clancy picks up a ticket, it can transition it on your Jira board.
+Jira uses transition action names (e.g. "In Progress", "Start Progress").
+These usually match the column name, but check your Jira workflow if transitions fail.
+
+What transition should Clancy use when it starts working on a ticket?
+
+[1] In Progress (most common)
+[2] Enter a different value
+[3] Skip — don't transition on pickup (ticket stays in its current column)
+```
+
+If [1]: store `CLANCY_STATUS_IN_PROGRESS="In Progress"` in `.clancy/.env`.
+If [2]: prompt for the value, store as `CLANCY_STATUS_IN_PROGRESS` in `.clancy/.env`. Wrap in double quotes.
+If [3] or the user says "skip"/"none": skip — no `CLANCY_STATUS_IN_PROGRESS` line written.
+
+Then ask:
+
+```
+What transition should Clancy use after implementation is complete?
+
+[1] Done
+[2] Ready for Review
+[3] Enter a different value
+[4] Skip — don't transition on completion (ticket stays in its current column)
+```
+
+If [1]: store `CLANCY_STATUS_DONE="Done"` in `.clancy/.env`.
+If [2]: store `CLANCY_STATUS_DONE="Ready for Review"` in `.clancy/.env`.
+If [3]: prompt for the value, store as `CLANCY_STATUS_DONE` in `.clancy/.env`. Wrap in double quotes.
+If [4] or the user says "skip"/"none": skip — no `CLANCY_STATUS_DONE` line written.
+
+**Linear:** Output:
+
+```
+When Clancy picks up a ticket, it can move it to a workflow state on your board.
+
+What state should Clancy move a ticket to when it starts working on it?
+
+[1] In Progress (most common)
+[2] Enter a different value
+[3] Skip — don't transition on pickup (ticket stays in its current state)
+```
+
+If [1]: store `CLANCY_STATUS_IN_PROGRESS="In Progress"` in `.clancy/.env`.
+If [2]: prompt for the value, store as `CLANCY_STATUS_IN_PROGRESS` in `.clancy/.env`. Wrap in double quotes.
+If [3] or the user says "skip"/"none": skip — no `CLANCY_STATUS_IN_PROGRESS` line written.
+
+Then ask:
+
+```
+What state should Clancy move a ticket to after implementation is complete?
+
+[1] Done
+[2] Ready for Review
+[3] Enter a different value
+[4] Skip — don't transition on completion (ticket stays in its current state)
+```
+
+If [1]: store `CLANCY_STATUS_DONE="Done"` in `.clancy/.env`.
+If [2]: store `CLANCY_STATUS_DONE="Ready for Review"` in `.clancy/.env`.
+If [3]: prompt for the value, store as `CLANCY_STATUS_DONE` in `.clancy/.env`. Wrap in double quotes.
+If [4] or the user says "skip"/"none": skip — no `CLANCY_STATUS_DONE` line written.
+
+You can always configure these later via `/clancy:settings`.
+
+---
+
 ### Q4: Base branch (auto-detect)
 
 Silently detect the base branch — do not ask unless detection fails:
@@ -319,6 +395,28 @@ If skipped (Enter): no `CLANCY_ROLES` line is written — only core roles are in
 The installer reads `CLANCY_ROLES` from `.clancy/.env` to determine which optional role directories to copy. Core roles (implementer, reviewer, setup) are always copied regardless of this setting. After changing `CLANCY_ROLES`, re-run `npx chief-clancy@latest --local` (or `--global`) to apply.
 
 Note: as more roles are added in future versions, they appear as additional numbered options here. The flow scales naturally.
+
+---
+
+## Step 4d (Jira only, if Planner role selected): Planning queue status
+
+Only ask this if the user selected Planner in Step 4c above (or if re-running init and `CLANCY_ROLES` already includes `planner`).
+
+If the planner role is not enabled, skip this step entirely.
+
+Output:
+
+```
+The Planner role picks tickets from a separate queue for planning.
+
+Which Jira status should Clancy pick planning tickets from?
+
+[1] Backlog (default)
+[2] Enter a different value
+```
+
+If [1]: store `CLANCY_PLAN_STATUS="Backlog"` in `.clancy/.env`.
+If [2]: prompt for the value, store as `CLANCY_PLAN_STATUS` in `.clancy/.env`. Wrap in double quotes.
 
 ---
 

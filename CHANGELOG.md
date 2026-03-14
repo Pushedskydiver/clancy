@@ -7,6 +7,14 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.5.2] — 2026-03-14
+
+### 🐛 Fixes
+
+- **Init missing queue config questions** — `/clancy:init` now asks for status transition names (In Progress / Done) on Jira and Linear, and planning queue status on Jira when the Planner role is enabled. Previously only the implementation queue status was asked for Jira, and Linear users had no way to configure transitions during init.
+
+---
+
 ## [0.5.1] — 2026-03-13
 
 ### 🐛 Fixes
