@@ -85,7 +85,7 @@ export async function resolveUsername(token: string): Promise<string> {
 
     if (!response.ok) {
       console.warn(
-        `⚠ GitHub /user returned HTTP ${response.status} — falling back to @me. Fine-grained PATs may need read:user permission.`,
+        `⚠ GitHub /user returned HTTP ${response.status} — falling back to @me. Fine-grained PATs need "Account permissions → read" (or classic PATs need read:user scope).`,
       );
       return '@me';
     }
