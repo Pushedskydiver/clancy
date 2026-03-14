@@ -51,6 +51,7 @@ General
   [G1] Max iterations    {MAX_ITERATIONS:-5}          tickets per /clancy:run session
   [G2] Claude model      {CLANCY_MODEL:-default}     model used for each ticket session
   [G3] Base branch       {CLANCY_BASE_BRANCH:-main}
+  [G4] Max rework        {CLANCY_MAX_REWORK:-3}
 
 {If Jira:}
 Jira
@@ -60,17 +61,19 @@ Jira
   [B4] Pickup status     {CLANCY_STATUS_IN_PROGRESS if set, else off}
   [B5] Done status       {CLANCY_STATUS_DONE if set, else off}
   [B6] Review status     {CLANCY_STATUS_REVIEW if set, else "uses Done status"}
+  [B7] Rework status     {CLANCY_STATUS_REWORK if set, else off}
 
 {If GitHub:}
 GitHub
-  (No board-specific settings — labels are managed in GitHub directly)
+  [B1] Rework label      {CLANCY_REWORK_LABEL if set, else off}
 
 {If Linear:}
 Linear
   [B1] Label filter      {CLANCY_LABEL if set, else off}
   [B2] Pickup status     {CLANCY_STATUS_IN_PROGRESS if set, else off}
   [B3] Done status       {CLANCY_STATUS_DONE if set, else off}
-  [B4] Review status     {CLANCY_STATUS_REVIEW if set, else "uses Done status"}
+  [B4] Review status     {CLANCY_STATUS_REVIEW if set, else "uses Done state"}
+  [B5] Rework status     {CLANCY_STATUS_REWORK if set, else off}
 
 Roles
   [R1] Planner           {✅ enabled / ─ disabled}
@@ -153,6 +156,24 @@ Enter new value (or press enter to keep current):
 ```
 
 Write `CLANCY_BASE_BRANCH=<value>` to `.clancy/.env`.
+
+---
+
+### [G4] Max rework cycles
+
+```
+Max rework cycles — current: {value or 3}
+After this many rework cycles on a single ticket, Clancy flags it for human intervention.
+
+[1] 3 (default)
+[2] Enter a different number
+[3] Cancel
+```
+
+Validate the input is a positive integer between 1 and 20. If invalid, re-prompt.
+
+If [1]: remove `CLANCY_MAX_REWORK` from `.clancy/.env` (uses default).
+If [2]: prompt `How many rework cycles before human intervention?` then write `CLANCY_MAX_REWORK=<value>` to `.clancy/.env`.
 
 ---
 
@@ -254,6 +275,40 @@ If [2]: remove `CLANCY_STATUS_REVIEW` from `.clancy/.env`.
 
 ---
 
+### [B7] Jira Rework status (Jira only)
+
+```
+Jira Rework status — current: {value or "off"}
+When a reviewer sends a ticket back for changes, Clancy picks it up again
+with feedback context. Set to the Jira status name for rework tickets.
+
+[1] Set status name
+[2] Off (disable rework loop)
+[3] Cancel
+```
+
+If [1]: prompt `What status name represents "sent back for changes"? (e.g. Rework, Changes Requested)` then write `CLANCY_STATUS_REWORK=<value>` to `.clancy/.env`. Wrap in double quotes.
+If [2]: remove `CLANCY_STATUS_REWORK` from `.clancy/.env`.
+
+---
+
+### [B1] GitHub Rework label (GitHub only)
+
+```
+GitHub Rework label — current: {value or "off"}
+When a reviewer sends an issue back for changes, Clancy picks it up again
+with feedback context. Requires a label on the issue.
+
+[1] Set label name
+[2] Off (disable rework loop)
+[3] Cancel
+```
+
+If [1]: prompt `What label marks issues for rework? (e.g. needs-changes)` then write `CLANCY_REWORK_LABEL=<value>` to `.clancy/.env`. Wrap in double quotes.
+If [2]: remove `CLANCY_REWORK_LABEL` from `.clancy/.env`.
+
+---
+
 ### [B1] Linear label filter (Linear only)
 
 ```
@@ -319,6 +374,23 @@ the issue to this state. Falls back to CLANCY_STATUS_DONE if not set.
 
 If [1]: prompt `What workflow state name should Clancy use for In Review? (e.g. In Review, Ready for Review, Code Review)` then write `CLANCY_STATUS_REVIEW=<value>` to `.clancy/.env`.
 If [2]: remove `CLANCY_STATUS_REVIEW` from `.clancy/.env`.
+
+---
+
+### [B5] Linear Rework status (Linear only)
+
+```
+Linear Rework status — current: {value or "off"}
+When a reviewer sends an issue back for changes, Clancy picks it up again
+with feedback context. Set to the Linear workflow state name for rework issues.
+
+[1] Set state name
+[2] Off (disable rework loop)
+[3] Cancel
+```
+
+If [1]: prompt `What workflow state name represents "sent back for changes"? (e.g. Rework, Changes Requested)` then write `CLANCY_STATUS_REWORK=<value>` to `.clancy/.env`. Wrap in double quotes.
+If [2]: remove `CLANCY_STATUS_REWORK` from `.clancy/.env`.
 
 ---
 

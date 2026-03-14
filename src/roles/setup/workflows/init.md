@@ -406,6 +406,76 @@ Same storage logic as Jira above.
 
 ---
 
+### Q3e (Jira and Linear only): Rework loop
+
+Only ask this if the board is **Jira** or **Linear**. Skip this step entirely for **GitHub Issues** — GitHub rework is configured separately below.
+
+**Jira:** Output:
+
+```
+When a reviewer sends a ticket back for changes, Clancy can pick it up
+again with the review feedback.
+
+What status represents "sent back for changes"?
+
+[1] Enter a value (e.g. Rework, Changes Requested)
+[2] Skip — don't enable rework loop
+```
+
+If [1]: prompt for the value, store as `CLANCY_STATUS_REWORK` in `.clancy/.env`. Wrap in double quotes.
+If [2]: skip — no `CLANCY_STATUS_REWORK` line written (rework loop inactive).
+
+**Linear:** Output:
+
+```
+When a reviewer sends an issue back for changes, Clancy can pick it up
+again with the review feedback.
+
+What state represents "sent back for changes"?
+
+[1] Enter a value (e.g. Rework, Changes Requested)
+[2] Skip — don't enable rework loop
+```
+
+Same storage logic as Jira above — store as `CLANCY_STATUS_REWORK`.
+
+---
+
+### Q3e (GitHub only): Rework loop
+
+Only ask this if the board is **GitHub Issues**. Skip for Jira and Linear.
+
+Output:
+
+```
+Should Clancy pick up issues sent back for changes? (requires a rework label)
+
+[1] Yes — use "needs-changes" label (default)
+[2] Yes — enter a different label name
+[3] Skip — don't enable rework loop
+```
+
+If [1]: store `CLANCY_REWORK_LABEL="needs-changes"` in `.clancy/.env`.
+If [2]: prompt for the label name, store as `CLANCY_REWORK_LABEL` in `.clancy/.env`. Wrap in double quotes.
+If [3]: skip — no `CLANCY_REWORK_LABEL` line written (rework loop inactive).
+
+---
+
+### Q3f (all boards): Max rework cycles
+
+Only ask this if rework was enabled in Q3e above. If rework was skipped, skip this step too.
+
+Output:
+
+```
+Max rework cycles before flagging for human intervention? [3]
+```
+
+If a number is entered: store as `CLANCY_MAX_REWORK` in `.clancy/.env`.
+If enter is pressed with no value: use default 3 — store `CLANCY_MAX_REWORK=3` in `.clancy/.env`.
+
+---
+
 ### Q4: Base branch (auto-detect)
 
 Silently detect the base branch — do not ask unless detection fails:

@@ -4,6 +4,8 @@ import {
   buildAuthHeader,
   buildJql,
   extractAdfText,
+  fetchComments,
+  fetchReworkTicket,
   fetchTicket,
   isSafeJqlValue,
   pingJira,
@@ -253,6 +255,285 @@ describe('jira', () => {
       );
 
       expect(result).toBeUndefined();
+    });
+  });
+
+  describe('fetchReworkTicket', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('returns ticket when rework tickets exist', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              issues: [
+                {
+                  key: 'PROJ-456',
+                  fields: {
+                    summary: 'Fix alignment issue',
+                    description: null,
+                    issuelinks: [],
+                    parent: { key: 'PROJ-10' },
+                    customfield_10014: null,
+                  },
+                },
+              ],
+            }),
+        }),
+      );
+
+      const result = await fetchReworkTicket(
+        'https://example.atlassian.net',
+        'base64auth',
+        'PROJ',
+        'Rework',
+      );
+
+      expect(result).toEqual({
+        key: 'PROJ-456',
+        title: 'Fix alignment issue',
+        description: '',
+        provider: 'jira',
+        epicKey: 'PROJ-10',
+        blockers: [],
+      });
+    });
+
+    it('returns undefined when no rework tickets', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve({ issues: [] }),
+        }),
+      );
+
+      const result = await fetchReworkTicket(
+        'https://example.atlassian.net',
+        'base64auth',
+        'PROJ',
+        'Rework',
+      );
+
+      expect(result).toBeUndefined();
+    });
+
+    it('returns undefined on API error', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({ ok: false, status: 500 }),
+      );
+
+      const result = await fetchReworkTicket(
+        'https://example.atlassian.net',
+        'base64auth',
+        'PROJ',
+        'Rework',
+      );
+
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe('fetchComments', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('returns comments', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              comments: [
+                {
+                  id: '1',
+                  body: {
+                    type: 'doc',
+                    content: [
+                      {
+                        type: 'paragraph',
+                        content: [
+                          { type: 'text', text: 'Please fix the padding' },
+                        ],
+                      },
+                    ],
+                  },
+                  created: '2026-03-14T10:00:00.000Z',
+                },
+                {
+                  id: '2',
+                  body: {
+                    type: 'doc',
+                    content: [
+                      {
+                        type: 'paragraph',
+                        content: [
+                          { type: 'text', text: 'Also update the color' },
+                        ],
+                      },
+                    ],
+                  },
+                  created: '2026-03-14T11:00:00.000Z',
+                },
+              ],
+            }),
+        }),
+      );
+
+      const result = await fetchComments(
+        'https://example.atlassian.net',
+        'base64auth',
+        'PROJ-123',
+      );
+
+      expect(result).toHaveLength(2);
+      expect(result[0]).toContain('Please fix the padding');
+      expect(result[1]).toContain('Also update the color');
+    });
+
+    it('filters by since timestamp', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              comments: [
+                {
+                  id: '1',
+                  body: {
+                    type: 'doc',
+                    content: [
+                      {
+                        type: 'paragraph',
+                        content: [{ type: 'text', text: 'Old comment' }],
+                      },
+                    ],
+                  },
+                  created: '2026-03-13T10:00:00.000Z',
+                },
+                {
+                  id: '2',
+                  body: {
+                    type: 'doc',
+                    content: [
+                      {
+                        type: 'paragraph',
+                        content: [{ type: 'text', text: 'New comment' }],
+                      },
+                    ],
+                  },
+                  created: '2026-03-14T11:00:00.000Z',
+                },
+              ],
+            }),
+        }),
+      );
+
+      const result = await fetchComments(
+        'https://example.atlassian.net',
+        'base64auth',
+        'PROJ-123',
+        '2026-03-14T00:00:00.000Z',
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toContain('New comment');
+    });
+
+    it('returns empty array when no comments', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () => Promise.resolve({ comments: [] }),
+        }),
+      );
+
+      const result = await fetchComments(
+        'https://example.atlassian.net',
+        'base64auth',
+        'PROJ-123',
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it('returns empty array on API error', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({ ok: false, status: 500 }),
+      );
+
+      const result = await fetchComments(
+        'https://example.atlassian.net',
+        'base64auth',
+        'PROJ-123',
+      );
+
+      expect(result).toEqual([]);
+    });
+
+    it('extracts ADF text correctly', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              comments: [
+                {
+                  id: '1',
+                  body: {
+                    type: 'doc',
+                    content: [
+                      {
+                        type: 'paragraph',
+                        content: [
+                          { type: 'text', text: 'Bold ' },
+                          { type: 'text', text: 'and normal' },
+                        ],
+                      },
+                    ],
+                  },
+                  created: '2026-03-14T10:00:00.000Z',
+                },
+              ],
+            }),
+        }),
+      );
+
+      const result = await fetchComments(
+        'https://example.atlassian.net',
+        'base64auth',
+        'PROJ-123',
+      );
+
+      expect(result).toHaveLength(1);
+      expect(result[0]).toContain('Bold');
+      expect(result[0]).toContain('and normal');
+    });
+
+    it('returns empty array on network error', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockRejectedValue(new Error('ECONNREFUSED')),
+      );
+
+      const result = await fetchComments(
+        'https://example.atlassian.net',
+        'base64auth',
+        'PROJ-123',
+      );
+
+      expect(result).toEqual([]);
     });
   });
 

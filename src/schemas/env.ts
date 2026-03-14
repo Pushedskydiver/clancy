@@ -36,6 +36,11 @@ export const sharedEnvSchema = z.object({
   BITBUCKET_TOKEN: z.optional(z.string()),
   CLANCY_GIT_PLATFORM: z.optional(z.string()),
   CLANCY_GIT_API_URL: z.optional(z.string()),
+
+  // QA rework loop
+  CLANCY_STATUS_REWORK: z.optional(z.string()),
+  CLANCY_REWORK_LABEL: z.optional(z.string()),
+  CLANCY_MAX_REWORK: z.optional(z.string()),
 });
 
 // ─── Board-specific schemas ──────────────────────────────────────────────────

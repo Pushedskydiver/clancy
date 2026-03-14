@@ -92,6 +92,54 @@ When a ticket has a parent epic, the original squash-merge flow applies:
 3. Transitions the ticket to the done status (`CLANCY_STATUS_DONE`)
 4. Logs `DONE` to `.clancy/progress.txt`
 
+## Rework flow
+
+When a reviewer sends a ticket back for changes, Clancy can pick it up again with the reviewer's feedback and push fixes. This is opt-in -- configure via `/clancy:init` or `/clancy:settings`.
+
+### What triggers rework
+
+| Board | Trigger | Env var |
+| --- | --- | --- |
+| Jira | Reviewer moves ticket to the rework status | `CLANCY_STATUS_REWORK` |
+| GitHub | Reviewer reopens the issue and adds the rework label | `CLANCY_REWORK_LABEL` |
+| Linear | Reviewer moves issue to the rework state | `CLANCY_STATUS_REWORK` |
+
+Rework tickets take priority over fresh tickets in the queue. Clancy checks the rework queue first on every run.
+
+### Two rework paths
+
+**PR-flow rework (ticket had no parent -- PR exists):**
+
+1. The feature branch and PR already exist on the remote
+2. Clancy checks out the existing feature branch (`git fetch` + `git checkout`)
+3. Reads reviewer feedback from board comments posted since the last implementation
+4. Implements fixes on the same branch -- does not re-implement from scratch
+5. Pushes to the same branch -- the PR updates automatically
+6. Transitions the ticket back to the review status (`CLANCY_STATUS_REVIEW`)
+7. Logs as `REWORK` in `.clancy/progress.txt`
+
+**Epic-flow rework (ticket had parent -- original branch deleted after squash merge):**
+
+1. The original feature branch is gone (deleted after squash merge)
+2. Clancy creates a new branch from the epic/base branch: `fix/{ticket-key}`
+3. Reads reviewer feedback from board comments
+4. Implements fixes, using `git log` on the epic branch for context on the previous implementation
+5. Squash-merges to the epic branch (same as the original flow)
+6. Transitions the ticket to Done (`CLANCY_STATUS_DONE`)
+7. Logs as `REWORK` in `.clancy/progress.txt`
+
+### Feedback sources
+
+Clancy reads feedback from **board ticket comments** posted after the last progress entry for that ticket. Reviewers should write feedback on the ticket itself. If no comments are found, Clancy still picks up the rework ticket but notes the absence of feedback in the prompt.
+
+### Max rework guard
+
+After `CLANCY_MAX_REWORK` cycles (default: 3) on the same ticket, Clancy logs `SKIPPED` with reason "max rework cycles reached -- needs human intervention" and moves on. Increase via `/clancy:settings` or resolve the ticket manually.
+
+### Opting in
+
+Rework is inactive by default. To enable it, set `CLANCY_STATUS_REWORK` (Jira/Linear) or `CLANCY_REWORK_LABEL` (GitHub) via `/clancy:init` or `/clancy:settings`. If these env vars are not set, the rework queue is never checked.
+
 ## How the loop works
 
 ```

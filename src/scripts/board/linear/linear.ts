@@ -8,8 +8,10 @@
  * Only OAuth tokens use "Bearer". This is intentional per Linear docs.
  */
 import {
+  linearCommentsResponseSchema,
   linearIssueUpdateResponseSchema,
   linearIssuesResponseSchema,
+  linearReworkIssuesResponseSchema,
   linearViewerResponseSchema,
   linearWorkflowStatesResponseSchema,
 } from '~/schemas/linear.js';
@@ -310,5 +312,131 @@ export async function transitionIssue(
     return await executeStateTransition(apiKey, issueId, stateId);
   } catch {
     return false;
+  }
+}
+
+/**
+ * Fetch a single issue in a rework state from Linear.
+ *
+ * Filters by `state.name` (exact match) instead of `state.type`,
+ * so the rework column name is configurable per team.
+ *
+ * @param env - The Linear environment variables.
+ * @param reworkStateName - The workflow state name to filter by (e.g., `'Rework'`).
+ * @returns The fetched ticket with optional parent info, or `undefined` if none available.
+ */
+export async function fetchReworkIssue(
+  env: LinearEnv,
+  reworkStateName: string,
+): Promise<
+  | (Ticket & {
+      issueId: string;
+      parentIdentifier?: string;
+    })
+  | undefined
+> {
+  const label = env.CLANCY_LABEL?.trim();
+  const hasLabel = Boolean(label);
+
+  const labelFilter = hasLabel ? 'labels: { name: { eq: $label } }' : '';
+
+  const query = `
+    query($teamId: String!, $stateName: String!${hasLabel ? ', $label: String!' : ''}) {
+      viewer {
+        assignedIssues(
+          filter: {
+            team: { id: { eq: $teamId } }
+            state: { name: { eq: $stateName } }
+            ${labelFilter}
+          }
+          first: 1
+        ) {
+          nodes {
+            id
+            identifier
+            title
+            description
+            state { name }
+            parent { identifier }
+          }
+        }
+      }
+    }
+  `;
+
+  const variables: Record<string, unknown> = {
+    teamId: env.LINEAR_TEAM_ID,
+    stateName: reworkStateName,
+  };
+
+  if (hasLabel) variables.label = label;
+
+  const raw = await linearGraphql(env.LINEAR_API_KEY, query, variables);
+  const parsed = linearReworkIssuesResponseSchema.safeParse(raw);
+
+  if (!parsed.success) {
+    console.warn(`⚠ Unexpected Linear response shape: ${parsed.error.message}`);
+    return undefined;
+  }
+
+  const nodes = parsed.data.data?.viewer?.assignedIssues?.nodes;
+
+  if (!nodes?.length) return undefined;
+
+  const issue = nodes[0];
+
+  return {
+    key: issue.identifier,
+    title: issue.title,
+    description: issue.description ?? '',
+    provider: 'linear',
+    issueId: issue.id,
+    parentIdentifier: issue.parent?.identifier,
+  };
+}
+
+/**
+ * Fetch comments on a Linear issue.
+ *
+ * Best-effort — returns an empty array on any error.
+ *
+ * @param apiKey - The Linear personal API key.
+ * @param issueId - The Linear issue internal ID.
+ * @param since - Optional ISO timestamp; only comments created after this are returned.
+ * @returns Array of comment body strings.
+ */
+export async function fetchComments(
+  apiKey: string,
+  issueId: string,
+  since?: string,
+): Promise<string[]> {
+  try {
+    const query = `
+      query($issueId: String!) {
+        issue(id: $issueId) {
+          comments {
+            nodes {
+              body
+              createdAt
+            }
+          }
+        }
+      }
+    `;
+
+    const raw = await linearGraphql(apiKey, query, { issueId });
+    const parsed = linearCommentsResponseSchema.safeParse(raw);
+
+    if (!parsed.success) return [];
+
+    const nodes = parsed.data.data?.issue?.comments?.nodes;
+
+    if (!nodes) return [];
+
+    const filtered = since ? nodes.filter((c) => c.createdAt > since) : nodes;
+
+    return filtered.map((c) => c.body);
+  } catch {
+    return [];
   }
 }

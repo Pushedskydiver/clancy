@@ -7,6 +7,34 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.5.5] — 2026-03-14
+
+### ✨ Features
+
+- **QA rework loop** — when a reviewer sends a ticket back for changes (via Jira/Linear status or GitHub label), Clancy picks it up from the rework queue with priority over fresh tickets. Reads reviewer feedback from board comments, builds a focused rework prompt ("fix the flagged issues, don't re-implement"), and pushes fixes to the existing PR branch or squash-merges a `fix/` branch for epic-flow rework.
+- **Rework queue per board** — Jira/Linear: configurable rework status (`CLANCY_STATUS_REWORK`). GitHub: configurable rework label (`CLANCY_REWORK_LABEL`, default `needs-changes`). Rework queue checked before fresh tickets.
+- **Board comment fetching** — new `fetchComments()` functions for all 3 boards (Jira REST, GitHub REST, Linear GraphQL). Filtered by timestamp to only include feedback posted after last implementation.
+- **Feedback module** (`src/scripts/shared/feedback/feedback.ts`) — board-agnostic facade that dispatches to the correct board's comment API.
+- **Rework prompt** (`buildReworkPrompt`) — includes reviewer feedback, previous implementation context, and "address specific feedback" instructions.
+- **Progress reader** — `findLastEntry()` and `countReworkCycles()` functions for reading progress history.
+- **Max rework guard** — after N cycles (default 3, configurable via `CLANCY_MAX_REWORK`), ticket is skipped with "needs human intervention".
+- **New env vars** — `CLANCY_STATUS_REWORK`, `CLANCY_REWORK_LABEL`, `CLANCY_MAX_REWORK`
+
+### 📝 Documentation
+
+- **Init workflow** — added Q3e (rework status/label) and Q3f (max rework cycles)
+- **Settings workflow** — added rework settings for all 3 boards + general max rework
+- **Scaffold workflow** — added rework env vars to all 3 `.env.example` templates
+- **Implementer docs** — added rework flow section
+- **Configuration guide** — added rework env vars to table
+- **Troubleshooting guide** — added rework scenarios
+
+### ✅ Tests
+
+- 65 new tests (270 → 335): schema (2), progress reader (10), Jira rework/comments (12), GitHub rework/comments/removeLabel (8), Linear rework/comments (6), feedback module (11), rework prompt (7), branch rework (3), git fetchRemoteBranch (2), orchestrator rework flows (8, approximate)
+
+---
+
 ## [0.5.4] — 2026-03-14
 
 ### ✨ Features

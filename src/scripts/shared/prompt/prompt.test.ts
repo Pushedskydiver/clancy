@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { buildPrompt } from './prompt.js';
+import { buildPrompt, buildReworkPrompt } from './prompt.js';
 
 describe('buildPrompt', () => {
   it('builds a Jira prompt with correct labels', () => {
@@ -105,5 +105,72 @@ describe('buildPrompt', () => {
 
     expect(prompt).toContain('STACK.md, ARCHITECTURE.md, CONVENTIONS.md');
     expect(prompt).toContain('Follow the conventions in GIT.md exactly');
+  });
+});
+
+describe('buildReworkPrompt', () => {
+  const baseInput = {
+    key: 'PROJ-123',
+    title: 'Add login page',
+    description: 'Create a login page with email/password fields.',
+    provider: 'jira' as const,
+    feedbackComments: ['Button colour is wrong', 'Missing validation'],
+  };
+
+  it('includes ticket key and title', () => {
+    const prompt = buildReworkPrompt(baseInput);
+
+    expect(prompt).toContain(
+      'You are fixing review feedback on [PROJ-123] Add login page',
+    );
+  });
+
+  it('includes feedback comments as numbered list', () => {
+    const prompt = buildReworkPrompt(baseInput);
+
+    expect(prompt).toContain('1. Button colour is wrong');
+    expect(prompt).toContain('2. Missing validation');
+  });
+
+  it('handles empty feedback comments', () => {
+    const prompt = buildReworkPrompt({
+      ...baseInput,
+      feedbackComments: [],
+    });
+
+    expect(prompt).toContain(
+      'No reviewer comments found. Review the existing implementation and fix any issues.',
+    );
+  });
+
+  it('includes previous context when provided', () => {
+    const prompt = buildReworkPrompt({
+      ...baseInput,
+      previousContext: 'diff --git a/file.ts b/file.ts\n+added line',
+    });
+
+    expect(prompt).toContain('## Previous Implementation');
+    expect(prompt).toContain('diff --git a/file.ts b/file.ts');
+  });
+
+  it('omits previous context section when not provided', () => {
+    const prompt = buildReworkPrompt(baseInput);
+
+    expect(prompt).not.toContain('## Previous Implementation');
+  });
+
+  it('includes doc reading instructions', () => {
+    const prompt = buildReworkPrompt(baseInput);
+
+    expect(prompt).toContain('STACK.md, ARCHITECTURE.md, CONVENTIONS.md');
+    expect(prompt).toContain('Follow the conventions in GIT.md exactly');
+  });
+
+  it('includes "don\'t re-implement" instruction', () => {
+    const prompt = buildReworkPrompt(baseInput);
+
+    expect(prompt).toContain(
+      "Don't re-implement unrelated areas. Focus only on what was flagged.",
+    );
   });
 });

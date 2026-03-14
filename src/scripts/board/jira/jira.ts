@@ -8,6 +8,7 @@
  * was removed by Atlassian in August 2025).
  */
 import {
+  jiraCommentsResponseSchema,
   jiraSearchResponseSchema,
   jiraTransitionsResponseSchema,
 } from '~/schemas/jira.js';
@@ -336,5 +337,79 @@ export async function transitionIssue(
     return response.ok;
   } catch {
     return false;
+  }
+}
+
+/**
+ * Fetch the next available rework ticket from Jira.
+ *
+ * Same as `fetchTicket` but uses `reworkStatus` instead of the normal queue
+ * status in the JQL query.
+ *
+ * @param baseUrl - The Jira Cloud base URL.
+ * @param auth - The Base64-encoded Basic auth string.
+ * @param projectKey - The Jira project key.
+ * @param reworkStatus - The JQL status for rework tickets.
+ * @param label - Optional label filter.
+ * @param sprint - Optional sprint filter.
+ * @returns The fetched rework ticket, or `undefined` if none are available.
+ */
+export async function fetchReworkTicket(
+  baseUrl: string,
+  auth: string,
+  projectKey: string,
+  reworkStatus: string,
+  label?: string,
+  sprint?: string,
+): Promise<
+  | (Ticket & {
+      epicKey?: string;
+      blockers: string[];
+    })
+  | undefined
+> {
+  return fetchTicket(baseUrl, auth, projectKey, reworkStatus, sprint, label);
+}
+
+/**
+ * Fetch comments from a Jira issue.
+ *
+ * Best-effort — returns an empty array on any error.
+ *
+ * @param baseUrl - The Jira Cloud base URL.
+ * @param auth - The Base64-encoded Basic auth string.
+ * @param issueKey - The Jira issue key (e.g., `'PROJ-123'`).
+ * @param since - Optional ISO 8601 timestamp; only comments created after this are returned.
+ * @returns Array of comment text strings.
+ */
+export async function fetchComments(
+  baseUrl: string,
+  auth: string,
+  issueKey: string,
+  since?: string,
+): Promise<string[]> {
+  try {
+    const response = await fetch(
+      `${baseUrl}/rest/api/3/issue/${issueKey}/comment`,
+      { headers: jiraHeaders(auth) },
+    );
+
+    if (!response.ok) return [];
+
+    const json: unknown = await response.json();
+    const parsed = jiraCommentsResponseSchema.safeParse(json);
+
+    if (!parsed.success) return [];
+
+    let comments = parsed.data.comments;
+
+    if (since) {
+      const sinceDate = new Date(since);
+      comments = comments.filter((c) => new Date(c.created) > sinceDate);
+    }
+
+    return comments.map((c) => extractAdfText(c.body));
+  } catch {
+    return [];
   }
 }

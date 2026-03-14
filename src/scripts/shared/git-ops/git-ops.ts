@@ -126,6 +126,26 @@ export function deleteBranch(branch: string): void {
  * @param branch - The branch name to push.
  * @returns `true` if the push succeeded, `false` on failure.
  */
+/**
+ * Fetch a remote branch into a local branch of the same name.
+ *
+ * Runs `git fetch origin {branch}:{branch}`.
+ *
+ * @param branch - The branch name to fetch from the remote.
+ * @returns `true` if the fetch succeeded, `false` if the branch doesn't exist on the remote.
+ */
+export function fetchRemoteBranch(branch: string): boolean {
+  try {
+    execFileSync('git', ['fetch', 'origin', `${branch}:${branch}`], {
+      encoding: 'utf8',
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function pushBranch(branch: string): boolean {
   try {
     execFileSync('git', ['push', '-u', 'origin', branch], {
