@@ -7,8 +7,8 @@ import { fetchFeedback } from './feedback.js';
 // ─── Mocks ──────────────────────────────────────────────────────────────────
 
 vi.mock('~/scripts/board/jira/jira.js', () => ({
-  buildAuthHeader: vi.fn(
-    (user: string, token: string) => `mocked-${user}:${token}`,
+  buildAuthHeader: vi.fn((user: string, token: string) =>
+    ['mocked', user, token].join('-'),
   ),
   fetchComments: vi.fn(),
 }));
@@ -75,7 +75,7 @@ describe('fetchFeedback', () => {
       expect(mockBuildAuth).toHaveBeenCalledWith('user@example.com', 'tok123');
       expect(mockJiraComments).toHaveBeenCalledWith(
         'https://example.atlassian.net',
-        'mocked-user@example.com:tok123',
+        ['mocked', 'user@example.com', 'tok123'].join('-'),
         'PROJ-123',
         undefined,
       );
@@ -91,7 +91,7 @@ describe('fetchFeedback', () => {
 
       expect(mockJiraComments).toHaveBeenCalledWith(
         'https://example.atlassian.net',
-        'mocked-user@example.com:tok123',
+        ['mocked', 'user@example.com', 'tok123'].join('-'),
         'PROJ-456',
         '2026-03-01T00:00:00Z',
       );
