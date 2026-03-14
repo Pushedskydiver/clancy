@@ -70,11 +70,11 @@ clancy-afk.js
        node clancy-once.js
          1. Preflight checks (credentials, git state, board reachability)
          2. Fetch next ticket from board (maxResults=1)
-         3. git checkout $EPIC_BRANCH
+         3. git checkout $CLANCY_BASE_BRANCH (or epic/{parent} if ticket has a parent)
          4. git checkout -b feature/{ticket-key}
          5. Read .clancy/docs/* (especially GIT.md)
          6. echo "$PROMPT" | claude --dangerously-skip-permissions
-         7. git checkout $EPIC_BRANCH
+         7. git checkout $CLANCY_BASE_BRANCH
          8. git merge --squash feature/{ticket-key}
          9. git commit -m "feat(TICKET): summary"
         10. git branch -D feature/{ticket-key}

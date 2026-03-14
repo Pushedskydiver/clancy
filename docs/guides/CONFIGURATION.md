@@ -60,7 +60,7 @@ Posts to Slack or Teams when a ticket completes or Clancy hits an error. URL is 
 | --- | --- | --- |
 | Jira | `status = "Backlog"` | `CLANCY_PLAN_STATUS` |
 | GitHub | Label: `needs-refinement` | `CLANCY_PLAN_LABEL` |
-| Linear | `state.type = "backlog"` | `CLANCY_PLAN_STATE_TYPE` |
+| Linear | `state.type: "backlog"` | `CLANCY_PLAN_STATE_TYPE` |
 
 ### Shared filters (apply to both queues)
 
