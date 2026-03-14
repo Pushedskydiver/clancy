@@ -65,9 +65,9 @@ For each ticket, the implementer:
 ## How the loop works
 
 ```
-clancy-afk.js
+.clancy/clancy-afk.js
   └─ while i < MAX_ITERATIONS:
-       node clancy-once.js
+       node .clancy/clancy-once.js
          1. Preflight checks (credentials, git state, board reachability)
          2. Fetch next ticket from board (maxResults=1)
          3. git checkout $CLANCY_BASE_BRANCH (or epic/{parent} if ticket has a parent)
