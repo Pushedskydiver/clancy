@@ -101,8 +101,6 @@ Posts to Slack or Teams when a ticket completes. The payload format (Slack vs Te
 | `CLANCY_STATUS_DONE` | Jira/Linear | No | — | Status when completing a ticket |
 | `CLANCY_STATUS_REVIEW` | Jira/Linear | No | — | Status when creating a PR (falls back to `CLANCY_STATUS_DONE`) |
 | `CLANCY_MAX_REWORK` | All | No | `3` | Max rework cycles before human intervention |
-
-**Note on rework detection:** PR-based rework detection is automatic and requires no configuration -- when a reviewer clicks "Request Changes" on a PR/MR, Clancy picks it up on the next run. `CLANCY_MAX_REWORK` controls the safety limit for rework cycles.
 | `GITLAB_TOKEN` | All | No | — | GitLab personal access token (for PR creation) |
 | `BITBUCKET_USER` | All | No | — | Bitbucket username (for PR creation) |
 | `BITBUCKET_TOKEN` | All | No | — | Bitbucket app password (for PR creation) |
@@ -120,3 +118,5 @@ Posts to Slack or Teams when a ticket completes. The payload format (Slack vs Te
 | `PLAYWRIGHT_STORYBOOK_COMMAND` | All | No | — | Storybook start command |
 | `PLAYWRIGHT_STORYBOOK_PORT` | All | No | — | Storybook port |
 | `PLAYWRIGHT_STARTUP_WAIT` | All | No | `15` | Seconds to wait for server |
+
+**Note on rework detection:** Rework is detected automatically from PR comments: inline code comments always trigger rework, and conversation comments trigger with a `Rework:` prefix. `CLANCY_MAX_REWORK` controls the safety limit for rework cycles.

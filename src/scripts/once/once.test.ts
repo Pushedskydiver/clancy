@@ -746,6 +746,48 @@ describe('run', () => {
     expect(mockInvokeClaude).toHaveBeenCalled();
   });
 
+  it('rework creates fresh branch when remote branch is missing', async () => {
+    setupJiraHappyPath();
+    mockDetectBoard.mockReturnValue({
+      provider: 'jira',
+      env: {
+        JIRA_BASE_URL: 'https://example.atlassian.net',
+        JIRA_USER: 'user@test.com',
+        JIRA_API_TOKEN: 'token',
+        JIRA_PROJECT_KEY: 'PROJ',
+        GITHUB_TOKEN: 'ghp_test',
+      },
+    });
+    mockFetchJira.mockResolvedValue(undefined);
+    mockFindEntriesWithStatus.mockReturnValue([
+      {
+        timestamp: '2026-03-14 10:00',
+        key: 'PROJ-400',
+        summary: 'PR rework missing branch',
+        status: 'PR_CREATED',
+      },
+    ]);
+    mockCheckGitHubPrReviewState.mockResolvedValue({
+      changesRequested: true,
+      prNumber: 99,
+      prUrl: 'https://github.com/o/r/pull/99',
+    });
+    mockFetchGitHubPrReviewComments.mockResolvedValue(['Fix the issue']);
+    mockFetchRemoteBranch.mockReturnValue(false);
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run([]);
+    log.mockRestore();
+
+    // Should ensure target branch, then create fresh ticket branch
+    expect(mockEnsureBranch).toHaveBeenCalledWith('main', 'main');
+    expect(mockCheckout).toHaveBeenCalledWith('main');
+    expect(mockCheckout).toHaveBeenCalledWith('feature/proj-400', true);
+
+    // Should NOT squash merge (rework goes through deliverViaPullRequest)
+    expect(mockSquashMerge).not.toHaveBeenCalled();
+  });
+
   it('PR-flow rework checks out existing branch', async () => {
     setupJiraHappyPath();
     mockDetectBoard.mockReturnValue({

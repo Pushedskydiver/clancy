@@ -42,20 +42,7 @@ export const jiraTransitionsResponseSchema = z.object({
   transitions: z.array(jiraTransitionSchema),
 });
 
-/** A single comment from `GET /rest/api/3/issue/{key}/comment`. */
-const jiraCommentSchema = z.object({
-  id: z.string(),
-  body: z.optional(z.unknown()),
-  created: z.string(),
-});
-
-/** Response from `GET /rest/api/3/issue/{key}/comment`. */
-export const jiraCommentsResponseSchema = z.object({
-  comments: z.array(jiraCommentSchema),
-});
-
 export type JiraSearchResponse = z.infer<typeof jiraSearchResponseSchema>;
 export type JiraTransitionsResponse = z.infer<
   typeof jiraTransitionsResponseSchema
 >;
-export type JiraCommentsResponse = z.infer<typeof jiraCommentsResponseSchema>;

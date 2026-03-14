@@ -30,7 +30,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### ✅ Tests
 
-- 82 new tests (270 → 352): progress reader (15), Jira comments (9), GitHub comments (5), Linear comments (6), feedback module (11), rework prompt (7), git fetchRemoteBranch (2), GitHub PR review (8), GitLab MR review (9), Bitbucket PR review (9), orchestrator PR rework (4), env schema (2)
+- 82 new tests (270 → 352): progress reader (15), rework prompt (7), git fetchRemoteBranch (2), GitHub PR review (8), GitLab MR review (9), Bitbucket PR review (12), rework-comment (10), orchestrator PR rework (8), env schema (2), Jira async (8), pr-body rework (1)
 
 ---
 

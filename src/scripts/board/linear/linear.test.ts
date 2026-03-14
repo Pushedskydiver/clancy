@@ -1,11 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import {
-  fetchComments,
-  fetchIssue,
-  isValidTeamId,
-  pingLinear,
-} from './linear.js';
+import { fetchIssue, isValidTeamId, pingLinear } from './linear.js';
 
 describe('linear', () => {
   describe('isValidTeamId', () => {
@@ -171,91 +166,6 @@ describe('linear', () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = await fetchIssue(env as any);
       expect(result).toBeUndefined();
-    });
-  });
-
-  describe('fetchComments', () => {
-    afterEach(() => {
-      vi.unstubAllGlobals();
-    });
-
-    it('returns comment bodies', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              data: {
-                issue: {
-                  comments: {
-                    nodes: [
-                      {
-                        body: 'First comment',
-                        createdAt: '2026-01-01T00:00:00Z',
-                      },
-                      {
-                        body: 'Second comment',
-                        createdAt: '2026-01-02T00:00:00Z',
-                      },
-                    ],
-                  },
-                },
-              },
-            }),
-        }),
-      );
-
-      const result = await fetchComments('lin_key', 'issue-id-1');
-      expect(result).toEqual(['First comment', 'Second comment']);
-    });
-
-    it('filters comments by since timestamp', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: true,
-          json: () =>
-            Promise.resolve({
-              data: {
-                issue: {
-                  comments: {
-                    nodes: [
-                      {
-                        body: 'Old comment',
-                        createdAt: '2026-01-01T00:00:00Z',
-                      },
-                      {
-                        body: 'New comment',
-                        createdAt: '2026-01-03T00:00:00Z',
-                      },
-                    ],
-                  },
-                },
-              },
-            }),
-        }),
-      );
-
-      const result = await fetchComments(
-        'lin_key',
-        'issue-id-1',
-        '2026-01-02T00:00:00Z',
-      );
-      expect(result).toEqual(['New comment']);
-    });
-
-    it('returns empty array on API error', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn().mockResolvedValue({
-          ok: false,
-          status: 500,
-        }),
-      );
-
-      const result = await fetchComments('lin_key', 'issue-id-1');
-      expect(result).toEqual([]);
     });
   });
 });

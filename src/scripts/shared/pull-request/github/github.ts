@@ -22,18 +22,6 @@ import {
 } from '../rework-comment/rework-comment.js';
 
 /**
- * Create a pull request on GitHub.
- *
- * @param token - The GitHub personal access token.
- * @param repo - The repository in `owner/repo` format.
- * @param head - The source branch name.
- * @param base - The target branch name.
- * @param title - The PR title.
- * @param body - The PR body (markdown).
- * @param apiBase - The API base URL (defaults to `https://api.github.com`).
- * @returns A result with the PR URL and number on success, or an error message.
- */
-/**
  * Check the review state of an open PR for a given branch.
  *
  * Finds the open PR matching the branch, fetches inline and conversation

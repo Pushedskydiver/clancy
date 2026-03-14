@@ -167,7 +167,7 @@ export function countReworkCycles(projectRoot: string, key: string): number {
  */
 export function findEntriesWithStatus(
   projectRoot: string,
-  status: string,
+  status: ProgressStatus,
 ): ProgressEntry[] {
   const entries = parseProgressFile(projectRoot);
 

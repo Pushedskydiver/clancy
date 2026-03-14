@@ -8,7 +8,6 @@
  * Only OAuth tokens use "Bearer". This is intentional per Linear docs.
  */
 import {
-  linearCommentsResponseSchema,
   linearIssueUpdateResponseSchema,
   linearIssuesResponseSchema,
   linearViewerResponseSchema,
@@ -311,51 +310,5 @@ export async function transitionIssue(
     return await executeStateTransition(apiKey, issueId, stateId);
   } catch {
     return false;
-  }
-}
-
-/**
- * Fetch comments on a Linear issue.
- *
- * Best-effort — returns an empty array on any error.
- *
- * @param apiKey - The Linear personal API key.
- * @param issueId - The Linear issue internal ID.
- * @param since - Optional ISO timestamp; only comments created after this are returned.
- * @returns Array of comment body strings.
- */
-export async function fetchComments(
-  apiKey: string,
-  issueId: string,
-  since?: string,
-): Promise<string[]> {
-  try {
-    const query = `
-      query($issueId: String!) {
-        issue(id: $issueId) {
-          comments {
-            nodes {
-              body
-              createdAt
-            }
-          }
-        }
-      }
-    `;
-
-    const raw = await linearGraphql(apiKey, query, { issueId });
-    const parsed = linearCommentsResponseSchema.safeParse(raw);
-
-    if (!parsed.success) return [];
-
-    const nodes = parsed.data.data?.issue?.comments?.nodes;
-
-    if (!nodes) return [];
-
-    const filtered = since ? nodes.filter((c) => c.createdAt > since) : nodes;
-
-    return filtered.map((c) => c.body);
-  } catch {
-    return [];
   }
 }

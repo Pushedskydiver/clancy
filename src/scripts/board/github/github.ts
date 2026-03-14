@@ -9,10 +9,7 @@
  */
 import { z } from 'zod/mini';
 
-import {
-  githubCommentsResponseSchema,
-  githubIssuesResponseSchema,
-} from '~/schemas/github.js';
+import { githubIssuesResponseSchema } from '~/schemas/github.js';
 import {
   GITHUB_API,
   githubHeaders,
@@ -192,50 +189,6 @@ export async function fetchIssue(
     provider: 'github',
     milestone: issue.milestone?.title,
   };
-}
-
-/**
- * Fetch comments on a GitHub issue.
- *
- * Best-effort — returns an empty array on any error.
- *
- * @param token - The GitHub personal access token.
- * @param repo - The repository in `owner/repo` format.
- * @param issueNumber - The issue number to fetch comments for.
- * @param since - Optional ISO 8601 timestamp to only return comments updated after this time.
- * @returns Array of comment body strings.
- */
-export async function fetchComments(
-  token: string,
-  repo: string,
-  issueNumber: number,
-  since?: string,
-): Promise<string[]> {
-  try {
-    const params = new URLSearchParams();
-
-    if (since) params.set('since', since);
-
-    const query = params.toString();
-    const url = `${GITHUB_API}/repos/${repo}/issues/${issueNumber}/comments${query ? `?${query}` : ''}`;
-
-    const response = await fetch(url, {
-      headers: githubHeaders(token),
-    });
-
-    if (!response.ok) return [];
-
-    const json: unknown = await response.json();
-    const parsed = githubCommentsResponseSchema.safeParse(json);
-
-    if (!parsed.success) return [];
-
-    return parsed.data
-      .map((comment) => comment.body ?? '')
-      .filter((body) => body.length > 0);
-  } catch {
-    return [];
-  }
 }
 
 /**
