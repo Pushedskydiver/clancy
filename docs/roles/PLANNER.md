@@ -45,7 +45,7 @@ The planner fetches from a **separate queue** to the implementer, targeting earl
 | GitHub | Label: `needs-refinement` | `CLANCY_PLAN_LABEL` |
 | Linear | `state.type: "backlog"` | `CLANCY_PLAN_STATE_TYPE` |
 
-`CLANCY_PLAN_STATE_TYPE` accepts one of: `backlog`, `unstarted`, `started`, `completed`, `cancelled`, `triage`.
+`CLANCY_PLAN_STATE_TYPE` accepts one of: `backlog`, `unstarted`, `started`, `completed`, `canceled`, `triage`.
 
 Additional filters vary by board:
 - **Jira:** `CLANCY_LABEL` and `CLANCY_JQL_SPRINT` apply on top of the planning queue filter

@@ -33,7 +33,7 @@ export const sharedEnvSchema = z.object({
       'unstarted',
       'started',
       'completed',
-      'cancelled',
+      'canceled',
       'triage',
     ]),
   ),

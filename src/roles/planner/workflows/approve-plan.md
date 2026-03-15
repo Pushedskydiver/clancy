@@ -362,7 +362,7 @@ If `CLANCY_STATUS_PLANNED` is set:
      "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY/transitions"
    ```
 
-2. **Find matching transition:** Look for a transition where `.to.name` or `.name` matches `CLANCY_STATUS_PLANNED` (case-insensitive).
+2. **Find matching transition:** Look for a transition where `.name` matches `CLANCY_STATUS_PLANNED` (case-insensitive). This matches the pattern used in the runtime Jira module.
 
 3. **Execute transition:**
    ```bash
@@ -445,7 +445,7 @@ Plan promoted. Moved to unstarted. Ready for /clancy:once.
 
 Append to `.clancy/progress.txt`:
 ```
-YYYY-MM-DD HH:MM | {KEY} | APPROVE | --
+YYYY-MM-DD HH:MM | {KEY} | APPROVE | —
 ```
 
 On failure:

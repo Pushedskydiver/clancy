@@ -505,7 +505,7 @@ LINEAR_TEAM_ID=your-team-uuid
 
 # ─── Planner Queue (optional — requires CLANCY_ROLES to include "planner") ───
 # State type for issues that /clancy:plan fetches from (default: backlog)
-# Valid values: backlog, unstarted, started, completed, cancelled, triage
+# Valid values: backlog, unstarted, started, completed, canceled, triage
 # CLANCY_PLAN_STATE_TYPE="backlog"
 
 # ─── Git ──────────────────────────────────────────────────────────────────────

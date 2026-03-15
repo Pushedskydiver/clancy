@@ -96,7 +96,7 @@ Posts to Slack or Teams when a ticket completes. The payload format (Slack vs Te
 | `CLANCY_JQL_SPRINT` | Jira | No | — | Enable sprint filtering |
 | `CLANCY_PLAN_STATUS` | Jira | No | `Backlog` | Planning queue status |
 | `CLANCY_PLAN_LABEL` | GitHub | No | `needs-refinement` | Planning queue label |
-| `CLANCY_PLAN_STATE_TYPE` | Linear | No | `backlog` | Planning queue state type (enum: backlog, unstarted, started, completed, cancelled, triage) |
+| `CLANCY_PLAN_STATE_TYPE` | Linear | No | `backlog` | Planning queue state type (enum: backlog, unstarted, started, completed, canceled, triage) |
 | `CLANCY_STATUS_PLANNED` | Jira | No | — | Transition status after plan approval |
 | `CLANCY_SKIP_COMMENTS` | All | No | `true` | Post a comment when skipping a ticket |
 | `CLANCY_STATUS_IN_PROGRESS` | Jira/Linear | No | — | Status when picking up a ticket |
