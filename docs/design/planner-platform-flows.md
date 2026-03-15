@@ -549,8 +549,8 @@ Response: {
 }
 
 Find transition where:
-  .to.name == CLANCY_STATUS_PLANNED (case-insensitive match)
-  OR .name == CLANCY_STATUS_PLANNED
+  .name == CLANCY_STATUS_PLANNED (case-insensitive match)
+  This matches the pattern in the runtime Jira module (transition.name).
 
 If not found: warn "Status '{name}' not found in available transitions."
 ```

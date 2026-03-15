@@ -557,16 +557,7 @@ Labels applied to every created issue:
 3. **Component label** — `component:{CLANCY_COMPONENT}` if `CLANCY_COMPONENT` is set.
 4. **Size label** — `size:{S|M|L}` from the decomposition table.
 
-**Label pre-creation:** Before creating issues, check if all required labels exist on the repo. For each label that might not exist, attempt creation:
-
-```
-PUT /repos/{owner}/{repo}/labels
-Content-Type: application/json
-
-{"name": "needs-refinement", "color": "d4c5f9", "description": "Needs implementation plan"}
-```
-
-The `PUT` is idempotent — if the label exists, GitHub returns 200. If it does not exist, use:
+**Label pre-creation:** Before creating issues, check if all required labels exist on the repo. For each label that might not exist, attempt creation via POST (GitHub has no idempotent PUT for labels):
 
 ```
 POST /repos/{owner}/{repo}/labels
