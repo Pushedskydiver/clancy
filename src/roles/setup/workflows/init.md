@@ -552,7 +552,7 @@ Which Linear state type should Clancy pick planning issues from?
 
 If [1]: store `CLANCY_PLAN_STATE_TYPE="backlog"` in `.clancy/.env`.
 If [2]: store `CLANCY_PLAN_STATE_TYPE="triage"` in `.clancy/.env`.
-If [3]: prompt for the value, store as `CLANCY_PLAN_STATE_TYPE` in `.clancy/.env`. Valid values: backlog, unstarted, started, completed, cancelled, triage.
+If [3]: prompt for the value, store as `CLANCY_PLAN_STATE_TYPE` in `.clancy/.env`. Valid values: backlog, unstarted, started, completed, canceled, triage.
 
 ---
 

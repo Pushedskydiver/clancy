@@ -30,7 +30,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 - **Linear `.env.example` missing `CLANCY_PLAN_STATE_TYPE`** — added to the Linear scaffold template.
 - **Init missing GitHub/Linear planning queue config** — init now asks GitHub users for `CLANCY_PLAN_LABEL` and Linear users for `CLANCY_PLAN_STATE_TYPE` when the Planner role is enabled.
-- **`CLANCY_PLAN_STATE_TYPE` validated as enum** — now restricted to `backlog`, `unstarted`, `started`, `completed`, `cancelled`, `triage` instead of accepting any string.
+- **`CLANCY_PLAN_STATE_TYPE` validated as enum** — now restricted to `backlog`, `unstarted`, `started`, `completed`, `canceled`, `triage` instead of accepting any string.
 - **`PLANNER.md` template mismatch** — documentation now matches the actual workflow template sections and order.
 
 ---

@@ -490,8 +490,8 @@ For each planned ticket, append to `.clancy/progress.txt` using the appropriate 
 | Outcome | Log entry |
 |---|---|
 | Normal | `YYYY-MM-DD HH:MM \| {KEY} \| PLAN \| {S/M/L}` |
-| Revised (re-plan with feedback) | `YYYY-MM-DD HH:MM \| {KEY} \| {S/M/L} (revised) \| PLAN` |
-| Comment post failed | `YYYY-MM-DD HH:MM \| {KEY} \| {S/M/L} (post failed) \| PLAN` |
+| Revised (re-plan with feedback) | `YYYY-MM-DD HH:MM \| {KEY} \| PLAN \| {S/M/L} (revised)` |
+| Comment post failed | `YYYY-MM-DD HH:MM \| {KEY} \| PLAN \| {S/M/L} (post failed)` |
 | Skipped (infeasible) | `YYYY-MM-DD HH:MM \| {KEY} \| SKIPPED \| {reason}` |
 
 ---
