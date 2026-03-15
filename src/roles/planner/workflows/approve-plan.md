@@ -33,7 +33,11 @@ Promote an approved Clancy plan from a ticket comment to the ticket description.
    ```
    Auto-selected [{KEY}] {Title} (planned {date}). Promote this plan? [Y/n]
    ```
-   To resolve the title, fetch the ticket from the board (see Step 3 APIs). If fetching fails, show the key without a title.
+   To resolve the title, fetch the ticket from the board:
+   - **GitHub:** `GET /repos/$GITHUB_REPO/issues/$ISSUE_NUMBER` → use `.title`
+   - **Jira:** `GET $JIRA_BASE_URL/rest/api/3/issue/$KEY?fields=summary` → use `.fields.summary`
+   - **Linear:** `issues(filter: { identifier: { eq: "$KEY" } }) { nodes { title } }` → use `nodes[0].title`
+   If fetching fails, show the key without a title: `Auto-selected [{KEY}] (planned {date}). Promote? [Y/n]`
 5. If user declines:
    ```
    Cancelled.
@@ -415,11 +419,18 @@ Could not transition ticket. Move it manually to your implementation queue.
 
 On success, display a board-specific message:
 
-**GitHub:**
+**GitHub (with CLANCY_LABEL set):**
 ```
-Plan promoted. Label swapped: {plan_label} -> {impl_label}. Ready for /clancy:once.
+Plan promoted. Label swapped: {plan_label} → {impl_label}. Ready for /clancy:once.
 
-"Book 'em, Lou." -- The ticket is ready for /clancy:once.
+"Book 'em, Lou." — The ticket is ready for /clancy:once.
+```
+
+**GitHub (without CLANCY_LABEL):**
+```
+Plan promoted. Label removed: {plan_label}. Add your implementation label manually, or run /clancy:once.
+
+"Book 'em, Lou."
 ```
 
 **Jira (with transition):**
