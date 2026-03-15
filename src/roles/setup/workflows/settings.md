@@ -80,6 +80,8 @@ Planner
   [P1] Plan label         {CLANCY_PLAN_LABEL:-needs-refinement}
 {If Linear:}
   [P1] Plan state type    {CLANCY_PLAN_STATE_TYPE:-backlog}
+{If Jira:}
+  [P2] Post-approval      {CLANCY_STATUS_PLANNED if set, else "off"}
 
 Git Host (PR creation)
   [H1] Git host token    {platform: GitHub/GitLab/Bitbucket or "not set"}
@@ -342,7 +344,7 @@ If [2]: remove `CLANCY_STATUS_REVIEW` from `.clancy/.env`.
 ```
 Planner role — currently: {enabled / disabled}
 The Planner refines vague backlog tickets into structured implementation plans.
-Commands: /clancy:plan, /clancy:approve
+Commands: /clancy:plan, /clancy:approve-plan
 
 [1] Enable
 [2] Disable
@@ -406,6 +408,24 @@ Which Linear state type should /clancy:plan fetch issues from?
 If [1]: remove `CLANCY_PLAN_STATE_TYPE` from `.clancy/.env` (uses default).
 If [2]: write `CLANCY_PLAN_STATE_TYPE=triage` to `.clancy/.env`.
 If [3]: prompt `What state type should /clancy:plan fetch from?` then write `CLANCY_PLAN_STATE_TYPE=<value>` to `.clancy/.env`.
+
+---
+
+### [P2] Post-approval transition (Jira only)
+
+Only shown when Planner is enabled and board is Jira.
+
+```
+Post-approval transition — current: {value or "off"}
+After approving a plan, transition the ticket to this status.
+
+[1] Set status name
+[2] Off (move manually)
+[3] Cancel
+```
+
+If [1]: prompt `What status should Clancy transition to after approving a plan? (e.g. To Do, Ready)` then write `CLANCY_STATUS_PLANNED=<value>` to `.clancy/.env`. Wrap in double quotes.
+If [2]: remove `CLANCY_STATUS_PLANNED` from `.clancy/.env`.
 
 ---
 

@@ -18,8 +18,9 @@ integration, structured codebase docs, and a git workflow built for team develop
 |---|---|
 | `/clancy:plan` | Refine backlog tickets into structured implementation plans |
 | `/clancy:plan 3` | Plan up to 3 tickets in batch mode |
-| `/clancy:plan --force` | Re-plan tickets that already have a plan (reads feedback) |
-| `/clancy:approve` | Promote an approved plan to the ticket description |
+| `/clancy:plan PROJ-123` | Plan a specific ticket by key (also `#42`, `ENG-42`) |
+| `/clancy:plan --fresh` | Discard any existing plan and start from scratch |
+| `/clancy:approve-plan` | Promote an approved plan to the ticket description |
 
 ### Implementer
 

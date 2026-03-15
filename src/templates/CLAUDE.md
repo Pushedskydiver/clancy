@@ -54,7 +54,9 @@ Log completed tickets to `.clancy/progress.txt`:
 `YYYY-MM-DD HH:MM | TICKET-KEY | Summary | DONE`
 
 Planning entries use: `YYYY-MM-DD HH:MM | TICKET-KEY | PLAN | S/M/L`
+Revised plan entries use: `YYYY-MM-DD HH:MM | TICKET-KEY | REVISED | S/M/L`
 Approval entries use: `YYYY-MM-DD HH:MM | TICKET-KEY | APPROVE | —`
+Failed comment posts use: `YYYY-MM-DD HH:MM | TICKET-KEY | POST_FAILED | {reason}`
 
 ### Design context
 When a ticket description contains a Figma URL, fetch design context before implementing.

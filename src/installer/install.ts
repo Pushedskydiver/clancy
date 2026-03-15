@@ -115,7 +115,7 @@ function printSuccess(enabledRoles: Set<string> | null): void {
       'Planner',
       [
         ['/clancy:plan', 'Refine backlog tickets into plans'],
-        ['/clancy:approve', 'Promote plan to ticket description'],
+        ['/clancy:approve-plan', 'Promote plan to ticket description'],
       ],
     ],
     [

@@ -27,21 +27,23 @@ Each line has one of these formats:
 - `YYYY-MM-DD HH:MM | TICKET-KEY | Summary | DONE` — completed implementation
 - `YYYY-MM-DD HH:MM | TICKET-KEY | REVIEW | {score}%` — ticket review
 - `YYYY-MM-DD HH:MM | TICKET-KEY | PLAN | {S/M/L}` — plan generated
+- `YYYY-MM-DD HH:MM | TICKET-KEY | REVISED | {S/M/L}` — plan revised after feedback
 - `YYYY-MM-DD HH:MM | TICKET-KEY | APPROVE | —` — plan promoted to description
 - `YYYY-MM-DD HH:MM | TICKET-KEY | SKIPPED | {reason}` — ticket skipped
+- `YYYY-MM-DD HH:MM | TICKET-KEY | POST_FAILED | {reason}` — failed to post comment to board
 
 Parse each line:
 - Date (YYYY-MM-DD)
 - Time (HH:MM)
 - Ticket key (e.g. PROJ-42)
-- Action type (DONE, REVIEW, PLAN, APPROVE, SKIPPED, or summary text)
+- Action type (DONE, REVIEW, PLAN, REVISED, APPROVE, SKIPPED, POST_FAILED, or summary text)
 - Detail (status, score, size, or reason)
 
 Extract:
 - Total DONE tickets
 - First and latest run dates
 - All DONE tickets from the current calendar week (Mon–Sun)
-- Counts for each action type: PLAN, APPROVE, REVIEW, SKIPPED
+- Counts for each action type: PLAN, REVISED, APPROVE, REVIEW, SKIPPED, POST_FAILED
 - Epic key from ticket key — e.g. PROJ-42 → epic likely PROJ-10 (use parent field if logged, otherwise group by project prefix)
 
 ---
@@ -71,9 +73,11 @@ By epic:
   (other)                           {bar}  {count} tickets
 
 Plans generated: {N}      (only show if > 0)
+Plans revised: {N}        (only show if > 0)
 Plans approved: {N}       (only show if > 0)
 Reviews run: {N}          (only show if > 0)
 Tickets skipped: {N}      (only show if > 0)
+Post failures: {N}        (only show if > 0)
 Full log: .clancy/progress.txt
 
 "The law is powerless to help you, but here's what Clancy's done."
@@ -86,7 +90,7 @@ Full log: .clancy/progress.txt
 - Progress bars: ASCII, proportional to highest count, width 10 chars, `█` filled, `░` empty
 - Epic grouping: group by epic key in the ticket's parent field (from progress.txt if logged), or by project prefix if not available
 - Tickets without an epic: group under `(other)`
-- REVIEW, PLAN, APPROVE, and SKIPPED lines: shown separately at the end as counts — not included in ticket count
+- REVIEW, PLAN, REVISED, APPROVE, SKIPPED, and POST_FAILED lines: shown separately at the end as counts — not included in ticket count
 
 ---
 

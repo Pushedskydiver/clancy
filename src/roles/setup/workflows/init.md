@@ -504,13 +504,13 @@ Note: as more roles are added in future versions, they appear as additional numb
 
 ---
 
-## Step 4d (Jira only, if Planner role selected): Planning queue status
+## Step 4d (if Planner role selected): Planning queue config
 
 Only ask this if the user selected Planner in Step 4c above (or if re-running init and `CLANCY_ROLES` already includes `planner`).
 
 If the planner role is not enabled, skip this step entirely.
 
-Output:
+**Jira:** Output:
 
 ```
 The Planner role picks tickets from a separate queue for planning.
@@ -523,6 +523,57 @@ Which Jira status should Clancy pick planning tickets from?
 
 If [1]: store `CLANCY_PLAN_STATUS="Backlog"` in `.clancy/.env`.
 If [2]: prompt for the value, store as `CLANCY_PLAN_STATUS` in `.clancy/.env`. Wrap in double quotes.
+
+**GitHub:** Output:
+
+```
+The Planner role picks issues from a separate queue for planning.
+
+Which GitHub label should Clancy pick planning issues from?
+
+[1] needs-refinement (default)
+[2] Enter a different label name
+```
+
+If [1]: store `CLANCY_PLAN_LABEL="needs-refinement"` in `.clancy/.env`.
+If [2]: prompt for the value, store as `CLANCY_PLAN_LABEL` in `.clancy/.env`. Wrap in double quotes.
+
+**Linear:** Output:
+
+```
+The Planner role picks issues from a separate queue for planning.
+
+Which Linear state type should Clancy pick planning issues from?
+
+[1] backlog (default)
+[2] triage
+[3] Enter a different value
+```
+
+If [1]: store `CLANCY_PLAN_STATE_TYPE="backlog"` in `.clancy/.env`.
+If [2]: store `CLANCY_PLAN_STATE_TYPE="triage"` in `.clancy/.env`.
+If [3]: prompt for the value, store as `CLANCY_PLAN_STATE_TYPE` in `.clancy/.env`. Valid values: backlog, unstarted, started, completed, cancelled, triage.
+
+---
+
+## Step 4e (Jira only, if Planner role selected): Post-approval transition
+
+Only ask this if the user selected Planner in Step 4c above (or if re-running init and `CLANCY_ROLES` already includes `planner`), **and** the board is Jira.
+
+If the planner role is not enabled, or the board is not Jira, skip this step entirely.
+
+Output:
+
+```
+After approving a plan, Clancy can transition the ticket to your implementation queue.
+What status should Clancy transition to?
+
+[1] Enter a status name (e.g. To Do, Ready)
+[2] Skip — I'll move tickets manually
+```
+
+If [1]: prompt for the value, store as `CLANCY_STATUS_PLANNED` in `.clancy/.env`. Wrap in double quotes.
+If [2]: skip — no `CLANCY_STATUS_PLANNED` line written.
 
 ---
 

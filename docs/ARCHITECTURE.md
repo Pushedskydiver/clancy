@@ -98,9 +98,9 @@ Backlog ticket
   ▼
 Human reviews plan on the board
   │
-  ├─ Approves → /clancy:approve {KEY} → plan promoted to ticket description → ready for /clancy:once
+  ├─ Approves → /clancy:approve-plan {KEY} → plan promoted to ticket description → ticket transitioned → ready for /clancy:once
   │
-  └─ Rejects (leaves feedback) → /clancy:plan --force → reads feedback, generates improved plan
+  └─ Rejects (leaves feedback) → /clancy:plan → auto-detects feedback, generates improved plan
 ```
 
 The planner and implementer work on **separate queues** (e.g. Jira: `Backlog` vs `To Do`, GitHub: `needs-refinement` vs `clancy` label, Linear: `backlog` vs `unstarted` state type). They never compete for the same tickets.

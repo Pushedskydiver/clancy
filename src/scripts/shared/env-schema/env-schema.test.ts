@@ -225,6 +225,45 @@ describe('detectBoard', () => {
       expect(result.env.CLANCY_MAX_REWORK).toBe('3');
     });
 
+    it('passes through CLANCY_STATUS_PLANNED and CLANCY_SKIP_COMMENTS', () => {
+      const result = detectBoard(
+        jiraEnv({
+          CLANCY_STATUS_PLANNED: 'Planned',
+          CLANCY_SKIP_COMMENTS: 'true',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_STATUS_PLANNED).toBe('Planned');
+      expect(result.env.CLANCY_SKIP_COMMENTS).toBe('true');
+    });
+
+    it('accepts valid CLANCY_PLAN_STATE_TYPE enum value', () => {
+      const result = detectBoard(
+        jiraEnv({
+          CLANCY_PLAN_STATE_TYPE: 'backlog',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_PLAN_STATE_TYPE).toBe('backlog');
+    });
+
+    it('rejects invalid CLANCY_PLAN_STATE_TYPE value', () => {
+      const result = detectBoard(
+        jiraEnv({
+          CLANCY_PLAN_STATE_TYPE: 'invalid',
+        }),
+      );
+
+      expect(typeof result).toBe('string');
+      expect(result).toContain('validation failed');
+    });
+
     it('rework vars are optional — config parses without them', () => {
       const result = detectBoard(githubEnv());
 

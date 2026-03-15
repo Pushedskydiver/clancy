@@ -27,7 +27,18 @@ export const sharedEnvSchema = z.object({
   CLANCY_ROLES: z.optional(z.string()),
   CLANCY_PLAN_STATUS: z.optional(z.string()),
   CLANCY_PLAN_LABEL: z.optional(z.string()),
-  CLANCY_PLAN_STATE_TYPE: z.optional(z.string()),
+  CLANCY_PLAN_STATE_TYPE: z.optional(
+    z.enum([
+      'backlog',
+      'unstarted',
+      'started',
+      'completed',
+      'cancelled',
+      'triage',
+    ]),
+  ),
+  CLANCY_STATUS_PLANNED: z.optional(z.string()),
+  CLANCY_SKIP_COMMENTS: z.optional(z.string()),
 
   // Git host integration (for PR creation on non-GitHub boards)
   GITHUB_TOKEN: z.optional(z.string()),

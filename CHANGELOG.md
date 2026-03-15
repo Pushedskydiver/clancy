@@ -7,6 +7,34 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.5.6] — 2026-03-15
+
+### ✨ Features
+
+- **Auto-detect feedback for re-planning** — running `/clancy:plan` on an already-planned ticket auto-detects feedback comments and revises the plan. Replaces the old `--force` flag.
+- **`--fresh` flag** — `/clancy:plan --fresh` discards any existing plan and starts from scratch, ignoring feedback.
+- **Specific ticket targeting** — `/clancy:plan PROJ-123` plans a specific ticket by key instead of pulling from the queue. Supports `PROJ-123`, `#42`, and `ENG-42` formats.
+- **Branch freshness check** — planner preflight now fetches from remote and warns if the local branch is behind, offering pull/continue/abort.
+- **Skip comments** — when Clancy skips an irrelevant or infeasible ticket, a comment is posted on the board explaining why. Opt-out via `CLANCY_SKIP_COMMENTS=false`.
+- **Post-approval transitions** — `/clancy:approve-plan` now automatically transitions tickets: GitHub label swap (plan label removed, implementation label added), Jira status transition via `CLANCY_STATUS_PLANNED`, Linear state move to unstarted. All best-effort.
+- **Plan comment editing** — after approval, the plan comment is edited to prepend an approval note instead of being deleted.
+- **Auto-select for approve-plan** — `/clancy:approve-plan` (no args) auto-selects the oldest unapproved ticket from `progress.txt` and shows a confirmation prompt.
+
+### ♻️ Refactor
+
+- **`/clancy:approve` renamed to `/clancy:approve-plan`** — prepares for v0.6.0 strategist role which adds `/clancy:approve-brief`.
+- **Plan template reordered** — new canonical section order: Summary, Affected Files, Implementation Approach, Test Strategy, Acceptance Criteria, Dependencies, Figma Link, Risks/Considerations, Size Estimate.
+- **Linear approve uses filter-based query** — replaced fuzzy `issueSearch` with `issues(filter: { identifier: { eq } })` for exact ticket matching.
+
+### 🐛 Fixes
+
+- **Linear `.env.example` missing `CLANCY_PLAN_STATE_TYPE`** — added to the Linear scaffold template.
+- **Init missing GitHub/Linear planning queue config** — init now asks GitHub users for `CLANCY_PLAN_LABEL` and Linear users for `CLANCY_PLAN_STATE_TYPE` when the Planner role is enabled.
+- **`CLANCY_PLAN_STATE_TYPE` validated as enum** — now restricted to `backlog`, `unstarted`, `started`, `completed`, `cancelled`, `triage` instead of accepting any string.
+- **`PLANNER.md` template mismatch** — documentation now matches the actual workflow template sections and order.
+
+---
+
 ## [0.5.5] — 2026-03-14
 
 ### ✨ Features

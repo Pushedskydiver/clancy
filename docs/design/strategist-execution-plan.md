@@ -1,0 +1,125 @@
+# Strategist Role (v0.6.0) — Execution Plan
+
+## Overview
+
+~25 files (4 new, ~21 modified). 4 waves, 8 agents total. The strategist is a **pure markdown workflow** — no runtime TypeScript like `once.ts`. The installer picks up roles dynamically from `src/roles/`.
+
+## Prerequisites
+
+**The planner fix PR (v0.5.6) must be merged first.** It handles:
+- `/clancy:approve` → `/clancy:approve-plan` rename (all ~12 files)
+- Planner `--force` → auto-detect + `--fresh`
+- Branch freshness check (planner + implementer workflows)
+- `CLANCY_STATUS_PLANNED`, `CLANCY_SKIP_COMMENTS` env vars
+- `CLANCY_PLAN_STATE_TYPE` enum validation
+
+The strategist builds on top of this — it does NOT need to redo any of the above.
+
+---
+
+## Wave Structure
+
+### Wave 1 — Foundation + Core (3 parallel agents)
+
+| Agent | Chunks | Files | Complexity |
+|---|---|---|---|
+| **1** | Schema + types | `src/schemas/env.ts` (add `CLANCY_BRIEF_ISSUE_TYPE`, `CLANCY_BRIEF_EPIC`, `CLANCY_COMPONENT`), `src/types/remote.ts` (add `BRIEF`, `APPROVE_BRIEF` to ProgressStatus) | Small |
+| **2** | **Brief workflow** | `src/roles/strategist/workflows/brief.md` (NEW, ~500 lines) | **Large** |
+| **3** | **Approve-brief workflow** | `src/roles/strategist/workflows/approve-brief.md` (NEW, ~400 lines) | **Large** |
+
+Agents 2 and 3 are the critical path — they need the full design docs.
+
+**No approve rename needed** — already done in v0.5.6.
+**No planner --fresh change needed** — already done in v0.5.6.
+**No branch freshness check needed** — already in planner + implementer from v0.5.6. Strategist brief workflow includes it natively.
+
+### Wave 2 — Integration (3 parallel agents)
+
+| Agent | Chunks | Files |
+|---|---|---|
+| **4** | Command files + installer | `src/roles/strategist/commands/brief.md` (NEW), `src/roles/strategist/commands/approve-brief.md` (NEW), `src/installer/install.ts` |
+| **5** | Setup integration + scaffold | `src/roles/setup/commands/help.md`, `src/roles/setup/workflows/init.md`, `src/roles/setup/workflows/settings.md`, `src/roles/setup/workflows/scaffold.md` |
+| **6** | Reviewer logs + hook + template | `src/roles/reviewer/workflows/logs.md`, `hooks/clancy-check-update.js`, `src/templates/CLAUDE.md` |
+
+### Wave 3 — Documentation (2 parallel agents)
+
+| Agent | Chunks | Files |
+|---|---|---|
+| **7** | Role doc + cross-cutting docs | `docs/roles/STRATEGIST.md` (NEW), `docs/ARCHITECTURE.md`, `docs/roles/SETUP.md`, `docs/guides/CONFIGURATION.md` |
+| **8** | README + project + release | `README.md`, `CLAUDE.md`, `CHANGELOG.md`, `package.json` |
+
+### Wave 4 — Verification
+
+Run `npm test && npm run typecheck && npm run lint`. Fix any issues.
+
+---
+
+## What's inherited from v0.5.6
+
+| Item | Status after v0.5.6 |
+|---|---|
+| `/clancy:approve-plan` | Already renamed, all references updated |
+| Branch freshness check | Already in `plan.md` and `once.md` — strategist copies the pattern |
+| `CLANCY_STATUS_PLANNED` | Already in env schema |
+| `CLANCY_SKIP_COMMENTS` | Already in env schema |
+| `CLANCY_PLAN_STATE_TYPE` validation | Already validated as enum |
+| Auto-detect + `--fresh` pattern | Already in planner — strategist follows same pattern |
+
+## What's new for v0.6.0
+
+- Strategist commands/workflows (brief, approve-brief)
+- `CLANCY_BRIEF_ISSUE_TYPE`, `CLANCY_BRIEF_EPIC`, `CLANCY_COMPONENT` env vars
+- `BRIEF`, `APPROVE_BRIEF` progress statuses
+- `.clancy/briefs/` directory + `.approved` marker system
+- Ticket creation APIs (Jira POST /issue, GitHub POST /issues, Linear issueCreate)
+- Dependency linking (Jira issueLink, GitHub cross-refs, Linear issueRelationCreate)
+- Adaptive agent research (1-4 agents)
+- Brief template rendering
+- `CLANCY_COMPONENT` auto-apply on created tickets
+- Stale brief hook extension
+- `--dry-run` for approve-brief
+- Strategist in init/settings/scaffold/help
+
+---
+
+## Reusable Patterns
+
+| What | Where it exists | How strategist reuses |
+|---|---|---|
+| Board comment posting (curl) | Planner `plan.md` step 5 | Identical curl patterns for Jira ADF, GitHub MD, Linear GQL |
+| Issue fetching | Planner `approve-plan.md` step 3 | Same API calls for single-issue fetch |
+| Progress logging | `appendProgress()` | New statuses `BRIEF`, `APPROVE_BRIEF` |
+| Auto-detect + `--fresh` | Planner `plan.md` (from v0.5.6) | Same pattern for brief revision detection |
+| Branch freshness check | Planner `plan.md` + implementer `once.md` (from v0.5.6) | Copy inline git commands |
+| Optional role toggle | Init step 4c, settings R1 | Add `[2] Strategist` |
+| Installer role scan | `install.ts` walks `src/roles/` | Just create the directory |
+| Skip comments | Planner `plan.md` (from v0.5.6) | Same comment API patterns |
+
+## Genuinely New
+
+- `.clancy/briefs/` directory + slug generation + `.approved` marker
+- Ticket creation APIs (new API calls not in planner)
+- Dependency linking
+- Adaptive agent research (1-4 agents)
+- Brief template rendering
+- Brief selection logic (index/slug/ticket/conversational)
+- `CLANCY_COMPONENT` auto-apply on created tickets
+- Stale brief hook extension
+- `--dry-run` for approve-brief
+
+---
+
+## Risks (ordered by severity)
+
+1. **Brief workflow complexity** — 500-line markdown workflow covering 4 input modes × 3 boards × edge cases
+2. **Ticket creation API payloads** — Jira next-gen vs classic parent field, GitHub label pre-creation, Linear UUID resolution
+3. **Hook extension** — CommonJS, must not block SessionStart
+4. **CLANCY_COMPONENT** — only implement "set on created tickets" side. Queue filtering deferred.
+
+---
+
+## De-risking Order
+
+1. Schema/types first (validates TypeScript compiles)
+2. Brief workflow early (critical path, surface issues fast)
+3. Docs last (can be written accurately after code is final)

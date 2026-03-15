@@ -407,6 +407,14 @@ MAX_ITERATIONS=5
 # Only used if Planner role is enabled via CLANCY_ROLES
 # CLANCY_PLAN_STATUS="Backlog"
 
+# After approving a plan, transition the ticket to this status (e.g. "To Do")
+# CLANCY_STATUS_PLANNED="To Do"
+
+# ─── Optional: Skip comments ──────────────────────────────────────────────
+# When Clancy skips a ticket (irrelevant/infeasible), post a comment explaining why
+# Set to "false" to disable skip comments
+# CLANCY_SKIP_COMMENTS=true
+
 # ─── Optional: Notifications ──────────────────────────────────────────────────
 # Webhook URL for Slack or Teams notifications on ticket completion
 # CLANCY_NOTIFY_WEBHOOK=https://hooks.slack.com/services/your/webhook/url
@@ -469,6 +477,11 @@ MAX_ITERATIONS=20
 # next run. No configuration needed.
 # CLANCY_MAX_REWORK=3                    # Max rework cycles before human intervention (default: 3)
 
+# ─── Optional: Skip comments ──────────────────────────────────────────────
+# When Clancy skips a ticket (irrelevant/infeasible), post a comment explaining why
+# Set to "false" to disable skip comments
+# CLANCY_SKIP_COMMENTS=true
+
 # ─── Optional: Notifications ──────────────────────────────────────────────────
 # Webhook URL for Slack or Teams notifications on ticket completion
 # CLANCY_NOTIFY_WEBHOOK=https://hooks.slack.com/services/your/webhook/url
@@ -489,6 +502,11 @@ LINEAR_TEAM_ID=your-team-uuid
 # where not every issue is suitable for autonomous implementation (e.g. non-code tasks).
 # Create the label in Linear first, then add it to any issue you want Clancy to pick up.
 # CLANCY_LABEL=clancy
+
+# ─── Planner Queue (optional — requires CLANCY_ROLES to include "planner") ───
+# State type for issues that /clancy:plan fetches from (default: backlog)
+# Valid values: backlog, unstarted, started, completed, cancelled, triage
+# CLANCY_PLAN_STATE_TYPE="backlog"
 
 # ─── Git ──────────────────────────────────────────────────────────────────────
 # Base integration branch. Clancy branches from here when an issue has no parent.
@@ -540,6 +558,11 @@ MAX_ITERATIONS=20
 # BITBUCKET_TOKEN=your-app-password        # if your git host is Bitbucket
 # CLANCY_GIT_PLATFORM=gitlab               # override auto-detection (github/gitlab/bitbucket)
 # CLANCY_GIT_API_URL=https://gitlab.example.com/api/v4  # self-hosted git API base URL
+
+# ─── Optional: Skip comments ──────────────────────────────────────────────
+# When Clancy skips a ticket (irrelevant/infeasible), post a comment explaining why
+# Set to "false" to disable skip comments
+# CLANCY_SKIP_COMMENTS=true
 
 # ─── Optional: Notifications ──────────────────────────────────────────────────
 # Webhook URL for Slack or Teams notifications on ticket completion
