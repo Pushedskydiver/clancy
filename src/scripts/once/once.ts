@@ -244,7 +244,7 @@ async function fetchReworkFromPrReview(config: BoardConfig): Promise<
   let ghUsername: string | undefined;
   if (remote.host === 'github') {
     try {
-      ghUsername = await resolveUsername(creds.token);
+      ghUsername = await resolveUsername(creds.token, apiBase);
     } catch {
       // Best-effort — skip author filtering if username resolution fails
     }
@@ -806,6 +806,9 @@ async function deliverViaPullRequest(
  * rework detection on the next cycle.
  */
 function buildReworkComment(feedback: string[]): string {
+  if (feedback.length === 0) {
+    return '[clancy] Rework pushed addressing reviewer feedback.';
+  }
   const count = feedback.length;
   const summary = feedback
     .slice(0, 3)

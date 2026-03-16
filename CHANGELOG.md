@@ -16,7 +16,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - **GitLab: resolve discussion threads** — after rework, Clancy resolves addressed DiffNote discussion threads.
 - **GitHub: `CHANGES_REQUESTED` review state** — an additional rework trigger alongside comment-based detection. If any reviewer has requested changes via GitHub's review mechanism, rework is triggered.
 - **Connectivity preflight** — `git ls-remote origin HEAD` runs during preflight as a warning-only check. If the remote is unreachable, a warning is printed but the run continues.
-- **PR number in progress entries** — progress.txt entries now include a `pr:NNN` suffix when a PR is created, enabling faster rework detection without API lookups.
+- **PR number in progress entries** — progress.txt entries now include a `pr:NNN` suffix when a PR is created, for future optimisation of rework detection.
 - **previousContext in rework prompts** — rework prompts now include a `git diff --stat` against the target branch, giving Claude visibility into what files have already been changed.
 - **Collapsible rework instructions in PR body** — rework instructions in the PR description are now wrapped in a `<details>` block to reduce visual noise.
 

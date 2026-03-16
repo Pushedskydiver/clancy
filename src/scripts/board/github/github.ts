@@ -78,11 +78,14 @@ export async function pingGitHub(
  * @param token - The GitHub personal access token.
  * @returns The GitHub username, or `@me` as a fallback.
  */
-export async function resolveUsername(token: string): Promise<string> {
+export async function resolveUsername(
+  token: string,
+  apiBase?: string,
+): Promise<string> {
   if (cachedUsername) return cachedUsername;
 
   try {
-    const response = await fetch(`${GITHUB_API}/user`, {
+    const response = await fetch(`${apiBase ?? GITHUB_API}/user`, {
       headers: githubHeaders(token),
     });
 
