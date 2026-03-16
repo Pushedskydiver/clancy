@@ -9,7 +9,7 @@ Autonomous, board-driven development for Claude Code. npm package: `chief-clancy
 | `src/installer/install.ts` | Entry point — compiled to `dist/installer/install.js`, run via `npx chief-clancy` |
 | `src/installer/` | Installer modules (file-ops, hook-installer, manifest, prompts) |
 | `src/roles/` | Slash commands and workflows organised by role (planner, implementer, reviewer, setup) |
-| `src/scripts/once/once.ts` | Unified once orchestrator (all 3 boards) |
+| `src/scripts/once/` | Once orchestrator — 8 modules: types, board-ops, fetch-ticket, git-token, pr-creation, deliver, rework, once (runner) |
 | `src/scripts/afk/afk.ts` | AFK loop runner |
 | `src/scripts/shared/` | Shared utilities (env-schema, branch, prompt, progress, etc.) |
 | `src/scripts/shared/pull-request/` | PR creation + rework comment detection (github, gitlab, bitbucket, post-pr, pr-body, rework-comment) |

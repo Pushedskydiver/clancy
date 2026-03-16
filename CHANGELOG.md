@@ -7,6 +7,14 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.5.8] — 2026-03-16
+
+### ♻️ Refactor
+
+- **`once.ts` decomposed into 8 focused modules** — the 1292-line orchestrator has been split into small, human-readable modules. Each module handles a single concern: types (12 lines), board operations (122), ticket fetching (89), git token resolution (34), PR creation (107), delivery (200), rework detection + actions (379), and the orchestrator itself (398). Zero logic changes — pure extraction. All 404 tests pass unchanged.
+
+---
+
 ## [0.5.7] — 2026-03-16
 
 ### ✨ Features

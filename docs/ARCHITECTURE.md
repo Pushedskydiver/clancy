@@ -29,7 +29,16 @@ clancy/
 │   │       ├── commands/       — init, settings, doctor, help, etc.
 │   │       └── workflows/      — scaffold, init, map-codebase, etc.
 │   ├── scripts/
-│   │   ├── once/once.ts        — unified once orchestrator (all 3 boards)
+│   │   ├── once/               — once orchestrator (8 modules)
+│   │   │   ├── types.ts        — FetchedTicket type
+│   │   │   ├── board-ops.ts    — sharedEnv, pingBoard, validateInputs, transitionToStatus
+│   │   │   ├── fetch-ticket.ts — board-specific ticket fetch dispatch
+│   │   │   ├── git-token.ts    — resolveGitToken
+│   │   │   ├── pr-creation.ts  — attemptPrCreation, buildManualPrUrl
+│   │   │   ├── deliver.ts      — deliverViaEpicMerge, deliverViaPullRequest
+│   │   │   ├── rework.ts       — fetchReworkFromPrReview, postReworkActions, buildReworkComment
+│   │   │   ├── once.ts         — run() orchestrator entry point
+│   │   │   └── once.test.ts    — 404 tests
 │   │   ├── afk/afk.ts          — AFK loop runner
 │   │   ├── board/              — board-specific modules (jira, github, linear)
 │   │   └── shared/             — env-schema, branch, prompt, progress, etc.
