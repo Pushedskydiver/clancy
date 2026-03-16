@@ -340,7 +340,7 @@ Transition the ticket from the planning queue to the implementation queue. This 
      "https://api.github.com/repos/$GITHUB_REPO/issues/$ISSUE_NUMBER/labels" \
      -d '{"labels": ["$CLANCY_LABEL"]}'
    ```
-   If `CLANCY_LABEL` is not set, skip this step (only the plan label removal is done). If set, use its value (default: `clancy`). If the label does not exist on the repo, attempt to create it:
+   If `CLANCY_LABEL` is not set, skip this step entirely (only the plan label removal is done). `CLANCY_LABEL` has no default — it is fully optional. When set (e.g. `clancy`), use its value. If the label does not exist on the repo, attempt to create it:
    ```bash
    curl -s \
      -H "Authorization: Bearer $GITHUB_TOKEN" \

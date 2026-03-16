@@ -63,8 +63,8 @@ Additional filters vary by board:
 
 1. **You** add the `needs-refinement` label to issues you want planned (this is a manual step)
 2. `/clancy:plan` picks up issues with that label
-3. `/clancy:approve-plan` removes `needs-refinement` (the plan label) and adds `clancy` (the implementation queue label). Creates the label if it doesn't exist.
-4. `/clancy:once` picks up issues with the `clancy` label
+3. `/clancy:approve-plan` removes `needs-refinement` (the plan label). If `CLANCY_LABEL` is set, also adds it as the implementation label.
+4. `/clancy:once` picks up issues (filtered by `CLANCY_LABEL` if set, otherwise all open assigned issues)
 5. On completion, Clancy closes the issue
 
 No GitHub Projects integration — Clancy works with the Issues REST API only.
@@ -119,7 +119,7 @@ When `/clancy:approve-plan` runs, it:
 4. Appends the plan to the ticket description (never replaces the original description)
 5. **Edits the plan comment** — prepends an approval note to the existing comment (does not delete it)
 6. **Transitions the ticket** to the implementation queue:
-   - **GitHub:** removes the plan label (`CLANCY_PLAN_LABEL`), adds the implementation label (`CLANCY_LABEL`). Creates the label if missing.
+   - **GitHub:** removes the plan label (`CLANCY_PLAN_LABEL`). If `CLANCY_LABEL` is set, adds it as the implementation label (creates if missing). If not set, only the plan label is removed.
    - **Jira:** if `CLANCY_STATUS_PLANNED` is configured, fetches available transitions and POSTs the transition. If not configured, skips (manual transition).
    - **Linear:** resolves the "unstarted" state UUID via `workflowStates` query, then updates the issue state. Always attempted.
    - All transitions are best-effort — warns on failure, never blocks the approval.

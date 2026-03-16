@@ -87,7 +87,7 @@ Commands are user-facing (appear in Claude Code's `/` menu). Workflows contain t
 
 ## Planner Lifecycle
 
-The Planner role (`/clancy:plan` and `/clancy:approve`) operates as a pure workflow — no runtime script, no git operations:
+The Planner role (`/clancy:plan` and `/clancy:approve-plan`) operates as a pure workflow — no runtime script, no git operations:
 
 ```
 Backlog ticket

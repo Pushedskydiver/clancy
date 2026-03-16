@@ -27,16 +27,7 @@ export const sharedEnvSchema = z.object({
   CLANCY_ROLES: z.optional(z.string()),
   CLANCY_PLAN_STATUS: z.optional(z.string()),
   CLANCY_PLAN_LABEL: z.optional(z.string()),
-  CLANCY_PLAN_STATE_TYPE: z.optional(
-    z.enum([
-      'backlog',
-      'unstarted',
-      'started',
-      'completed',
-      'canceled',
-      'triage',
-    ]),
-  ),
+  CLANCY_PLAN_STATE_TYPE: z.optional(z.string()),
   CLANCY_STATUS_PLANNED: z.optional(z.string()),
   CLANCY_SKIP_COMMENTS: z.optional(z.string()),
 

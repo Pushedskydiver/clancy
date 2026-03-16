@@ -253,15 +253,14 @@ describe('detectBoard', () => {
       expect(result.env.CLANCY_PLAN_STATE_TYPE).toBe('backlog');
     });
 
-    it('rejects invalid CLANCY_PLAN_STATE_TYPE value', () => {
+    it('accepts any CLANCY_PLAN_STATE_TYPE value (validated at runtime by workflow)', () => {
       const result = detectBoard(
         jiraEnv({
-          CLANCY_PLAN_STATE_TYPE: 'invalid',
+          CLANCY_PLAN_STATE_TYPE: 'custom-state',
         }),
       );
 
-      expect(typeof result).toBe('string');
-      expect(result).toContain('validation failed');
+      expect(typeof result).not.toBe('string');
     });
 
     it('rework vars are optional — config parses without them', () => {
