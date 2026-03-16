@@ -26,10 +26,12 @@ export const gitlabNoteSchema = z.object({
       new_path: z.optional(z.string()),
     }),
   ),
+  author: z.optional(z.object({ username: z.string() })),
 });
 
 /** A single MR discussion (contains one or more notes). */
 export const gitlabDiscussionSchema = z.object({
+  id: z.optional(z.string()),
   notes: z.array(gitlabNoteSchema),
 });
 

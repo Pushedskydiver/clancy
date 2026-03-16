@@ -4,6 +4,8 @@ import {
   checkMrReviewState,
   createMergeRequest,
   fetchMrReviewComments,
+  postMrNote,
+  resolveDiscussions,
 } from './gitlab.js';
 
 describe('gitlab', () => {
@@ -593,7 +595,7 @@ describe('gitlab', () => {
       vi.unstubAllGlobals();
     });
 
-    it('returns all DiffNote comments and only Rework: conversation comments', async () => {
+    it('returns all DiffNote comments and only Rework: conversation comments with discussion IDs', async () => {
       vi.stubGlobal(
         'fetch',
         vi.fn(() =>
@@ -602,6 +604,7 @@ describe('gitlab', () => {
             json: () =>
               Promise.resolve([
                 {
+                  id: 'disc-1',
                   notes: [
                     {
                       body: 'This needs fixing',
@@ -614,6 +617,7 @@ describe('gitlab', () => {
                   ],
                 },
                 {
+                  id: 'disc-2',
                   notes: [
                     {
                       body: 'Looks good to me',
@@ -624,6 +628,7 @@ describe('gitlab', () => {
                   ],
                 },
                 {
+                  id: 'disc-3',
                   notes: [
                     {
                       body: 'Rework: Also fix the validation',
@@ -638,17 +643,18 @@ describe('gitlab', () => {
         ),
       );
 
-      const comments = await fetchMrReviewComments(
+      const result = await fetchMrReviewComments(
         'token',
         'https://gitlab.com/api/v4',
         'g/p',
         42,
       );
 
-      expect(comments).toEqual([
+      expect(result.comments).toEqual([
         '[src/main.ts] This needs fixing',
         'Also fix the validation',
       ]);
+      expect(result.discussionIds).toEqual(['disc-1', 'disc-3']);
     });
 
     it('includes DiffNote comments with file path prefix', async () => {
@@ -660,6 +666,7 @@ describe('gitlab', () => {
             json: () =>
               Promise.resolve([
                 {
+                  id: 'disc-1',
                   notes: [
                     {
                       body: 'Needs refactor',
@@ -676,14 +683,14 @@ describe('gitlab', () => {
         ),
       );
 
-      const comments = await fetchMrReviewComments(
+      const result = await fetchMrReviewComments(
         'token',
         'https://gitlab.com/api/v4',
         'g/p',
         42,
       );
 
-      expect(comments).toEqual(['[src/main.ts] Needs refactor']);
+      expect(result.comments).toEqual(['[src/main.ts] Needs refactor']);
     });
 
     it('filters out system notes and non-Rework: conversation comments', async () => {
@@ -695,6 +702,7 @@ describe('gitlab', () => {
             json: () =>
               Promise.resolve([
                 {
+                  id: 'disc-sys',
                   notes: [
                     {
                       body: 'System DiffNote',
@@ -706,6 +714,7 @@ describe('gitlab', () => {
                   ],
                 },
                 {
+                  id: 'disc-ok',
                   notes: [
                     {
                       body: 'Regular discussion comment',
@@ -716,6 +725,7 @@ describe('gitlab', () => {
                   ],
                 },
                 {
+                  id: 'disc-rework',
                   notes: [
                     {
                       body: 'Rework: Valid comment',
@@ -730,30 +740,184 @@ describe('gitlab', () => {
         ),
       );
 
-      const comments = await fetchMrReviewComments(
+      const result = await fetchMrReviewComments(
         'token',
         'https://gitlab.com/api/v4',
         'g/p',
         42,
       );
 
-      expect(comments).toEqual(['Valid comment']);
+      expect(result.comments).toEqual(['Valid comment']);
+      expect(result.discussionIds).toEqual(['disc-rework']);
     });
 
-    it('returns empty array on error', async () => {
+    it('returns empty comments and discussionIds on error', async () => {
       vi.stubGlobal(
         'fetch',
         vi.fn(() => Promise.reject(new Error('Network failure'))),
       );
 
-      const comments = await fetchMrReviewComments(
+      const result = await fetchMrReviewComments(
         'token',
         'https://gitlab.com/api/v4',
         'g/p',
         42,
       );
 
-      expect(comments).toEqual([]);
+      expect(result).toEqual({ comments: [], discussionIds: [] });
+    });
+  });
+
+  describe('postMrNote', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    });
+
+    it('posts a note successfully and returns true', async () => {
+      const mockFetch = vi.fn(() => Promise.resolve({ ok: true }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await postMrNote(
+        'glpat-test',
+        'https://gitlab.com/api/v4',
+        'group/project',
+        42,
+        'Rework pushed.',
+      );
+
+      expect(result).toBe(true);
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://gitlab.com/api/v4/projects/group%2Fproject/merge_requests/42/notes',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ body: 'Rework pushed.' }),
+        }),
+      );
+    });
+
+    it('returns false on API error', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.resolve({ ok: false, status: 403 })),
+      );
+
+      const result = await postMrNote(
+        'token',
+        'https://gitlab.com/api/v4',
+        'g/p',
+        42,
+        'comment',
+      );
+
+      expect(result).toBe(false);
+    });
+
+    it('returns false on network error', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.reject(new Error('Network error'))),
+      );
+
+      const result = await postMrNote(
+        'token',
+        'https://gitlab.com/api/v4',
+        'g/p',
+        42,
+        'comment',
+      );
+
+      expect(result).toBe(false);
+    });
+  });
+
+  describe('resolveDiscussions', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    });
+
+    it('resolves all discussions and returns count', async () => {
+      const mockFetch = vi.fn(() => Promise.resolve({ ok: true }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await resolveDiscussions(
+        'glpat-test',
+        'https://gitlab.com/api/v4',
+        'group/project',
+        42,
+        ['disc-1', 'disc-2'],
+      );
+
+      expect(result).toBe(2);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://gitlab.com/api/v4/projects/group%2Fproject/merge_requests/42/discussions/disc-1',
+        expect.objectContaining({
+          method: 'PUT',
+          body: JSON.stringify({ resolved: true }),
+        }),
+      );
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://gitlab.com/api/v4/projects/group%2Fproject/merge_requests/42/discussions/disc-2',
+        expect.objectContaining({
+          method: 'PUT',
+          body: JSON.stringify({ resolved: true }),
+        }),
+      );
+    });
+
+    it('handles partial failure and returns count of successes', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true })
+        .mockResolvedValueOnce({ ok: false, status: 500 })
+        .mockResolvedValueOnce({ ok: true });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await resolveDiscussions(
+        'token',
+        'https://gitlab.com/api/v4',
+        'g/p',
+        42,
+        ['disc-1', 'disc-2', 'disc-3'],
+      );
+
+      expect(result).toBe(2);
+    });
+
+    it('handles network errors gracefully and continues', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockRejectedValueOnce(new Error('Network error'))
+        .mockResolvedValueOnce({ ok: true });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await resolveDiscussions(
+        'token',
+        'https://gitlab.com/api/v4',
+        'g/p',
+        42,
+        ['disc-1', 'disc-2'],
+      );
+
+      expect(result).toBe(1);
+    });
+
+    it('returns 0 for empty discussion list', async () => {
+      const mockFetch = vi.fn();
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await resolveDiscussions(
+        'token',
+        'https://gitlab.com/api/v4',
+        'g/p',
+        42,
+        [],
+      );
+
+      expect(result).toBe(0);
+      expect(mockFetch).not.toHaveBeenCalled();
     });
   });
 });

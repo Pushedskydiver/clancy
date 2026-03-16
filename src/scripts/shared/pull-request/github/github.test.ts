@@ -4,6 +4,8 @@ import {
   checkPrReviewState,
   createPullRequest,
   fetchPrReviewComments,
+  postPrComment,
+  requestReview,
 } from './github.js';
 
 describe('pull-request/github', () => {
@@ -568,6 +570,159 @@ describe('pull-request/github', () => {
       // Should NOT include since parameter
       expect(mockFetch.mock.calls[1]![0]).not.toContain('&since=');
     });
+
+    it('CHANGES_REQUESTED review triggers rework', async () => {
+      const mockFetch = vi
+        .fn()
+        // PR list
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                number: 10,
+                html_url: 'https://github.com/owner/repo/pull/10',
+                state: 'open',
+              },
+            ]),
+        })
+        // Inline comments — none
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]),
+        })
+        // Conversation comments — none
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]),
+        })
+        // Reviews — CHANGES_REQUESTED
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                state: 'CHANGES_REQUESTED',
+                user: { login: 'reviewer1' },
+                submitted_at: '2026-01-01T00:00:00Z',
+              },
+            ]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkPrReviewState(
+        'ghp_test',
+        'owner/repo',
+        'feature/test',
+        'owner',
+      );
+
+      expect(result).toEqual({
+        changesRequested: true,
+        prNumber: 10,
+        prUrl: 'https://github.com/owner/repo/pull/10',
+        reviewers: ['reviewer1'],
+      });
+    });
+
+    it('APPROVED review does not trigger rework when no comments', async () => {
+      const mockFetch = vi
+        .fn()
+        // PR list
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                number: 10,
+                html_url: 'https://github.com/owner/repo/pull/10',
+                state: 'open',
+              },
+            ]),
+        })
+        // Inline comments — none
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]),
+        })
+        // Conversation comments — none
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]),
+        })
+        // Reviews — APPROVED only
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                state: 'APPROVED',
+                user: { login: 'reviewer1' },
+                submitted_at: '2026-01-01T00:00:00Z',
+              },
+            ]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkPrReviewState(
+        'ghp_test',
+        'owner/repo',
+        'feature/test',
+        'owner',
+      );
+
+      expect(result).toEqual({
+        changesRequested: false,
+        prNumber: 10,
+        prUrl: 'https://github.com/owner/repo/pull/10',
+      });
+    });
+
+    it('review fetch failure does not break flow', async () => {
+      const mockFetch = vi
+        .fn()
+        // PR list
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                number: 10,
+                html_url: 'https://github.com/owner/repo/pull/10',
+                state: 'open',
+              },
+            ]),
+        })
+        // Inline comments — none
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]),
+        })
+        // Conversation comments — none
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]),
+        })
+        // Reviews — error
+        .mockResolvedValueOnce({
+          ok: false,
+          status: 500,
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkPrReviewState(
+        'ghp_test',
+        'owner/repo',
+        'feature/test',
+        'owner',
+      );
+
+      expect(result).toEqual({
+        changesRequested: false,
+        prNumber: 10,
+        prUrl: 'https://github.com/owner/repo/pull/10',
+      });
+    });
   });
 
   describe('fetchPrReviewComments', () => {
@@ -673,6 +828,136 @@ describe('pull-request/github', () => {
       const result = await fetchPrReviewComments('ghp_test', 'owner/repo', 10);
 
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('postPrComment', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    });
+
+    it('posts a comment successfully and returns true', async () => {
+      const mockFetch = vi.fn(() => Promise.resolve({ ok: true }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await postPrComment(
+        'ghp_test',
+        'owner/repo',
+        42,
+        'Rework pushed.',
+      );
+
+      expect(result).toBe(true);
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.github.com/repos/owner/repo/issues/42/comments',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ body: 'Rework pushed.' }),
+        }),
+      );
+    });
+
+    it('returns false on API error', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.resolve({ ok: false, status: 403 })),
+      );
+
+      const result = await postPrComment(
+        'ghp_test',
+        'owner/repo',
+        42,
+        'comment',
+      );
+
+      expect(result).toBe(false);
+    });
+
+    it('returns false on network error', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.reject(new Error('Network error'))),
+      );
+
+      const result = await postPrComment(
+        'ghp_test',
+        'owner/repo',
+        42,
+        'comment',
+      );
+
+      expect(result).toBe(false);
+    });
+
+    it('uses custom API base URL', async () => {
+      const mockFetch = vi.fn(() => Promise.resolve({ ok: true }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      await postPrComment(
+        'ghp_test',
+        'owner/repo',
+        42,
+        'comment',
+        'https://github.acme.com/api/v3',
+      );
+
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://github.acme.com/api/v3/repos/owner/repo/issues/42/comments',
+        expect.any(Object),
+      );
+    });
+  });
+
+  describe('requestReview', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    });
+
+    it('requests review successfully and returns true', async () => {
+      const mockFetch = vi.fn(() => Promise.resolve({ ok: true }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await requestReview('ghp_test', 'owner/repo', 42, [
+        'reviewer1',
+        'reviewer2',
+      ]);
+
+      expect(result).toBe(true);
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.github.com/repos/owner/repo/pulls/42/requested_reviewers',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ reviewers: ['reviewer1', 'reviewer2'] }),
+        }),
+      );
+    });
+
+    it('returns false on API error', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.resolve({ ok: false, status: 422 })),
+      );
+
+      const result = await requestReview('ghp_test', 'owner/repo', 42, [
+        'not-a-collaborator',
+      ]);
+
+      expect(result).toBe(false);
+    });
+
+    it('returns false on network error', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.reject(new Error('Network error'))),
+      );
+
+      const result = await requestReview('ghp_test', 'owner/repo', 42, [
+        'reviewer1',
+      ]);
+
+      expect(result).toBe(false);
     });
   });
 });

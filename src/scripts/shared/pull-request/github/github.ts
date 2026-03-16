@@ -11,6 +11,7 @@ import {
   githubCommentsResponseSchema,
   githubPrCommentsSchema,
   githubPrListSchema,
+  githubReviewListSchema,
 } from '~/schemas/github.js';
 import { GITHUB_API, githubHeaders } from '~/scripts/shared/http/http.js';
 import type { PrCreationResult, PrReviewState } from '~/types/index.js';
@@ -43,6 +44,7 @@ export async function checkPrReviewState(
   owner: string,
   apiBase = GITHUB_API,
   since?: string,
+  excludeAuthor?: string,
 ): Promise<PrReviewState | undefined> {
   try {
     const headers = githubHeaders(token);
@@ -76,21 +78,58 @@ export async function checkPrReviewState(
 
     if (!inlineRes.ok || !convoRes.ok) return undefined;
 
-    const inlineComments = githubPrCommentsSchema.parse(await inlineRes.json());
-    const convoComments = githubCommentsResponseSchema.parse(
-      await convoRes.json(),
-    );
+    const rawInline = githubPrCommentsSchema.parse(await inlineRes.json());
+    const rawConvo = githubCommentsResponseSchema.parse(await convoRes.json());
+
+    const inlineComments = excludeAuthor
+      ? rawInline.filter((c) => c.user?.login !== excludeAuthor)
+      : rawInline;
+    const convoComments = excludeAuthor
+      ? rawConvo.filter((c) => c.user?.login !== excludeAuthor)
+      : rawConvo;
 
     const hasInlineComments = inlineComments.length > 0;
     const hasReworkConvo = convoComments.some(
       (c) => c.body && isReworkComment(c.body),
     );
-    const hasRework = hasInlineComments || hasReworkConvo;
+    let changesRequested = hasInlineComments || hasReworkConvo;
+    let reviewers: string[] | undefined;
+
+    // Additional signal: GitHub "Request Changes" review state
+    if (!changesRequested) {
+      try {
+        const reviewsRes = await fetch(
+          `${apiBase}/repos/${repo}/pulls/${pr.number}/reviews?per_page=100`,
+          { headers },
+        );
+        if (reviewsRes.ok) {
+          const reviews = githubReviewListSchema.parse(await reviewsRes.json());
+          // Deduplicate by user — keep latest per user
+          const latestByUser = new Map<string, string>();
+          for (const review of reviews) {
+            if (review.state === 'PENDING' || review.state === 'DISMISSED')
+              continue;
+            latestByUser.set(review.user.login, review.state);
+          }
+          // Check if any reviewer's latest state is CHANGES_REQUESTED
+          const requestedChanges = [...latestByUser.entries()].filter(
+            ([, s]) => s === 'CHANGES_REQUESTED',
+          );
+          if (requestedChanges.length > 0) {
+            changesRequested = true;
+            reviewers = requestedChanges.map(([login]) => login);
+          }
+        }
+      } catch {
+        // Best-effort — if review fetch fails, rely on comment detection only
+      }
+    }
 
     return {
-      changesRequested: hasRework,
+      changesRequested,
       prNumber: pr.number,
       prUrl: pr.html_url,
+      reviewers,
     };
   } catch {
     return undefined;
@@ -119,6 +158,7 @@ export async function fetchPrReviewComments(
   prNumber: number,
   apiBase = GITHUB_API,
   since?: string,
+  excludeAuthor?: string,
 ): Promise<string[]> {
   try {
     const headers = githubHeaders(token);
@@ -141,10 +181,15 @@ export async function fetchPrReviewComments(
 
     if (!inlineRes.ok || !convoRes.ok) return [];
 
-    const inlineComments = githubPrCommentsSchema.parse(await inlineRes.json());
-    const convoComments = githubCommentsResponseSchema.parse(
-      await convoRes.json(),
-    );
+    const rawInline = githubPrCommentsSchema.parse(await inlineRes.json());
+    const rawConvo = githubCommentsResponseSchema.parse(await convoRes.json());
+
+    const inlineComments = excludeAuthor
+      ? rawInline.filter((c) => c.user?.login !== excludeAuthor)
+      : rawInline;
+    const convoComments = excludeAuthor
+      ? rawConvo.filter((c) => c.user?.login !== excludeAuthor)
+      : rawConvo;
 
     const combined: string[] = [];
 
@@ -163,6 +208,78 @@ export async function fetchPrReviewComments(
     return combined;
   } catch {
     return [];
+  }
+}
+
+/**
+ * Post a comment on a GitHub PR/issue.
+ *
+ * Best-effort — never throws. Returns `true` on success, `false` on error.
+ *
+ * @param token - The GitHub personal access token.
+ * @param repo - The repository in `owner/repo` format.
+ * @param prNumber - The PR (issue) number.
+ * @param body - The comment body (markdown).
+ * @param apiBase - The API base URL (defaults to `https://api.github.com`).
+ */
+export async function postPrComment(
+  token: string,
+  repo: string,
+  prNumber: number,
+  body: string,
+  apiBase = GITHUB_API,
+): Promise<boolean> {
+  try {
+    const res = await fetch(
+      `${apiBase}/repos/${repo}/issues/${prNumber}/comments`,
+      {
+        method: 'POST',
+        headers: {
+          ...githubHeaders(token),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ body }),
+      },
+    );
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Re-request review from specified reviewers on a GitHub PR.
+ *
+ * Best-effort — never throws. Returns `true` on success, `false` on error.
+ *
+ * @param token - The GitHub personal access token.
+ * @param repo - The repository in `owner/repo` format.
+ * @param prNumber - The PR number.
+ * @param reviewers - Array of GitHub usernames to request review from.
+ * @param apiBase - The API base URL (defaults to `https://api.github.com`).
+ */
+export async function requestReview(
+  token: string,
+  repo: string,
+  prNumber: number,
+  reviewers: string[],
+  apiBase = GITHUB_API,
+): Promise<boolean> {
+  try {
+    const res = await fetch(
+      `${apiBase}/repos/${repo}/pulls/${prNumber}/requested_reviewers`,
+      {
+        method: 'POST',
+        headers: {
+          ...githubHeaders(token),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ reviewers }),
+      },
+    );
+    return res.ok;
+  } catch {
+    return false;
   }
 }
 

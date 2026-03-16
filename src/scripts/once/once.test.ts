@@ -30,6 +30,7 @@ import {
   checkPrReviewState as checkGitHubPrReviewState,
   createPullRequest as createGitHubPr,
   fetchPrReviewComments as fetchGitHubPrReviewComments,
+  requestReview as requestGitHubReview,
 } from '~/scripts/shared/pull-request/github/github.js';
 import { detectRemote } from '~/scripts/shared/remote/remote.js';
 
@@ -73,6 +74,8 @@ vi.mock('~/scripts/shared/pull-request/github/github.js', () => ({
     }),
   ),
   fetchPrReviewComments: vi.fn(() => Promise.resolve([])),
+  postPrComment: vi.fn(() => Promise.resolve(true)),
+  requestReview: vi.fn(() => Promise.resolve(true)),
 }));
 
 vi.mock('~/scripts/board/linear/linear.js', () => ({
@@ -87,6 +90,7 @@ vi.mock('~/scripts/shared/git-ops/git-ops.js', () => ({
   checkout: vi.fn(),
   currentBranch: vi.fn(() => 'main'),
   deleteBranch: vi.fn(),
+  diffAgainstBranch: vi.fn(() => undefined),
   ensureBranch: vi.fn(),
   fetchRemoteBranch: vi.fn(() => true),
   pushBranch: vi.fn(() => true),
@@ -173,6 +177,7 @@ const mockCreateGitHubPr = vi.mocked(createGitHubPr);
 const mockFindEntriesWithStatus = vi.mocked(findEntriesWithStatus);
 const mockCheckGitHubPrReviewState = vi.mocked(checkGitHubPrReviewState);
 const mockFetchGitHubPrReviewComments = vi.mocked(fetchGitHubPrReviewComments);
+const mockRequestGitHubReview = vi.mocked(requestGitHubReview);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -249,6 +254,7 @@ describe('run', () => {
       repo: 'repo',
       hostname: 'github.com',
     });
+    mockRequestGitHubReview.mockResolvedValue(true);
     mockCreateGitHubPr.mockResolvedValue({
       ok: true,
       url: 'https://github.com/o/r/pull/1',
@@ -431,12 +437,13 @@ describe('run', () => {
     expect(mockSquashMerge).not.toHaveBeenCalled();
     expect(mockDeleteBranch).not.toHaveBeenCalled();
 
-    // Progress logged as PR_CREATED
+    // Progress logged as PR_CREATED with PR number
     expect(mockAppendProgress).toHaveBeenCalledWith(
       expect.any(String),
       'PROJ-456',
       'Standalone task',
       'PR_CREATED',
+      1,
     );
   });
 
@@ -502,6 +509,7 @@ describe('run', () => {
       '#99',
       'No milestone',
       'PR_CREATED',
+      1,
     );
   });
 
@@ -606,12 +614,14 @@ describe('run', () => {
     await run([]);
     log.mockRestore();
 
-    // Should log PR rework message
+    // Should log exactly ONE progress entry (REWORK), not double-log
+    expect(mockAppendProgress).toHaveBeenCalledTimes(1);
     expect(mockAppendProgress).toHaveBeenCalledWith(
       expect.any(String),
       'PROJ-500',
       'PR rework from review',
       'REWORK',
+      99,
     );
   });
 
@@ -745,6 +755,95 @@ describe('run', () => {
     expect(mockInvokeClaude).toHaveBeenCalled();
   });
 
+  it('detects rework from PUSHED entry when PR was created manually', async () => {
+    setupJiraHappyPath();
+    mockDetectBoard.mockReturnValue({
+      provider: 'jira',
+      env: {
+        JIRA_BASE_URL: 'https://example.atlassian.net',
+        JIRA_USER: 'user@test.com',
+        JIRA_API_TOKEN: 'token',
+        JIRA_PROJECT_KEY: 'PROJ',
+        GITHUB_TOKEN: 'ghp_test',
+      },
+    });
+    mockFetchJira.mockResolvedValue(undefined);
+    // Return PUSHED entry only on the 'PUSHED' call
+    mockFindEntriesWithStatus.mockImplementation(
+      (_root: string, status: string) => {
+        if (status === 'PUSHED') {
+          return [
+            {
+              timestamp: '2026-03-14 10:00',
+              key: 'PROJ-700',
+              summary: 'Pushed then manual PR',
+              status: 'PUSHED',
+            },
+          ];
+        }
+        return [];
+      },
+    );
+    mockCheckGitHubPrReviewState.mockResolvedValue({
+      changesRequested: true,
+      prNumber: 55,
+      prUrl: 'https://github.com/o/r/pull/55',
+    });
+    mockFetchGitHubPrReviewComments.mockResolvedValue(['Handle edge case']);
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run([]);
+    log.mockRestore();
+
+    // Should detect rework from PUSHED entry
+    expect(mockAppendProgress).toHaveBeenCalledTimes(1);
+    expect(mockAppendProgress).toHaveBeenCalledWith(
+      expect.any(String),
+      'PROJ-700',
+      'Pushed then manual PR',
+      'REWORK',
+      55,
+    );
+  });
+
+  it('calls findEntriesWithStatus for all 4 rework-relevant statuses', async () => {
+    setupJiraHappyPath();
+    mockDetectBoard.mockReturnValue({
+      provider: 'jira',
+      env: {
+        JIRA_BASE_URL: 'https://example.atlassian.net',
+        JIRA_USER: 'user@test.com',
+        JIRA_API_TOKEN: 'token',
+        JIRA_PROJECT_KEY: 'PROJ',
+        GITHUB_TOKEN: 'ghp_test',
+      },
+    });
+    mockFindEntriesWithStatus.mockReturnValue([]);
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run([]);
+    log.mockRestore();
+
+    // Should scan for PR_CREATED, REWORK, PUSHED, and PUSH_FAILED
+    expect(mockFindEntriesWithStatus).toHaveBeenCalledTimes(4);
+    expect(mockFindEntriesWithStatus).toHaveBeenCalledWith(
+      expect.any(String),
+      'PR_CREATED',
+    );
+    expect(mockFindEntriesWithStatus).toHaveBeenCalledWith(
+      expect.any(String),
+      'REWORK',
+    );
+    expect(mockFindEntriesWithStatus).toHaveBeenCalledWith(
+      expect.any(String),
+      'PUSHED',
+    );
+    expect(mockFindEntriesWithStatus).toHaveBeenCalledWith(
+      expect.any(String),
+      'PUSH_FAILED',
+    );
+  });
+
   it('rework creates fresh branch when remote branch is missing', async () => {
     setupJiraHappyPath();
     mockDetectBoard.mockReturnValue({
@@ -822,5 +921,48 @@ describe('run', () => {
     // Should fetch remote branch and checkout
     expect(mockFetchRemoteBranch).toHaveBeenCalledWith('feature/proj-300');
     expect(mockCheckout).toHaveBeenCalledWith('feature/proj-300');
+  });
+
+  it('re-requests review after rework when reviewers are present', async () => {
+    setupJiraHappyPath();
+    mockDetectBoard.mockReturnValue({
+      provider: 'jira',
+      env: {
+        JIRA_BASE_URL: 'https://example.atlassian.net',
+        JIRA_USER: 'user@test.com',
+        JIRA_API_TOKEN: 'token',
+        JIRA_PROJECT_KEY: 'PROJ',
+        GITHUB_TOKEN: 'ghp_test',
+      },
+    });
+    mockFetchJira.mockResolvedValue(undefined);
+    mockFindEntriesWithStatus.mockReturnValue([
+      {
+        timestamp: '2026-03-14 10:00',
+        key: 'PROJ-800',
+        summary: 'Rework with reviewers',
+        status: 'PR_CREATED',
+      },
+    ]);
+    mockCheckGitHubPrReviewState.mockResolvedValue({
+      changesRequested: true,
+      prNumber: 77,
+      prUrl: 'https://github.com/o/r/pull/77',
+      reviewers: ['alice', 'bob'],
+    });
+    mockFetchGitHubPrReviewComments.mockResolvedValue(['Fix the tests']);
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run([]);
+    log.mockRestore();
+
+    // Should re-request review from the reviewers who requested changes
+    expect(mockRequestGitHubReview).toHaveBeenCalledWith(
+      'ghp_test',
+      'owner/repo',
+      77,
+      ['alice', 'bob'],
+      'https://api.github.com',
+    );
   });
 });

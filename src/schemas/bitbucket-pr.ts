@@ -35,6 +35,11 @@ export const bitbucketCommentSchema = z.object({
     }),
   ),
   created_on: z.string(),
+  user: z.optional(
+    z.object({
+      nickname: z.optional(z.string()),
+    }),
+  ),
 });
 
 /** Response from `GET /repositories/{workspace}/{slug}/pullrequests/{id}/comments` (paginated). */
@@ -73,6 +78,11 @@ export const bitbucketServerCommentSchema = z.object({
     }),
   ),
   createdDate: z.number(),
+  author: z.optional(
+    z.object({
+      slug: z.optional(z.string()),
+    }),
+  ),
 });
 
 /** A single activity on a Server PR (from /activities endpoint). */

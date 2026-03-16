@@ -26,6 +26,7 @@ export const githubCommentSchema = z.object({
   id: z.number(),
   body: z.optional(z.nullable(z.string())),
   created_at: z.string(),
+  user: z.optional(z.object({ login: z.string() })),
 });
 
 /** Response from `GET /repos/{owner}/{repo}/issues/{number}/comments` (array of comments). */
@@ -56,6 +57,7 @@ export const githubPrCommentSchema = z.object({
   body: z.optional(z.nullable(z.string())),
   path: z.optional(z.string()),
   created_at: z.optional(z.string()),
+  user: z.optional(z.object({ login: z.string() })),
 });
 
 /** Response from `GET /repos/{owner}/{repo}/pulls/{number}/comments` (array). */

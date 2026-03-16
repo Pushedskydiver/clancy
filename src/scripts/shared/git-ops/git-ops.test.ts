@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import {
   branchExists,
+  diffAgainstBranch,
   fetchRemoteBranch,
   hasUncommittedChanges,
   pushBranch,
@@ -63,6 +64,30 @@ describe('git-ops', () => {
       });
 
       expect(fetchRemoteBranch('nonexistent-branch')).toBe(false);
+    });
+  });
+
+  describe('diffAgainstBranch', () => {
+    it('returns stat output', () => {
+      mockExecFileSync.mockReturnValue(
+        ' src/index.ts | 5 +++++\n 1 file changed, 5 insertions(+)\n',
+      );
+
+      const result = diffAgainstBranch('main');
+      expect(result).toContain('src/index.ts');
+      expect(mockExecFileSync).toHaveBeenCalledWith(
+        'git',
+        ['diff', 'main...HEAD', '--stat'],
+        expect.objectContaining({ encoding: 'utf8' }),
+      );
+    });
+
+    it('returns undefined on error', () => {
+      mockExecFileSync.mockImplementation(() => {
+        throw new Error('unknown revision');
+      });
+
+      expect(diffAgainstBranch('nonexistent')).toBeUndefined();
     });
   });
 

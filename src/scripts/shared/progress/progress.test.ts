@@ -13,13 +13,13 @@ import {
 } from './progress.js';
 
 describe('formatTimestamp', () => {
-  it('formats a date as YYYY-MM-DD HH:MM', () => {
-    const date = new Date(2024, 0, 15, 14, 5); // Jan 15, 2024 14:05
+  it('formats a date as YYYY-MM-DD HH:MM in UTC', () => {
+    const date = new Date('2024-01-15T14:05:00Z');
     expect(formatTimestamp(date)).toBe('2024-01-15 14:05');
   });
 
   it('pads single-digit months and days', () => {
-    const date = new Date(2024, 2, 3, 9, 7); // Mar 3, 2024 09:07
+    const date = new Date('2024-03-03T09:07:00Z');
     expect(formatTimestamp(date)).toBe('2024-03-03 09:07');
   });
 });
@@ -70,6 +70,63 @@ describe('appendProgress', () => {
 
     const content = readFileSync(join(root, '.clancy', 'progress.txt'), 'utf8');
     expect(content).toContain('#42 | Fix bug | DONE');
+  });
+
+  it('includes pr:NNN suffix when prNumber is provided', () => {
+    const root = makeTempRoot();
+    appendProgress(root, 'PROJ-10', 'Add feature', 'PR_CREATED', 42);
+
+    const content = readFileSync(join(root, '.clancy', 'progress.txt'), 'utf8');
+    expect(content).toContain('PROJ-10 | Add feature | PR_CREATED | pr:42');
+  });
+
+  it('produces backward-compatible format without prNumber', () => {
+    const root = makeTempRoot();
+    appendProgress(root, 'PROJ-10', 'Add feature', 'PR_CREATED');
+
+    const content = readFileSync(join(root, '.clancy', 'progress.txt'), 'utf8');
+    expect(content).toContain('PROJ-10 | Add feature | PR_CREATED');
+    expect(content).not.toContain('pr:');
+  });
+});
+
+describe('parseProgressFile (via findLastEntry)', () => {
+  const dirs: string[] = [];
+
+  function makeTempRoot(): string {
+    const dir = join(tmpdir(), `clancy-progress-test-${randomUUID()}`);
+    mkdirSync(join(dir, '.clancy'), { recursive: true });
+    dirs.push(dir);
+    return dir;
+  }
+
+  afterEach(() => {
+    for (const dir of dirs) {
+      rmSync(dir, { recursive: true, force: true });
+    }
+    dirs.length = 0;
+  });
+
+  it('parses pr:NNN field from progress entry', () => {
+    const root = makeTempRoot();
+    appendProgress(root, 'PROJ-5', 'Add login', 'PR_CREATED', 99);
+
+    const entry = findLastEntry(root, 'PROJ-5');
+    expect(entry).toBeDefined();
+    expect(entry!.status).toBe('PR_CREATED');
+    expect(entry!.prNumber).toBe(99);
+    expect(entry!.summary).toBe('Add login');
+  });
+
+  it('handles entries without pr:NNN', () => {
+    const root = makeTempRoot();
+    appendProgress(root, 'PROJ-6', 'Fix bug', 'DONE');
+
+    const entry = findLastEntry(root, 'PROJ-6');
+    expect(entry).toBeDefined();
+    expect(entry!.status).toBe('DONE');
+    expect(entry!.prNumber).toBeUndefined();
+    expect(entry!.summary).toBe('Fix bug');
   });
 });
 

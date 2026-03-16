@@ -15,6 +15,7 @@ export type ProgressEntry = {
   key: string;
   summary: string;
   status: ProgressStatus;
+  prNumber?: number;
 };
 
 /**
@@ -24,11 +25,11 @@ export type ProgressEntry = {
  * @returns The formatted date string.
  */
 export function formatTimestamp(date: Date): string {
-  const y = date.getFullYear();
-  const mo = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  const h = String(date.getHours()).padStart(2, '0');
-  const mi = String(date.getMinutes()).padStart(2, '0');
+  const y = date.getUTCFullYear();
+  const mo = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(date.getUTCDate()).padStart(2, '0');
+  const h = String(date.getUTCHours()).padStart(2, '0');
+  const mi = String(date.getUTCMinutes()).padStart(2, '0');
 
   return `${y}-${mo}-${d} ${h}:${mi}`;
 }
@@ -54,13 +55,15 @@ export function appendProgress(
   key: string,
   summary: string,
   status: ProgressStatus,
+  prNumber?: number,
 ): void {
   const filePath = join(projectRoot, '.clancy', 'progress.txt');
 
   mkdirSync(dirname(filePath), { recursive: true });
 
   const timestamp = formatTimestamp(new Date());
-  const line = `${timestamp} | ${key} | ${summary} | ${status}\n`;
+  const prSuffix = prNumber != null ? ` | pr:${prNumber}` : '';
+  const line = `${timestamp} | ${key} | ${summary} | ${status}${prSuffix}\n`;
 
   appendFileSync(filePath, line, 'utf8');
 }
@@ -92,12 +95,27 @@ function parseProgressFile(projectRoot: string): ProgressEntry[] {
     const parts = trimmed.split(' | ');
     if (parts.length < 4) continue;
 
-    entries.push({
-      timestamp: parts[0]!,
-      key: parts[1]!,
-      summary: parts.slice(2, -1).join(' | '),
-      status: parts[parts.length - 1]! as ProgressStatus,
-    });
+    const lastPart = parts[parts.length - 1]!;
+    const prMatch = lastPart.match(/^pr:(\d+)$/);
+
+    if (prMatch) {
+      // Has PR number: status is second-to-last
+      entries.push({
+        timestamp: parts[0]!,
+        key: parts[1]!,
+        summary: parts.slice(2, -2).join(' | '),
+        status: parts[parts.length - 2]! as ProgressStatus,
+        prNumber: parseInt(prMatch[1]!, 10),
+      });
+    } else {
+      // No PR number: status is last (backward compatible)
+      entries.push({
+        timestamp: parts[0]!,
+        key: parts[1]!,
+        summary: parts.slice(2, -1).join(' | '),
+        status: lastPart as ProgressStatus,
+      });
+    }
   }
 
   return entries;

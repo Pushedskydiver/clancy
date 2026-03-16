@@ -139,6 +139,38 @@ export function fetchRemoteBranch(branch: string): boolean {
 }
 
 /**
+ * Get the diff stat between the current branch and a target branch.
+ *
+ * Returns the `--stat` summary, or `undefined` if the diff fails.
+ * Truncated to `maxLength` characters to avoid oversized prompts.
+ *
+ * @param targetBranch - The branch to diff against.
+ * @param maxLength - Maximum output length (default 8000).
+ * @returns The diff stat output, or `undefined` on failure.
+ */
+export function diffAgainstBranch(
+  targetBranch: string,
+  maxLength = 8000,
+): string | undefined {
+  try {
+    const output = execFileSync(
+      'git',
+      ['diff', `${targetBranch}...HEAD`, '--stat'],
+      {
+        encoding: 'utf8',
+        timeout: 10000,
+      },
+    ).trim();
+    if (!output) return undefined;
+    return output.length > maxLength
+      ? output.slice(0, maxLength) + '\n... (truncated)'
+      : output;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Push a branch to the remote origin.
  *
  * Uses `-u` to set up upstream tracking.

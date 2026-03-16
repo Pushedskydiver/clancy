@@ -7,6 +7,8 @@ import {
   createServerPullRequest,
   fetchPrReviewComments,
   fetchServerPrReviewComments,
+  postCloudPrComment,
+  postServerPrComment,
 } from './bitbucket.js';
 
 describe('bitbucket', () => {
@@ -236,6 +238,38 @@ describe('bitbucket', () => {
       );
 
       expect(result.ok).toBe(false);
+    });
+
+    it('detects 409 with "Only one pull request" as already-exists', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: false,
+            status: 409,
+            text: () =>
+              Promise.resolve(
+                'Only one pull request may be open for a given source and target branch',
+              ),
+          }),
+        ),
+      );
+
+      const result = await createServerPullRequest(
+        'token',
+        'https://bb.acme.com/rest/api/1.0',
+        'PROJ',
+        'repo',
+        'feature/test',
+        'main',
+        'feat: test',
+        'Description',
+      );
+
+      expect(result.ok).toBe(false);
+      if (!result.ok) {
+        expect(result.alreadyExists).toBe(true);
+      }
     });
   });
 
@@ -1161,6 +1195,167 @@ describe('bitbucket', () => {
       );
 
       expect(result).toEqual([]);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Cloud — comment posting
+  // -------------------------------------------------------------------------
+
+  describe('postCloudPrComment', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    });
+
+    it('posts a comment successfully and returns true', async () => {
+      const mockFetch = vi.fn(() => Promise.resolve({ ok: true }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await postCloudPrComment(
+        'user',
+        'token',
+        'workspace',
+        'repo',
+        10,
+        'Rework pushed.',
+      );
+
+      expect(result).toBe(true);
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://api.bitbucket.org/2.0/repositories/workspace/repo/pullrequests/10/comments',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ content: { raw: 'Rework pushed.' } }),
+        }),
+      );
+    });
+
+    it('returns false on API error', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.resolve({ ok: false, status: 403 })),
+      );
+
+      const result = await postCloudPrComment(
+        'user',
+        'token',
+        'ws',
+        'repo',
+        10,
+        'comment',
+      );
+
+      expect(result).toBe(false);
+    });
+
+    it('returns false on network error', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.reject(new Error('Network error'))),
+      );
+
+      const result = await postCloudPrComment(
+        'user',
+        'token',
+        'ws',
+        'repo',
+        10,
+        'comment',
+      );
+
+      expect(result).toBe(false);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Server/DC — comment posting
+  // -------------------------------------------------------------------------
+
+  describe('postServerPrComment', () => {
+    afterEach(() => {
+      vi.restoreAllMocks();
+      vi.unstubAllGlobals();
+    });
+
+    it('posts a comment successfully and returns true', async () => {
+      const mockFetch = vi.fn(() => Promise.resolve({ ok: true }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await postServerPrComment(
+        'token',
+        'https://bb.acme.com/rest/api/1.0',
+        'PROJ',
+        'repo',
+        20,
+        'Rework pushed.',
+      );
+
+      expect(result).toBe(true);
+      expect(mockFetch).toHaveBeenCalledWith(
+        'https://bb.acme.com/rest/api/1.0/projects/PROJ/repos/repo/pull-requests/20/comments',
+        expect.objectContaining({
+          method: 'POST',
+          body: JSON.stringify({ text: 'Rework pushed.' }),
+        }),
+      );
+    });
+
+    it('uses Bearer auth header', async () => {
+      const mockFetch = vi.fn(() => Promise.resolve({ ok: true }));
+      vi.stubGlobal('fetch', mockFetch);
+
+      await postServerPrComment(
+        'my-token',
+        'https://bb.acme.com/rest/api/1.0',
+        'PROJ',
+        'repo',
+        20,
+        'comment',
+      );
+
+      const fetchCall = mockFetch.mock.calls[0];
+      const headers = (fetchCall[1] as RequestInit).headers as Record<
+        string,
+        string
+      >;
+      expect(headers.Authorization).toBe('Bearer my-token');
+    });
+
+    it('returns false on API error', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.resolve({ ok: false, status: 401 })),
+      );
+
+      const result = await postServerPrComment(
+        'token',
+        'https://bb.acme.com/rest/api/1.0',
+        'PROJ',
+        'repo',
+        20,
+        'comment',
+      );
+
+      expect(result).toBe(false);
+    });
+
+    it('returns false on network error', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.reject(new Error('Network error'))),
+      );
+
+      const result = await postServerPrComment(
+        'token',
+        'https://bb.acme.com/rest/api/1.0',
+        'PROJ',
+        'repo',
+        20,
+        'comment',
+      );
+
+      expect(result).toBe(false);
     });
   });
 });

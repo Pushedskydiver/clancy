@@ -121,4 +121,6 @@ Posts to Slack or Teams when a ticket completes. The payload format (Slack vs Te
 | `PLAYWRIGHT_STORYBOOK_PORT` | All | No | — | Storybook port |
 | `PLAYWRIGHT_STARTUP_WAIT` | All | No | `15` | Seconds to wait for server |
 
-**Note on rework detection:** Rework is detected automatically from PR comments: inline code comments always trigger rework, and conversation comments trigger with a `Rework:` prefix. `CLANCY_MAX_REWORK` controls the safety limit for rework cycles.
+**Note on rework detection:** Rework is detected automatically from PR comments: inline code comments always trigger rework, and conversation comments trigger with a `Rework:` prefix. On GitHub, a `CHANGES_REQUESTED` review state is an additional trigger. `CLANCY_MAX_REWORK` controls the safety limit for rework cycles.
+
+**Note on connectivity:** Clancy runs a connectivity preflight check (`git ls-remote origin HEAD`) before every run. If the remote is unreachable, a warning is printed but the run continues — PR creation and rework detection may fail, but local work proceeds normally. See the [Troubleshooting guide](TROUBLESHOOTING.md) for details.

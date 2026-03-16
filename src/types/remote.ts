@@ -57,6 +57,8 @@ export type PrReviewState = {
   prNumber: number;
   /** The PR/MR URL (for logging). */
   prUrl: string;
+  /** Usernames of reviewers who requested changes (GitHub only). */
+  reviewers?: string[];
 };
 
 /** Progress log status values. */

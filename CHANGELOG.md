@@ -7,6 +7,35 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.5.7] — 2026-03-16
+
+### ✨ Features
+
+- **Post-rework PR comment** — after pushing rework fixes, Clancy leaves a comment on the PR summarising the addressed feedback (all platforms).
+- **GitHub: re-request review** — after rework, Clancy re-requests review from reviewers who left feedback.
+- **GitLab: resolve discussion threads** — after rework, Clancy resolves addressed DiffNote discussion threads.
+- **GitHub: `CHANGES_REQUESTED` review state** — an additional rework trigger alongside comment-based detection. If any reviewer has requested changes via GitHub's review mechanism, rework is triggered.
+- **Connectivity preflight** — `git ls-remote origin HEAD` runs during preflight as a warning-only check. If the remote is unreachable, a warning is printed but the run continues.
+- **PR number in progress entries** — progress.txt entries now include a `pr:NNN` suffix when a PR is created, for future optimisation of rework detection.
+- **previousContext in rework prompts** — rework prompts now include a `git diff --stat` against the target branch, giving Claude visibility into what files have already been changed.
+- **Collapsible rework instructions in PR body** — rework instructions in the PR description are now wrapped in a `<details>` block to reduce visual noise.
+
+### 🐛 Fixes
+
+- **Double progress logging on rework** — rework delivery was producing 2 progress entries (one from `deliverViaPullRequest` and one from `run`). Now produces exactly 1 (`REWORK`).
+- **UTC timestamps in progress.txt** — `formatTimestamp()` was using local time methods (`getHours`, etc.). Now uses UTC methods (`getUTCHours`, etc.) for consistent cross-timezone behaviour.
+- **Empty ticket description in rework prompts** — rework `FetchedTicket` had `description: ''`. Now uses the ticket summary as a fallback.
+- **Rework detection expanded** — now scans `PUSHED` and `PUSH_FAILED` entries in addition to `PR_CREATED` and `REWORK`, catching PRs created manually after a push failure.
+- **Author filtering prevents self-triggering rework** — Clancy's own PR comments are excluded from rework detection via `excludeAuthor` filtering (GitHub; other platforms use timestamp filtering).
+- **Bitbucket Server "Only one pull request" detection** — `createServerPullRequest` now matches both "already exists" and "Only one pull request" messages on HTTP 409.
+- **Bitbucket Server manual PR URL fallback** — `buildManualPrUrl` now returns a pre-filled URL for Bitbucket Server (was returning `undefined`).
+
+### ✅ Tests
+
+- 36 new tests (368 → 404)
+
+---
+
 ## [0.5.6] — 2026-03-15
 
 ### ✨ Features

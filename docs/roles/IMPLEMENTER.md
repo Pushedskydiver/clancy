@@ -73,7 +73,7 @@ When a ticket has no parent epic, Clancy uses a PR-based flow instead of merging
 2. Detects the git host from the remote URL (GitHub, GitLab, Bitbucket — including self-hosted)
 3. Creates a pull request / merge request with a description linking back to the board ticket
 4. Transitions the ticket to the review status (`CLANCY_STATUS_REVIEW`, falls back to `CLANCY_STATUS_DONE`)
-5. Logs `PR_CREATED` to `.clancy/progress.txt`
+5. Logs `PR_CREATED` to `.clancy/progress.txt` with a `pr:NNN` suffix tracking the PR number
 
 **Fallback ladder** — Clancy never falls back to local merge if the intent is PR creation:
 - Push fails → logs `PUSH_FAILED`, leaves the branch for manual push
@@ -98,26 +98,34 @@ When a reviewer sends a ticket back for changes, Clancy picks it up automaticall
 
 ### How rework is detected
 
-Clancy detects rework via **comments on the pull request**, not platform review states. No configuration is needed — the PR body includes instructions for reviewers explaining the convention.
+Clancy detects rework via **comments on the pull request** and (on GitHub) **review state**. No configuration is needed — the PR body includes collapsible instructions for reviewers explaining the convention.
 
 How it works:
-- Clancy scans `.clancy/progress.txt` for `PR_CREATED` entries
-- For each PR, it fetches comments from the git host API
+- Clancy scans `.clancy/progress.txt` for entries with `PR_CREATED`, `REWORK`, `PUSHED`, or `PUSH_FAILED` status
+- For each candidate, it fetches comments from the git host API
 - **Inline code comments** (on specific lines in the diff) always trigger rework — no prefix needed
 - **Conversation comments** (general comments at the bottom of the PR) only trigger rework when prefixed with `Rework:` (e.g. "Rework: this function should handle null inputs")
+- **GitHub `CHANGES_REQUESTED` review state** is an additional rework trigger — if any reviewer has requested changes via GitHub's review mechanism, rework is triggered even without inline or `Rework:` comments
+- **Author filtering** — on GitHub, Clancy's own comments (e.g. post-rework status comments) are excluded from rework detection via author filtering; other platforms rely on timestamp filtering to prevent self-triggering loops
 - If no rework-triggering comments are found, Clancy fetches the next fresh ticket from the queue
 
-This approach works identically across GitHub, GitLab, and Bitbucket — no platform-specific review states involved.
+This approach works identically across GitHub, GitLab, and Bitbucket — the comment-based detection is platform-agnostic, with GitHub's review state as an additional signal.
 
 ### Rework process
 
-1. The feature branch and PR already exist on the remote
-2. Clancy checks out the existing feature branch (`git fetch` + `git checkout`)
-3. Reads reviewer feedback from PR comments (inline and `Rework:`-prefixed conversation comments)
-4. Implements fixes on the same branch — does not re-implement from scratch
-5. Pushes to the same branch — the PR updates automatically
-6. Transitions the ticket back to the review status (`CLANCY_STATUS_REVIEW`)
-7. Logs as `REWORK` in `.clancy/progress.txt`
+1. **Connectivity preflight** — before starting, Clancy runs `git ls-remote origin HEAD` to verify the remote is reachable. If it fails, a warning is printed but rework proceeds (the push step will fail gracefully)
+2. The feature branch and PR already exist on the remote
+3. Clancy checks out the existing feature branch (`git fetch` + `git checkout`)
+4. Reads reviewer feedback from PR comments (inline and `Rework:`-prefixed conversation comments)
+5. Builds a rework prompt that includes `previousContext` — a `git diff --stat` against the target branch showing what files have already been changed
+6. Implements fixes on the same branch — does not re-implement from scratch
+7. Pushes to the same branch — the PR updates automatically
+8. **Post-rework actions** (best-effort, never block the flow):
+   - Leaves a PR comment summarising the rework (all platforms)
+   - **GitHub:** re-requests review from reviewers who used "Request Changes" (when that was the rework trigger)
+   - **GitLab:** resolves addressed discussion threads
+9. Transitions the ticket back to the review status (`CLANCY_STATUS_REVIEW`)
+10. Logs as `REWORK` in `.clancy/progress.txt` with a `pr:NNN` suffix tracking the PR number
 
 If the feature branch has been deleted from the remote, Clancy creates a fresh branch from the target and treats it as a new implementation.
 
@@ -140,15 +148,17 @@ After `CLANCY_MAX_REWORK` cycles (default: 3) on the same ticket, Clancy logs `S
 .clancy/clancy-afk.js
   └─ while i < MAX_ITERATIONS:
        node .clancy/clancy-once.js
-         1. Preflight checks (credentials, git state, board reachability)
-         2. Fetch next ticket from board (maxResults=1)
-         3. git checkout $CLANCY_BASE_BRANCH (or epic/{parent} if ticket has a parent)
-         4. git checkout -b feature/{ticket-key}
-         5. Read .clancy/docs/* (especially GIT.md)
-         6. echo "$PROMPT" | claude --dangerously-skip-permissions
-         7a. [Has parent] git merge --squash → commit → delete branch → transition Done
-         7b. [No parent]  git push → create PR → transition In Review
-         8. Append to .clancy/progress.txt
+         1. Preflight checks (credentials, git state, board reachability, connectivity)
+         2. Check for rework (scan progress.txt for PR_CREATED/REWORK/PUSHED/PUSH_FAILED)
+         3. If no rework: fetch next ticket from board (maxResults=1)
+         4. git checkout $CLANCY_BASE_BRANCH (or epic/{parent} if ticket has a parent)
+         5. git checkout -b feature/{ticket-key}
+         6. Read .clancy/docs/* (especially GIT.md)
+         7. echo "$PROMPT" | claude --dangerously-skip-permissions
+         8a. [Has parent] git merge --squash → commit → delete branch → transition Done
+         8b. [No parent]  git push → create PR → transition In Review
+         8c. [Rework]     git push → post PR comment → re-request review → transition In Review
+         9. Append to .clancy/progress.txt (UTC timestamps, pr:NNN suffix)
        if "No tickets found": break
 ```
 
