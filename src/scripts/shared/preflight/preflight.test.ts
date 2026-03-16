@@ -1,10 +1,16 @@
 import { execFileSync } from 'node:child_process';
 import { describe, expect, it, vi } from 'vitest';
 
-import { binaryExists, isGitRepo } from './preflight.js';
+import { binaryExists, isGitRepo, runPreflight } from './preflight.js';
 
 vi.mock('node:child_process');
 vi.mock('node:fs');
+vi.mock('~/scripts/shared/env-parser/env-parser.js', () => ({
+  loadClancyEnv: () => ({ JIRA_BASE_URL: 'https://test.atlassian.net' }),
+}));
+vi.mock('~/scripts/shared/git-ops/git-ops.js', () => ({
+  hasUncommittedChanges: () => false,
+}));
 
 const mockExecFileSync = vi.mocked(execFileSync);
 
@@ -38,6 +44,35 @@ describe('preflight', () => {
       });
 
       expect(isGitRepo()).toBe(false);
+    });
+  });
+
+  describe('runPreflight connectivity check', () => {
+    it('warns when git ls-remote fails', () => {
+      mockExecFileSync.mockImplementation((_cmd, args) => {
+        const argList = args as string[];
+        if (argList?.[0] === 'ls-remote') {
+          throw new Error('Could not resolve host');
+        }
+        return Buffer.from('');
+      });
+
+      const result = runPreflight('/tmp/test-project');
+      expect(result.ok).toBe(true);
+      expect(result.warning).toContain('Could not reach origin');
+    });
+
+    it('does not block when git ls-remote fails', () => {
+      mockExecFileSync.mockImplementation((_cmd, args) => {
+        const argList = args as string[];
+        if (argList?.[0] === 'ls-remote') {
+          throw new Error('Could not resolve host');
+        }
+        return Buffer.from('');
+      });
+
+      const result = runPreflight('/tmp/test-project');
+      expect(result.ok).toBe(true);
     });
   });
 });

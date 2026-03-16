@@ -121,8 +121,81 @@ export async function createServerPullRequest(
         number: data.id ?? 0,
       };
     },
-    (status, text) => status === 409 && text.includes('already exists'),
+    (status, text) =>
+      status === 409 &&
+      (text.includes('already exists') ||
+        text.includes('Only one pull request')),
   );
+}
+
+// ---------------------------------------------------------------------------
+// Cloud — comment posting
+// ---------------------------------------------------------------------------
+
+/**
+ * Post a comment on a Bitbucket Cloud pull request.
+ *
+ * Best-effort — never throws. Returns `true` on success, `false` on error.
+ */
+export async function postCloudPrComment(
+  username: string,
+  token: string,
+  workspace: string,
+  repoSlug: string,
+  prId: number,
+  body: string,
+): Promise<boolean> {
+  try {
+    const res = await fetch(
+      `https://api.bitbucket.org/2.0/repositories/${workspace}/${repoSlug}/pullrequests/${prId}/comments`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: basicAuth(username, token),
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ content: { raw: body } }),
+      },
+    );
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Server/DC — comment posting
+// ---------------------------------------------------------------------------
+
+/**
+ * Post a comment on a Bitbucket Server/DC pull request.
+ *
+ * Best-effort — never throws. Returns `true` on success, `false` on error.
+ */
+export async function postServerPrComment(
+  token: string,
+  apiBase: string,
+  projectKey: string,
+  repoSlug: string,
+  prId: number,
+  body: string,
+): Promise<boolean> {
+  try {
+    const res = await fetch(
+      `${apiBase}/projects/${projectKey}/repos/${repoSlug}/pull-requests/${prId}/comments`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text: body }),
+      },
+    );
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 // ---------------------------------------------------------------------------

@@ -61,6 +61,84 @@ export async function createMergeRequest(
 }
 
 /**
+ * Post a note (comment) on a GitLab merge request.
+ *
+ * Best-effort — never throws. Returns `true` on success, `false` on error.
+ *
+ * @param token - The GitLab personal access token.
+ * @param apiBase - The API base URL (e.g. `https://gitlab.com/api/v4`).
+ * @param projectPath - The raw project path. URL-encoded internally.
+ * @param mrIid - The MR internal ID (iid).
+ * @param body - The note body (markdown).
+ */
+export async function postMrNote(
+  token: string,
+  apiBase: string,
+  projectPath: string,
+  mrIid: number,
+  body: string,
+): Promise<boolean> {
+  try {
+    const encoded = encodeURIComponent(projectPath);
+    const res = await fetch(
+      `${apiBase}/projects/${encoded}/merge_requests/${mrIid}/notes`,
+      {
+        method: 'POST',
+        headers: { 'PRIVATE-TOKEN': token, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ body }),
+      },
+    );
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Resolve MR discussion threads on GitLab.
+ *
+ * Best-effort per discussion — failures are silently skipped.
+ * Returns the number of successfully resolved discussions.
+ *
+ * @param token - The GitLab personal access token.
+ * @param apiBase - The API base URL (e.g. `https://gitlab.com/api/v4`).
+ * @param projectPath - The raw project path. URL-encoded internally.
+ * @param mrIid - The MR internal ID (iid).
+ * @param discussionIds - Array of discussion IDs to resolve.
+ */
+export async function resolveDiscussions(
+  token: string,
+  apiBase: string,
+  projectPath: string,
+  mrIid: number,
+  discussionIds: string[],
+): Promise<number> {
+  const encoded = encodeURIComponent(projectPath);
+  let resolved = 0;
+
+  for (const id of discussionIds) {
+    try {
+      const res = await fetch(
+        `${apiBase}/projects/${encoded}/merge_requests/${mrIid}/discussions/${id}`,
+        {
+          method: 'PUT',
+          headers: {
+            'PRIVATE-TOKEN': token,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({ resolved: true }),
+        },
+      );
+      if (res.ok) resolved++;
+    } catch {
+      // Best-effort per discussion
+    }
+  }
+
+  return resolved;
+}
+
+/**
  * Check the review state of an open MR for a given branch.
  *
  * Finds the open MR matching the source branch, fetches all discussions.
@@ -152,7 +230,7 @@ export async function checkMrReviewState(
  * @param projectPath - The raw project path. URL-encoded internally.
  * @param mrIid - The MR internal ID (iid).
  * @param since - ISO 8601 timestamp; only notes created after this time are returned.
- * @returns An array of feedback descriptions.
+ * @returns An object with feedback descriptions and discussion IDs.
  */
 export async function fetchMrReviewComments(
   token: string,
@@ -160,7 +238,7 @@ export async function fetchMrReviewComments(
   projectPath: string,
   mrIid: number,
   since?: string,
-): Promise<string[]> {
+): Promise<{ comments: string[]; discussionIds: string[] }> {
   try {
     const encodedPath = encodeURIComponent(projectPath);
     const url = `${apiBase}/projects/${encodedPath}/merge_requests/${mrIid}/discussions?per_page=100`;
@@ -169,12 +247,15 @@ export async function fetchMrReviewComments(
       headers: { 'PRIVATE-TOKEN': token },
     });
 
-    if (!res.ok) return [];
+    if (!res.ok) return { comments: [], discussionIds: [] };
 
     const discussions = gitlabDiscussionsSchema.parse(await res.json());
     const comments: string[] = [];
+    const discussionIds: string[] = [];
 
     for (const discussion of discussions) {
+      let discussionHasFeedback = false;
+
       for (const note of discussion.notes) {
         if (note.system) continue;
         if (since && note.created_at && note.created_at <= since) continue;
@@ -188,14 +269,20 @@ export async function fetchMrReviewComments(
             ? `[${note.position.new_path}] `
             : '';
           comments.push(`${prefix}${note.body}`);
+          discussionHasFeedback = true;
         } else if (isReworkComment(note.body)) {
           comments.push(extractReworkContent(note.body));
+          discussionHasFeedback = true;
         }
+      }
+
+      if (discussionHasFeedback && discussion.id) {
+        discussionIds.push(discussion.id);
       }
     }
 
-    return comments;
+    return { comments, discussionIds };
   } catch {
-    return [];
+    return { comments: [], discussionIds: [] };
   }
 }

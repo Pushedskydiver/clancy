@@ -80,7 +80,7 @@ describe('buildPrBody', () => {
     expect(body).toContain('github.com/Pushedskydiver/clancy');
   });
 
-  it('includes rework instructions section with inline and general guidance', () => {
+  it('includes rework instructions in a collapsible details block', () => {
     const config: BoardConfig = {
       provider: 'github',
       env: { GITHUB_TOKEN: 'ghp_test', GITHUB_REPO: 'owner/repo' },
@@ -88,7 +88,11 @@ describe('buildPrBody', () => {
     const ticket: Ticket = { ...baseTicket, key: '#1' };
 
     const body = buildPrBody(config, ticket);
-    expect(body).toContain('**Rework instructions:**');
+    expect(body).toContain('<details>');
+    expect(body).toContain(
+      '<summary><strong>Rework instructions</strong> (click to expand)</summary>',
+    );
+    expect(body).toContain('</details>');
     expect(body).toContain('**Code comments**');
     expect(body).toContain('always picked up automatically');
     expect(body).toContain('**General feedback**');

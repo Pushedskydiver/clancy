@@ -86,12 +86,25 @@ export function runPreflight(projectRoot: string): PreflightResult {
     return { ok: false, error: '✗ Not inside a git repository' };
   }
 
-  // Warn about uncommitted changes
+  // Check connectivity to remote (warning-only, never blocks)
   let warning: string | undefined;
 
-  if (hasUncommittedChanges()) {
+  try {
+    execFileSync('git', ['ls-remote', 'origin', 'HEAD'], {
+      encoding: 'utf8',
+      timeout: 5000,
+      stdio: ['pipe', 'pipe', 'pipe'],
+    });
+  } catch {
     warning =
+      '⚠ Could not reach origin. PR creation and rework detection may not work.';
+  }
+
+  // Warn about uncommitted changes
+  if (hasUncommittedChanges()) {
+    const dirtyWarning =
       '⚠ Working directory has uncommitted changes — they will be included in the branch';
+    warning = warning ? `${warning}\n${dirtyWarning}` : dirtyWarning;
   }
 
   return { ok: true, env, warning };

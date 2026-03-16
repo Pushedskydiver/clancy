@@ -47,6 +47,7 @@ import {
   checkout,
   currentBranch,
   deleteBranch,
+  diffAgainstBranch,
   ensureBranch,
   fetchRemoteBranch,
   pushBranch,
@@ -70,16 +71,22 @@ import {
   createServerPullRequest as createBitbucketServerPr,
   fetchPrReviewComments as fetchBitbucketPrReviewComments,
   fetchServerPrReviewComments as fetchBitbucketServerPrReviewComments,
+  postCloudPrComment,
+  postServerPrComment,
 } from '~/scripts/shared/pull-request/bitbucket/bitbucket.js';
 import {
   checkPrReviewState as checkGitHubPrReviewState,
   createPullRequest as createGitHubPr,
   fetchPrReviewComments as fetchGitHubPrReviewComments,
+  postPrComment as postGitHubPrComment,
+  requestReview as requestGitHubReview,
 } from '~/scripts/shared/pull-request/github/github.js';
 import {
   checkMrReviewState as checkGitLabMrReviewState,
   createMergeRequest as createGitLabMr,
   fetchMrReviewComments as fetchGitLabMrReviewComments,
+  postMrNote,
+  resolveDiscussions,
 } from '~/scripts/shared/pull-request/gitlab/gitlab.js';
 import { buildPrBody } from '~/scripts/shared/pull-request/pr-body/pr-body.js';
 import {
@@ -199,14 +206,21 @@ async function fetchTicket(
  * This is best-effort — errors are swallowed so the orchestrator
  * can fall through to fresh ticket fetch.
  */
-async function fetchReworkFromPrReview(
-  config: BoardConfig,
-): Promise<
-  { ticket: FetchedTicket; feedback: string[]; prNumber: number } | undefined
+async function fetchReworkFromPrReview(config: BoardConfig): Promise<
+  | {
+      ticket: FetchedTicket;
+      feedback: string[];
+      prNumber: number;
+      discussionIds?: string[];
+      reviewers: string[];
+    }
+  | undefined
 > {
   const prCreated = findEntriesWithStatus(process.cwd(), 'PR_CREATED');
   const reworked = findEntriesWithStatus(process.cwd(), 'REWORK');
-  const candidates = [...prCreated, ...reworked];
+  const pushed = findEntriesWithStatus(process.cwd(), 'PUSHED');
+  const pushFailed = findEntriesWithStatus(process.cwd(), 'PUSH_FAILED');
+  const candidates = [...prCreated, ...reworked, ...pushed, ...pushFailed];
   if (candidates.length === 0) return undefined;
 
   const platformOverride = sharedEnv(config).CLANCY_GIT_PLATFORM;
@@ -244,7 +258,12 @@ async function fetchReworkFromPrReview(
     }
 
     let reviewState:
-      | { changesRequested: boolean; prNumber: number; prUrl: string }
+      | {
+          changesRequested: boolean;
+          prNumber: number;
+          prUrl: string;
+          reviewers?: string[];
+        }
       | undefined;
 
     switch (remote.host) {
@@ -293,6 +312,8 @@ async function fetchReworkFromPrReview(
       // Fetch review comments for the PR
       let feedback: string[] = [];
 
+      let discussionIds: string[] | undefined;
+
       switch (remote.host) {
         case 'github':
           feedback = await fetchGitHubPrReviewComments(
@@ -303,15 +324,18 @@ async function fetchReworkFromPrReview(
             since,
           );
           break;
-        case 'gitlab':
-          feedback = await fetchGitLabMrReviewComments(
+        case 'gitlab': {
+          const mrResult = await fetchGitLabMrReviewComments(
             creds.token,
             apiBase,
             remote.projectPath,
             reviewState.prNumber,
             since,
           );
+          feedback = mrResult.comments;
+          discussionIds = mrResult.discussionIds;
           break;
+        }
         case 'bitbucket':
           feedback = await fetchBitbucketPrReviewComments(
             creds.username!,
@@ -337,12 +361,18 @@ async function fetchReworkFromPrReview(
       const ticket: FetchedTicket = {
         key: entry.key,
         title: entry.summary,
-        description: '',
+        description: entry.summary,
         parentInfo: 'none',
         blockers: 'None',
       };
 
-      return { ticket, feedback, prNumber: reviewState.prNumber };
+      return {
+        ticket,
+        feedback,
+        prNumber: reviewState.prNumber,
+        discussionIds,
+        reviewers: reviewState.reviewers ?? [],
+      };
     }
   }
 
@@ -567,6 +597,9 @@ function buildManualPrUrl(
   if (remote.host === 'bitbucket') {
     return `https://${remote.hostname}/${remote.workspace}/${remote.repoSlug}/pull-requests/new?source=${encodedTicket}&dest=${encodedTarget}`;
   }
+  if (remote.host === 'bitbucket-server') {
+    return `https://${remote.hostname}/projects/${remote.projectKey}/repos/${remote.repoSlug}/pull-requests?create&sourceBranch=refs/heads/${encodedTicket}&targetBranch=refs/heads/${encodedTarget}`;
+  }
   return undefined;
 }
 
@@ -635,6 +668,7 @@ async function deliverViaPullRequest(
   ticketBranch: string,
   targetBranch: string,
   startTime: number,
+  skipLog = false,
 ): Promise<boolean> {
   const pushed = pushBranch(ticketBranch);
 
@@ -642,7 +676,8 @@ async function deliverViaPullRequest(
     console.log(yellow(`⚠ Could not push ${ticketBranch} to origin.`));
     console.log(dim('  The branch is still available locally. Push manually:'));
     console.log(dim(`  git push -u origin ${ticketBranch}`));
-    appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSH_FAILED');
+    if (!skipLog)
+      appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSH_FAILED');
     checkout(targetBranch);
 
     const elapsed = formatDuration(Date.now() - startTime);
@@ -683,14 +718,22 @@ async function deliverViaPullRequest(
 
     if (pr?.ok) {
       console.log(green(`  ✓ PR created: ${pr.url}`));
-      appendProgress(process.cwd(), ticket.key, ticket.title, 'PR_CREATED');
+      if (!skipLog)
+        appendProgress(
+          process.cwd(),
+          ticket.key,
+          ticket.title,
+          'PR_CREATED',
+          pr.number,
+        );
     } else if (pr && !pr.ok && pr.alreadyExists) {
       console.log(
         yellow(
           `  ⚠ A PR/MR already exists for ${ticketBranch}. Branch pushed.`,
         ),
       );
-      appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSHED');
+      if (!skipLog)
+        appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSHED');
     } else if (pr && !pr.ok) {
       console.log(yellow(`  ⚠ PR/MR creation failed: ${pr.error}`));
       const manualUrl = buildManualPrUrl(remote, ticketBranch, targetBranch);
@@ -699,7 +742,8 @@ async function deliverViaPullRequest(
       } else {
         console.log(dim('  Branch pushed — create a PR/MR manually.'));
       }
-      appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSHED');
+      if (!skipLog)
+        appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSHED');
     } else {
       // No token available for this platform
       const manualUrl = buildManualPrUrl(remote, ticketBranch, targetBranch);
@@ -708,7 +752,8 @@ async function deliverViaPullRequest(
       } else {
         console.log(dim('  Branch pushed to remote. Create a PR/MR manually.'));
       }
-      appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSHED');
+      if (!skipLog)
+        appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSHED');
     }
   } else if (remote.host === 'none') {
     console.log(
@@ -716,11 +761,13 @@ async function deliverViaPullRequest(
         `⚠ No git remote configured. Branch available locally: ${ticketBranch}`,
       ),
     );
-    appendProgress(process.cwd(), ticket.key, ticket.title, 'LOCAL');
+    if (!skipLog)
+      appendProgress(process.cwd(), ticket.key, ticket.title, 'LOCAL');
   } else {
     // Unknown or Azure remote — just note the push
     console.log(dim('  Branch pushed to remote. Create a PR/MR manually.'));
-    appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSHED');
+    if (!skipLog)
+      appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSHED');
   }
 
   // Transition to In Review (not Done — PR hasn't been merged yet)
@@ -736,6 +783,149 @@ async function deliverViaPullRequest(
   // Switch back to target branch
   checkout(targetBranch);
   return true;
+}
+
+// ─── Post-rework actions ──────────────────────────────────────────────────
+
+/**
+ * Build a rework comment to post on the PR after pushing fixes.
+ *
+ * Prefixed with `[clancy]` (not `Rework:`) so it does NOT trigger
+ * rework detection on the next cycle.
+ */
+function buildReworkComment(feedback: string[]): string {
+  const count = feedback.length;
+  const summary = feedback
+    .slice(0, 3)
+    .map((f) => `- ${f.slice(0, 80)}`)
+    .join('\n');
+  const suffix = feedback.length > 3 ? '\n- ...' : '';
+  return `[clancy] Rework pushed addressing ${count} feedback item${count !== 1 ? 's' : ''}.\n\n${summary}${suffix}`;
+}
+
+/**
+ * Perform post-rework actions: comment on PR, re-request review (GitHub),
+ * resolve threads (GitLab). All best-effort — failures warn but don't block.
+ */
+async function postReworkActions(
+  config: BoardConfig,
+  prNumber: number,
+  feedback: string[],
+  discussionIds?: string[],
+  reviewers?: string[],
+): Promise<void> {
+  const platformOverride = sharedEnv(config).CLANCY_GIT_PLATFORM;
+  const remote = detectRemote(platformOverride);
+
+  if (
+    remote.host === 'none' ||
+    remote.host === 'unknown' ||
+    remote.host === 'azure'
+  ) {
+    return;
+  }
+
+  const creds = resolveGitToken(config, remote);
+  if (!creds) return;
+
+  const apiBase = buildApiBaseUrl(remote, sharedEnv(config).CLANCY_GIT_API_URL);
+  if (!apiBase) return;
+
+  const comment = buildReworkComment(feedback);
+
+  // 1. Post rework comment
+  try {
+    let posted = false;
+
+    switch (remote.host) {
+      case 'github':
+        posted = await postGitHubPrComment(
+          creds.token,
+          `${remote.owner}/${remote.repo}`,
+          prNumber,
+          comment,
+          apiBase,
+        );
+        break;
+      case 'gitlab':
+        posted = await postMrNote(
+          creds.token,
+          apiBase,
+          remote.projectPath,
+          prNumber,
+          comment,
+        );
+        break;
+      case 'bitbucket':
+        posted = await postCloudPrComment(
+          creds.username!,
+          creds.token,
+          remote.workspace,
+          remote.repoSlug,
+          prNumber,
+          comment,
+        );
+        break;
+      case 'bitbucket-server':
+        posted = await postServerPrComment(
+          creds.token,
+          apiBase,
+          remote.projectKey,
+          remote.repoSlug,
+          prNumber,
+          comment,
+        );
+        break;
+    }
+
+    if (posted) {
+      console.log(dim('  ✓ Posted rework comment'));
+    }
+  } catch {
+    // Best-effort
+  }
+
+  // 2. GitLab: resolve addressed discussion threads
+  if (remote.host === 'gitlab' && discussionIds && discussionIds.length > 0) {
+    try {
+      const resolved = await resolveDiscussions(
+        creds.token,
+        apiBase,
+        remote.projectPath,
+        prNumber,
+        discussionIds,
+      );
+      if (resolved > 0) {
+        console.log(
+          dim(
+            `  ✓ Resolved ${resolved} discussion thread${resolved !== 1 ? 's' : ''}`,
+          ),
+        );
+      }
+    } catch {
+      // Best-effort
+    }
+  }
+
+  // 3. GitHub: re-request review from reviewers who requested changes
+  if (remote.host === 'github' && reviewers && reviewers.length > 0) {
+    try {
+      const ok = await requestGitHubReview(
+        creds.token,
+        `${remote.owner}/${remote.repo}`,
+        prNumber,
+        reviewers,
+        apiBase,
+      );
+      if (ok) {
+        console.log(
+          dim(`  ✓ Re-requested review from ${reviewers.join(', ')}`),
+        );
+      }
+    } catch {
+      // Best-effort
+    }
+  }
 }
 
 // ─── Main orchestrator ───────────────────────────────────────────────────────
@@ -812,6 +1002,9 @@ export async function run(argv: string[]): Promise<void> {
     // 5. Check rework — PR-based detection, then fresh ticket
     let isRework = false;
     let prFeedback: string[] | undefined;
+    let reworkPrNumber: number | undefined;
+    let reworkDiscussionIds: string[] | undefined;
+    let reworkReviewers: string[] | undefined;
     let ticket: FetchedTicket | undefined;
 
     // PR-based rework (automatic, no config needed)
@@ -821,6 +1014,9 @@ export async function run(argv: string[]): Promise<void> {
         isRework = true;
         ticket = prRework.ticket;
         prFeedback = prRework.feedback;
+        reworkPrNumber = prRework.prNumber;
+        reworkDiscussionIds = prRework.discussionIds;
+        reworkReviewers = prRework.reviewers;
         console.log(yellow(`  ↻ PR rework: [${ticket.key}] ${ticket.title}`));
       }
     } catch {
@@ -966,7 +1162,7 @@ export async function run(argv: string[]): Promise<void> {
         description: ticket.description,
         provider: config.provider,
         feedbackComments: prFeedback ?? [],
-        previousContext: undefined, // V1: no diff context yet
+        previousContext: diffAgainstBranch(targetBranch),
       });
     } else {
       prompt = buildPrompt({
@@ -999,11 +1195,29 @@ export async function run(argv: string[]): Promise<void> {
         ticketBranch,
         targetBranch,
         startTime,
+        true,
       );
       if (!delivered) return;
 
-      // Override progress to REWORK (deliverViaPullRequest logs PR_CREATED/PUSHED)
-      appendProgress(process.cwd(), ticket.key, ticket.title, 'REWORK');
+      // Log single REWORK entry (skipLog prevents deliverViaPullRequest from double-logging)
+      appendProgress(
+        process.cwd(),
+        ticket.key,
+        ticket.title,
+        'REWORK',
+        reworkPrNumber,
+      );
+
+      // Post-rework actions (all best-effort)
+      if (reworkPrNumber != null) {
+        await postReworkActions(
+          config,
+          reworkPrNumber,
+          prFeedback ?? [],
+          reworkDiscussionIds,
+          reworkReviewers,
+        );
+      }
     } else if (hasParent) {
       await deliverViaEpicMerge(config, ticket, ticketBranch, targetBranch);
     } else {
