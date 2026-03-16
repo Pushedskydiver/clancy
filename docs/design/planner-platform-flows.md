@@ -600,7 +600,7 @@ Errors:
 
 - Personal API keys do NOT use "Bearer" prefix (OAuth tokens do)
 - All queries are GraphQL via `POST https://api.linear.app/graphql`
-- State type is an enum: `backlog`, `unstarted`, `started`, `completed`, `cancelled`, `triage`
+- State type is an enum: `backlog`, `unstarted`, `started`, `completed`, `canceled`, `triage`
 - `issueSearch` is fuzzy text search — always verify `identifier` field after fetch
 - No label filter in planning queue (unlike Jira/GitHub)
 - Comments are fetched inline with GraphQL queries (no separate call)
@@ -678,7 +678,7 @@ Response: {
 Checks:
   - nodes empty -> "Issue {KEY} not found on Linear." (stop)
   - state.type == "completed" -> Warn: "Issue is completed. Plan anyway? [y/N]"
-  - state.type == "canceled" -> Warn: "Issue is cancelled. Plan anyway? [y/N]"
+  - state.type == "canceled" -> Warn: "Issue is canceled. Plan anyway? [y/N]"
   - parent != null -> Note only (informational)
 ```
 
@@ -851,7 +851,7 @@ On failure: warn, continue (best-effort).
 
 | Scenario | Behaviour |
 |---|---|
-| CLANCY_PLAN_STATE_TYPE is invalid enum value | API returns empty nodes. Guidance: "Check CLANCY_PLAN_STATE_TYPE is a valid Linear state type (backlog, unstarted, started, completed, cancelled, triage)." |
+| CLANCY_PLAN_STATE_TYPE is invalid enum value | API returns empty nodes. Guidance: "Check CLANCY_PLAN_STATE_TYPE is a valid Linear state type (backlog, unstarted, started, completed, canceled, triage)." |
 | issueSearch returns no exact match | "Issue {KEY} not found." (stop) |
 | issueSearch returns multiple exact matches | Use first match (should be unique by identifier) |
 | No "unstarted" state type in team workflow | Warn, skip transition. "No 'unstarted' state found." |

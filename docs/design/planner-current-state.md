@@ -714,7 +714,7 @@ During init, only Jira users get a planning queue configuration step (Step 4d). 
 
 ### 4. No validation of CLANCY_PLAN_STATE_TYPE values
 
-The Zod schema accepts any string for `CLANCY_PLAN_STATE_TYPE`, but Linear state types are an enum (`backlog`, `unstarted`, `started`, `completed`, `cancelled`, `triage`). An invalid value would silently return no results from the API.
+The Zod schema accepts any string for `CLANCY_PLAN_STATE_TYPE`, but Linear state types are an enum (`backlog`, `unstarted`, `started`, `completed`, `canceled`, `triage`). An invalid value would silently return no results from the API.
 
 ### 5. GitHub planning uses CLANCY_PLAN_LABEL, not CLANCY_LABEL
 

@@ -29,7 +29,7 @@
 ```
 # ─── Planner Queue (optional — requires CLANCY_ROLES to include "planner") ───
 # State type for backlog issues that /clancy:plan fetches from (default: backlog)
-# Valid values: backlog, unstarted, started, completed, cancelled, triage
+# Valid values: backlog, unstarted, started, completed, canceled, triage
 # CLANCY_PLAN_STATE_TYPE="backlog"
 ```
 
@@ -67,7 +67,7 @@
 **Fix:** Update `src/schemas/env.ts` (or `src/scripts/shared/env-schema/env-schema.ts` — whichever holds the runtime schema) to validate:
 ```typescript
 CLANCY_PLAN_STATE_TYPE: z.optional(
-  z.enum(["backlog", "unstarted", "started", "completed", "cancelled", "triage"])
+  z.enum(["backlog", "unstarted", "started", "completed", "canceled", "triage"])
 ),
 ```
 
@@ -281,7 +281,7 @@ Summary, Affected Files, Implementation Approach, Test Strategy, Acceptance Crit
 Changes to `src/schemas/env.ts`:
 - Add `CLANCY_STATUS_PLANNED: z.optional(z.string())` to shared schema
 - Add `CLANCY_SKIP_COMMENTS: z.optional(z.string())` to shared schema
-- Change `CLANCY_PLAN_STATE_TYPE` from `z.optional(z.string())` to `z.optional(z.enum(["backlog", "unstarted", "started", "completed", "cancelled", "triage"]))`
+- Change `CLANCY_PLAN_STATE_TYPE` from `z.optional(z.string())` to `z.optional(z.enum(["backlog", "unstarted", "started", "completed", "canceled", "triage"]))`
 
 **Agent 2 — Plan workflow rewrite**
 
