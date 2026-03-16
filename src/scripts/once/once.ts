@@ -240,6 +240,16 @@ async function fetchReworkFromPrReview(config: BoardConfig): Promise<
   const apiBase = buildApiBaseUrl(remote, sharedEnv(config).CLANCY_GIT_API_URL);
   if (!apiBase) return undefined;
 
+  // Resolve GitHub username for author filtering (GitHub only)
+  let ghUsername: string | undefined;
+  if (remote.host === 'github') {
+    try {
+      ghUsername = await resolveUsername(creds.token);
+    } catch {
+      // Best-effort — skip author filtering if username resolution fails
+    }
+  }
+
   // Limit to first 5 candidates to avoid rate limits
   const toCheck = candidates.slice(0, 5);
 
@@ -253,7 +263,7 @@ async function fetchReworkFromPrReview(config: BoardConfig): Promise<
     // Falls back to undefined if timestamp is invalid (skips filtering).
     let since: string | undefined;
     if (entry.timestamp) {
-      const date = new Date(entry.timestamp.replace(' ', 'T'));
+      const date = new Date(entry.timestamp.replace(' ', 'T') + 'Z');
       since = Number.isNaN(date.getTime()) ? undefined : date.toISOString();
     }
 
@@ -275,6 +285,7 @@ async function fetchReworkFromPrReview(config: BoardConfig): Promise<
           remote.owner,
           apiBase,
           since,
+          ghUsername,
         );
         break;
       case 'gitlab':
@@ -322,6 +333,7 @@ async function fetchReworkFromPrReview(config: BoardConfig): Promise<
             reviewState.prNumber,
             apiBase,
             since,
+            ghUsername,
           );
           break;
         case 'gitlab': {
@@ -1197,7 +1209,10 @@ export async function run(argv: string[]): Promise<void> {
         startTime,
         true,
       );
-      if (!delivered) return;
+      if (!delivered) {
+        appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSH_FAILED');
+        return;
+      }
 
       // Log single REWORK entry (skipLog prevents deliverViaPullRequest from double-logging)
       appendProgress(

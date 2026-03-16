@@ -91,7 +91,7 @@ Posts to Slack or Teams when a ticket completes. The payload format (Slack vs Te
 | `GITHUB_REPO` | GitHub | Yes | — | Repo in `owner/repo` format |
 | `LINEAR_API_KEY` | Linear | Yes | — | Linear personal API key (no Bearer prefix) |
 | `LINEAR_TEAM_ID` | Linear | Yes | — | Linear team ID |
-| `CLANCY_LABEL` | All | No | — | Label filter for tickets. Also applied as a label on PRs created by Clancy (GitHub/GitLab) |
+| `CLANCY_LABEL` | All | No | — | Label filter for tickets |
 | `CLANCY_JQL_STATUS` | Jira | No | `To Do` | Implementation queue status |
 | `CLANCY_JQL_SPRINT` | Jira | No | — | Enable sprint filtering |
 | `CLANCY_PLAN_STATUS` | Jira | No | `Backlog` | Planning queue status |

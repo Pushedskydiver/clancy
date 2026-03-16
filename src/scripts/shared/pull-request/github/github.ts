@@ -107,7 +107,7 @@ export async function checkPrReviewState(
     if (!changesRequested) {
       try {
         const reviewsRes = await fetch(
-          `${apiBase}/repos/${repo}/pulls/${pr.number}/reviews?per_page=10`,
+          `${apiBase}/repos/${repo}/pulls/${pr.number}/reviews?per_page=100`,
           { headers },
         );
         if (reviewsRes.ok) {
@@ -166,6 +166,7 @@ export async function fetchPrReviewComments(
   prNumber: number,
   apiBase = GITHUB_API,
   since?: string,
+  excludeAuthor?: string,
 ): Promise<string[]> {
   try {
     const headers = githubHeaders(token);
@@ -188,10 +189,23 @@ export async function fetchPrReviewComments(
 
     if (!inlineRes.ok || !convoRes.ok) return [];
 
-    const inlineComments = githubPrCommentsSchema.parse(await inlineRes.json());
-    const convoComments = githubCommentsResponseSchema.parse(
-      await convoRes.json(),
-    );
+    const rawInline = githubPrCommentsSchema.parse(await inlineRes.json());
+    const rawConvo = githubCommentsResponseSchema.parse(await convoRes.json());
+
+    const inlineComments = excludeAuthor
+      ? rawInline.filter(
+          (c) =>
+            (c as unknown as { user?: { login?: string } }).user?.login !==
+            excludeAuthor,
+        )
+      : rawInline;
+    const convoComments = excludeAuthor
+      ? rawConvo.filter(
+          (c) =>
+            (c as unknown as { user?: { login?: string } }).user?.login !==
+            excludeAuthor,
+        )
+      : rawConvo;
 
     const combined: string[] = [];
 
