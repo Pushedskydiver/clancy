@@ -1,6 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import type { BoardConfig } from '~/scripts/shared/env-schema/env-schema.js';
+import type {
+  BoardConfig,
+  GitHubEnv,
+  JiraEnv,
+  LinearEnv,
+} from '~/scripts/shared/env-schema/env-schema.js';
 
 import type { FetchedTicket } from '../types/types.js';
 import {
@@ -77,17 +82,17 @@ const ticket: FetchedTicket = {
 
 describe('sharedEnv', () => {
   it('returns env from Jira config', () => {
-    const env = sharedEnv(jiraConfig);
+    const env = sharedEnv(jiraConfig) as JiraEnv;
     expect(env.JIRA_BASE_URL).toBe('https://example.atlassian.net');
   });
 
   it('returns env from GitHub config', () => {
-    const env = sharedEnv(githubConfig);
+    const env = sharedEnv(githubConfig) as GitHubEnv;
     expect(env.GITHUB_TOKEN).toBe('ghp_abc123');
   });
 
   it('returns env from Linear config', () => {
-    const env = sharedEnv(linearConfig);
+    const env = sharedEnv(linearConfig) as LinearEnv;
     expect(env.LINEAR_API_KEY).toBe('lin_abc');
   });
 });

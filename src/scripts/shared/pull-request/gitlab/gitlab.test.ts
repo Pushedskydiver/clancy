@@ -93,11 +93,11 @@ describe('gitlab', () => {
         'body',
       );
 
-      const fetchCall = mockFetch.mock.calls[0];
-      const headers = (fetchCall[1] as RequestInit).headers as Record<
+      const fetchCall = mockFetch.mock.calls[0] as unknown as [
         string,
-        string
-      >;
+        RequestInit,
+      ];
+      const headers = fetchCall[1].headers as Record<string, string>;
       expect(headers['PRIVATE-TOKEN']).toBe('my-token');
     });
 

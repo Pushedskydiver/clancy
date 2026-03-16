@@ -14,6 +14,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - **once/ modules reorganised into sub-folders** — each module now follows the project convention `<name>/<name>.ts` + `<name>/<name>.test.ts`, matching `shared/` and `board/` patterns.
 - **`schemas/github.ts` renamed to `github-issues.ts`** — consistent with `gitlab-mr.ts` and `bitbucket-pr.ts`.
 - **Unused `schemas/index.ts` barrel deleted** — nothing imported from it.
+- **Test files included in tsconfig** — removed `**/*.test.ts` exclusion from `tsconfig.json` so VS Code resolves path aliases (`~/`) in test files. Build uses `tsconfig.build.json` to keep test files out of `dist/`. Fixed type errors in 7 test files.
 
 ### ✅ Tests
 

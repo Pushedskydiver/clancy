@@ -65,6 +65,7 @@ describe('fetchTicket', () => {
       key: 'PROJ-10',
       title: 'Add login',
       description: 'Create login page.',
+      provider: 'jira',
       epicKey: 'PROJ-1',
       blockers: ['PROJ-5'],
     });
@@ -85,6 +86,7 @@ describe('fetchTicket', () => {
       key: 'PROJ-11',
       title: 'Clean up',
       description: 'Refactor.',
+      provider: 'jira',
       epicKey: 'PROJ-1',
       blockers: [],
     });
@@ -98,6 +100,7 @@ describe('fetchTicket', () => {
       key: 'PROJ-12',
       title: 'Standalone',
       description: 'No epic.',
+      provider: 'jira',
       blockers: [],
     });
 
@@ -155,6 +158,7 @@ describe('fetchTicket', () => {
       key: 'LIN-5',
       title: 'Linear task',
       description: 'Do something.',
+      provider: 'linear',
       parentIdentifier: 'LIN-1',
       issueId: 'uuid-abc',
     });

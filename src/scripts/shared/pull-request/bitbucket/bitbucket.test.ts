@@ -77,11 +77,11 @@ describe('bitbucket', () => {
         'body',
       );
 
-      const fetchCall = mockFetch.mock.calls[0];
-      const headers = (fetchCall[1] as RequestInit).headers as Record<
+      const fetchCall = mockFetch.mock.calls[0] as unknown as [
         string,
-        string
-      >;
+        RequestInit,
+      ];
+      const headers = fetchCall[1].headers as Record<string, string>;
       const expected = `Basic ${Buffer.from('myuser:mytoken').toString('base64')}`;
       expect(headers.Authorization).toBe(expected);
     });
@@ -202,14 +202,14 @@ describe('bitbucket', () => {
         'body',
       );
 
-      const fetchCall = mockFetch.mock.calls[0];
-      const headers = (fetchCall[1] as RequestInit).headers as Record<
+      const fetchCall = mockFetch.mock.calls[0] as unknown as [
         string,
-        string
-      >;
+        RequestInit,
+      ];
+      const headers = fetchCall[1].headers as Record<string, string>;
       expect(headers.Authorization).toBe('Bearer my-token');
 
-      const body = JSON.parse((fetchCall[1] as RequestInit).body as string);
+      const body = JSON.parse(fetchCall[1].body as string);
       expect(body.fromRef.id).toBe('refs/heads/feature/x');
       expect(body.toRef.id).toBe('refs/heads/develop');
     });
@@ -1314,11 +1314,11 @@ describe('bitbucket', () => {
         'comment',
       );
 
-      const fetchCall = mockFetch.mock.calls[0];
-      const headers = (fetchCall[1] as RequestInit).headers as Record<
+      const fetchCall = mockFetch.mock.calls[0] as unknown as [
         string,
-        string
-      >;
+        RequestInit,
+      ];
+      const headers = fetchCall[1].headers as Record<string, string>;
       expect(headers.Authorization).toBe('Bearer my-token');
     });
 

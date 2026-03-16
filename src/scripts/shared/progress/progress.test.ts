@@ -4,6 +4,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
+import type { ProgressStatus } from '~/types/index.js';
+
 import {
   appendProgress,
   countReworkCycles,
@@ -300,8 +302,12 @@ describe('findEntriesWithStatus', () => {
     const root = makeTempRoot();
     appendProgress(root, 'PROJ-1', 'Add login', 'PR_CREATED');
 
-    expect(findEntriesWithStatus(root, 'pr_created')).toHaveLength(0);
-    expect(findEntriesWithStatus(root, 'Pr_Created')).toHaveLength(0);
+    expect(
+      findEntriesWithStatus(root, 'pr_created' as ProgressStatus),
+    ).toHaveLength(0);
+    expect(
+      findEntriesWithStatus(root, 'Pr_Created' as ProgressStatus),
+    ).toHaveLength(0);
     expect(findEntriesWithStatus(root, 'PR_CREATED')).toHaveLength(1);
   });
 });
