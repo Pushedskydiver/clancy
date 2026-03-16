@@ -97,7 +97,7 @@ export async function fetchReworkFromPrReview(config: BoardConfig): Promise<
     // Convert progress timestamp (YYYY-MM-DD HH:MM) to ISO 8601 for API filtering.
     // Only comments created AFTER this timestamp should trigger rework,
     // preventing stale inline comments from causing infinite rework loops.
-    // Parse local timestamp (YYYY-MM-DD HH:MM) and convert to ISO 8601.
+    // Parse UTC timestamp (YYYY-MM-DD HH:MM) to ISO 8601.
     // Falls back to undefined if timestamp is invalid (skips filtering).
     let since: string | undefined;
     if (entry.timestamp) {
