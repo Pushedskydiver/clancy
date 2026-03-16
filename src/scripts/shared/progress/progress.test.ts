@@ -300,7 +300,9 @@ describe('findEntriesWithStatus', () => {
     const root = makeTempRoot();
     appendProgress(root, 'PROJ-1', 'Add login', 'PR_CREATED');
 
+    // @ts-expect-error — intentionally passing invalid case to verify case-sensitivity
     expect(findEntriesWithStatus(root, 'pr_created')).toHaveLength(0);
+    // @ts-expect-error — intentionally passing invalid case to verify case-sensitivity
     expect(findEntriesWithStatus(root, 'Pr_Created')).toHaveLength(0);
     expect(findEntriesWithStatus(root, 'PR_CREATED')).toHaveLength(1);
   });

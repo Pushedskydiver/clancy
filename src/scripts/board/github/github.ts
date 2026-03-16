@@ -9,7 +9,7 @@
  */
 import { z } from 'zod/mini';
 
-import { githubIssuesResponseSchema } from '~/schemas/github.js';
+import { githubIssuesResponseSchema } from '~/schemas/github-issues.js';
 import {
   GITHUB_API,
   githubHeaders,

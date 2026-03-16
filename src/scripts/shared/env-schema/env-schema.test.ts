@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import type { GitHubEnv, JiraEnv, LinearEnv } from './env-schema.js';
 import { detectBoard } from './env-schema.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -47,8 +48,10 @@ describe('detectBoard', () => {
       if (typeof result === 'string') return;
 
       expect(result.provider).toBe('jira');
-      expect(result.env.JIRA_BASE_URL).toBe('https://example.atlassian.net');
-      expect(result.env.JIRA_PROJECT_KEY).toBe('PROJ');
+      expect((result.env as JiraEnv).JIRA_BASE_URL).toBe(
+        'https://example.atlassian.net',
+      );
+      expect((result.env as JiraEnv).JIRA_PROJECT_KEY).toBe('PROJ');
     });
 
     it('returns error when required Jira field is missing', () => {
@@ -72,8 +75,8 @@ describe('detectBoard', () => {
       expect(typeof result).not.toBe('string');
       if (typeof result === 'string') return;
 
-      expect(result.env.CLANCY_JQL_STATUS).toBe('In Progress');
-      expect(result.env.CLANCY_JQL_SPRINT).toBe('true');
+      expect((result.env as JiraEnv).CLANCY_JQL_STATUS).toBe('In Progress');
+      expect((result.env as JiraEnv).CLANCY_JQL_SPRINT).toBe('true');
       expect(result.env.CLANCY_LABEL).toBe('clancy');
       expect(result.env.CLANCY_MODEL).toBe('opus');
     });
@@ -87,8 +90,8 @@ describe('detectBoard', () => {
       if (typeof result === 'string') return;
 
       expect(result.provider).toBe('github');
-      expect(result.env.GITHUB_TOKEN).toBe('ghp_abc123');
-      expect(result.env.GITHUB_REPO).toBe('acme/app');
+      expect((result.env as GitHubEnv).GITHUB_TOKEN).toBe('ghp_abc123');
+      expect((result.env as GitHubEnv).GITHUB_REPO).toBe('acme/app');
     });
 
     it('does not detect GitHub when GITHUB_REPO is missing', () => {
@@ -120,8 +123,8 @@ describe('detectBoard', () => {
       if (typeof result === 'string') return;
 
       expect(result.provider).toBe('linear');
-      expect(result.env.LINEAR_API_KEY).toBe('lin_api_abc123');
-      expect(result.env.LINEAR_TEAM_ID).toBe('team-uuid-123');
+      expect((result.env as LinearEnv).LINEAR_API_KEY).toBe('lin_api_abc123');
+      expect((result.env as LinearEnv).LINEAR_TEAM_ID).toBe('team-uuid-123');
     });
 
     it('returns error when LINEAR_TEAM_ID is missing', () => {

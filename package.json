@@ -1,6 +1,6 @@
 {
   "name": "chief-clancy",
-  "version": "0.5.8",
+  "version": "0.5.9",
   "description": "Autonomous, board-driven development for Claude Code — scaffolds docs, integrates Kanban boards, runs tickets in a loop.",
   "keywords": [
     "claude",
@@ -38,7 +38,7 @@
   ],
   "scripts": {
     "clean": "rm -rf dist",
-    "build": "npm run clean && tsc && tsc-alias && npm run bundle",
+    "build": "npm run clean && tsc -p tsconfig.build.json && tsc-alias -p tsconfig.build.json && npm run bundle",
     "bundle": "node esbuild.config.js",
     "dev": "vitest",
     "test": "vitest run",

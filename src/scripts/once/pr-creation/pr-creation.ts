@@ -8,8 +8,8 @@ import { createMergeRequest as createGitLabMr } from '~/scripts/shared/pull-requ
 import { buildApiBaseUrl } from '~/scripts/shared/remote/remote.js';
 import type { PrCreationResult, RemoteInfo } from '~/types/index.js';
 
-import { sharedEnv } from './board-ops.js';
-import { resolveGitToken } from './git-token.js';
+import { sharedEnv } from '../board-ops/board-ops.js';
+import { resolveGitToken } from '../git-token/git-token.js';
 
 /**
  * Attempt to create a PR/MR on the detected remote platform.

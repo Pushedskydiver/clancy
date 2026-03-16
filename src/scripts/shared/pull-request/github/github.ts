@@ -12,7 +12,7 @@ import {
   githubPrCommentsSchema,
   githubPrListSchema,
   githubReviewListSchema,
-} from '~/schemas/github.js';
+} from '~/schemas/github-issues.js';
 import { GITHUB_API, githubHeaders } from '~/scripts/shared/http/http.js';
 import type { PrCreationResult, PrReviewState } from '~/types/index.js';
 

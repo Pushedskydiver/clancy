@@ -9,7 +9,7 @@ import {
 import { fetchIssue as fetchLinearIssue } from '~/scripts/board/linear/linear.js';
 import type { BoardConfig } from '~/scripts/shared/env-schema/env-schema.js';
 
-import type { FetchedTicket } from './types.js';
+import type { FetchedTicket } from '../types/types.js';
 
 // ─── Board-specific fetch ────────────────────────────────────────────────────
 

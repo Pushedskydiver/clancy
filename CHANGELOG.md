@@ -7,6 +7,21 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.5.9] — 2026-03-16
+
+### ♻️ Refactor
+
+- **once/ modules reorganised into sub-folders** — each module now follows the project convention `<name>/<name>.ts` + `<name>/<name>.test.ts`, matching `shared/` and `board/` patterns.
+- **`schemas/github.ts` renamed to `github-issues.ts`** — consistent with `gitlab-mr.ts` and `bitbucket-pr.ts`.
+- **Unused `schemas/index.ts` barrel deleted** — nothing imported from it.
+- **Test files included in tsconfig** — removed `**/*.test.ts` exclusion from `tsconfig.json` so VS Code resolves path aliases (`~/`) in test files. Build uses `tsconfig.build.json` to keep test files out of `dist/`. Fixed type errors in 7 test files.
+
+### ✅ Tests
+
+- **62 new per-module unit tests** (404 → 466) — co-located test files for board-ops (16), fetch-ticket (9), git-token (7), pr-creation (11), deliver (8), rework (11). The existing orchestrator integration tests in `once.test.ts` remain unchanged.
+
+---
+
 ## [0.5.8] — 2026-03-16
 
 ### ♻️ Refactor

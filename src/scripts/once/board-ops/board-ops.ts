@@ -15,7 +15,7 @@ import type {
   SharedEnv,
 } from '~/scripts/shared/env-schema/env-schema.js';
 
-import type { FetchedTicket } from './types.js';
+import type { FetchedTicket } from '../types/types.js';
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
