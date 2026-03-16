@@ -2,7 +2,17 @@
 
 Fetch backlog tickets from the board, explore the codebase, and generate structured implementation plans. Plans are posted as comments on the ticket for human review.
 
-Accepts an optional numeric argument for batch mode (`/clancy:plan 3`) and `--force` to re-plan tickets that already have a plan.
+Accepts optional arguments:
+- **Batch mode:** `/clancy:plan 3` — plan up to 3 tickets from the queue
+- **Specific ticket:** `/clancy:plan PROJ-123`, `/clancy:plan #42`, `/clancy:plan ENG-42` — plan a single ticket by key
+- **Fresh start:** `--fresh` — discard any existing plan and start over
+
+Examples:
+- `/clancy:plan` — plan 1 ticket from queue
+- `/clancy:plan 3` — plan 3 tickets from queue
+- `/clancy:plan PROJ-123` — plan a specific Jira/Linear ticket
+- `/clancy:plan #42` — plan a specific GitHub issue
+- `/clancy:plan --fresh PROJ-123` — discard existing plan and start over
 
 @.claude/clancy/workflows/plan.md
 

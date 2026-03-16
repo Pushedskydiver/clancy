@@ -16,7 +16,13 @@ Fetch backlog tickets from the board, explore the codebase, and generate structu
 
 2. Source `.clancy/.env` and check board credentials are present.
 
-3. Check `.clancy/docs/` — if the directory is empty or missing:
+3. Check `CLANCY_ROLES` includes `planner` (or env var is unset, which indicates a global install where all roles are available). If `CLANCY_ROLES` is set but does not include `planner`:
+   ```
+   The Planner role is not enabled. Add "planner" to CLANCY_ROLES in .clancy/.env or run /clancy:settings.
+   ```
+   Stop.
+
+4. Check `.clancy/docs/` — if the directory is empty or missing:
    ```
    ⚠️  No codebase documentation found in .clancy/docs/
    Plans will be less accurate without codebase context.
@@ -26,16 +32,37 @@ Fetch backlog tickets from the board, explore the codebase, and generate structu
    ```
    If the user declines, stop. If they confirm, continue without docs context.
 
+5. Branch freshness check — run `git fetch origin` and compare the current HEAD with `origin/$CLANCY_BASE_BRANCH` (defaults to `main`). If the local branch is behind:
+   ```
+   ⚠️  Your local branch is behind origin/{CLANCY_BASE_BRANCH} by {N} commit(s).
+
+   [1] Pull latest
+   [2] Continue anyway
+   [3] Abort
+   ```
+   - [1] runs `git pull origin $CLANCY_BASE_BRANCH` and continues
+   - [2] continues without pulling
+   - [3] stops
+
 ---
 
 ## Step 2 — Parse arguments
 
 Parse the arguments passed to the command:
 
-- **No argument:** plan 1 ticket
-- **Numeric argument** (e.g. `/clancy:plan 3`): plan up to N tickets, cap at 10
-- **`--force`:** re-plan tickets that already have a plan (reads feedback comments)
-- Arguments can appear in any order (e.g. `/clancy:plan 3 --force` or `/clancy:plan --force 3`)
+- **No argument:** plan 1 ticket from the queue
+- **Numeric argument** (e.g. `/clancy:plan 3`): plan up to N tickets from the queue, cap at 10
+- **Specific ticket key:** plan a single ticket by key, with per-platform validation:
+  - `#42` — valid for GitHub only. If board is Jira or Linear: `The #N format is for GitHub Issues. Use a ticket key like PROJ-123.` Stop.
+  - `PROJ-123` / `ENG-42` (letters-dash-number) — valid for Jira and Linear. If board is GitHub: `Use #N format for GitHub Issues (e.g. #42).` Stop.
+  - Bare integer on GitHub (e.g. `/clancy:plan 42` where 42 > 10): ambiguous — ask:
+    ```
+    Did you mean issue #42 or batch mode (42 tickets)?
+    [1] Plan issue #42
+    [2] Plan 10 tickets (max batch)
+    ```
+- **`--fresh`:** discard any existing plan and start over from scratch. This is NOT re-plan with feedback — it ignores existing plans entirely.
+- Arguments can appear in any order (e.g. `/clancy:plan --fresh PROJ-123` or `/clancy:plan PROJ-123 --fresh`)
 
 If N > 10: `Maximum batch size is 10. Planning 10 tickets.`
 
@@ -50,7 +77,61 @@ Planning {N} tickets — each requires codebase exploration. Continue? [Y/n]
 
 Detect board from `.clancy/.env` and fetch tickets from the **planning queue** (different from the implementation queue used by `/clancy:once`).
 
-### Jira
+### Specific ticket key (if provided)
+
+If a specific ticket key was parsed in Step 2, fetch that single ticket instead of the queue:
+
+#### GitHub — Fetch specific issue
+
+```bash
+RESPONSE=$(curl -s \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  "https://api.github.com/repos/$GITHUB_REPO/issues/$ISSUE_NUMBER")
+```
+
+Validate the response:
+- If `pull_request` field is present (not null): `#{N} is a PR, not an issue.` Stop.
+- If `state` is `closed`: warn `Issue #${N} is closed. Plan anyway? [y/N]`
+
+#### Jira — Fetch specific ticket
+
+```bash
+RESPONSE=$(curl -s \
+  -u "$JIRA_USER:$JIRA_API_TOKEN" \
+  -H "Accept: application/json" \
+  "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY?fields=summary,description,issuelinks,parent,customfield_10014,comment,status,issuetype")
+```
+
+Validate the response:
+- If `fields.status.statusCategory.key` is `done`: warn `Ticket is done. Plan anyway? [y/N]`
+- If `fields.issuetype.name` is `Epic`: note `This is an epic.` (continue normally)
+
+#### Linear — Fetch specific issue
+
+```graphql
+query {
+  issues(filter: { identifier: { eq: "$IDENTIFIER" } }) {
+    nodes {
+      id identifier title description
+      state { type name }
+      parent { identifier title }
+      comments { nodes { id body createdAt user { id } } }
+    }
+  }
+}
+```
+
+Validate the response:
+- If `nodes` is empty: `Issue {KEY} not found on Linear.` Stop.
+- If `state.type` is `completed`: warn `Issue is completed. Plan anyway? [y/N]`
+- If `state.type` is `canceled`: warn `Issue is canceled. Plan anyway? [y/N]`
+
+Then skip to Step 3b with this single ticket.
+
+### Queue fetch (no specific key)
+
+#### Jira
 
 Build the JQL using planning-specific env vars:
 - `CLANCY_PLAN_STATUS` defaults to `Backlog` if not set
@@ -71,7 +152,7 @@ RESPONSE=$(curl -s \
 
 Note: include the `comment` field so we can check for existing plans and read feedback.
 
-### GitHub Issues
+#### GitHub Issues
 
 First resolve the authenticated username (don't use `@me` — it breaks with fine-grained PATs):
 ```bash
@@ -90,7 +171,7 @@ RESPONSE=$(curl -s \
 - Filter out PRs (entries with `pull_request` key)
 - For each issue, fetch comments: `GET /repos/$GITHUB_REPO/issues/{number}/comments`
 
-### Linear
+#### Linear
 
 Build the filter using `CLANCY_PLAN_STATE_TYPE` (defaults to `backlog` if not set):
 
@@ -108,7 +189,7 @@ query {
       nodes {
         id identifier title description
         parent { identifier title }
-        comments { nodes { body createdAt } }
+        comments { nodes { id body createdAt user { id } } }
       }
     }
   }
@@ -129,27 +210,46 @@ If no tickets found:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 "Nothing to see here." — No backlog tickets to plan.
-
-Check your board configuration or run /clancy:settings to verify the plan queue.
-{If GitHub: "For GitHub: planning uses the \"$CLANCY_PLAN_LABEL\" label (default: needs-refinement), not \"clancy\". Apply that label to issues you want planned."}
 ```
+
+Then display board-specific guidance:
+
+- **GitHub:** `For GitHub: planning uses the "$CLANCY_PLAN_LABEL" label (default: needs-refinement), not "clancy". Apply that label to issues you want planned.`
+- **Jira:** `Check that CLANCY_PLAN_STATUS (currently: "$CLANCY_PLAN_STATUS") matches a status in your Jira project, and that tickets in that status are assigned to you.`
+- **Linear:** `Check that CLANCY_PLAN_STATE_TYPE (currently: "$CLANCY_PLAN_STATE_TYPE") is a valid Linear state type (backlog, unstarted, started, completed, canceled, triage), and that tickets in that state are assigned to you in team $LINEAR_TEAM_ID.`
+
 Stop.
 
 ---
 
-## Step 3b — Check for existing plans (unless --force)
+## Step 3b — Check for existing plans
 
-For each ticket, scan its comments for the marker `## Clancy Implementation Plan`:
+For each ticket, scan its comments for the marker `## Clancy Implementation Plan`. Then apply the following logic:
 
-- **No plan found:** proceed to step 4
-- **Has plan, no `--force`:** skip — display `⏭️ [{KEY}] already planned. Use --force to re-plan.`
-- **Has plan, with `--force`:** proceed to step 3c
+| Condition | Behaviour |
+|---|---|
+| Has plan + feedback comments found after the plan | Revise: proceed to Step 3c to read feedback, then generate a revised plan |
+| Has plan + `--fresh` flag | Discard existing plan, proceed to Step 4 (fresh plan from scratch) |
+| Has plan + no feedback + no `--fresh` | Stop for this ticket: `Already planned. Comment on the ticket to provide feedback, then re-run /clancy:plan {KEY} to revise. Or use --fresh to start over.` |
+| No plan found | Proceed to Step 4 |
+
+Feedback detection per platform:
+- **GitHub:** comments posted after the plan comment where `user.login != $GITHUB_USERNAME` (the resolved username)
+- **Jira:** comments posted after the plan comment where `author.accountId != plan_comment.author.accountId`
+- **Linear:** all comments posted after the plan comment are treated as feedback (Linear personal keys don't expose viewer ID easily in comment context)
 
 ---
 
-## Step 3c — Read feedback comments (--force only)
+## Step 3c — Read feedback comments
 
-When re-planning, read all comments posted AFTER the most recent `## Clancy Implementation Plan` comment. These are presumed to be PO/team feedback. No special syntax needed — they just comment normally on the ticket.
+When revising a plan (auto-detected from feedback comments after the existing plan), read all comments posted AFTER the most recent `## Clancy Implementation Plan` comment.
+
+Filter out the planner's own comments:
+- **GitHub:** exclude comments where `user.login == $GITHUB_USERNAME` (the resolved username)
+- **Jira:** exclude comments by the same `author.accountId` as the plan comment
+- **Linear:** all post-plan comments are treated as feedback
+
+These are presumed to be PO/team feedback. No special syntax needed — they just comment normally on the ticket.
 
 Pass this feedback to the plan generation step as additional context.
 
@@ -188,10 +288,25 @@ Before spending time exploring files, scan the ticket title and description for 
 - Non-code deliverables: "write a runbook", "create a presentation", "update the wiki"
 - Infrastructure ops: "rotate API keys in prod", "scale the fleet", "restart the service"
 
+**STACK.md cross-reference:** If `.clancy/docs/STACK.md` exists, read it. If the ticket mentions a technology not listed in STACK.md, flag it as a concern (but do not skip — include a note in the plan's Risks section instead).
+
 If infeasible:
 ```
 ⏭️  [{KEY}] {Title} — not a codebase change. Skipping.
    → {reason, e.g. "Ticket describes work in Google Tag Manager, not in the codebase."}
+```
+
+**Post skip comment to board:** Check `CLANCY_SKIP_COMMENTS` env var (default: `true`). If not `false`, post a brief comment on the ticket:
+
+> Clancy skipped this ticket: {reason}
+>
+> This ticket appears to require work outside the codebase (e.g. {specific signal}). If this is incorrect, add more context to the ticket description and re-run `/clancy:plan`.
+
+Use the same comment API patterns as Step 5 (plan posting). Best-effort — warn on failure, do not stop.
+
+**Log SKIPPED entry:** Append to `.clancy/progress.txt`:
+```
+YYYY-MM-DD HH:MM | {KEY} | SKIPPED | {reason}
 ```
 
 Continue to the next ticket. **Pass signals:** Anything mentioning code, components, features, bugs, UI, API, tests, refactoring, or lacking enough context to determine (benefit of the doubt).
@@ -246,38 +361,40 @@ Write the plan in this exact template:
 ### Summary
 {1-3 sentences: what this ticket asks for, why it matters, gaps filled}
 
+### Affected Files
+| File | Change Type | Description |
+|------|-------------|-------------|
+| `src/path/file.ts` | Modify | {What changes and why} |
+| `src/path/new-file.ts` | Create | {What this new file does} |
+| `src/path/file.test.ts` | Modify | {What changes and why} |
+
+### Implementation Approach
+{2-4 sentences: implementation strategy, patterns, key decisions}
+
+### Test Strategy
+- [ ] {Specific test to write or verify}
+- [ ] {Specific test to write or verify}
+
 ### Acceptance Criteria
 - [ ] {Specific, testable criterion}
 - [ ] {Specific, testable criterion}
 - [ ] {Specific, testable criterion}
 
-### Technical Approach
-{2-4 sentences: implementation strategy, patterns, key decisions}
-
-### Affected Files
-| File | Change |
-|------|--------|
-| `src/path/file.ts` | {What changes and why} |
-| `src/path/file.test.ts` | {What changes and why} |
-
-### Edge Cases
-- {Specific edge case and handling}
-- {Specific edge case and handling}
-
-### Test Plan
-- [ ] {Specific test to write or verify}
-- [ ] {Specific test to write or verify}
-
 ### Dependencies
 {Blockers, prerequisites, external deps. "None" if clean.}
+
+### Figma Link
+{If a Figma URL was found in the ticket, include it here. Otherwise omit this section entirely.}
+
+### Risks / Considerations
+- {Specific risk or consideration and handling}
+- {Specific risk or consideration and handling}
 
 ### Size Estimate
 **{S / M / L}** — {Brief justification}
 
 ---
-*Generated by [Clancy](https://github.com/Pushedskydiver/clancy).
-To request changes: comment on this ticket, then run `/clancy:plan --force` to re-plan with your feedback.
-To approve: run `/clancy:approve {KEY}` to promote this plan to the ticket description.*
+*Generated by [Clancy](https://github.com/Pushedskydiver/clancy). To request changes: comment on this ticket, then re-run `/clancy:plan` to revise. To start over: `/clancy:plan --fresh`. To approve: `/clancy:approve-plan {KEY}`.*
 ```
 
 **If re-planning with feedback**, prepend a section before Summary:
@@ -289,11 +406,11 @@ To approve: run `/clancy:approve {KEY}` to promote this plan to the ticket descr
 **Quality rules:**
 - Acceptance criteria must be testable ("user can X", "system does Y"), never vague
 - Affected files must be real files found during exploration, not guesses
-- Edge cases must be specific to this ticket, not generic
+- Risks / Considerations must be specific to this ticket, not generic
 - Size: S (< 1 hour, few files), M (1-4 hours, moderate), L (4+ hours, significant)
 - If affected files > 15: add a note "Consider splitting this ticket"
 - If UI ticket without Figma URL: note in plan
-- If ticket mentions tech not in STACK.md: note in plan
+- If ticket mentions tech not in STACK.md: note in Risks / Considerations
 
 **Dependency detection:**
 
@@ -368,10 +485,14 @@ Linear accepts Markdown directly.
 
 ## Step 6 — Log
 
-For each planned ticket, append to `.clancy/progress.txt`:
-```
-YYYY-MM-DD HH:MM | {KEY} | PLAN | {S/M/L}
-```
+For each planned ticket, append to `.clancy/progress.txt` using the appropriate variant:
+
+| Outcome | Log entry |
+|---|---|
+| Normal | `YYYY-MM-DD HH:MM \| {KEY} \| PLAN \| {S/M/L}` |
+| Revised (re-plan with feedback) | `YYYY-MM-DD HH:MM \| {KEY} \| REVISED \| {S/M/L}` |
+| Comment post failed | `YYYY-MM-DD HH:MM \| {KEY} \| POST_FAILED \| {reason}` |
+| Skipped (infeasible) | `YYYY-MM-DD HH:MM \| {KEY} \| SKIPPED \| {reason}` |
 
 ---
 
@@ -385,9 +506,9 @@ Planned {N} ticket(s):
   ✅ [{KEY1}] {Title} — M | 6 files | Comment posted
   ✅ [{KEY2}] {Title} — S | 2 files | Comment posted
   ⏭️  [{KEY3}] {Title} — already planned
-  ⏭️  [{KEY4}] {Title} — infeasible (external admin)
+  ⏭️  [{KEY4}] {Title} — not a codebase change
 
-Plans written to your board. After review, run /clancy:approve {KEY} to promote.
+Plans written to your board. After review, run /clancy:approve-plan {KEY} to promote.
 
 "Let me dust this for prints..."
 ```
@@ -397,9 +518,10 @@ Plans written to your board. After review, run /clancy:approve {KEY} to promote.
 ## Notes
 
 - This command does NOT implement anything — it generates plans only
-- Plans are posted as comments, never overwriting the ticket description (that's `/clancy:approve`)
-- Re-running without `--force` safely skips already-planned tickets
+- Plans are posted as comments, never overwriting the ticket description (that's `/clancy:approve-plan`)
+- Re-running without `--fresh` auto-detects feedback: if feedback exists, revises; if no feedback, stops with guidance
+- The `--fresh` flag discards the existing plan entirely and generates a new one from scratch
 - The planning queue is separate from the implementation queue — they never compete for the same tickets
 - All board API calls are best-effort — if a comment fails to post, print the plan to stdout as fallback
 - When exploring the codebase, use Glob and Read for small tickets, parallel Explore subagents for larger ones
-- The `## Clancy Implementation Plan` marker in comments is used by both `/clancy:plan` (to detect existing plans) and `/clancy:approve` (to find the plan to promote)
+- The `## Clancy Implementation Plan` marker in comments is used by both `/clancy:plan` (to detect existing plans) and `/clancy:approve-plan` (to find the plan to promote)

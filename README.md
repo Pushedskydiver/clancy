@@ -2,7 +2,7 @@
 
 **Autonomous, board-driven development for Claude Code.**
 
-[![npm](https://img.shields.io/npm/v/chief-clancy?style=for-the-badge&color=cb3837)](https://www.npmjs.com/package/chief-clancy) [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE) [![Tests](https://img.shields.io/badge/tests-365%20passing-brightgreen?style=for-the-badge)](docs/TESTING.md) [![GitHub Stars](https://img.shields.io/github/stars/Pushedskydiver/clancy?style=for-the-badge)](https://github.com/Pushedskydiver/clancy/stargazers)
+[![npm](https://img.shields.io/npm/v/chief-clancy?style=for-the-badge&color=cb3837)](https://www.npmjs.com/package/chief-clancy) [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE) [![Tests](https://img.shields.io/badge/tests-368%20passing-brightgreen?style=for-the-badge)](docs/TESTING.md) [![GitHub Stars](https://img.shields.io/github/stars/Pushedskydiver/clancy?style=for-the-badge)](https://github.com/Pushedskydiver/clancy/stargazers)
 
 > [!WARNING]
 > Clancy is in early development. Expect bugs, breaking changes, and rough edges. If you hit an issue, please [open a bug report](https://github.com/Pushedskydiver/clancy/issues/new).
@@ -151,7 +151,7 @@ npx chief-clancy
 | ---------------------- | ------------------------------------------------------------------------ |
 | `/clancy:plan` ¹       | Refine backlog tickets into structured implementation plans              |
 | `/clancy:plan 3` ¹     | Plan up to 3 tickets in batch mode                                       |
-| `/clancy:approve` ¹    | Promote an approved plan to the ticket description                       |
+| `/clancy:approve-plan` ¹ | Promote an approved plan to the ticket description                     |
 | `/clancy:init`         | Wizard — choose board, collect config, scaffold everything               |
 | `/clancy:run`          | Loop mode — processes tickets until queue is empty or MAX_ITERATIONS hit |
 | `/clancy:run 20`       | Same, override MAX_ITERATIONS to 20 for this session                     |
@@ -181,7 +181,7 @@ Clancy organises its commands into **roles** — each role handles a different s
 | **Implementer** | Plan → code. Picks up tickets, implements, commits, merges | `/clancy:once`, `/clancy:run`, `/clancy:dry-run` |
 | **Reviewer** | Score ticket readiness and track progress | `/clancy:review`, `/clancy:status`, `/clancy:logs` |
 | **Setup** | Configure and maintain Clancy | `/clancy:init`, `/clancy:settings`, `/clancy:doctor`, etc. |
-| **Planner** *(optional)* | Refine backlog tickets into structured implementation plans | `/clancy:plan`, `/clancy:approve` |
+| **Planner** *(optional)* | Refine backlog tickets into structured implementation plans | `/clancy:plan`, `/clancy:approve-plan` |
 
 **Core roles** (Implementer, Reviewer, Setup) are always installed. **Optional roles** (Planner) are opt-in — add them to `CLANCY_ROLES` in `.clancy/.env` and re-run the installer:
 

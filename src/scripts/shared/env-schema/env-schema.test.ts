@@ -225,6 +225,44 @@ describe('detectBoard', () => {
       expect(result.env.CLANCY_MAX_REWORK).toBe('3');
     });
 
+    it('passes through CLANCY_STATUS_PLANNED and CLANCY_SKIP_COMMENTS', () => {
+      const result = detectBoard(
+        jiraEnv({
+          CLANCY_STATUS_PLANNED: 'Planned',
+          CLANCY_SKIP_COMMENTS: 'true',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_STATUS_PLANNED).toBe('Planned');
+      expect(result.env.CLANCY_SKIP_COMMENTS).toBe('true');
+    });
+
+    it('accepts valid CLANCY_PLAN_STATE_TYPE enum value', () => {
+      const result = detectBoard(
+        jiraEnv({
+          CLANCY_PLAN_STATE_TYPE: 'backlog',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_PLAN_STATE_TYPE).toBe('backlog');
+    });
+
+    it('accepts any CLANCY_PLAN_STATE_TYPE value (validated at runtime by workflow)', () => {
+      const result = detectBoard(
+        jiraEnv({
+          CLANCY_PLAN_STATE_TYPE: 'custom-state',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+    });
+
     it('rework vars are optional — config parses without them', () => {
       const result = detectBoard(githubEnv());
 
