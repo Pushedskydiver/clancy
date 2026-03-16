@@ -28,9 +28,9 @@ import {
 } from '~/scripts/shared/remote/remote.js';
 import { dim } from '~/utils/ansi/ansi.js';
 
-import { sharedEnv } from './board-ops.js';
-import { resolveGitToken } from './git-token.js';
-import type { FetchedTicket } from './types.js';
+import { sharedEnv } from '../board-ops/board-ops.js';
+import { resolveGitToken } from '../git-token/git-token.js';
+import type { FetchedTicket } from '../types/types.js';
 
 // ─── PR-based rework detection ────────────────────────────────────────────────
 

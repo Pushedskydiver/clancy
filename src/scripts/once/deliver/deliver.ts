@@ -12,9 +12,12 @@ import { buildPrBody } from '~/scripts/shared/pull-request/pr-body/pr-body.js';
 import { detectRemote } from '~/scripts/shared/remote/remote.js';
 import { dim, green, yellow } from '~/utils/ansi/ansi.js';
 
-import { sharedEnv, transitionToStatus } from './board-ops.js';
-import { attemptPrCreation, buildManualPrUrl } from './pr-creation.js';
-import type { FetchedTicket } from './types.js';
+import { sharedEnv, transitionToStatus } from '../board-ops/board-ops.js';
+import {
+  attemptPrCreation,
+  buildManualPrUrl,
+} from '../pr-creation/pr-creation.js';
+import type { FetchedTicket } from '../types/types.js';
 
 // ─── Delivery paths ──────────────────────────────────────────────────────────
 

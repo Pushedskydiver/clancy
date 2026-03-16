@@ -1,7 +1,7 @@
 import type { BoardConfig } from '~/scripts/shared/env-schema/env-schema.js';
 import type { RemoteInfo } from '~/types/index.js';
 
-import { sharedEnv } from './board-ops.js';
+import { sharedEnv } from '../board-ops/board-ops.js';
 
 /**
  * Resolve a git host token from the board config's env.

@@ -43,11 +43,14 @@ import {
   sharedEnv,
   transitionToStatus,
   validateInputs,
-} from './board-ops.js';
-import { deliverViaEpicMerge, deliverViaPullRequest } from './deliver.js';
-import { fetchTicket } from './fetch-ticket.js';
-import { fetchReworkFromPrReview, postReworkActions } from './rework.js';
-import type { FetchedTicket } from './types.js';
+} from './board-ops/board-ops.js';
+import {
+  deliverViaEpicMerge,
+  deliverViaPullRequest,
+} from './deliver/deliver.js';
+import { fetchTicket } from './fetch-ticket/fetch-ticket.js';
+import { fetchReworkFromPrReview, postReworkActions } from './rework/rework.js';
+import type { FetchedTicket } from './types/types.js';
 
 // ─── Main orchestrator ───────────────────────────────────────────────────────
 
