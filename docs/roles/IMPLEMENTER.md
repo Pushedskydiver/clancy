@@ -122,7 +122,7 @@ This approach works identically across GitHub, GitLab, and Bitbucket — the com
 7. Pushes to the same branch — the PR updates automatically
 8. **Post-rework actions** (best-effort, never block the flow):
    - Leaves a PR comment summarising the rework (all platforms)
-   - **GitHub:** re-requests review from reviewers who left feedback
+   - **GitHub:** re-requests review from reviewers who used "Request Changes" (when that was the rework trigger)
    - **GitLab:** resolves addressed discussion threads
 9. Transitions the ticket back to the review status (`CLANCY_STATUS_REVIEW`)
 10. Logs as `REWORK` in `.clancy/progress.txt` with a `pr:NNN` suffix tracking the PR number
