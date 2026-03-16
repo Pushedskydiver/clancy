@@ -39,7 +39,7 @@ Run `/clancy:status` to see what Clancy would pick up. If the queue is empty:
 Clancy runs a connectivity preflight check (`git ls-remote origin HEAD`) before every run. If it fails, you'll see:
 
 ```
-⚠ Could not reach origin. PR creation and rework detection may fail.
+⚠ Could not reach origin. PR creation and rework detection may not work.
 ```
 
 This is a **warning only** — Clancy continues the run. Common causes:
@@ -74,7 +74,7 @@ If Clancy logs `PUSH_FAILED` or `PUSHED` (without a PR URL):
 
 ## Rework issues?
 
-- **PR rework not detecting?** — Clancy scans `progress.txt` for entries with `PR_CREATED`, `REWORK`, `PUSHED`, or `PUSH_FAILED` status — all four are checked for open PRs with reviewer feedback. Check that: (1) the PR was created by Clancy (it must follow Clancy's branch naming convention, e.g. `feature/proj-123` or `feature/issue-42`), (2) the reviewer left feedback in the right format — **inline code comments** on specific lines always trigger rework, while **general conversation comments** need a `Rework:` prefix to be detected (e.g. "Rework: this should validate inputs"), (3) a git host token is configured in `.clancy/.env` (e.g. `GITHUB_TOKEN`, `GITLAB_TOKEN`, or `BITBUCKET_TOKEN`/`BITBUCKET_USER`), and (4) on GitHub, a `CHANGES_REQUESTED` review state also triggers rework. Note: Clancy's own comments are automatically excluded from rework detection (author filtering) to prevent self-triggering loops.
+- **PR rework not detecting?** — Clancy scans `progress.txt` for entries with `PR_CREATED`, `REWORK`, `PUSHED`, or `PUSH_FAILED` status — all four are checked for open PRs with reviewer feedback. Check that: (1) the PR was created by Clancy (it must follow Clancy's branch naming convention, e.g. `feature/proj-123` or `feature/issue-42`), (2) the reviewer left feedback in the right format — **inline code comments** on specific lines always trigger rework, while **general conversation comments** need a `Rework:` prefix to be detected (e.g. "Rework: this should validate inputs"), (3) a git host token is configured in `.clancy/.env` (e.g. `GITHUB_TOKEN`, `GITLAB_TOKEN`, or `BITBUCKET_TOKEN`/`BITBUCKET_USER`), and (4) on GitHub, a `CHANGES_REQUESTED` review state also triggers rework. Note: on GitHub, Clancy's own comments are excluded from rework detection via author filtering; other platforms rely on timestamp filtering to prevent self-triggering loops.
 
 - **Max rework cycles reached** — Clancy logged `SKIPPED` for a ticket that has hit the max rework limit. Increase `CLANCY_MAX_REWORK` in `.clancy/.env` (default: 3) or resolve the ticket manually. This limit prevents infinite rework loops.
 

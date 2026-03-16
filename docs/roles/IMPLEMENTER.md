@@ -106,7 +106,7 @@ How it works:
 - **Inline code comments** (on specific lines in the diff) always trigger rework — no prefix needed
 - **Conversation comments** (general comments at the bottom of the PR) only trigger rework when prefixed with `Rework:` (e.g. "Rework: this function should handle null inputs")
 - **GitHub `CHANGES_REQUESTED` review state** is an additional rework trigger — if any reviewer has requested changes via GitHub's review mechanism, rework is triggered even without inline or `Rework:` comments
-- **Author filtering** — Clancy's own comments (e.g. post-rework status comments) are excluded from rework detection to prevent self-triggering loops
+- **Author filtering** — on GitHub, Clancy's own comments (e.g. post-rework status comments) are excluded from rework detection via author filtering; other platforms rely on timestamp filtering to prevent self-triggering loops
 - If no rework-triggering comments are found, Clancy fetches the next fresh ticket from the queue
 
 This approach works identically across GitHub, GitLab, and Bitbucket — the comment-based detection is platform-agnostic, with GitHub's review state as an additional signal.

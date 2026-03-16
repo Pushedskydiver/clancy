@@ -26,7 +26,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - **UTC timestamps in progress.txt** — `formatTimestamp()` was using local time methods (`getHours`, etc.). Now uses UTC methods (`getUTCHours`, etc.) for consistent cross-timezone behaviour.
 - **Empty ticket description in rework prompts** — rework `FetchedTicket` had `description: ''`. Now uses the ticket summary as a fallback.
 - **Rework detection expanded** — now scans `PUSHED` and `PUSH_FAILED` entries in addition to `PR_CREATED` and `REWORK`, catching PRs created manually after a push failure.
-- **Author filtering prevents self-triggering rework** — Clancy's own PR comments are excluded from rework detection via `excludeAuthor` filtering on all platforms.
+- **Author filtering prevents self-triggering rework** — Clancy's own PR comments are excluded from rework detection via `excludeAuthor` filtering (GitHub; other platforms use timestamp filtering).
 - **Bitbucket Server "Only one pull request" detection** — `createServerPullRequest` now matches both "already exists" and "Only one pull request" messages on HTTP 409.
 - **Bitbucket Server manual PR URL fallback** — `buildManualPrUrl` now returns a pre-filled URL for Bitbucket Server (was returning `undefined`).
 

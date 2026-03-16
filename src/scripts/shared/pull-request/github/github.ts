@@ -82,18 +82,10 @@ export async function checkPrReviewState(
     const rawConvo = githubCommentsResponseSchema.parse(await convoRes.json());
 
     const inlineComments = excludeAuthor
-      ? rawInline.filter(
-          (c) =>
-            (c as unknown as { user?: { login?: string } }).user?.login !==
-            excludeAuthor,
-        )
+      ? rawInline.filter((c) => c.user?.login !== excludeAuthor)
       : rawInline;
     const convoComments = excludeAuthor
-      ? rawConvo.filter(
-          (c) =>
-            (c as unknown as { user?: { login?: string } }).user?.login !==
-            excludeAuthor,
-        )
+      ? rawConvo.filter((c) => c.user?.login !== excludeAuthor)
       : rawConvo;
 
     const hasInlineComments = inlineComments.length > 0;
@@ -193,18 +185,10 @@ export async function fetchPrReviewComments(
     const rawConvo = githubCommentsResponseSchema.parse(await convoRes.json());
 
     const inlineComments = excludeAuthor
-      ? rawInline.filter(
-          (c) =>
-            (c as unknown as { user?: { login?: string } }).user?.login !==
-            excludeAuthor,
-        )
+      ? rawInline.filter((c) => c.user?.login !== excludeAuthor)
       : rawInline;
     const convoComments = excludeAuthor
-      ? rawConvo.filter(
-          (c) =>
-            (c as unknown as { user?: { login?: string } }).user?.login !==
-            excludeAuthor,
-        )
+      ? rawConvo.filter((c) => c.user?.login !== excludeAuthor)
       : rawConvo;
 
     const combined: string[] = [];
