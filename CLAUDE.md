@@ -23,6 +23,20 @@ Autonomous, board-driven development for Claude Code. npm package: `chief-clancy
 | `hooks/` | 4 Node.js hooks (credential guard, context monitor, statusline, update check) |
 | `registry/boards.json` | Board registry for community board integrations |
 
+## Key documentation
+
+| Doc | Purpose |
+|---|---|
+| [docs/GLOSSARY.md](docs/GLOSSARY.md) | Ubiquitous language — term definitions for roles, delivery, orchestrator, strategist |
+| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture, module map, function inventory |
+| [docs/VISUAL-ARCHITECTURE.md](docs/VISUAL-ARCHITECTURE.md) | Mermaid diagrams — role interactions, ticket lifecycle, delivery paths |
+| [docs/CONVENTIONS.md](docs/CONVENTIONS.md) | Code conventions, naming patterns, TypeScript/hook rules |
+| [docs/TESTING.md](docs/TESTING.md) | Testing strategy, co-location rules, coverage thresholds |
+| [docs/GIT.md](docs/GIT.md) | Branch strategy, merge conventions |
+| [docs/design/](docs/design/) | Design docs — strategist flows, epic branch workflow |
+| [docs/roles/](docs/roles/) | Role descriptions (implementer, reviewer, setup, planner) |
+| [docs/guides/](docs/guides/) | Configuration, security, troubleshooting guides |
+
 ## Running tests
 
 ```bash
