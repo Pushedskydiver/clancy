@@ -2,7 +2,7 @@
 
 ## Overview
 
-~25 files (4 new, ~21 modified). 4 waves, 8 agents total. The strategist is a **pure markdown workflow** — no runtime TypeScript like `once.ts`. The installer picks up roles dynamically from `src/roles/`.
+~27 files (4 new, ~23 modified). 4 waves, 9 agents total. The strategist is a **pure markdown workflow** — no runtime TypeScript like `once.ts`. The installer picks up roles dynamically from `src/roles/`. Also includes blocker-aware ticket pickup in the implementer (runtime TypeScript change) and `fetchChildrenStatus` rewrite to use `Epic:` text convention.
 
 ## Prerequisites
 
@@ -23,7 +23,7 @@ The strategist builds on top of this — it does NOT need to redo any of the abo
 
 | Agent | Chunks | Files | Complexity |
 |---|---|---|---|
-| **1** | Schema + types | `src/schemas/env.ts` (add `CLANCY_BRIEF_ISSUE_TYPE`, `CLANCY_BRIEF_EPIC`, `CLANCY_COMPONENT`), `src/types/remote.ts` (add `BRIEF`, `APPROVE_BRIEF` to ProgressStatus) | Small |
+| **1** | Schema + types | `src/schemas/env.ts` (add `CLANCY_BRIEF_ISSUE_TYPE`, `CLANCY_BRIEF_EPIC`, `CLANCY_COMPONENT`, `CLANCY_MODE`), `src/types/remote.ts` (add `BRIEF`, `APPROVE_BRIEF` to ProgressStatus) | Small |
 | **2** | **Brief workflow** | `src/roles/strategist/workflows/brief.md` (NEW, ~500 lines) | **Large** |
 | **3** | **Approve-brief workflow** | `src/roles/strategist/workflows/approve-brief.md` (NEW, ~400 lines) | **Large** |
 
@@ -33,20 +33,21 @@ Agents 2 and 3 are the critical path — they need the full design docs.
 **No planner --fresh change needed** — already done in v0.5.6.
 **No branch freshness check needed** — already in planner + implementer from v0.5.6. Strategist brief workflow includes it natively.
 
-### Wave 2 — Integration (3 parallel agents)
+### Wave 2 — Integration (4 parallel agents)
 
 | Agent | Chunks | Files |
 |---|---|---|
 | **4** | Command files + installer | `src/roles/strategist/commands/brief.md` (NEW), `src/roles/strategist/commands/approve-brief.md` (NEW), `src/installer/install.ts` |
 | **5** | Setup integration + scaffold | `src/roles/setup/commands/help.md`, `src/roles/setup/workflows/init.md`, `src/roles/setup/workflows/settings.md`, `src/roles/setup/workflows/scaffold.md` |
 | **6** | Reviewer logs + hook + template | `src/roles/reviewer/workflows/logs.md`, `hooks/clancy-check-update.js`, `src/templates/CLAUDE.md` |
+| **7** | Implementer blocker check + fetchChildrenStatus rewrite | `src/scripts/once/fetch-ticket/fetch-ticket.ts` (blocker-aware pickup), `src/scripts/board/{jira,github,linear}/*.ts` (add `fetchBlockerStatus` + rewrite `fetchChildrenStatus` to use `Epic:` text convention + add Zod validation) |
 
 ### Wave 3 — Documentation (2 parallel agents)
 
 | Agent | Chunks | Files |
 |---|---|---|
-| **7** | Role doc + cross-cutting docs | `docs/roles/STRATEGIST.md` (NEW), `docs/ARCHITECTURE.md`, `docs/roles/SETUP.md`, `docs/guides/CONFIGURATION.md` |
-| **8** | README + project + release | `README.md`, `CLAUDE.md`, `CHANGELOG.md`, `package.json` |
+| **8** | Role doc + cross-cutting docs | `docs/roles/STRATEGIST.md` (NEW), `docs/ARCHITECTURE.md`, `docs/roles/SETUP.md`, `docs/guides/CONFIGURATION.md`, `docs/GLOSSARY.md` |
+| **9** | README + project + release | `README.md`, `CLAUDE.md`, `CHANGELOG.md`, `package.json`, `package-lock.json` |
 
 ### Wave 4 — Verification
 
@@ -88,6 +89,9 @@ Run `npm test && npm run typecheck && npm run lint`. Fix any issues.
 - **Blocking-aware ticket ordering** — topological sort of decomposition table; circular dependency detection
 - **Strengthened user stories** — behaviour-driven format with traceability to decomposed tickets
 - **Open Questions section** — unresolvable questions from grill phase surfaced for PO review
+- **Blocker-aware ticket pickup** — implementer checks blocking dependencies before picking up a ticket. If any blocker is incomplete, skip and pick the next one. Per-board: Jira issueLinks, GitHub "Blocked by #N" body parsing, Linear relations API
+- **`fetchChildrenStatus` rewrite** — all 3 board implementations rewritten to use `Epic: {key}` text convention in child descriptions (cross-platform), replacing native parent/child APIs. Zod validation added
+- **`Epic: {key}` in child descriptions** — strategist embeds epic reference in every child ticket description during `/clancy:approve-brief`. Enables cross-platform epic completion detection
 
 ---
 
@@ -123,6 +127,9 @@ Run `npm test && npm run typecheck && npm run lint`. Fix any issues.
 - Vertical slice validation rule in decomposition
 - HITL/AFK mode classification per ticket
 - Topological sort + circular dependency detection in approve-brief
+- Blocker-aware ticket pickup in implementer (`fetchTicket` checks dependencies before returning)
+- `fetchChildrenStatus` rewrite — `Epic:` text convention + Zod validation for all 3 boards
+- `fetchBlockerStatus` — new per-board function to check if a ticket's blockers are resolved
 
 ---
 
@@ -132,6 +139,8 @@ Run `npm test && npm run typecheck && npm run lint`. Fix any issues.
 2. **Ticket creation API payloads** — Jira next-gen vs classic parent field, GitHub label pre-creation, Linear UUID resolution
 3. **Hook extension** — CommonJS, must not block SessionStart
 4. **CLANCY_COMPONENT** — only implement "set on created tickets" side. Queue filtering deferred.
+5. **Blocker checking across boards** — Jira uses issueLinks (reliable), GitHub uses body text parsing (fragile), Linear uses relations API (needs UUID). Different reliability levels per board.
+6. **`fetchChildrenStatus` rewrite** — changing from native APIs to text convention. Must not break epic completion for existing Jira users who have children without `Epic:` in description.
 
 ---
 

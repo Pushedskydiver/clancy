@@ -34,6 +34,7 @@ Ubiquitous language for the Clancy project. Use these terms consistently in code
 | **Once** | A single ticket execution cycle: preflight → fetch ticket → implement → deliver → log. Entry point: `/clancy:once`. |
 | **Run** | AFK loop that calls once repeatedly until the queue is empty. Entry point: `/clancy:run`. |
 | **Preflight** | Startup checks: `.clancy/.env` exists, credentials valid, board reachable. Runs before every ticket. |
+| **Blocker check** | Before implementing a ticket, the implementer checks its blocking dependencies on the board. If any blocker is incomplete, the ticket is skipped and the next one is picked up. Per-board: Jira checks issueLinks, GitHub parses "Blocked by #N" from body, Linear checks relations API. (v0.6.0) |
 | **Feasibility check** | After fetching a ticket, Clancy assesses whether the work is achievable in the current codebase context. Skippable with `--skip-feasibility`. |
 | **Rework** | Automatic re-implementation triggered by PR review comments. Inline code comments always trigger; conversation comments need `Rework:` prefix. |
 | **Max rework guard** | Safety limit: `CLANCY_MAX_REWORK` (default 3) caps the number of rework cycles per ticket to prevent infinite loops. |
