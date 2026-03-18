@@ -62,24 +62,7 @@ function parentLabel(provider: BoardProvider): string {
   return provider === 'github' ? 'Milestone' : 'Epic';
 }
 
-/**
- * Build the full Claude prompt for implementing a ticket.
- *
- * @param input - The ticket data for the prompt.
- * @returns The complete prompt string.
- *
- * @example
- * ```ts
- * const prompt = buildPrompt({
- *   provider: 'jira',
- *   key: 'PROJ-123',
- *   title: 'Add login page',
- *   description: 'Create a login page with email/password fields.',
- *   parentInfo: 'PROJ-100',
- *   blockers: 'None',
- * });
- * ```
- */
+/** Input for building a rework prompt from reviewer feedback. */
 export type ReworkPromptInput = {
   key: string;
   title: string;
@@ -139,6 +122,12 @@ Steps:
 5. When done, confirm you are finished.`;
 }
 
+/**
+ * Build the full Claude prompt for implementing a ticket.
+ *
+ * @param input - The ticket data for the prompt.
+ * @returns The complete prompt string.
+ */
 export function buildPrompt(input: PromptInput): string {
   const label = ticketLabel(input.provider);
   const pLabel = parentLabel(input.provider);
