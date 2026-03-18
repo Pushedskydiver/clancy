@@ -33,7 +33,7 @@ import type { FetchedTicket } from '../types/types.js';
  * Ensure the epic branch exists locally and on the remote.
  *
  * - If it exists on the remote, fetches it locally.
- * - If it only exists locally with unpushed commits, refuses to overwrite
+ * - If it only exists locally but not on the remote, refuses to overwrite
  *   and prints migration instructions (safety guard for mid-upgrade users).
  * - If it doesn't exist at all, creates from `origin/{baseBranch}` and pushes.
  *
@@ -83,6 +83,7 @@ export function ensureEpicBranch(
     execFileSync('git', ['fetch', 'origin', baseBranch], {
       encoding: 'utf8',
       stdio: ['pipe', 'pipe', 'pipe'],
+      timeout: 15_000,
     });
     execFileSync(
       'git',
@@ -387,6 +388,7 @@ export async function deliverEpicToBase(
 
   if (pr && !pr.ok && pr.alreadyExists) {
     console.log(yellow(`  ⚠ An epic PR already exists for ${epicBranch}.`));
+    appendProgress(process.cwd(), epicKey, epicTitle, 'EPIC_PR_CREATED');
     return true;
   }
 
