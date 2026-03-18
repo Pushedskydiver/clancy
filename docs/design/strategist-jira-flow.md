@@ -256,7 +256,11 @@ Body: { "jql": "project=\"PROJ\" AND summary ~ \"customer portal\" ORDER BY crea
 
 Using the brief template. Populate all sections from research findings. Include `### External Research` only if web research was conducted.
 
-Ticket Decomposition table: max 10 rows. Each ticket gets: Title, Description (1-2 sentences), Size (S/M/L), Dependencies (references to other tickets in the table by `#N`).
+Ticket Decomposition table: max 10 rows. Each ticket gets: Title, Description (1-2 sentences), Size (S/M/L), Dependencies (references to other tickets in the table by `#N`), Mode (AFK or HITL).
+
+**Vertical slice rule:** Each ticket must be a vertical slice cutting through all layers needed to deliver one piece of working functionality. If a ticket title mentions only one layer (e.g. "Set up database schema"), restructure it into a slice that delivers observable behaviour (e.g. "Portal route + DB schema + basic list view").
+
+**HITL/AFK classification:** Tag each ticket as AFK (can be implemented autonomously) or HITL (needs human input — credentials, design decisions, external setup, ambiguous requirements).
 
 #### 8. Save Locally
 
@@ -404,25 +408,27 @@ Read the `## Ticket Decomposition` table from the brief. Extract:
 - `Description`
 - `Size`
 - `Dependencies` (references like `#1`, `#3`)
+- `Mode` (AFK or HITL)
 
-Validate: at least 1 ticket, at most 10.
+Validate: at least 1 ticket, at most 10. Detect circular dependencies (error + stop). Topological sort by dependency graph so blockers are created before dependents.
 
 #### 4. Confirm With User
 
 Display:
 ```
-Creating 6 tickets under PROJ-200:
+Creating 6 tickets under PROJ-200 (dependency order):
 
-  #1  [S] Set up portal route structure — No dependencies
-  #2  [M] Implement SSO integration — No dependencies
-  #3  [M] Build role-based access control — Depends on #2
-  #4  [S] Create portal dashboard layout — Depends on #1
-  #5  [L] Implement customer data views — Depends on #3, #4
-  #6  [S] Add portal navigation and breadcrumbs — Depends on #4
+  #1  [S] [AFK]  Portal route + empty dashboard shell — No deps
+  #2  [M] [HITL] SSO login flow (needs IdP config) — No deps
+  #3  [M] [AFK]  Role-based access control — After #2
+  #4  [S] [AFK]  Dashboard layout with real data — After #1
+  #5  [L] [AFK]  Full customer data views — After #3, #4
+  #6  [S] [AFK]  Navigation and breadcrumbs — After #4
 
 Parent epic: PROJ-200 (Add customer portal)
 Issue type: Task (override with CLANCY_BRIEF_ISSUE_TYPE)
 Labels: clancy (from CLANCY_LABEL)
+AFK-ready: 5 | Needs human: 1
 
 Proceed? [Y/n]
 ```
@@ -443,9 +449,9 @@ Headers: Authorization: Basic {auth}, Accept: application/json
 - **Not found:** Display: `X Issue type "Task" not available in project PROJ. Available types: Story, Bug, Sub-task. Set CLANCY_BRIEF_ISSUE_TYPE in .clancy/.env`
   - Stop
 
-#### 6. Create Child Tickets (Sequential, 500ms Delay)
+#### 6. Create Child Tickets (Sequential, Dependency Order, 500ms Delay)
 
-For each ticket in the decomposition table, in order:
+For each ticket in topological (dependency) order:
 
 **API Call:**
 ```
@@ -469,10 +475,12 @@ Body: {
     },
     "issuetype": { "name": "Task" },
     "parent": { "key": "PROJ-200" },
-    "labels": ["clancy"]
+    "labels": ["clancy", "clancy:afk"]
   }
 }
 ```
+
+**Mode label:** Include `clancy:afk` or `clancy:hitl` label based on the ticket's Mode classification. This label is used by `/clancy:run` to decide whether to pick up the ticket autonomously or skip it for human attention.
 
 **Conditional fields (included when env vars are set):**
 

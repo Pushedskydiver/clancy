@@ -106,6 +106,46 @@ describe('buildPrompt', () => {
     expect(prompt).toContain('STACK.md, ARCHITECTURE.md, CONVENTIONS.md');
     expect(prompt).toContain('Follow the conventions in GIT.md exactly');
   });
+
+  it('includes TDD instructions when tdd is true', () => {
+    const prompt = buildPrompt({
+      provider: 'jira',
+      key: 'PROJ-1',
+      title: 'T',
+      description: 'D',
+      parentInfo: 'none',
+      tdd: true,
+    });
+
+    expect(prompt).toContain('## Test-Driven Development');
+    expect(prompt).toContain('red-green-refactor');
+    expect(prompt).toContain('Write a failing test');
+  });
+
+  it('omits TDD instructions when tdd is false', () => {
+    const prompt = buildPrompt({
+      provider: 'jira',
+      key: 'PROJ-1',
+      title: 'T',
+      description: 'D',
+      parentInfo: 'none',
+      tdd: false,
+    });
+
+    expect(prompt).not.toContain('## Test-Driven Development');
+  });
+
+  it('omits TDD instructions when tdd is undefined', () => {
+    const prompt = buildPrompt({
+      provider: 'jira',
+      key: 'PROJ-1',
+      title: 'T',
+      description: 'D',
+      parentInfo: 'none',
+    });
+
+    expect(prompt).not.toContain('## Test-Driven Development');
+  });
 });
 
 describe('buildReworkPrompt', () => {
@@ -172,5 +212,18 @@ describe('buildReworkPrompt', () => {
     expect(prompt).toContain(
       "Don't re-implement unrelated areas. Focus only on what was flagged.",
     );
+  });
+
+  it('includes TDD instructions when tdd is true', () => {
+    const prompt = buildReworkPrompt({ ...baseInput, tdd: true });
+
+    expect(prompt).toContain('## Test-Driven Development');
+    expect(prompt).toContain('red-green-refactor');
+  });
+
+  it('omits TDD instructions when tdd is not set', () => {
+    const prompt = buildReworkPrompt(baseInput);
+
+    expect(prompt).not.toContain('## Test-Driven Development');
   });
 });

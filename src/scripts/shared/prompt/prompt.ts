@@ -15,7 +15,25 @@ type PromptInput = {
   parentInfo: string;
   /** Blocker info string (e.g., `'Blocked by: PROJ-99, PROJ-98'` or `'None'`). */
   blockers?: string;
+  /** When true, enforce test-driven development (red-green-refactor). */
+  tdd?: boolean;
 };
+
+const tddBlock = `
+## Test-Driven Development
+
+You MUST follow the red-green-refactor cycle for every behaviour change:
+
+1. **Red** — Write a failing test that describes the desired behaviour.
+   Run the test suite and confirm the new test fails.
+2. **Green** — Write the minimum code to make the failing test pass.
+   Do not add behaviour beyond what the test requires.
+3. **Refactor** — Clean up the implementation while keeping all tests green.
+   Look for duplication, unclear names, or unnecessary complexity.
+
+Repeat for each behaviour. Do not write implementation code without a failing test first.
+Design interfaces for testability — prefer pure functions and thin boundaries
+so modules are easy to test in isolation.`;
 
 /**
  * Get the board-specific label for the ticket type.
@@ -70,6 +88,8 @@ export type ReworkPromptInput = {
   feedbackComments: string[];
   /** Git diff or git log output from the previous implementation. */
   previousContext?: string;
+  /** When true, enforce test-driven development (red-green-refactor). */
+  tdd?: boolean;
 };
 
 /**
@@ -108,7 +128,7 @@ ${input.description}
 
 ${feedbackSection}${previousSection}
 
-Address the specific feedback above. Don't re-implement unrelated areas. Focus only on what was flagged.
+Address the specific feedback above. Don't re-implement unrelated areas. Focus only on what was flagged.${input.tdd ? tddBlock : ''}
 
 Steps:
 1. Read core docs in .clancy/docs/: STACK.md, ARCHITECTURE.md, CONVENTIONS.md, GIT.md, DEFINITION-OF-DONE.md, CONCERNS.md
@@ -152,5 +172,5 @@ If the ${input.provider === 'github' ? 'issue' : 'ticket'} IS implementable, con
 2. Follow the conventions in GIT.md exactly
 3. Implement the ${input.provider === 'github' ? 'issue' : 'ticket'} fully
 4. Commit your work following the conventions in GIT.md
-5. When done, confirm you are finished.`;
+5. When done, confirm you are finished.${input.tdd ? tddBlock : ''}`;
 }

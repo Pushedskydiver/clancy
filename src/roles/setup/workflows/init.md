@@ -421,6 +421,19 @@ If enter is pressed with no value: use default 3 — store `CLANCY_MAX_REWORK=3`
 
 ---
 
+### Q3f (all boards): TDD mode
+
+Output:
+
+```
+Enable Test-Driven Development? Clancy will follow red-green-refactor for every behaviour change. [y/N]
+```
+
+If `y`: store `CLANCY_TDD=true` in `.clancy/.env`.
+If `N` or enter: do not add `CLANCY_TDD` to `.clancy/.env`.
+
+---
+
 ### Q4: Base branch (auto-detect)
 
 Silently detect the base branch — do not ask unless detection fails:

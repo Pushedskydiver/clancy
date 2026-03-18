@@ -402,6 +402,10 @@ MAX_ITERATIONS=5
 # next run. No configuration needed.
 # CLANCY_MAX_REWORK=3                    # Max rework cycles before human intervention (default: 3)
 
+# ─── Optional: Test-Driven Development ──────────────────────────────────────
+# When enabled, Clancy follows red-green-refactor for every behaviour change.
+# CLANCY_TDD=true
+
 # ─── Optional: Planner queue ─────────────────────────────────────────────────
 # Status for backlog tickets that /clancy:plan fetches from (default: Backlog)
 # Only used if Planner role is enabled via CLANCY_ROLES
@@ -477,6 +481,10 @@ MAX_ITERATIONS=20
 # next run. No configuration needed.
 # CLANCY_MAX_REWORK=3                    # Max rework cycles before human intervention (default: 3)
 
+# ─── Optional: Test-Driven Development ──────────────────────────────────────
+# When enabled, Clancy follows red-green-refactor for every behaviour change.
+# CLANCY_TDD=true
+
 # ─── Optional: Skip comments ──────────────────────────────────────────────
 # When Clancy skips a ticket (irrelevant/infeasible), post a comment explaining why
 # Set to "false" to disable skip comments
@@ -548,6 +556,10 @@ MAX_ITERATIONS=20
 # a conversation comment prefixed with "Rework:", Clancy picks it up on the
 # next run. No configuration needed.
 # CLANCY_MAX_REWORK=3                    # Max rework cycles before human intervention (default: 3)
+
+# ─── Optional: Test-Driven Development ──────────────────────────────────────
+# When enabled, Clancy follows red-green-refactor for every behaviour change.
+# CLANCY_TDD=true
 
 # ─── Optional: Git host (PR creation) ───────────────────────────────────────
 # When an issue has no parent, Clancy pushes the feature branch and creates a

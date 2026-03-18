@@ -308,7 +308,34 @@ on {date}"  (Part 3)
                        │
                        v
 ┌──────────────────────────────────────────────┐
-│  Step 2a: AUTO-DETECT EXISTING BRIEF         │
+│  Step 2a: GRILL PHASE (interactive only)     │
+│                                              │
+│  Running interactively (human present)?      │
+│    NO (AFK/batch) -> skip to step 2b         │
+│    YES -> interview the user exhaustively:   │
+│                                              │
+│  Walk the "design tree":                     │
+│    - Ask clarifying questions about scope,   │
+│      users, constraints, edge cases          │
+│    - Explore the codebase to verify/inform   │
+│      claims made during the conversation     │
+│    - Resolve dependencies between decisions  │
+│    - Continue until no open questions remain  │
+│                                              │
+│  Typical output: 5-20 clarifying questions   │
+│  resolved before brief generation begins.    │
+│                                              │
+│  AFK auto-resolve: when running in AFK/batch │
+│  mode, the strategist uses its own judgement  │
+│  + codebase context to resolve open          │
+│  questions. Unresolvable questions are listed │
+│  in a ## Open Questions section of the brief │
+│  for the PO to address during review.        │
+└──────────────────────┬───────────────────────┘
+                       │
+                       v
+┌──────────────────────────────────────────────┐
+│  Step 2b: AUTO-DETECT EXISTING BRIEF         │
 │                                              │
 │  Scan .clancy/briefs/ for match              │
 │  (by ticket key or slug)                     │
@@ -388,9 +415,13 @@ on {date}"  (Part 3)
 │    - Goals / Non-Goals                       │
 │    - Background Research (codebase + web)     │
 │    - Related Existing Work                   │
-│    - User Stories                             │
+│    - User Stories (behaviour-driven, see     │
+│      guidance below)                         │
 │    - Technical Considerations                │
-│    - Ticket Decomposition (max 10 rows)      │
+│    - Ticket Decomposition (max 10 rows,      │
+│      vertical slices, HITL/AFK tags)         │
+│    - Open Questions (if any remain from      │
+│      grill phase — AFK mode only)            │
 │    - Success Criteria                        │
 │    - Risks                                   │
 └──────────────────────┬───────────────────────┘
@@ -452,6 +483,142 @@ on {date}"  (Part 3)
 │  YYYY-MM-DD HH:MM | BRIEF | {slug} |        │
 │    {N} proposed tickets                      │
 └──────────────────────────────────────────────┘
+```
+
+### Step 2a: Grill Phase — Detailed Guidance
+
+The grill phase is inspired by the "design tree" concept (Frederick P. Brooks, *The Design of Design*). The goal is to walk every branch of the design tree systematically before generating the brief, resolving ambiguity upfront rather than encoding it into vague tickets.
+
+```
+Grill Phase Behaviour
+──────────────────────────────────────────────────────────────────
+
+INTERACTIVE MODE (human present):
+  1. After gathering the idea (step 2), interview the user:
+     - Scope: "What's in and what's out?"
+     - Users: "Who uses this? What are the personas?"
+     - Constraints: "Performance budget? Browser support? Auth?"
+     - Edge cases: "What happens when X is empty / fails / times out?"
+     - Dependencies: "Does this depend on other in-flight work?"
+  2. Explore the codebase between questions to verify/inform
+     (e.g. user says "we have a notification service" — check it)
+  3. Resolve dependencies between decisions one by one
+     (e.g. "you said SSO — does that mean the dashboard
+      also needs role-based access?")
+  4. Continue until no open questions remain
+  5. The resolved answers feed directly into the brief
+
+  Typical: 5-20 clarifying questions over 2-5 rounds.
+
+AFK / BATCH MODE (no human):
+  1. Auto-resolve questions using codebase context + board context
+  2. List any genuinely unresolvable questions in the brief:
+     ## Open Questions
+     - [ ] Should the portal support SSO or email/password only?
+     - [ ] Is the 50ms latency budget per-request or p99?
+  3. The PO addresses these during brief review (feedback loop)
+```
+
+### Step 5: Brief Template — Detailed Guidance
+
+#### User Stories
+
+User stories describe desired system behaviour in plain language. They form the bridge between the problem statement and the ticket decomposition — every ticket should trace back to at least one user story.
+
+```
+User Story Format
+──────────────────────────────────────────────────────────────────
+
+As a [persona], I want to [action] so that [outcome].
+
+Examples:
+  As a customer, I want to view my order history so that I can
+    track past purchases without contacting support.
+  As an admin, I want to bulk-import users via CSV so that
+    onboarding large teams doesn't require manual entry.
+  As a developer, I want the auth module to expose a thin
+    interface so that I can mock it in integration tests.
+
+Guidelines:
+  - Write 3-8 user stories per brief (more = scope too large)
+  - Each story must be testable (implies acceptance criteria)
+  - Stories should cover the primary personas, not every edge case
+  - Edge cases belong in Technical Considerations, not stories
+  - Every ticket in the decomposition must trace to ≥1 story
+```
+
+#### Ticket Decomposition — Vertical Slices
+
+Tickets must be **vertical slices** (tracer bullets), not horizontal layers. Each ticket cuts through all integration layers needed to deliver one thin, working piece of functionality end-to-end.
+
+```
+Vertical Slice Guidance
+──────────────────────────────────────────────────────────────────
+
+WRONG (horizontal layers):
+  #1 [M] Set up database schema for portal
+  #2 [M] Build API endpoints for portal
+  #3 [M] Create React components for portal
+  #4 [S] Wire up API calls in frontend
+  #5 [S] Add tests
+
+  Problem: nothing works until #4 is done. No value is
+  deliverable until the very end. Integration bugs surface late.
+
+RIGHT (vertical slices):
+  #1 [S] Portal route + empty dashboard shell (E2E skeleton)
+  #2 [M] SSO login flow (DB + API + UI for auth)
+  #3 [M] Role-based access control (middleware + UI guards)
+  #4 [S] Dashboard layout with real data (one widget)
+  #5 [L] Full customer data views (remaining widgets)
+  #6 [S] Navigation and breadcrumbs
+
+  Each ticket delivers a working, testable, deployable slice.
+  Integration is proven from ticket #1 onwards.
+
+VALIDATION RULE:
+  If a ticket title mentions only one layer (e.g. "Set up
+  database schema", "Create React components"), flag it and
+  restructure into a vertical slice that delivers observable
+  behaviour.
+```
+
+#### Ticket Decomposition — HITL/AFK Classification
+
+Each ticket in the decomposition table includes a `Mode` column indicating whether it requires human-in-the-loop (HITL) intervention or can run autonomously (AFK).
+
+```
+HITL/AFK Classification
+──────────────────────────────────────────────────────────────────
+
+Decomposition table columns:
+  | # | Title | Description | Size | Deps | Mode | Ticket |
+
+Mode values:
+  AFK  — Ticket can be implemented autonomously by /clancy:once
+         or /clancy:run without human intervention.
+  HITL — Ticket requires human judgement, approval, or input
+         during implementation (e.g. design decisions, API key
+         provisioning, third-party service setup, UX review).
+
+Classification heuristics:
+  AFK when:
+    - Pure code change with clear spec (add endpoint, fix bug)
+    - Refactoring with existing test coverage
+    - Adding tests for existing behaviour
+    - Wiring up existing services/modules
+  HITL when:
+    - Requires credentials or secrets not yet provisioned
+    - Involves UX/design decisions not specified in the brief
+    - Needs external service setup (DNS, CI config, etc.)
+    - Requires human review before proceeding (security, legal)
+    - Ambiguous requirements that the brief couldn't resolve
+
+Why this matters:
+  /clancy:run uses the Mode tag to decide whether to pick up a
+  ticket automatically (AFK) or skip it for human attention (HITL).
+  This prevents autonomous runs from getting stuck on tickets
+  that need human input.
 ```
 
 ### Step 2: Gather Idea — Mode-Specific Flows
@@ -701,6 +868,7 @@ On failure:                 On failure:                 On failure:
 │    - Description                             │
 │    - Size (S/M/L)                            │
 │    - Dependencies (#1, #3, etc.)             │
+│    - Mode (AFK/HITL)                         │
 │    - Ticket column (if partially created)    │
 │                                              │
 │  Validate:                                   │
@@ -708,6 +876,14 @@ On failure:                 On failure:                 On failure:
 │    >10 tickets -> Warn (continue anyway)     │
 │    Tickets already in Ticket column -> skip  │
 │      those (partial resume)                  │
+│    Circular deps -> "Circular dependency     │
+│      between #N and #M" (stop)              │
+│                                              │
+│  Topological sort:                           │
+│    Order tickets by dependency graph so      │
+│    blockers are created before dependents.   │
+│    This ensures blocking relationships can   │
+│    be linked immediately after creation.     │
 └──────────────────────┬───────────────────────┘
                        │
                        v
@@ -717,9 +893,10 @@ On failure:                 On failure:                 On failure:
 │  Display:                                    │
 │    Brief: {slug}                             │
 │    Parent: {ticket or "none"}                │
-│    Tickets to create:                        │
-│      [1] [S] Title — No deps                 │
-│      [2] [M] Title — Depends on #1           │
+│    Tickets to create (dependency order):     │
+│      [1] [S] [AFK]  Title — No deps          │
+│      [2] [M] [HITL] Title — Blocks #3, #4    │
+│      [3] [M] [AFK]  Title — After #2         │
 │    Labels: {list}                            │
 │    Issue type: {type} (Jira only)            │
 │                                              │
@@ -794,15 +971,17 @@ On failure:                 On failure:                 On failure:
                        v
 ┌──────────────────────────────────────────────┐
 │  Step 7: CREATE CHILD TICKETS                │
-│  Sequential, 500ms delay between each        │
+│  Sequential in topological (dependency)      │
+│  order, 500ms delay between each.            │
 │  (platform-specific — see below)             │
 │                                              │
-│  For each ticket in decomposition:           │
+│  For each ticket in dependency order:        │
 │    Already created (Ticket column)?          │
 │      -> Skip (resume from partial)           │
-│    Create via API                            │
+│    Create via API (include Mode tag in       │
+│      description/labels — see platform docs) │
 │      -> Success: record key, display:        │
-│         "[1/6] + PROJ-201 — Title"           │
+│         "[1/6] + PROJ-201 — Title [AFK]"     │
 │      -> Failure: see error flows (Part 5)    │
 │    Wait 500ms                                │
 └──────────────────────┬───────────────────────┘
@@ -850,8 +1029,9 @@ On failure:                 On failure:                 On failure:
 │  Step 12: DISPLAY SUMMARY                    │
 │                                              │
 │  "N tickets created under {parent}"          │
-│  List all: key — title (size)                │
+│  List all: key — title (size) [Mode]         │
 │  "Dependencies linked: N"                    │
+│  "AFK-ready: X | Needs human: Y"            │
 │  "Next: /clancy:plan"                        │
 └──────────────────────┬───────────────────────┘
                        │
