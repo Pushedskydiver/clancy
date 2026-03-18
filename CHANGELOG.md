@@ -7,6 +7,27 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.5.10] — 2026-03-18
+
+### ✨ Features
+
+- **TDD mode** (`CLANCY_TDD=true`) — when enabled, Clancy follows the red-green-refactor cycle for every behaviour change. Writes a failing test first, implements the minimum code to pass, then refactors. Applies to both new implementations (`/clancy:once`) and rework cycles. Configurable via `/clancy:init` and `/clancy:settings`.
+
+### 📝 Docs
+
+- **Strategist design docs updated for v0.6.0** — incorporates 5 improvements from Matt Pocock's agent skills analysis:
+  - **Grill phase** — interactive clarification interview (5-20 questions) before brief generation. AFK mode auto-resolves using codebase context; unresolvable questions surfaced in `## Open Questions` section.
+  - **Vertical slice decomposition** — validation rule enforcing end-to-end slices over horizontal layers, with right/wrong examples.
+  - **HITL/AFK classification** — each decomposed ticket tagged as AFK (autonomous) or HITL (needs human). `clancy:afk`/`clancy:hitl` labels set on board tickets for `/clancy:run` filtering.
+  - **Blocking-aware ticket ordering** — topological sort in `/clancy:approve-brief`; circular dependency detection.
+  - **Strengthened user stories** — behaviour-driven format with traceability to decomposed tickets.
+
+### ✅ Tests
+
+- 7 new tests (466 → 473)
+
+---
+
 ## [0.5.9] — 2026-03-16
 
 ### ♻️ Refactor

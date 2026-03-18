@@ -15,7 +15,25 @@ type PromptInput = {
   parentInfo: string;
   /** Blocker info string (e.g., `'Blocked by: PROJ-99, PROJ-98'` or `'None'`). */
   blockers?: string;
+  /** When true, enforce test-driven development (red-green-refactor). */
+  tdd?: boolean;
 };
+
+const tddBlock = `
+## Test-Driven Development
+
+You MUST follow the red-green-refactor cycle for every behaviour change:
+
+1. **Red** — Write a failing test that describes the desired behaviour.
+   Run the test suite and confirm the new test fails.
+2. **Green** — Write the minimum code to make the failing test pass.
+   Do not add behaviour beyond what the test requires.
+3. **Refactor** — Clean up the implementation while keeping all tests green.
+   Look for duplication, unclear names, or unnecessary complexity.
+
+Repeat for each behaviour. Do not write implementation code without a failing test first.
+Design interfaces for testability — prefer pure functions and thin boundaries
+so modules are easy to test in isolation.`;
 
 /**
  * Get the board-specific label for the ticket type.
@@ -44,24 +62,7 @@ function parentLabel(provider: BoardProvider): string {
   return provider === 'github' ? 'Milestone' : 'Epic';
 }
 
-/**
- * Build the full Claude prompt for implementing a ticket.
- *
- * @param input - The ticket data for the prompt.
- * @returns The complete prompt string.
- *
- * @example
- * ```ts
- * const prompt = buildPrompt({
- *   provider: 'jira',
- *   key: 'PROJ-123',
- *   title: 'Add login page',
- *   description: 'Create a login page with email/password fields.',
- *   parentInfo: 'PROJ-100',
- *   blockers: 'None',
- * });
- * ```
- */
+/** Input for building a rework prompt from reviewer feedback. */
 export type ReworkPromptInput = {
   key: string;
   title: string;
@@ -70,6 +71,8 @@ export type ReworkPromptInput = {
   feedbackComments: string[];
   /** Git diff or git log output from the previous implementation. */
   previousContext?: string;
+  /** When true, enforce test-driven development (red-green-refactor). */
+  tdd?: boolean;
 };
 
 /**
@@ -108,7 +111,7 @@ ${input.description}
 
 ${feedbackSection}${previousSection}
 
-Address the specific feedback above. Don't re-implement unrelated areas. Focus only on what was flagged.
+Address the specific feedback above. Don't re-implement unrelated areas. Focus only on what was flagged.${input.tdd ? tddBlock : ''}
 
 Steps:
 1. Read core docs in .clancy/docs/: STACK.md, ARCHITECTURE.md, CONVENTIONS.md, GIT.md, DEFINITION-OF-DONE.md, CONCERNS.md
@@ -119,6 +122,12 @@ Steps:
 5. When done, confirm you are finished.`;
 }
 
+/**
+ * Build the full Claude prompt for implementing a ticket.
+ *
+ * @param input - The ticket data for the prompt.
+ * @returns The complete prompt string.
+ */
 export function buildPrompt(input: PromptInput): string {
   const label = ticketLabel(input.provider);
   const pLabel = parentLabel(input.provider);
@@ -146,7 +155,7 @@ If you must SKIP this ${input.provider === 'github' ? 'issue' : 'ticket'}:
 3. Append to .clancy/progress.txt: YYYY-MM-DD HH:MM | ${input.key} | {reason} | SKIPPED
 4. Stop — no branches, no file changes, no git operations.
 
-If the ${input.provider === 'github' ? 'issue' : 'ticket'} IS implementable, continue:
+If the ${input.provider === 'github' ? 'issue' : 'ticket'} IS implementable, continue:${input.tdd ? tddBlock : ''}
 1. Read core docs in .clancy/docs/: STACK.md, ARCHITECTURE.md, CONVENTIONS.md, GIT.md, DEFINITION-OF-DONE.md, CONCERNS.md
    Also read if relevant to this ticket: INTEGRATIONS.md (external APIs/services/auth), TESTING.md (tests/specs/coverage), DESIGN-SYSTEM.md (UI/components/styles), ACCESSIBILITY.md (accessibility/ARIA/WCAG)
 2. Follow the conventions in GIT.md exactly

@@ -79,6 +79,12 @@ Run `npm test && npm run typecheck && npm run lint`. Fix any issues.
 - Stale brief hook extension
 - `--dry-run` for approve-brief
 - Strategist in init/settings/scaffold/help
+- **Grill phase** — interactive clarification interview before brief generation (auto-resolve in AFK mode)
+- **Vertical slice decomposition** — validation rule enforcing end-to-end slices, not horizontal layers
+- **HITL/AFK classification** — each decomposed ticket tagged as autonomous (AFK) or human-required (HITL)
+- **Blocking-aware ticket ordering** — topological sort of decomposition table; circular dependency detection
+- **Strengthened user stories** — behaviour-driven format with traceability to decomposed tickets
+- **Open Questions section** — unresolvable questions from AFK grill phase surfaced for PO review
 
 ---
 
@@ -106,6 +112,11 @@ Run `npm test && npm run typecheck && npm run lint`. Fix any issues.
 - `CLANCY_COMPONENT` auto-apply on created tickets
 - Stale brief hook extension
 - `--dry-run` for approve-brief
+- Grill phase (interactive design-tree interview + AFK auto-resolve)
+- Vertical slice validation rule in decomposition
+- HITL/AFK mode classification per ticket
+- Topological sort + circular dependency detection in approve-brief
+- Open Questions section in brief template (AFK mode)
 
 ---
 

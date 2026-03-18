@@ -279,6 +279,8 @@ export async function run(argv: string[]): Promise<void> {
     // 12. Build prompt and invoke Claude
     let prompt: string;
 
+    const tdd = config.env.CLANCY_TDD === 'true';
+
     if (isRework) {
       prompt = buildReworkPrompt({
         key: ticket.key,
@@ -287,6 +289,7 @@ export async function run(argv: string[]): Promise<void> {
         provider: config.provider,
         feedbackComments: prFeedback ?? [],
         previousContext: diffAgainstBranch(targetBranch),
+        tdd,
       });
     } else {
       prompt = buildPrompt({
@@ -296,6 +299,7 @@ export async function run(argv: string[]): Promise<void> {
         description: ticket.description,
         parentInfo: ticket.parentInfo,
         blockers: config.provider !== 'github' ? ticket.blockers : undefined,
+        tdd,
       });
     }
 

@@ -41,6 +41,9 @@ export const sharedEnvSchema = z.object({
 
   // QA rework loop
   CLANCY_MAX_REWORK: z.optional(z.string()),
+
+  // Implementation mode
+  CLANCY_TDD: z.optional(z.string()),
 });
 
 // ─── Board-specific schemas ──────────────────────────────────────────────────

@@ -52,6 +52,7 @@ General
   [G2] Claude model      {CLANCY_MODEL:-default}     model used for each ticket session
   [G3] Base branch       {CLANCY_BASE_BRANCH:-main}
   [G4] Max rework        {CLANCY_MAX_REWORK:-3}
+  [G5] TDD mode          {on if CLANCY_TDD=true, else off}
 
 {If Jira:}
 Jira
@@ -170,6 +171,21 @@ Validate the input is a positive integer between 1 and 20. If invalid, re-prompt
 
 If [1]: remove `CLANCY_MAX_REWORK` from `.clancy/.env` (uses default).
 If [2]: prompt `How many rework cycles before human intervention?` then write `CLANCY_MAX_REWORK=<value>` to `.clancy/.env`.
+
+---
+
+### [G5] TDD mode
+
+```
+Test-Driven Development — current: {on/off}
+When enabled, Clancy follows red-green-refactor for every behaviour change.
+
+[1] Enable
+[2] Disable
+```
+
+If [1]: write `CLANCY_TDD=true` to `.clancy/.env`.
+If [2]: remove `CLANCY_TDD` from `.clancy/.env`.
 
 ---
 

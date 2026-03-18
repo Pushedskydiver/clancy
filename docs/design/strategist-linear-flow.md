@@ -288,9 +288,9 @@ Scan `.clancy/briefs/` for unapproved files (no corresponding `.approved` marker
 
 **Step 1 — Preflight:** Validate env, branch freshness.
 
-**Step 2 — Load brief:** Local file read. Parse the ticket decomposition table.
+**Step 2 — Load brief:** Local file read. Parse the ticket decomposition table (including Mode column: AFK/HITL). Topological sort by dependency graph. Detect circular dependencies (error + stop).
 
-**Step 3 — Confirm:** Display ticket list with sizes and parent. Ask Y/n.
+**Step 3 — Confirm:** Display ticket list with sizes, mode tags, and parent (in dependency order). Show AFK/HITL breakdown. Ask Y/n.
 
 **Step 4 — Resolve parent issue UUID (ENG-42):**
 
@@ -337,9 +337,11 @@ query($teamId: String!) {
 
 Search the returned labels for exact name matches. If a label doesn't exist, create it (see edge case 9).
 
-**Step 7 — Create child issues (one per decomposition row):**
+**Mode labels:** Also look up/create `clancy:afk` and `clancy:hitl` labels. Apply the appropriate one to each ticket based on its Mode classification. These labels are used by `/clancy:run` to decide whether to pick up the ticket autonomously.
 
-For each ticket in the decomposition table, with 500ms delay between calls:
+**Step 7 — Create child issues (one per decomposition row, dependency order):**
+
+For each ticket in topological (dependency) order, with 500ms delay between calls:
 
 ```graphql
 mutation($input: IssueCreateInput!) {
@@ -365,7 +367,7 @@ Variables:
     "description": "<ticket description from decomposition>",
     "parentId": "<UUID of ENG-42>",
     "stateId": "<backlog state UUID>",
-    "labelIds": ["<CLANCY_LABEL UUID>", "<component label UUID>"],
+    "labelIds": ["<CLANCY_LABEL UUID>", "<component label UUID>", "<mode label UUID>"],
     "priority": 0
   }
 }
@@ -429,11 +431,13 @@ Brief: real-time-notifications
 Source: [ENG-42] Add real-time notifications
 Parent: ENG-42
 
-Tickets to create:
-  #1  [S] Set up WebSocket infrastructure
-  #2  [M] Implement notification service          (depends on #1)
-  #3  [S] Add notification preferences UI         (depends on #1)
-  #4  [S] Add notification badge component        (depends on #2)
+Tickets to create (dependency order):
+  #1  [S] [AFK]  Set up WebSocket infrastructure — No deps
+  #2  [M] [AFK]  Implement notification service — After #1
+  #3  [S] [HITL] Add notification preferences UI — After #1
+  #4  [S] [AFK]  Add notification badge component — After #2
+
+AFK-ready: 3 | Needs human: 1
 
 Create 4 tickets under ENG-42? [Y/n] Y
 

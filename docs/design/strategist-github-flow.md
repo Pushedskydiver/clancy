@@ -517,13 +517,15 @@ Same as brief — check `.clancy/.env`, detect board, ping GitHub.
 
 Extract from the brief markdown:
 - **Source** — determines if board-sourced (has `#N`) or inline/file.
-- **Ticket Decomposition table** — parse each row for: index, title, description, size, dependencies.
+- **Ticket Decomposition table** — parse each row for: index, title, description, size, dependencies, mode (AFK/HITL).
 - **Parent issue** — from Source if board-sourced, or from `--epic` flag.
 
 Validate:
 - Decomposition table must exist and have at least 1 row.
 - If 0 rows: `✗ Brief has no ticket decomposition. Edit the brief and add tickets.` Stop.
 - If >10 rows: `⚠ Brief proposes {N} tickets (max 10). Only the first 10 will be created.` Truncate.
+- If circular dependencies detected: `✗ Circular dependency between #N and #M.` Stop.
+- Topological sort by dependency graph so blockers are created before dependents.
 
 ### Step 4 — Confirm
 
@@ -535,13 +537,14 @@ Clancy — Approve Brief
 Brief: redesign-settings-page
 Parent: #50
 
-Tickets to create:
-  [1] Add settings layout component (S)
-  [2] Implement theme toggle (M) — depends on #1
-  [3] Add keyboard navigation (S) — depends on #1
-  [4] Write integration tests (M) — depends on #1, #2, #3
+Tickets to create (dependency order):
+  [1] [S] [AFK]  Add settings layout component — No deps
+  [2] [M] [AFK]  Implement theme toggle — After #1
+  [3] [S] [AFK]  Add keyboard navigation — After #1
+  [4] [M] [AFK]  Write integration tests — After #1, #2, #3
 
 Labels: needs-refinement, component:frontend
+AFK-ready: 4 | Needs human: 0
 
 Create 4 issues? [Y/n]
 ```
@@ -556,6 +559,7 @@ Labels applied to every created issue:
 2. **Clancy label** — `CLANCY_LABEL` if set (e.g. `clancy`).
 3. **Component label** — `component:{CLANCY_COMPONENT}` if `CLANCY_COMPONENT` is set.
 4. **Size label** — `size:{S|M|L}` from the decomposition table.
+5. **Mode label** — `clancy:afk` or `clancy:hitl` from the Mode column. Used by `/clancy:run` to decide whether to pick up the ticket autonomously.
 
 **Label pre-creation:** Before creating issues, check if all required labels exist on the repo. For each label that might not exist, attempt creation via POST (GitHub has no idempotent PUT for labels):
 
@@ -575,7 +579,7 @@ Content-Type: application/json
 
 ### Step 6 — Create child issues
 
-For each ticket in the decomposition table, with a **500ms delay** between API calls:
+For each ticket in topological (dependency) order, with a **500ms delay** between API calls:
 
 **API call:**
 ```
@@ -875,10 +879,13 @@ Clancy — Approve Brief
 Brief: add-dark-mode-support
 Parent: none (inline brief)
 
-Tickets to create:
-  [1] Add theme context provider (S)
-  [2] Implement CSS variable system (M) — depends on #1
-  [3] Add toggle component (S) — depends on #1
+Tickets to create (dependency order):
+  [1] [S] [AFK]  Add theme context provider — No deps
+  [2] [M] [AFK]  Implement CSS variable system — After #1
+  [3] [S] [AFK]  Add toggle component — After #1
+
+Labels: needs-refinement
+AFK-ready: 3 | Needs human: 0
 
 No parent issue — tickets will be standalone.
 To link to a parent: /clancy:approve-brief --epic #100
