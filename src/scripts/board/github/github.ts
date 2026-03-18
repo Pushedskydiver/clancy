@@ -194,6 +194,60 @@ export async function fetchIssue(
   };
 }
 
+/** Result of checking children status for an epic/milestone. */
+export type ChildrenStatus = { total: number; incomplete: number };
+
+/**
+ * Fetch the children status of a GitHub parent issue.
+ *
+ * Searches for issues whose body contains `Parent: #{parentNumber}` and
+ * counts total vs open. Used to determine if all children are done.
+ *
+ * @param token - The GitHub personal access token.
+ * @param repo - The repository in `owner/repo` format.
+ * @param parentNumber - The parent issue number.
+ * @returns The children status, or `undefined` on failure.
+ */
+export async function fetchChildrenStatus(
+  token: string,
+  repo: string,
+  parentNumber: number,
+): Promise<ChildrenStatus | undefined> {
+  if (!isValidRepo(repo)) return undefined;
+
+  try {
+    // Fetch all issues (open + closed) and filter for parent reference
+    const allParams = new URLSearchParams({
+      state: 'all',
+      per_page: '100',
+    });
+    const allResponse = await fetch(
+      `${GITHUB_API}/repos/${repo}/issues?${allParams}`,
+      { headers: githubHeaders(token) },
+    );
+    if (!allResponse.ok) return undefined;
+
+    const allIssues = (await allResponse.json()) as Array<{
+      body?: string | null;
+      pull_request?: unknown;
+      state?: string;
+    }>;
+
+    const parentRef = `Parent: #${parentNumber}`;
+    const children = allIssues.filter(
+      (issue) =>
+        !issue.pull_request && issue.body && issue.body.includes(parentRef),
+    );
+
+    const total = children.length;
+    const incomplete = children.filter((c) => c.state === 'open').length;
+
+    return { total, incomplete };
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * Close a GitHub issue.
  *

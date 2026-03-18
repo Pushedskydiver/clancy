@@ -212,7 +212,7 @@ export async function fetchReworkFromPrReview(config: BoardConfig): Promise<
         key: entry.key,
         title: entry.summary,
         description: entry.summary,
-        parentInfo: 'none',
+        parentInfo: entry.parent ?? 'none',
         blockers: 'None',
       };
 

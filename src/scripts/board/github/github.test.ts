@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { isValidRepo, resetUsernameCache, resolveUsername } from './github.js';
+import {
+  fetchChildrenStatus,
+  isValidRepo,
+  resetUsernameCache,
+  resolveUsername,
+} from './github.js';
 
 describe('github', () => {
   describe('isValidRepo', () => {
@@ -93,6 +98,62 @@ describe('github', () => {
       expect(first).toBe('cached-user');
       expect(second).toBe('cached-user');
       expect(mockFetch).toHaveBeenCalledTimes(1);
+    });
+  });
+
+  describe('fetchChildrenStatus', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('returns total and incomplete counts from issues', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve([
+                { body: 'Parent: #50', state: 'open' },
+                { body: 'Parent: #50', state: 'closed' },
+                { body: 'Parent: #50', state: 'open' },
+                { body: 'Unrelated issue', state: 'open' },
+                { body: 'Parent: #50', pull_request: {}, state: 'open' },
+              ]),
+          }),
+        ),
+      );
+
+      const result = await fetchChildrenStatus('ghp_test', 'owner/repo', 50);
+
+      expect(result).toEqual({ total: 3, incomplete: 2 });
+    });
+
+    it('returns zero counts when no children found', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve([]),
+          }),
+        ),
+      );
+
+      const result = await fetchChildrenStatus('ghp_test', 'owner/repo', 50);
+
+      expect(result).toEqual({ total: 0, incomplete: 0 });
+    });
+
+    it('returns undefined on API failure', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.resolve({ ok: false, status: 500 })),
+      );
+
+      const result = await fetchChildrenStatus('ghp_test', 'owner/repo', 50);
+
+      expect(result).toBeUndefined();
     });
   });
 });

@@ -1,6 +1,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { fetchIssue, isValidTeamId, pingLinear } from './linear.js';
+import {
+  fetchChildrenStatus,
+  fetchIssue,
+  isValidTeamId,
+  pingLinear,
+} from './linear.js';
 
 describe('linear', () => {
   describe('isValidTeamId', () => {
@@ -165,6 +170,76 @@ describe('linear', () => {
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const result = await fetchIssue(env as any);
+      expect(result).toBeUndefined();
+    });
+  });
+
+  describe('fetchChildrenStatus', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('returns total and incomplete counts', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                data: {
+                  issue: {
+                    children: {
+                      nodes: [
+                        { state: { type: 'completed' } },
+                        { state: { type: 'started' } },
+                        { state: { type: 'unstarted' } },
+                        { state: { type: 'canceled' } },
+                      ],
+                    },
+                  },
+                },
+              }),
+          }),
+        ),
+      );
+
+      const result = await fetchChildrenStatus('lin_key', 'parent-uuid');
+
+      expect(result).toEqual({ total: 4, incomplete: 2 });
+    });
+
+    it('returns zero counts when no children', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                data: {
+                  issue: {
+                    children: { nodes: [] },
+                  },
+                },
+              }),
+          }),
+        ),
+      );
+
+      const result = await fetchChildrenStatus('lin_key', 'parent-uuid');
+
+      expect(result).toEqual({ total: 0, incomplete: 0 });
+    });
+
+    it('returns undefined on API failure', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.resolve({ ok: false, status: 500 })),
+      );
+
+      const result = await fetchChildrenStatus('lin_key', 'parent-uuid');
+
       expect(result).toBeUndefined();
     });
   });

@@ -232,6 +232,74 @@ export async function fetchTicket(
   };
 }
 
+/** Result of checking children status for an epic. */
+export type ChildrenStatus = { total: number; incomplete: number };
+
+/**
+ * Fetch the children status of a Jira epic.
+ *
+ * Returns the total number of children and how many are incomplete
+ * (statusCategory != 'done'). Used to determine if an epic is complete.
+ *
+ * @param baseUrl - The Jira Cloud base URL.
+ * @param auth - The Base64-encoded Basic auth string.
+ * @param parentKey - The parent issue key (e.g., `'PROJ-100'`).
+ * @returns The children status, or `undefined` on failure.
+ */
+export async function fetchChildrenStatus(
+  baseUrl: string,
+  auth: string,
+  parentKey: string,
+): Promise<ChildrenStatus | undefined> {
+  if (!ISSUE_KEY_PATTERN.test(parentKey)) return undefined;
+
+  try {
+    // Fetch all children
+    const totalResponse = await fetch(`${baseUrl}/rest/api/3/search/jql`, {
+      method: 'POST',
+      headers: {
+        ...jiraHeaders(auth),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        jql: `parent = ${parentKey}`,
+        maxResults: 0,
+      }),
+    });
+
+    if (!totalResponse.ok) return undefined;
+
+    const totalJson = (await totalResponse.json()) as { total?: number };
+    const total = totalJson.total ?? 0;
+
+    if (total === 0) return { total: 0, incomplete: 0 };
+
+    // Fetch incomplete children
+    const incompleteResponse = await fetch(`${baseUrl}/rest/api/3/search/jql`, {
+      method: 'POST',
+      headers: {
+        ...jiraHeaders(auth),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        jql: `parent = ${parentKey} AND statusCategory != "done"`,
+        maxResults: 0,
+      }),
+    });
+
+    if (!incompleteResponse.ok) return undefined;
+
+    const incompleteJson = (await incompleteResponse.json()) as {
+      total?: number;
+    };
+    const incomplete = incompleteJson.total ?? 0;
+
+    return { total, incomplete };
+  } catch {
+    return undefined;
+  }
+}
+
 /**
  * Look up a Jira transition ID by status name.
  *
