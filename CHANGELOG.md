@@ -24,7 +24,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### ✅ Tests
 
-- 5 new tests (466 → 471)
+- 7 new tests (466 → 473)
 
 ---
 

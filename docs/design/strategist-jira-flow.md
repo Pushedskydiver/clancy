@@ -475,7 +475,7 @@ Body: {
     },
     "issuetype": { "name": "Task" },
     "parent": { "key": "PROJ-200" },
-    "labels": ["clancy", "clancy:afk OR clancy:hitl"]
+    "labels": ["clancy", "<clancy:afk | clancy:hitl>"]
   }
 }
 ```
