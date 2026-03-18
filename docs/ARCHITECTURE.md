@@ -142,18 +142,22 @@ The core work happens in TypeScript modules, bundled into self-contained scripts
 clancy-afk.js (loop runner — bundled, self-contained)
   └─ while i < MAX_ITERATIONS:
             run(argv)  ← once orchestrator
-              1. Preflight checks (node, git)
-              2. Parse .clancy/.env → detectBoard() → BoardConfig
-              3. Fetch next ticket from board API
-              4. Compute epic/feature branches
-              5. [dry-run gate — exit here if --dry-run]
-              6. Transition ticket to In Progress
-              7. Create feature branch
-              8. Pipe prompt to: claude --dangerously-skip-permissions
-              9. Push branch → create PR/MR (targets epic branch if parent, base branch otherwise)
-             10. [Has parent] Check epic completion → create epic PR if all children done
-             11. Log to .clancy/progress.txt
-             12. Send notification (if configured)
+              1.  Preflight checks (node, git, connectivity)
+              2.  Parse .clancy/.env → detectBoard() → BoardConfig
+              3.  Validate board-specific inputs (JQL, repo format, team ID)
+              4.  Ping board (connectivity + credentials)
+              4a. Epic completion scan — check if any epics have all children done → create epic PR
+              5.  Check rework (scan PRs for review feedback) OR fetch fresh ticket
+              5a. Max rework guard (default: 3 cycles)
+              6.  Compute branches (ticket branch, target branch — epic or base)
+              7.  [dry-run gate — exit here if --dry-run]
+              8.  Feasibility check — can this be implemented as code? (skipped for rework)
+              9.  Git: ensure epic branch (if parent), create feature branch
+             10.  Transition ticket to In Progress
+             11.  Build prompt + invoke Claude (claude --dangerously-skip-permissions)
+             12.  Push branch → create PR/MR (targets epic branch if parent, base branch otherwise)
+             13.  Log to .clancy/progress.txt (with parent:KEY for epic children)
+             14.  Send notification (if configured)
             if "No tickets found": break
 ```
 
