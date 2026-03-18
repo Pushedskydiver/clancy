@@ -336,13 +336,14 @@ on {date}"  (Part 3)
 │                                              │
 │  AI-GRILL:                                   │
 │    Strategist generates 10-15 questions.     │
-│    Devil's advocate agent answers each using: │
-│      - Codebase context (always)             │
-│      - Board context (always)                │
-│      - Web research (when relevant)          │
-│    Single pass — no multi-round loop.        │
+│    Devil's advocate agent INTERROGATES its   │
+│    sources (codebase, board, web) to answer. │
+│    Challenges its own answers — flags        │
+│    conflicts between sources.                │
+│    Self-follow-ups within the same pass.     │
+│    Never asks the human (that's --afk).      │
 │    Answerable → ## Discovery                 │
-│    Not answerable → ## Open Questions        │
+│    Conflicting/unknown → ## Open Questions   │
 │                                              │
 │  Both modes produce:                         │
 │    ## Discovery (Q&A with source tags)       │
@@ -615,30 +616,49 @@ AI-Grill Behaviour
      constraints, edge cases, dependencies, existing code,
      data, security, observability).
 
-  2. Devil's advocate agent answers each question using:
-     - Codebase context (always — explore affected areas,
-       read .clancy/docs/, check existing patterns)
-     - Board context (always — parent ticket, related
-       tickets, existing children)
-     - Web research (when question involves external
-       technology, patterns, or third-party integrations.
-       Same trigger as Step 4: --research flag forces it,
-       otherwise judgement-based)
+  2. Devil's advocate agent answers each question by
+     INTERROGATING ITS SOURCES — this is the AI equivalent
+     of the user asking questions back:
+     - Codebase: explore affected areas, read .clancy/docs/,
+       check existing patterns. Don't assume — look.
+     - Board: parent ticket, related tickets, existing
+       children. Check for conflicting requirements.
+     - Web: when the question involves external technology,
+       patterns, or third-party integrations. Same trigger
+       as Step 4: --research flag forces it, otherwise
+       judgement-based.
 
-  3. The agent must NOT accept its own vague answers. If the
-     codebase doesn't clearly answer a question, don't guess —
-     flag it as an Open Question. Walk each branch to its
-     conclusion within the single pass.
+  3. The agent must CHALLENGE ITS OWN ANSWERS. If the codebase
+     says one thing but the ticket description says another,
+     flag the conflict. If a question can be partially
+     answered, answer the part you can and flag the rest.
+     Do NOT accept vague self-answers — if the codebase
+     doesn't clearly support a decision, don't guess.
 
-  4. Single pass — no multi-round loop. If an answer raises
-     a follow-up, resolve it within the same pass. The agent
-     must be thorough enough in one pass that a second would
-     add nothing.
+  4. Answers may spawn SELF-FOLLOW-UPS within the same pass:
+     "Should this support SSO?" → checks codebase → finds
+     src/auth/sso-provider.ts → "SSO exists, but it's SAML.
+     Should the new feature use SAML or add OIDC?" → checks
+     ticket description → no mention → checks web → "OIDC is
+     the modern standard" → resolves as OIDC with caveat.
+     All resolved in one pass.
 
-  5. Classify each question:
+  5. Single pass — no multi-round loop with the human. But
+     the agent must be thorough enough in one pass that a
+     second would add nothing. Each question is followed to
+     its conclusion, including self-follow-ups.
+
+  6. The agent must NEVER ask the human questions (that
+     defeats --afk mode). Instead, unresolvable questions
+     go to ## Open Questions for the PO to address during
+     brief review.
+
+  7. Classify each question:
      - Answerable (>80% confidence, or technical decision
        with clear codebase precedent)
        → ## Discovery with source tag
+     - Conflicting evidence (codebase says X, ticket says Y)
+       → ## Open Questions with conflict noted
      - Not answerable (business decision, ambiguous
        requirements, no codebase precedent, involves
        money/legal/compliance/security policy)
