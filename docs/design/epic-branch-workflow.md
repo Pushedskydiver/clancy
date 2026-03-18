@@ -178,20 +178,34 @@ Linear:
 
 ### Phase 4: Rework on Child PRs
 
-Rework works exactly as it does today. The PR targets the epic branch, so rework pushes to the feature branch and the PR updates automatically.
+Rework mostly works as it does today, but with one critical fix: **the rework module must preserve the parent info** so that the target branch is computed correctly.
+
+**Bug in current code:** `rework.ts:211-217` constructs a `FetchedTicket` with `parentInfo: 'none'` hardcoded. During rework, this causes `computeTargetBranch` to return the base branch (`main`) instead of the epic branch. The rework prompt would diff against `main` instead of the epic branch, giving Claude wrong context.
+
+**Fix:** Store the parent key in progress.txt entries. The progress format gains an optional `parent:{KEY}` suffix:
+
+```
+YYYY-MM-DD HH:MM | PROJ-101 | Add login form | PR_CREATED | pr:42 | parent:PROJ-100
+```
+
+The rework module reads `parent:PROJ-100` from the progress entry and passes it through to `computeTargetBranch`, which correctly returns `epic/proj-100`.
 
 ```
 Reviewer leaves feedback on PR #42 (feature/proj-101 → epic/proj-100)
        |
        v
   /clancy:run detects rework needed for PROJ-101
+  Progress entry has parent:PROJ-100
        |
        v
+  computeTargetBranch → epic/proj-100
+  Fetch epic/proj-100 from remote (not local main)
   Fetch feature/proj-101 from remote
   Checkout feature/proj-101
        |
        v
   Build rework prompt with reviewer feedback
+  diffAgainstBranch(epic/proj-100) ← correct context
   Invoke Claude → commits fixes
        |
        v
@@ -202,7 +216,7 @@ Reviewer leaves feedback on PR #42 (feature/proj-101 → epic/proj-100)
 
 ### Phase 5: Epic Branch Staleness
 
-The epic branch may fall behind the base branch as other work merges to main. Clancy should handle this.
+The epic branch may fall behind the base branch as other work merges to main. Clancy warns but does **not** auto-rebase — open child PRs targeting the epic branch would be invalidated by a rebase.
 
 ```
 Before creating a new child feature branch:
@@ -215,24 +229,26 @@ Before creating a new child feature branch:
   No        Yes
   |         |
   v         v
-Continue  Attempt rebase:
-            git checkout epic/proj-100
-            git rebase origin/main
-                 |
-            +----+----+
-            Clean     Conflicts
-            |         |
-            v         v
-          Push      Warn:
-          force-     "Epic branch has conflicts
-          with-lease  with base. Resolve manually
-          epic branch before continuing."
-                     (stop)
+Continue  How far behind?
+            |
+       +----+----+
+       ≤10       >10
+       commits   commits
+       |         |
+       v         v
+     Warn:     Warn + confirm:
+     "epic/     "epic/proj-100 is N commits
+      proj-100   behind main. Rebase manually
+      is N       before continuing."
+      commits    [1] Continue anyway
+      behind     [2] Abort
+      main."     (stop if abort)
+     Continue
 ```
 
-**Why rebase, not merge?** The epic branch should have a clean linear history of child tickets. Merge commits add noise and make the final epic PR harder to review.
+**Why no auto-rebase?** Rebasing rewrites history on a shared branch. If child PRs are open targeting the epic branch, a rebase invalidates their merge base and can break CI or cause merge conflicts. The user should rebase manually when no child PRs are open, then force-push with `--force-with-lease`.
 
-**Why force-with-lease?** The rebase rewrites history on the epic branch. `--force-with-lease` is safe because it fails if someone else has pushed to the epic branch since we last fetched.
+**Future enhancement:** An opt-in `CLANCY_EPIC_AUTO_REBASE=true` could be added for users who understand the implications. It should only rebase when there are no open child PRs targeting the epic branch (query the git host first).
 
 ---
 
@@ -253,21 +269,24 @@ Existing statuses remain unchanged — `PR_CREATED`, `REWORK`, `DONE` etc. all w
 
 | File | Change |
 |---|---|
-| `src/scripts/once/deliver/deliver.ts` | Replace `deliverViaEpicMerge` with epic-branch-aware `deliverViaPullRequest`. Add `deliverEpicToBase` function for Phase 3. |
-| `src/scripts/once/once.ts` | After delivery, check if epic is complete (Phase 3). Handle epic branch creation (Phase 1). |
-| `src/scripts/shared/branch/branch.ts` | Already correct — `computeTargetBranch` returns `epic/` branches. No changes needed. |
-| `src/scripts/shared/git-ops/git-ops.ts` | Add `rebaseOnto`, `branchExists`, `pushForceWithLease` functions. |
-| `src/scripts/shared/progress/progress.ts` | Add `EPIC_PR_CREATED`, `EPIC_COMPLETE` to `ProgressStatus`. |
+| `src/scripts/once/deliver/deliver.ts` | Delete `deliverViaEpicMerge`. Add `deliverEpicToBase` function for Phase 3. All child delivery goes through `deliverViaPullRequest` with the epic branch as target. |
+| `src/scripts/once/once.ts` | After delivery, check if epic is complete (Phase 3). Handle epic branch creation (Phase 1). Rework path must use parent info for correct target branch. |
+| `src/scripts/once/rework/rework.ts` | **Critical fix:** Read `parent:{KEY}` from progress.txt entry (currently hardcodes `parentInfo: 'none'`). Pass parent through to `computeTargetBranch` so rework targets the epic branch, not main. |
+| `src/scripts/shared/git-ops/git-ops.ts` | Add `remoteBranchExists` (current `branchExists` only checks local refs). Add `fetchRemoteRef` for fetching the epic branch from origin before branching from it. |
+| `src/scripts/shared/progress/progress.ts` | Add `EPIC_PR_CREATED`, `EPIC_COMPLETE` to `ProgressStatus`. Add optional `parent` field to progress entries. Update `appendProgress` to accept parent key. |
+| `src/scripts/shared/pull-request/pr-body/pr-body.ts` | Change `Closes {key}` to `Part of {key}` when PR targets an epic/milestone branch (prevents GitHub auto-close before epic reaches base). Add `buildEpicPrBody` for the final epic PR (lists all child PRs with links). |
 | `src/types/remote.ts` | Add `EPIC_PR_CREATED`, `EPIC_COMPLETE` to `ProgressStatus` type. |
-| `src/scripts/shared/pull-request/pr-body/pr-body.ts` | Add `buildEpicPrBody` for the final epic PR (lists all child tickets). |
+| `src/scripts/board/jira/jira.ts` | Add `fetchChildrenStatus` — JQL query for incomplete children of an epic. |
+| `src/scripts/board/github/github.ts` | Add `fetchChildrenStatus` — filter open issues referencing parent. |
+| `src/scripts/board/linear/linear.ts` | Add `fetchChildrenStatus` — GraphQL query for parent's children states. |
+| `docs/design/strategist-visual-flows.md` | Add epic branch mention to approve-brief summary output (Step 12). |
 
 ### Files unaffected
 
 | File | Why |
 |---|---|
 | `src/scripts/shared/prompt/prompt.ts` | Prompt doesn't change — Claude doesn't need to know about epic branches. |
-| `src/scripts/board/*/` | Board queries unchanged — ticket fetch and transitions work the same. |
-| `src/scripts/once/rework/rework.ts` | Rework detection unchanged — still scans progress.txt for `PR_CREATED`. |
+| `src/scripts/shared/branch/branch.ts` | Already correct — `computeTargetBranch` returns `epic/` branches. |
 | `src/scripts/once/pr-creation/pr-creation.ts` | PR creation unchanged — just receives a different target branch. |
 
 ### What gets removed
@@ -329,6 +348,11 @@ PROJ-203 is skipped as infeasible.
   Does not count as "done" for epic completion.
   User must close/cancel the ticket on the board manually,
   or update it to be feasible and re-run.
+
+  NOTE: The AFK runner stops on skip (afk.ts stop patterns
+  include "skipped"). This means the loop halts and remaining
+  children (204-206) won't be processed until the user
+  re-runs /clancy:run.
 ```
 
 ### 4. Epic branch deleted by mistake
@@ -381,22 +405,55 @@ Reviewer requests changes on the epic PR itself
 Strategist decomposes idea into 1 ticket (unlikely but possible).
        |
        v
-  Still creates epic branch for consistency.
-  After child completes → epic complete → epic PR to base.
-  The extra PR hop adds review but is worth it for consistency.
-  (Alternative: if decomposition produces only 1 ticket,
-   skip epic branch and deliver directly. TBD.)
+  At delivery time, check child count on board:
+    If only 1 child and it is this ticket → skip epic branch.
+    Deliver directly to CLANCY_BASE_BRANCH via PR.
+    (No epic branch created — the extra hop adds no value
+     for a single change.)
+```
+
+### 8. Parallel `/clancy:run` sessions (different machines)
+
+```
+Two machines both working on children of epic PROJ-100.
+       |
+       v
+  Child PRs: safe. Each machine creates independent feature
+  branches and PRs targeting the epic branch. No conflict.
+
+  Epic completion: race possible. Both detect "all done"
+  simultaneously and try to create the epic PR.
+    → First succeeds, second gets alreadyExists from
+      pr-creation.ts:145 (already handled).
+
+  Staleness: if machine A pushes to epic branch, machine B
+  has a stale ref. B's push will fail (non-fast-forward) or
+  B's --force-with-lease fails (expected, safe).
 ```
 
 ---
 
-## Open Questions
+## Resolved Design Decisions
 
-- [ ] Should Clancy auto-rebase the epic branch, or just warn and let the user handle it? Auto-rebase with `--force-with-lease` is safe but may surprise users.
-- [ ] Should the epic PR be created automatically, or should there be an explicit command like `/clancy:deliver-epic PROJ-100`? Automatic is simpler but less control.
-- [ ] For edge case 7 (single child), should we skip the epic branch? Simpler flow, but inconsistent.
-- [ ] Should `CLANCY_STATUS_REVIEW` be used for the epic PR transition, or a new `CLANCY_STATUS_EPIC_REVIEW`?
-- [ ] How should the epic PR body look? Should it list all child PRs with links, or just summarise the changes?
+| Question | Decision | Reasoning |
+|---|---|---|
+| Auto-rebase epic branch? | **Warn only, no auto-rebase.** Future opt-in via `CLANCY_EPIC_AUTO_REBASE`. | Rebasing invalidates open child PRs targeting the epic branch. Too dangerous for default behaviour. |
+| Auto-create epic PR or explicit command? | **Automatic** when all children are done. | Explicit command breaks the AFK loop. Auto-detection keeps autonomous operation intact. |
+| Skip epic branch for single child? | **Yes, skip.** Deliver directly to base branch. | Extra PR hop adds review latency with no benefit for a single change. Check child count on board at delivery time. |
+| Reuse `CLANCY_STATUS_REVIEW` or new status? | **Reuse `CLANCY_STATUS_REVIEW`.** | Epic PRs are functionally identical to regular PRs. Adding a new config option provides no practical benefit. |
+| Epic PR body format? | **List child PRs with links** + epic description from board. | Reviewer needs traceability to individual child reviews. Progress.txt `pr:N` entries provide the child PR numbers. |
+
+---
+
+## Review Findings (addressed in this document)
+
+Issues caught by architecture review agent and incorporated above:
+
+1. **Rework loses parent info** — `rework.ts:215` hardcodes `parentInfo: 'none'`. Fixed: store `parent:{KEY}` in progress.txt entries (Phase 4).
+2. **GitHub `Closes` auto-close** — child PRs merged into epic branch would prematurely close GitHub issues. Fixed: use `Part of` instead of `Closes` when PR targets an epic branch (impact table).
+3. **`ensureBranch` uses local refs** — epic branch would be created from stale local main. Fixed: Phase 1 specifies `git fetch origin` before creation + `remoteBranchExists` check.
+4. **Board modules missing from impact** — "all children done" queries need new functions. Fixed: added `fetchChildrenStatus` to all 3 board modules in impact table.
+5. **`branchExists` already exists** — what's actually needed is remote branch checking. Fixed: impact table now lists `remoteBranchExists` instead.
 
 ---
 
