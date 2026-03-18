@@ -79,12 +79,15 @@ Run `npm test && npm run typecheck && npm run lint`. Fix any issues.
 - Stale brief hook extension
 - `--dry-run` for approve-brief
 - Strategist in init/settings/scaffold/help
-- **Grill phase** — interactive clarification interview before brief generation (auto-resolve in AFK mode)
+- **Grill phase (dual-mode)** — human grill (interactive, multi-round) and AI-grill (autonomous, single-pass with devil's advocate agent). Mode determined by `--afk` flag or `CLANCY_MODE` env var
+- **AI-grill** — devil's advocate agent answers clarifying questions using codebase + board + web research. Produces `## Discovery` section with source tags
+- **`CLANCY_MODE` env var** — persistent `interactive` (default) or `afk` mode. `--afk` flag for per-invocation override
+- **Discovery section** — Q&A from grill phase with source tags (human/codebase/board/web) in every brief
 - **Vertical slice decomposition** — validation rule enforcing end-to-end slices, not horizontal layers
 - **HITL/AFK classification** — each decomposed ticket tagged as autonomous (AFK) or human-required (HITL)
 - **Blocking-aware ticket ordering** — topological sort of decomposition table; circular dependency detection
 - **Strengthened user stories** — behaviour-driven format with traceability to decomposed tickets
-- **Open Questions section** — unresolvable questions from AFK grill phase surfaced for PO review
+- **Open Questions section** — unresolvable questions from grill phase surfaced for PO review
 
 ---
 
@@ -112,11 +115,14 @@ Run `npm test && npm run typecheck && npm run lint`. Fix any issues.
 - `CLANCY_COMPONENT` auto-apply on created tickets
 - Stale brief hook extension
 - `--dry-run` for approve-brief
-- Grill phase (interactive design-tree interview + AFK auto-resolve)
+- Grill phase — dual-mode (human grill + AI-grill with devil's advocate agent)
+- `--afk` flag + `CLANCY_MODE` env var for grill mode detection
+- AI-grill devil's advocate agent (codebase + board + web research, single pass)
+- Discovery section in brief template (Q&A with source tags)
+- Open Questions section in brief template (unresolved from grill)
 - Vertical slice validation rule in decomposition
 - HITL/AFK mode classification per ticket
 - Topological sort + circular dependency detection in approve-brief
-- Open Questions section in brief template (AFK mode)
 
 ---
 

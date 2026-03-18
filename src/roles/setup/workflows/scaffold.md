@@ -406,6 +406,12 @@ MAX_ITERATIONS=5
 # When enabled, Clancy follows red-green-refactor for every behaviour change.
 # CLANCY_TDD=true
 
+# ─── Optional: Grill mode ───────────────────────────────────────────────────
+# Controls how /clancy:brief handles clarifying questions before generating a brief.
+# "interactive" (default) — asks the human. "afk" — AI-grill resolves autonomously.
+# Can also be overridden per-invocation with --afk flag.
+# CLANCY_MODE=interactive
+
 # ─── Optional: Planner queue ─────────────────────────────────────────────────
 # Status for backlog tickets that /clancy:plan fetches from (default: Backlog)
 # Only used if Planner role is enabled via CLANCY_ROLES
@@ -485,6 +491,12 @@ MAX_ITERATIONS=20
 # When enabled, Clancy follows red-green-refactor for every behaviour change.
 # CLANCY_TDD=true
 
+# ─── Optional: Grill mode ───────────────────────────────────────────────────
+# Controls how /clancy:brief handles clarifying questions before generating a brief.
+# "interactive" (default) — asks the human. "afk" — AI-grill resolves autonomously.
+# Can also be overridden per-invocation with --afk flag.
+# CLANCY_MODE=interactive
+
 # ─── Optional: Skip comments ──────────────────────────────────────────────
 # When Clancy skips a ticket (irrelevant/infeasible), post a comment explaining why
 # Set to "false" to disable skip comments
@@ -560,6 +572,12 @@ MAX_ITERATIONS=20
 # ─── Optional: Test-Driven Development ──────────────────────────────────────
 # When enabled, Clancy follows red-green-refactor for every behaviour change.
 # CLANCY_TDD=true
+
+# ─── Optional: Grill mode ───────────────────────────────────────────────────
+# Controls how /clancy:brief handles clarifying questions before generating a brief.
+# "interactive" (default) — asks the human. "afk" — AI-grill resolves autonomously.
+# Can also be overridden per-invocation with --afk flag.
+# CLANCY_MODE=interactive
 
 # ─── Optional: Git host (PR creation) ───────────────────────────────────────
 # When an issue has no parent, Clancy pushes the feature branch and creates a

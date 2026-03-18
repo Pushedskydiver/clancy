@@ -254,7 +254,7 @@ Body: { "jql": "project=\"PROJ\" AND summary ~ \"customer portal\" ORDER BY crea
 
 #### 7. Generate Brief
 
-Using the brief template. Populate all sections from research findings. Include `### External Research` only if web research was conducted.
+Using the brief template. Populate all sections from research findings. Include `### External Research` only if web research was conducted. Include `## Discovery` section with Q&A from the grill phase (each answer tagged with source: human, codebase, board, or web). Include `## Open Questions` for any unresolved questions.
 
 Ticket Decomposition table: max 10 rows. Each ticket gets: Title, Description (1-2 sentences), Size (S/M/L), Dependencies (references to other tickets in the table by `#N`), Mode (AFK or HITL).
 

@@ -200,6 +200,8 @@ Each role has detailed documentation:
 - [Setup & Maintenance](docs/roles/SETUP.md) — init wizard, settings, diagnostics, codebase mapping
 - [Planner](docs/roles/PLANNER.md) — refines backlog tickets into structured implementation plans
 
+For a visual overview of how roles, commands, and flows connect, see the [Visual Architecture](docs/VISUAL-ARCHITECTURE.md) diagrams.
+
 ---
 
 ## What gets created

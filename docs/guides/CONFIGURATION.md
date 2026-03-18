@@ -104,6 +104,7 @@ Posts to Slack or Teams when a ticket completes. The payload format (Slack vs Te
 | `CLANCY_STATUS_REVIEW` | Jira/Linear | No | — | Status when creating a PR (falls back to `CLANCY_STATUS_DONE`) |
 | `CLANCY_MAX_REWORK` | All | No | `3` | Max rework cycles before human intervention |
 | `CLANCY_TDD` | All | No | — | Enable test-driven development (red-green-refactor) |
+| `CLANCY_MODE` | All | No | `interactive` | Grill mode: `interactive` (human) or `afk` (AI-grill). Override per-invocation with `--afk` |
 | `GITLAB_TOKEN` | All | No | — | GitLab personal access token (for PR creation) |
 | `BITBUCKET_USER` | All | No | — | Bitbucket username (for PR creation) |
 | `BITBUCKET_TOKEN` | All | No | — | Bitbucket app password (for PR creation) |

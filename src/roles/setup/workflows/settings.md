@@ -53,6 +53,7 @@ General
   [G3] Base branch       {CLANCY_BASE_BRANCH:-main}
   [G4] Max rework        {CLANCY_MAX_REWORK:-3}
   [G5] TDD mode          {on if CLANCY_TDD=true, else off}
+  [G6] Grill mode         {CLANCY_MODE:-interactive}
 
 {If Jira:}
 Jira
@@ -186,6 +187,21 @@ When enabled, Clancy follows red-green-refactor for every behaviour change.
 
 If [1]: write `CLANCY_TDD=true` to `.clancy/.env`.
 If [2]: remove `CLANCY_TDD` from `.clancy/.env`.
+
+---
+
+### [G6] Grill mode
+
+```
+Grill mode — current: {interactive/afk}
+Controls how /clancy:brief handles clarifying questions before generating a brief.
+
+[1] Interactive (default) — asks the human
+[2] AFK — AI-grill resolves autonomously (for automation pipelines)
+```
+
+If [1]: remove `CLANCY_MODE` from `.clancy/.env` (uses default).
+If [2]: write `CLANCY_MODE=afk` to `.clancy/.env`.
 
 ---
 

@@ -7,6 +7,16 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.5.11] — 2026-03-18
+
+### 📝 Docs
+
+- **AI-grill mode** — dual-mode grill phase for `/clancy:brief`. Human grill (interactive, multi-round) and AI-grill (autonomous, single-pass devil's advocate agent using codebase + board + web research). Mode determined by `--afk` flag or `CLANCY_MODE` env var.
+- **`## Discovery` section** — new brief template section with source-tagged Q&A (human/codebase/board/web). Replaces the previous implicit auto-resolve approach.
+- **`CLANCY_MODE`** — documented in scaffold templates, settings, init, and configuration guide. Values: `interactive` (default) or `afk`.
+
+---
+
 ## [0.5.10] — 2026-03-18
 
 ### ✨ Features
