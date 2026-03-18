@@ -14,7 +14,7 @@ Before doing anything else, check for updates:
 
 ## Overview
 
-Pick up exactly one ticket from the Kanban board, implement it, commit, squash-merge, and stop. Does not loop.
+Pick up exactly one ticket from the Kanban board, implement it, commit, push, create a PR, and stop. Does not loop.
 
 ---
 

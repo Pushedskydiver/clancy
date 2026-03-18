@@ -50,7 +50,7 @@ Examples: `✨ feat:`, `🐛 fix:`, `♻️ refactor:`, `📝 docs:`, `📦 chor
 - Linear personal API keys do NOT use "Bearer" prefix (OAuth tokens do)
 - Linear filters by `state.type: "unstarted"` (enum), not state name (team-specific)
 - Hook files run as CommonJS (installer writes `{"type":"commonjs"}` package.json into hooks dir)
-- Git branch deletion uses `-D` (force) because squash merges leave branches "unmerged" from git's perspective
+- Git branch deletion uses `-D` (force) because squash merges leave branches "unmerged" from git's perspective (used in legacy code paths)
 - GitHub Issues endpoint returns PRs too — results are filtered client-side
 
 ## Key paths

@@ -7,7 +7,7 @@ The implementer is Clancy's core — it picks up tickets from your board and tur
 1. Fetches the highest-priority ticket assigned to you from the implementation queue
 2. Reads core codebase docs in `.clancy/docs/` (STACK, ARCHITECTURE, CONVENTIONS, GIT, DEFINITION-OF-DONE, CONCERNS) and loads additional docs if relevant to the ticket
 3. Creates a feature branch, implements the ticket, writes tests
-4. Commits, squash-merges to the epic/base branch, transitions the ticket on the board
+4. Commits, pushes the feature branch, and creates a PR (targeting the epic branch for parented tickets, or the base branch for standalone tickets)
 5. Logs the result to `.clancy/progress.txt`
 
 ## Commands
@@ -51,46 +51,46 @@ This is the "AFK loop" — you can walk away and let Clancy work through your ba
 
 ## Status transitions
 
-When picking up a ticket, Clancy transitions it to "In Progress" (configurable via `CLANCY_STATUS_IN_PROGRESS`). On completion:
-
-- **Epic flow (squash merge):** transitions to `CLANCY_STATUS_DONE`
-- **PR flow (no parent):** transitions to `CLANCY_STATUS_REVIEW` (falls back to `CLANCY_STATUS_DONE` if not set)
+When picking up a ticket, Clancy transitions it to "In Progress" (configurable via `CLANCY_STATUS_IN_PROGRESS`). After creating a PR, transitions to `CLANCY_STATUS_REVIEW` (falls back to `CLANCY_STATUS_DONE` if not set).
 
 ## Branch workflow
 
-For each ticket, the implementer:
+All tickets are delivered via pull request. The target branch depends on whether the ticket has a parent:
 
 1. Creates a feature branch: `feature/{ticket-key-lowercase}` (Jira/Linear, e.g. `feature/proj-123`) or `feature/issue-{number}` (GitHub, e.g. `feature/issue-42`)
 2. Implements and commits on the feature branch
-3. **If the ticket has a parent (epic/milestone):** squash-merges to the epic/base branch, deletes the feature branch locally
-4. **If the ticket has no parent:** pushes the feature branch and creates a pull request on your git host
+3. Pushes the feature branch and creates a PR:
+   - **Parented ticket (epic/milestone):** PR targets the epic branch (`epic/{key}` or `milestone/{slug}`)
+   - **Standalone ticket (no parent):** PR targets the base branch (`CLANCY_BASE_BRANCH`, default: `main`)
+   - **Single-child epic:** If the epic has only one child, the epic branch is skipped — PR targets the base branch directly
 
-### PR-based flow (no parent)
+### Epic branch flow (parented tickets)
 
-When a ticket has no parent epic, Clancy uses a PR-based flow instead of merging locally:
+When a ticket has a parent, Clancy creates or checks out an epic branch and creates a PR targeting it:
+
+1. Ensures the epic branch exists (creates from `origin/{baseBranch}` if not, fetches from remote if it does)
+2. Creates the feature branch from the epic branch
+3. Pushes and creates a PR targeting the epic branch
+4. Transitions the ticket to the review status
+5. Logs `PR_CREATED` with `parent:{KEY}` suffix in `.clancy/progress.txt`
+
+When all children of an epic are done (PRs merged), Clancy automatically creates a final PR from the epic branch to the base branch on the next run.
+
+### Standalone flow (no parent)
 
 1. Pushes the feature branch to the remote
 2. Detects the git host from the remote URL (GitHub, GitLab, Bitbucket — including self-hosted)
 3. Creates a pull request / merge request with a description linking back to the board ticket
-4. Transitions the ticket to the review status (`CLANCY_STATUS_REVIEW`, falls back to `CLANCY_STATUS_DONE`)
-5. Logs `PR_CREATED` to `.clancy/progress.txt` with a `pr:NNN` suffix tracking the PR number
+4. Transitions the ticket to the review status
+5. Logs `PR_CREATED` to `.clancy/progress.txt`
 
-**Fallback ladder** — Clancy never falls back to local merge if the intent is PR creation:
+**Fallback ladder** — Clancy never falls back to local merge:
 - Push fails → logs `PUSH_FAILED`, leaves the branch for manual push
 - PR creation fails → logs `PUSHED` with a manual URL for the user to create the PR
 - No git host token configured → logs `PUSHED`, user creates the PR manually
 - No remote detected → logs `LOCAL`, leaves the branch as-is
 
 **GitHub Issues** use the same `GITHUB_TOKEN` for both issue fetching and PR creation. **Jira** and **Linear** users need to configure a separate git host token via `/clancy:init` or `/clancy:settings`.
-
-### Epic flow (has parent)
-
-When a ticket has a parent epic, the original squash-merge flow applies:
-
-1. Squash-merges the feature branch into the epic/base branch
-2. Deletes the feature branch locally (never pushes deletes to remote)
-3. Transitions the ticket to the done status (`CLANCY_STATUS_DONE`)
-4. Logs `DONE` to `.clancy/progress.txt`
 
 ## Rework flow
 
@@ -155,9 +155,10 @@ After `CLANCY_MAX_REWORK` cycles (default: 3) on the same ticket, Clancy logs `S
          5. git checkout -b feature/{ticket-key}
          6. Read .clancy/docs/* (especially GIT.md)
          7. echo "$PROMPT" | claude --dangerously-skip-permissions
-         8a. [Has parent] git merge --squash → commit → delete branch → transition Done
-         8b. [No parent]  git push → create PR → transition In Review
+         8a. [Has parent] git push → create PR targeting epic branch → transition In Review
+         8b. [No parent]  git push → create PR targeting base branch → transition In Review
          8c. [Rework]     git push → post PR comment → re-request review → transition In Review
+         8d. [Epic done]  Create epic PR (epic branch → base branch)
          9. Append to .clancy/progress.txt (UTC timestamps, pr:NNN suffix)
        if "No tickets found": break
 ```

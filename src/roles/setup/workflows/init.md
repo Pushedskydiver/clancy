@@ -69,7 +69,7 @@ Output:
 
 "Chief Wiggum reporting for duty."
 
-Clancy pulls tickets from your Kanban board, plans and implements them, commits, and squash-merges — one ticket per run, fresh context every time.
+Clancy pulls tickets from your Kanban board, plans and implements them, commits, and creates PRs — one ticket per run, fresh context every time.
 
 Let's get you set up. This takes about 3 minutes (4 steps, then optional extras).
 ```

@@ -1,6 +1,6 @@
 # /clancy:once
 
-Pick up exactly one ticket from your Kanban board, implement it, commit, squash-merge, and stop.
+Pick up exactly one ticket from your Kanban board, implement it, commit, push, create a PR, and stop.
 
 Good for:
 - Your first run — watch Clancy work before going AFK
