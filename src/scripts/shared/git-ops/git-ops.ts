@@ -119,6 +119,27 @@ export function deleteBranch(branch: string): void {
 }
 
 /**
+ * Check whether a branch exists on the remote (without fetching it).
+ *
+ * Uses `git ls-remote --heads origin {branch}` for a lightweight check.
+ *
+ * @param branch - The branch name to check.
+ * @returns `true` if the branch exists on the remote.
+ */
+export function remoteBranchExists(branch: string): boolean {
+  try {
+    const output = execFileSync(
+      'git',
+      ['ls-remote', '--heads', 'origin', branch],
+      { encoding: 'utf8', timeout: 15000 },
+    ).trim();
+    return output.length > 0;
+  } catch {
+    return false;
+  }
+}
+
+/**
  * Fetch a remote branch into a local branch of the same name.
  *
  * Runs `git fetch origin {branch}:{branch}`.

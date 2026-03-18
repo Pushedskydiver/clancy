@@ -88,6 +88,40 @@ describe('appendProgress', () => {
     expect(content).toContain('PROJ-10 | Add feature | PR_CREATED');
     expect(content).not.toContain('pr:');
   });
+
+  it('includes parent:KEY suffix when parent is provided', () => {
+    const root = makeTempRoot();
+    appendProgress(root, 'PROJ-101', 'Add login', 'PR_CREATED', 42, 'PROJ-100');
+
+    const content = readFileSync(join(root, '.clancy', 'progress.txt'), 'utf8');
+    expect(content).toContain(
+      'PROJ-101 | Add login | PR_CREATED | pr:42 | parent:PROJ-100',
+    );
+  });
+
+  it('includes parent:KEY without prNumber', () => {
+    const root = makeTempRoot();
+    appendProgress(
+      root,
+      'PROJ-101',
+      'Add login',
+      'DONE',
+      undefined,
+      'PROJ-100',
+    );
+
+    const content = readFileSync(join(root, '.clancy', 'progress.txt'), 'utf8');
+    expect(content).toContain('PROJ-101 | Add login | DONE | parent:PROJ-100');
+    expect(content).not.toContain('pr:');
+  });
+
+  it('omits parent suffix when parent is not provided', () => {
+    const root = makeTempRoot();
+    appendProgress(root, 'PROJ-10', 'Add feature', 'DONE');
+
+    const content = readFileSync(join(root, '.clancy', 'progress.txt'), 'utf8');
+    expect(content).not.toContain('parent:');
+  });
 });
 
 describe('parseProgressFile (via findLastEntry)', () => {
@@ -127,6 +161,46 @@ describe('parseProgressFile (via findLastEntry)', () => {
     expect(entry!.status).toBe('DONE');
     expect(entry!.prNumber).toBeUndefined();
     expect(entry!.summary).toBe('Fix bug');
+  });
+
+  it('parses parent:KEY field from progress entry', () => {
+    const root = makeTempRoot();
+    appendProgress(root, 'PROJ-101', 'Add login', 'PR_CREATED', 42, 'PROJ-100');
+
+    const entry = findLastEntry(root, 'PROJ-101');
+    expect(entry).toBeDefined();
+    expect(entry!.status).toBe('PR_CREATED');
+    expect(entry!.prNumber).toBe(42);
+    expect(entry!.parent).toBe('PROJ-100');
+    expect(entry!.summary).toBe('Add login');
+  });
+
+  it('parses parent:KEY without pr:NNN', () => {
+    const root = makeTempRoot();
+    appendProgress(
+      root,
+      'PROJ-101',
+      'Add login',
+      'DONE',
+      undefined,
+      'PROJ-100',
+    );
+
+    const entry = findLastEntry(root, 'PROJ-101');
+    expect(entry).toBeDefined();
+    expect(entry!.status).toBe('DONE');
+    expect(entry!.prNumber).toBeUndefined();
+    expect(entry!.parent).toBe('PROJ-100');
+  });
+
+  it('handles legacy entries without parent field', () => {
+    const root = makeTempRoot();
+    appendProgress(root, 'PROJ-5', 'Old task', 'PR_CREATED', 10);
+
+    const entry = findLastEntry(root, 'PROJ-5');
+    expect(entry).toBeDefined();
+    expect(entry!.parent).toBeUndefined();
+    expect(entry!.prNumber).toBe(10);
   });
 });
 
@@ -294,6 +368,16 @@ describe('findEntriesWithStatus', () => {
     const keys = result.map((e) => e.key);
     expect(keys).toContain('PROJ-1');
     expect(keys).toContain('PROJ-2');
+  });
+
+  it('returns parent field in entries', () => {
+    const root = makeTempRoot();
+    appendProgress(root, 'PROJ-101', 'Add login', 'PR_CREATED', 42, 'PROJ-100');
+
+    const result = findEntriesWithStatus(root, 'PR_CREATED');
+    expect(result).toHaveLength(1);
+    expect(result[0]!.parent).toBe('PROJ-100');
+    expect(result[0]!.prNumber).toBe(42);
   });
 
   it('matches status case-sensitively', () => {

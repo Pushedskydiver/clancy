@@ -16,6 +16,7 @@ export type ProgressEntry = {
   summary: string;
   status: ProgressStatus;
   prNumber?: number;
+  parent?: string;
 };
 
 /**
@@ -48,6 +49,9 @@ export function formatTimestamp(date: Date): string {
  * ```ts
  * appendProgress('/path/to/project', 'PROJ-123', 'Add login page', 'DONE');
  * // Appends: "2024-01-15 14:30 | PROJ-123 | Add login page | DONE"
+ *
+ * appendProgress('/path/to/project', 'PROJ-101', 'Add login', 'PR_CREATED', 42, 'PROJ-100');
+ * // Appends: "2024-01-15 14:30 | PROJ-101 | Add login | PR_CREATED | pr:42 | parent:PROJ-100"
  * ```
  */
 export function appendProgress(
@@ -56,6 +60,7 @@ export function appendProgress(
   summary: string,
   status: ProgressStatus,
   prNumber?: number,
+  parent?: string,
 ): void {
   const filePath = join(projectRoot, '.clancy', 'progress.txt');
 
@@ -63,7 +68,8 @@ export function appendProgress(
 
   const timestamp = formatTimestamp(new Date());
   const prSuffix = prNumber != null ? ` | pr:${prNumber}` : '';
-  const line = `${timestamp} | ${key} | ${summary} | ${status}${prSuffix}\n`;
+  const parentSuffix = parent ? ` | parent:${parent}` : '';
+  const line = `${timestamp} | ${key} | ${summary} | ${status}${prSuffix}${parentSuffix}\n`;
 
   appendFileSync(filePath, line, 'utf8');
 }
@@ -72,9 +78,13 @@ export function appendProgress(
  * Parse a progress file into an array of entries.
  *
  * Each line is expected to follow the format:
- * `YYYY-MM-DD HH:MM | TICKET-KEY | summary | STATUS`
+ * `YYYY-MM-DD HH:MM | KEY | summary | STATUS [| pr:N] [| parent:KEY]`
  *
- * Lines that don't match are silently skipped.
+ * The `pr:` and `parent:` suffixes can appear in any order after the status.
+ * Uses named-prefix matching to identify these fields rather than positional
+ * indexing, ensuring backward compatibility with entries that lack them.
+ *
+ * Lines that don't match the minimum format are silently skipped.
  */
 function parseProgressFile(projectRoot: string): ProgressEntry[] {
   const filePath = join(projectRoot, '.clancy', 'progress.txt');
@@ -95,27 +105,48 @@ function parseProgressFile(projectRoot: string): ProgressEntry[] {
     const parts = trimmed.split(' | ');
     if (parts.length < 4) continue;
 
-    const lastPart = parts[parts.length - 1]!;
-    const prMatch = lastPart.match(/^pr:(\d+)$/);
+    // Fixed positions: timestamp, key, then everything else
+    const timestamp = parts[0]!;
+    const key = parts[1]!;
 
-    if (prMatch) {
-      // Has PR number: status is second-to-last
-      entries.push({
-        timestamp: parts[0]!,
-        key: parts[1]!,
-        summary: parts.slice(2, -2).join(' | '),
-        status: parts[parts.length - 2]! as ProgressStatus,
-        prNumber: parseInt(prMatch[1]!, 10),
-      });
-    } else {
-      // No PR number: status is last (backward compatible)
-      entries.push({
-        timestamp: parts[0]!,
-        key: parts[1]!,
-        summary: parts.slice(2, -1).join(' | '),
-        status: lastPart as ProgressStatus,
-      });
+    // Scan remaining segments for named prefixes and status
+    let status: ProgressStatus | undefined;
+    let prNumber: number | undefined;
+    let parent: string | undefined;
+    const summaryParts: string[] = [];
+
+    for (let i = 2; i < parts.length; i++) {
+      const segment = parts[i]!;
+      const prMatch = segment.match(/^pr:(\d+)$/);
+      const parentMatch = segment.match(/^parent:(.+)$/);
+
+      if (prMatch) {
+        prNumber = parseInt(prMatch[1]!, 10);
+      } else if (parentMatch) {
+        parent = parentMatch[1]!;
+      } else if (
+        i >= 3 &&
+        !status &&
+        segment === segment.toUpperCase() &&
+        segment.length > 1
+      ) {
+        // Status is an ALL_CAPS segment after the summary (position 3+)
+        status = segment as ProgressStatus;
+      } else {
+        summaryParts.push(segment);
+      }
     }
+
+    if (!status) continue;
+
+    entries.push({
+      timestamp,
+      key,
+      summary: summaryParts.join(' | '),
+      status,
+      ...(prNumber != null && { prNumber }),
+      ...(parent != null && { parent }),
+    });
   }
 
   return entries;
