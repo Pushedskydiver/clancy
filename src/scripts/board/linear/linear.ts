@@ -2,7 +2,7 @@
  * Clancy Linear board script.
  *
  * Fetches an issue from Linear's GraphQL API, creates branches,
- * invokes Claude, squash merges, transitions status, and sends notifications.
+ * invokes Claude, pushes feature branches, and creates PRs.
  *
  * Important: Linear personal API keys do NOT use "Bearer" prefix.
  * Only OAuth tokens use "Bearer". This is intentional per Linear docs.

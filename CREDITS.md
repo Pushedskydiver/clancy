@@ -21,7 +21,7 @@ These principles are the foundation everything in Clancy is built on.
 **Clancy's creator took Geoffrey's raw technique and evolved it for professional team use:**
 - Kanban board integration (Jira, GitHub Issues, Linear)
 - Structured docs layer (`.clancy/docs/`) — 10 docs read before every run
-- Epic branch git workflow with squash merge conventions
+- Epic branch git workflow with PR-based delivery
 - Per-ticket progress logging
 - Formal definition of done
 

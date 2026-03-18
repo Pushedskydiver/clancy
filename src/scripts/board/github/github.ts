@@ -2,7 +2,7 @@
  * Clancy GitHub Issues board script.
  *
  * Fetches an issue from GitHub Issues REST API, creates branches,
- * invokes Claude, squash merges, closes the issue, and sends notifications.
+ * invokes Claude, pushes feature branches, and creates PRs.
  *
  * Note: GitHub Issues endpoint returns both issues AND pull requests.
  * This script filters out PRs explicitly.

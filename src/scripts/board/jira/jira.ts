@@ -2,7 +2,7 @@
  * Clancy Jira board script.
  *
  * Fetches a ticket from Jira Cloud, creates branches, invokes Claude,
- * squash merges, transitions status, and sends notifications.
+ * pushes feature branches, creates PRs, and transitions status.
  *
  * Uses the new POST `/rest/api/3/search/jql` endpoint (old GET `/search`
  * was removed by Atlassian in August 2025).
