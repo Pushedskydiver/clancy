@@ -822,8 +822,8 @@ describe('run', () => {
     await run([]);
     log.mockRestore();
 
-    // Epic completion check (2 calls) + rework detection (4 calls)
-    expect(mockFindEntriesWithStatus).toHaveBeenCalledTimes(6);
+    // Epic completion check (4 calls: PR_CREATED, REWORK, PUSHED, EPIC_PR_CREATED) + rework detection (4 calls)
+    expect(mockFindEntriesWithStatus).toHaveBeenCalledTimes(8);
     expect(mockFindEntriesWithStatus).toHaveBeenCalledWith(
       expect.any(String),
       'PR_CREATED',

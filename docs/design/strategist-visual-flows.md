@@ -1133,8 +1133,8 @@ On failure:                 On failure:                 On failure:
 │  List all: key — title (size) [Mode]         │
 │  "Dependencies linked: N"                    │
 │  "AFK-ready: X | Needs human: Y"            │
-│  "Epic branch: epic/{parent-key}             │
-│    (created on first implementation)"        │
+│  "Epic branch: epic/{parent-key}              │
+│    (created on first implementation)"         │
 │  "Next: /clancy:plan"                        │
 └──────────────────────┬───────────────────────┘
                        │

@@ -135,9 +135,21 @@ export async function run(argv: string[]): Promise<void> {
     try {
       const prEntries = findEntriesWithStatus(process.cwd(), 'PR_CREATED');
       const reworkEntries = findEntriesWithStatus(process.cwd(), 'REWORK');
-      const allEntries = [...prEntries, ...reworkEntries];
+      const pushedEntries = findEntriesWithStatus(process.cwd(), 'PUSHED');
+      const allEntries = [...prEntries, ...reworkEntries, ...pushedEntries];
+
+      // Skip epics that already have an EPIC_PR_CREATED entry
+      const epicDone = new Set(
+        findEntriesWithStatus(process.cwd(), 'EPIC_PR_CREATED').map(
+          (e) => e.key,
+        ),
+      );
+
       const parentKeys = new Set(
-        allEntries.map((e) => e.parent).filter((p): p is string => Boolean(p)),
+        allEntries
+          .map((e) => e.parent)
+          .filter((p): p is string => Boolean(p))
+          .filter((p) => !epicDone.has(p)),
       );
       const baseBranch = config.env.CLANCY_BASE_BRANCH ?? 'main';
 
@@ -327,7 +339,10 @@ export async function run(argv: string[]): Promise<void> {
       if (hasParent && !skipEpicBranch) {
         // Ensure epic branch exists for rework targeting it
         const epicReady = ensureEpicBranch(targetBranch, baseBranch);
-        if (!epicReady) return;
+        if (!epicReady) {
+          if (originalBranch) checkout(originalBranch);
+          return;
+        }
       } else {
         ensureBranch(effectiveTarget, baseBranch);
       }

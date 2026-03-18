@@ -36,7 +36,6 @@ import type { FetchedTicket } from '../types/types.js';
  * - If it only exists locally with unpushed commits, refuses to overwrite
  *   and prints migration instructions (safety guard for mid-upgrade users).
  * - If it doesn't exist at all, creates from `origin/{baseBranch}` and pushes.
- * - Checks staleness: warns if the epic branch is behind the base branch.
  *
  * @param epicBranch - The epic branch name (e.g., `'epic/proj-100'`).
  * @param baseBranch - The base branch name (e.g., `'main'`).
@@ -50,8 +49,15 @@ export function ensureEpicBranch(
   const existsLocally = branchExists(epicBranch);
 
   if (existsOnRemote) {
-    // Fetch latest from remote
-    fetchRemoteBranch(epicBranch);
+    const fetched = fetchRemoteBranch(epicBranch);
+    if (!fetched) {
+      console.log(
+        yellow(
+          `⚠ Epic branch ${epicBranch} exists on remote but could not be fetched.`,
+        ),
+      );
+      return false;
+    }
     return true;
   }
 
