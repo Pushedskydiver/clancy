@@ -266,6 +266,28 @@ describe('detectBoard', () => {
       expect(typeof result).not.toBe('string');
     });
 
+    it('passes through CLANCY_TDD when set to true', () => {
+      const result = detectBoard(
+        githubEnv({
+          CLANCY_TDD: 'true',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_TDD).toBe('true');
+    });
+
+    it('CLANCY_TDD is optional — config parses without it', () => {
+      const result = detectBoard(githubEnv());
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_TDD).toBeUndefined();
+    });
+
     it('rework vars are optional — config parses without them', () => {
       const result = detectBoard(githubEnv());
 
