@@ -468,7 +468,7 @@ Body: {
         {
           "type": "paragraph",
           "content": [
-            { "type": "text", "text": "Create the base route structure for the customer portal, including layout components and route guards." }
+            { "type": "text", "text": "Epic: PROJ-200\n\nCreate the base route structure for the customer portal, including layout components and route guards." }
           ]
         }
       ]
@@ -479,6 +479,8 @@ Body: {
   }
 }
 ```
+
+**Epic reference:** The description always starts with `Epic: {parent-key}` (e.g., `Epic: PROJ-200`). This text convention enables cross-platform epic completion detection — `fetchChildrenStatus` searches for this reference rather than relying on native parent/child APIs.
 
 **Mode label:** Include `clancy:afk` or `clancy:hitl` label based on the ticket's Mode classification. This label is used by `/clancy:run` to decide whether to pick up the ticket autonomously or skip it for human attention.
 

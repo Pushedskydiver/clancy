@@ -587,11 +587,13 @@ POST /repos/{GITHUB_REPO}/issues
 Headers: githubHeaders(GITHUB_TOKEN), Content-Type: application/json
 Body: {
   "title": "{ticket title}",
-  "body": "<see Section 18 for body format>",
-  "labels": ["needs-refinement", "size:M", "component:frontend"],
+  "body": "Epic: #50\n\n<see Section 18 for body format>",
+  "labels": ["needs-refinement", "size:M", "component:frontend", "clancy:afk"],
   "assignees": ["{resolved_username}"]
 }
 ```
+
+**Epic reference:** The body always starts with `Epic: #{parent-number}` (e.g., `Epic: #50`). This text convention enables cross-platform epic completion detection — `fetchChildrenStatus` searches for this reference in issue bodies.
 
 **Assignee resolution:** Use `resolveUsername(GITHUB_TOKEN)` (already implemented and cached). Assign the authenticated user to all created issues so they appear in their queue.
 
