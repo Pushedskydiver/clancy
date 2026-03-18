@@ -64,11 +64,11 @@ graph TB
     run -->|loops once| once
     review -->|scores implementation| logs
 
-    style SETUP fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
-    style STRATEGIST fill:#fff3e0,stroke:#e65100,color:#bf360c
-    style PLANNER fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
-    style IMPLEMENTER fill:#fce4ec,stroke:#c62828,color:#b71c1c
-    style REVIEWER fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
+    style SETUP stroke:#2e7d32,stroke-width:2px
+    style STRATEGIST stroke:#e65100,stroke-width:2px
+    style PLANNER stroke:#1565c0,stroke-width:2px
+    style IMPLEMENTER stroke:#c62828,stroke-width:2px
+    style REVIEWER stroke:#6a1b9a,stroke-width:2px
 ```
 
 ---
@@ -180,12 +180,12 @@ flowchart TD
     Log --> Notify["Send notification\n(webhook, if configured)"]
     Notify --> End(["Done"])
 
-    style Stop1 fill:#ffcdd2,color:#b71c1c
-    style Stop2 fill:#ffcdd2,color:#b71c1c
-    style Stop3 fill:#fff9c4,color:#f57f17
-    style Stop4 fill:#e3f2fd,color:#0d47a1
-    style Stop5 fill:#fff9c4,color:#f57f17
-    style Stop6 fill:#ffcdd2,color:#b71c1c
+    style Stop1 stroke:#c62828,stroke-width:2px
+    style Stop2 stroke:#c62828,stroke-width:2px
+    style Stop3 stroke:#f9a825,stroke-width:2px
+    style Stop4 stroke:#1565c0,stroke-width:2px
+    style Stop5 stroke:#f9a825,stroke-width:2px
+    style Stop6 stroke:#c62828,stroke-width:2px
 ```
 
 ---
@@ -233,10 +233,10 @@ flowchart TD
     Link --> MarkApproved["Mark brief .approved"]
     MarkApproved --> Summary["Display summary\n→ Next: /clancy:plan"]
 
-    style Skip fill:#fff9c4,color:#f57f17
-    style Cancel fill:#ffcdd2,color:#b71c1c
-    style AIGrill fill:#e3f2fd,color:#0d47a1
-    style HumanGrill fill:#e8f5e9,color:#1b5e20
+    style Skip stroke:#f9a825,stroke-width:2px
+    style Cancel stroke:#c62828,stroke-width:2px
+    style AIGrill stroke:#1565c0,stroke-width:2px
+    style HumanGrill stroke:#2e7d32,stroke-width:2px
 ```
 
 ---
@@ -361,10 +361,10 @@ graph TD
 
     logs(["/clancy:logs"]) -->|reads| progress
 
-    style env fill:#fff3e0,color:#bf360c
-    style progress fill:#e8f5e9,color:#1b5e20
-    style oncejs fill:#fce4ec,color:#b71c1c
-    style afkjs fill:#fce4ec,color:#b71c1c
+    style env stroke:#e65100,stroke-width:2px
+    style progress stroke:#2e7d32,stroke-width:2px
+    style oncejs stroke:#c62828,stroke-width:2px
+    style afkjs stroke:#c62828,stroke-width:2px
 ```
 
 ---
@@ -398,8 +398,8 @@ flowchart LR
         P5 -->|"No (approved)"| P9["Merge PR\nTransition → Done"]
     end
 
-    style Epic fill:#e8f5e9,color:#1b5e20
-    style PR fill:#e3f2fd,color:#0d47a1
+    style Epic stroke:#2e7d32,stroke-width:2px
+    style PR stroke:#1565c0,stroke-width:2px
 ```
 
 ---
@@ -435,6 +435,6 @@ graph TD
     Header --> Context --> Exec --> TDD
     RHeader --> RContext --> RFeedback --> RTDD
 
-    style TDDBlock fill:#e3f2fd,color:#0d47a1
-    style RTDDBlock fill:#e3f2fd,color:#0d47a1
+    style TDDBlock stroke:#1565c0,stroke-width:2px
+    style RTDDBlock stroke:#1565c0,stroke-width:2px
 ```
