@@ -20,7 +20,7 @@ Ubiquitous language for the Clancy project. Use these terms consistently in code
 | **Ticket** | A unit of work on the board (Jira issue, GitHub issue, Linear issue). Clancy fetches, implements, and transitions tickets. |
 | **Parented ticket** | A ticket that has a parent (epic in Jira, milestone in GitHub, parent issue in Linear). Delivered via PR to the epic branch. |
 | **Standalone ticket** | A ticket with no parent. Delivered via PR directly to the base branch. |
-| **Epic branch** | A long-lived branch (e.g. `epic/proj-100`) where child ticket PRs are merged. Created on first child implementation. When all children are done, the epic branch gets a PR to the base branch. |
+| **Epic branch** | A long-lived branch where child ticket PRs are merged. Named `epic/{key}` for Jira/Linear (e.g. `epic/proj-100`) or `milestone/{slug}` for GitHub (e.g. `milestone/v2-launch`). Created on first child implementation. When all children are done, the epic branch gets a PR to the base branch. |
 | **Base branch** | The branch configured as `CLANCY_BASE_BRANCH` (default: `main`). The target for standalone ticket PRs and epic PRs. |
 | **Feature branch** | A short-lived branch (e.g. `feature/proj-101`) created for implementing a single ticket. PRs target either the epic branch or base branch. |
 | **Single-child skip** | Optimisation: if an epic has only one child ticket, skip the epic branch overhead — deliver the child PR directly to the base branch. |
@@ -32,7 +32,7 @@ Ubiquitous language for the Clancy project. Use these terms consistently in code
 | Term | Definition |
 |---|---|
 | **Once** | A single ticket execution cycle: preflight → fetch ticket → implement → deliver → log. Entry point: `/clancy:once`. |
-| **Run** | AFK loop that calls once repeatedly until the queue is empty. Entry point: `/clancy:run`. |
+| **Run** | AFK loop that calls once repeatedly until the queue is empty or `MAX_ITERATIONS` (default 5) is reached. Stops early on preflight failure, skipped tickets, or other stop conditions. Entry point: `/clancy:run`. |
 | **Preflight** | Startup checks: `.clancy/.env` exists, credentials valid, board reachable. Runs before every ticket. |
 | **Blocker check** | Before implementing a ticket, the implementer checks its blocking dependencies on the board. If any blocker is incomplete, the ticket is skipped and the next one is picked up. Per-board: Jira checks issueLinks, GitHub parses "Blocked by #N" from body, Linear checks relations API. (v0.6.0) |
 | **Feasibility check** | After fetching a ticket, Clancy assesses whether the work is achievable in the current codebase context. Skippable with `--skip-feasibility`. |
