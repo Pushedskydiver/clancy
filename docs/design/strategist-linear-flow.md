@@ -431,11 +431,13 @@ Brief: real-time-notifications
 Source: [ENG-42] Add real-time notifications
 Parent: ENG-42
 
-Tickets to create:
-  #1  [S] Set up WebSocket infrastructure
-  #2  [M] Implement notification service          (depends on #1)
-  #3  [S] Add notification preferences UI         (depends on #1)
-  #4  [S] Add notification badge component        (depends on #2)
+Tickets to create (dependency order):
+  #1  [S] [AFK]  Set up WebSocket infrastructure — No deps
+  #2  [M] [AFK]  Implement notification service — After #1
+  #3  [S] [HITL] Add notification preferences UI — After #1
+  #4  [S] [AFK]  Add notification badge component — After #2
+
+AFK-ready: 3 | Needs human: 1
 
 Create 4 tickets under ENG-42? [Y/n] Y
 

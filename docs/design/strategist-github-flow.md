@@ -879,10 +879,13 @@ Clancy — Approve Brief
 Brief: add-dark-mode-support
 Parent: none (inline brief)
 
-Tickets to create:
-  [1] Add theme context provider (S)
-  [2] Implement CSS variable system (M) — depends on #1
-  [3] Add toggle component (S) — depends on #1
+Tickets to create (dependency order):
+  [1] [S] [AFK]  Add theme context provider — No deps
+  [2] [M] [AFK]  Implement CSS variable system — After #1
+  [3] [S] [AFK]  Add toggle component — After #1
+
+Labels: needs-refinement
+AFK-ready: 3 | Needs human: 0
 
 No parent issue — tickets will be standalone.
 To link to a parent: /clancy:approve-brief --epic #100
