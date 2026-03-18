@@ -4,6 +4,8 @@
 
 Clancy is an npm package that installs Claude Code slash commands, workflows, and hooks into a user's project. Board logic is implemented in TypeScript ESM modules. Hooks are pre-built CommonJS. Commands and workflows are markdown.
 
+> For visual diagrams of roles, commands, flows, and board interactions, see [VISUAL-ARCHITECTURE.md](VISUAL-ARCHITECTURE.md).
+
 ## Directory Structure
 
 ```

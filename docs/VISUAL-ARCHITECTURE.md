@@ -2,6 +2,17 @@
 
 Interactive diagrams showing how roles, commands, and flows connect. Rendered natively by GitHub.
 
+## Table of Contents
+
+1. [Role & Command Map](#1-role--command-map) — all 5 roles and their 15 commands
+2. [Ticket Lifecycle](#2-ticket-lifecycle--end-to-end) — state machine from idea to merged code
+3. [Once Orchestrator](#3-the-once-orchestrator--implementation-flow) — what happens inside `/clancy:once`
+4. [Strategist Flow](#4-strategist-flow--brief-to-tickets-v060) — `/clancy:brief` and `/clancy:approve-brief`
+5. [Board API Matrix](#5-board-api-interaction-matrix) — which commands talk to which APIs
+6. [File Artifacts](#6-file-artifacts--what-lives-in-clancy) — everything in `.clancy/`
+7. [Delivery Paths](#7-delivery-paths--epic-merge-vs-pr-flow) — epic merge vs PR flow with rework
+8. [Prompt Building](#8-prompt-building--what-claude-receives) — what Claude gets for implementation and rework
+
 ---
 
 ## 1. Role & Command Map
