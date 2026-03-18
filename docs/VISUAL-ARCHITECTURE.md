@@ -64,11 +64,11 @@ graph TB
     run -->|loops once| once
     review -->|scores implementation| logs
 
-    style SETUP fill:#e8f5e9,stroke:#2e7d32
-    style STRATEGIST fill:#fff3e0,stroke:#e65100
-    style PLANNER fill:#e3f2fd,stroke:#1565c0
-    style IMPLEMENTER fill:#fce4ec,stroke:#c62828
-    style REVIEWER fill:#f3e5f5,stroke:#6a1b9a
+    style SETUP fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20
+    style STRATEGIST fill:#fff3e0,stroke:#e65100,color:#bf360c
+    style PLANNER fill:#e3f2fd,stroke:#1565c0,color:#0d47a1
+    style IMPLEMENTER fill:#fce4ec,stroke:#c62828,color:#b71c1c
+    style REVIEWER fill:#f3e5f5,stroke:#6a1b9a,color:#4a148c
 ```
 
 ---
@@ -180,12 +180,12 @@ flowchart TD
     Log --> Notify["Send notification\n(webhook, if configured)"]
     Notify --> End(["Done"])
 
-    style Stop1 fill:#ffcdd2
-    style Stop2 fill:#ffcdd2
-    style Stop3 fill:#fff9c4
-    style Stop4 fill:#e3f2fd
-    style Stop5 fill:#fff9c4
-    style Stop6 fill:#ffcdd2
+    style Stop1 fill:#ffcdd2,color:#b71c1c
+    style Stop2 fill:#ffcdd2,color:#b71c1c
+    style Stop3 fill:#fff9c4,color:#f57f17
+    style Stop4 fill:#e3f2fd,color:#0d47a1
+    style Stop5 fill:#fff9c4,color:#f57f17
+    style Stop6 fill:#ffcdd2,color:#b71c1c
 ```
 
 ---
@@ -233,10 +233,10 @@ flowchart TD
     Link --> MarkApproved["Mark brief .approved"]
     MarkApproved --> Summary["Display summary\n→ Next: /clancy:plan"]
 
-    style Skip fill:#fff9c4
-    style Cancel fill:#ffcdd2
-    style AIGrill fill:#e3f2fd
-    style HumanGrill fill:#e8f5e9
+    style Skip fill:#fff9c4,color:#f57f17
+    style Cancel fill:#ffcdd2,color:#b71c1c
+    style AIGrill fill:#e3f2fd,color:#0d47a1
+    style HumanGrill fill:#e8f5e9,color:#1b5e20
 ```
 
 ---
@@ -361,10 +361,10 @@ graph TD
 
     logs(["/clancy:logs"]) -->|reads| progress
 
-    style env fill:#fff3e0
-    style progress fill:#e8f5e9
-    style oncejs fill:#fce4ec
-    style afkjs fill:#fce4ec
+    style env fill:#fff3e0,color:#bf360c
+    style progress fill:#e8f5e9,color:#1b5e20
+    style oncejs fill:#fce4ec,color:#b71c1c
+    style afkjs fill:#fce4ec,color:#b71c1c
 ```
 
 ---
@@ -398,8 +398,8 @@ flowchart LR
         P5 -->|"No (approved)"| P9["Merge PR\nTransition → Done"]
     end
 
-    style Epic fill:#e8f5e9
-    style PR fill:#e3f2fd
+    style Epic fill:#e8f5e9,color:#1b5e20
+    style PR fill:#e3f2fd,color:#0d47a1
 ```
 
 ---
@@ -435,6 +435,6 @@ graph TD
     Header --> Context --> Exec --> TDD
     RHeader --> RContext --> RFeedback --> RTDD
 
-    style TDDBlock fill:#e3f2fd
-    style RTDDBlock fill:#e3f2fd
+    style TDDBlock fill:#e3f2fd,color:#0d47a1
+    style RTDDBlock fill:#e3f2fd,color:#0d47a1
 ```
