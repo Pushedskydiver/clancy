@@ -7,6 +7,36 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.5.12] — 2026-03-18
+
+### ✨ Features
+
+- **Epic branch workflow** — parented tickets now create PRs targeting an epic branch (`epic/{key}` or `milestone/{slug}`) instead of squash-merging directly to main. When all children of an epic are done, Clancy automatically creates a final PR from the epic branch to the base branch. Every code change gets reviewed via PR before reaching the base branch.
+- **Epic completion detection** — `fetchChildrenStatus` added to all 3 board modules (Jira JQL, GitHub Issues, Linear GraphQL). Returns `{ total, incomplete }` for automatic epic PR creation and single-child skip optimisation.
+- **Single-child skip** — if an epic has only one child ticket, the epic branch is skipped and the child delivers directly to the base branch via PR (avoids unnecessary double-review).
+- **Migration guard** — `ensureEpicBranch` detects local-only epic branches with unpushed squash-merged work from the previous delivery model and refuses to overwrite them, printing migration instructions.
+- **`Part of` for GitHub Issues** — child PRs targeting epic branches use `Part of #N` instead of `Closes #N` to prevent premature auto-close before the epic reaches the base branch.
+- **Rework parent preservation** — rework detection now reads the `parent:KEY` field from progress.txt entries, ensuring rework PRs target the correct epic branch instead of defaulting to main.
+
+### ♻️ Refactor
+
+- **`deliverViaEpicMerge` deleted** — all delivery goes through `deliverViaPullRequest` with the appropriate target branch. Simplifies delivery logic from two paths to one.
+- **Progress parser rewritten** — `parseProgressFile` now uses named-prefix matching (`pr:`, `parent:`) instead of positional segment indexing, supporting the new `parent:KEY` suffix without breaking legacy entries.
+
+### ✅ Tests
+
+- 34 new tests (473 → 507), 10 existing tests rewritten for the new delivery model
+
+### ⚠️ Migration
+
+If you have in-flight epics with locally squash-merged children (from the previous Clancy version), push the epic branch manually before running `/clancy:once`:
+```bash
+git push -u origin epic/{your-epic-key}
+```
+Clancy will detect the local-only branch and print instructions.
+
+---
+
 ## [0.5.11] — 2026-03-18
 
 ### 📝 Docs

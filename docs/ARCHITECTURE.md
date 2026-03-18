@@ -33,14 +33,14 @@ clancy/
 │   ├── scripts/
 │   │   ├── once/               — once orchestrator (8 modules)
 │   │   │   ├── types.ts        — FetchedTicket type
-│   │   │   ├── board-ops.ts    — sharedEnv, pingBoard, validateInputs, transitionToStatus
+│   │   │   ├── board-ops.ts    — sharedEnv, pingBoard, validateInputs, transitionToStatus, fetchEpicChildrenStatus
 │   │   │   ├── fetch-ticket.ts — board-specific ticket fetch dispatch
 │   │   │   ├── git-token.ts    — resolveGitToken
 │   │   │   ├── pr-creation.ts  — attemptPrCreation, buildManualPrUrl
-│   │   │   ├── deliver.ts      — deliverViaEpicMerge, deliverViaPullRequest
+│   │   │   ├── deliver.ts      — deliverViaPullRequest, ensureEpicBranch, deliverEpicToBase
 │   │   │   ├── rework.ts       — fetchReworkFromPrReview, postReworkActions, buildReworkComment
 │   │   │   ├── once.ts         — run() orchestrator entry point
-│   │   │   └── once.test.ts    — 404 tests
+│   │   │   └── once.test.ts    — integration tests
 │   │   ├── afk/afk.ts          — AFK loop runner
 │   │   ├── board/              — board-specific modules (jira, github, linear)
 │   │   └── shared/             — env-schema, branch, prompt, progress, etc.
@@ -150,10 +150,10 @@ clancy-afk.js (loop runner — bundled, self-contained)
               6. Transition ticket to In Progress
               7. Create feature branch
               8. Pipe prompt to: claude --dangerously-skip-permissions
-              9a. [Has parent] Squash merge → delete branch → transition Done → close issue (GitHub)
-              9b. [No parent]  Push branch → detect remote → create PR/MR → transition In Review
-             10. Log to .clancy/progress.txt
-             11. Send notification (if configured)
+              9. Push branch → create PR/MR (targets epic branch if parent, base branch otherwise)
+             10. [Has parent] Check epic completion → create epic PR if all children done
+             11. Log to .clancy/progress.txt
+             12. Send notification (if configured)
             if "No tickets found": break
 ```
 

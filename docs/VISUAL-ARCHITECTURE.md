@@ -10,7 +10,7 @@ Interactive diagrams showing how roles, commands, and flows connect. Rendered na
 4. [Strategist Flow](#4-strategist-flow--brief-to-tickets-v060) — `/clancy:brief` and `/clancy:approve-brief`
 5. [Board API Matrix](#5-board-api-interaction-matrix) — which commands talk to which APIs
 6. [File Artifacts](#6-file-artifacts--what-lives-in-clancy) — everything in `.clancy/`
-7. [Delivery Paths](#7-delivery-paths--epic-merge-vs-pr-flow) — epic merge vs PR flow with rework
+7. [Delivery Paths](#7-delivery-paths--pr-flow-with-epic-branches) — PR flow with epic branches
 8. [Prompt Building](#8-prompt-building--what-claude-receives) — what Claude gets for implementation and rework
 
 ---
@@ -104,13 +104,18 @@ stateDiagram-v2
     }
 
     state "Delivery" as deliv {
-        Deliver --> EpicMerge: Has parent?
-        Deliver --> PRFlow: No parent?
-        EpicMerge --> Done: Squash merge + transition
-        PRFlow --> PRCreated: Push + create PR
+        Deliver --> PRCreated: Push + create PR
         PRCreated --> Rework: Review feedback?
         Rework --> PRCreated: Push fixes
-        PRCreated --> Done: Approved + merged
+        PRCreated --> ChildDone: Approved + merged
+    }
+
+    state "Epic Completion" as epic {
+        ChildDone --> EpicCheck: Has parent?
+        ChildDone --> Done: No parent
+        EpicCheck --> EpicPR: All children done?
+        EpicCheck --> Done: More children remain
+        EpicPR --> Done: Epic PR approved + merged
     }
 
     Done --> [*]
@@ -168,14 +173,18 @@ flowchart TD
 
     BuildPrompt["Build prompt\n(ticket + docs + TDD?)"] --> InvokeClaude["Invoke Claude session\n(claude -p --dangerously-skip-permissions)"]
 
-    InvokeClaude -->|Success| HasParent{"Has parent\n(epic/milestone)?"}
+    InvokeClaude -->|Success| PRDeliver["Push feature branch\nCreate PR/MR\nTransition → Review"]
     InvokeClaude -->|Fail| Stop6["Claude session failed ✗"]
 
-    HasParent -->|Yes| EpicMerge["Squash merge → main\nDelete feature branch\nTransition → Done"]
-    HasParent -->|No| PRCreate["Push feature branch\nCreate PR/MR\nTransition → Review"]
+    PRDeliver --> EpicCheck{"Has parent\n(epic branch)?"}
 
-    EpicMerge --> Log["Log to progress.txt"]
-    PRCreate --> Log
+    EpicCheck -->|Yes| ChildrenDone{"All children\ndone?"}
+    EpicCheck -->|No| Log["Log to progress.txt"]
+
+    ChildrenDone -->|Yes| EpicPR["Create epic PR\nepic branch → base branch"]
+    ChildrenDone -->|No| Log
+
+    EpicPR --> Log
 
     Log --> Notify["Send notification\n(webhook, if configured)"]
     Notify --> End(["Done"])
@@ -369,37 +378,43 @@ graph TD
 
 ---
 
-## 7. Delivery Paths — Epic Merge vs PR Flow
+## 7. Delivery Paths — PR Flow with Epic Branches
 
-The two delivery paths determined by whether the ticket has a parent.
+All tickets are delivered via PR. The target branch depends on whether the ticket has a parent.
 
 ```mermaid
 flowchart LR
-    Claude["Claude commits code"] --> Check{"Has parent\n(epic/milestone)?"}
+    Claude["Claude commits code"] --> Push["Push feature branch"]
+    Push --> PR["Create PR/MR"]
 
-    Check -->|Yes| Epic["Epic Merge Path"]
-    Check -->|No| PR["PR-Based Path"]
+    PR --> Target{"PR target?"}
 
-    subgraph Epic["Epic Merge Path"]
-        E1["Squash merge\nfeature → main"] --> E2["Delete feature\nbranch"]
-        E2 --> E3["Transition ticket\n→ Done"]
-        E3 --> E4["Log: DONE"]
+    Target -->|"Has parent"| EpicBranch["PR targets\nepic branch"]
+    Target -->|"No parent"| BaseBranch["PR targets\nbase branch"]
+
+    subgraph ChildFlow["Child Ticket Flow"]
+        EpicBranch --> Review1["Reviewer reviews\nchild PR"]
+        Review1 --> Rework1{"Feedback?"}
+        Rework1 -->|Yes| Fix1["Rework fixes\npushed"]
+        Fix1 --> Review1
+        Rework1 -->|No| Merge1["Merge into\nepic branch"]
+        Merge1 --> EpicCheck{"All children\ndone?"}
+        EpicCheck -->|No| Done1["Log: PR_CREATED\n(more children remain)"]
+        EpicCheck -->|Yes| EpicPR["Create epic PR\nepic → base branch"]
+        EpicPR --> Review2["Reviewer reviews\ncomplete feature"]
+        Review2 --> Done2["Merge epic PR\n→ Done"]
     end
 
-    subgraph PR["PR-Based Path"]
-        P1["Push feature\nbranch"] --> P2["Create PR/MR\n(GitHub/GitLab/Bitbucket)"]
-        P2 --> P3["Transition ticket\n→ Review"]
-        P3 --> P4["Log: PR_CREATED"]
-        P4 --> P5{"Review\nfeedback?"}
-        P5 -->|Yes| P6["Fetch comments\nBuild rework prompt"]
-        P6 --> P7["Re-invoke Claude\nPush fixes"]
-        P7 --> P8["Post rework comment\nRe-request review"]
-        P8 --> P5
-        P5 -->|"No (approved)"| P9["Merge PR\nTransition → Done"]
+    subgraph StandaloneFlow["Standalone Ticket Flow"]
+        BaseBranch --> Review3["Reviewer reviews PR"]
+        Review3 --> Rework2{"Feedback?"}
+        Rework2 -->|Yes| Fix2["Rework fixes\npushed"]
+        Fix2 --> Review3
+        Rework2 -->|No| Done3["Merge PR\n→ Done"]
     end
 
-    style Epic stroke:#2e7d32,stroke-width:2px
-    style PR stroke:#1565c0,stroke-width:2px
+    style ChildFlow stroke:#1565c0,stroke-width:2px
+    style StandaloneFlow stroke:#2e7d32,stroke-width:2px
 ```
 
 ---
