@@ -1079,8 +1079,11 @@ On failure:                 On failure:                 On failure:
 │  For each ticket in dependency order:        │
 │    Already created (Ticket column)?          │
 │      -> Skip (resume from partial)           │
-│    Create via API (include Mode tag in       │
-│      description/labels — see platform docs) │
+│    Create via API:                           │
+│      - Include Mode tag (labels/description) │
+│      - Include "Epic: {parent-key}" in       │
+│        description (for epic completion      │
+│        detection across all boards)          │
 │      -> Success: record key, display:        │
 │         "[1/6] + PROJ-201 — Title [AFK]"     │
 │      -> Failure: see error flows (Part 5)    │
@@ -1133,6 +1136,7 @@ On failure:                 On failure:                 On failure:
 │  List all: key — title (size) [Mode]         │
 │  "Dependencies linked: N"                    │
 │  "AFK-ready: X | Needs human: Y"            │
+│  "Epic branch: epic/{parent-key}"             │
 │  "Next: /clancy:plan"                        │
 └──────────────────────┬───────────────────────┘
                        │

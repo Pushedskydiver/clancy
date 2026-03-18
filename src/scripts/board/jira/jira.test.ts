@@ -4,6 +4,7 @@ import {
   buildAuthHeader,
   buildJql,
   extractAdfText,
+  fetchChildrenStatus,
   fetchTicket,
   isSafeJqlValue,
   pingJira,
@@ -316,6 +317,79 @@ describe('jira', () => {
       );
 
       expect(result).toBe(false);
+    });
+  });
+
+  describe('fetchChildrenStatus', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('returns total and incomplete counts', async () => {
+      let callCount = 0;
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => {
+          callCount++;
+          return Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ total: callCount === 1 ? 5 : 2 }),
+          });
+        }),
+      );
+
+      const result = await fetchChildrenStatus(
+        'https://acme.atlassian.net',
+        'auth',
+        'PROJ-100',
+      );
+
+      expect(result).toEqual({ total: 5, incomplete: 2 });
+    });
+
+    it('returns zero counts when epic has no children', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ total: 0 }),
+          }),
+        ),
+      );
+
+      const result = await fetchChildrenStatus(
+        'https://acme.atlassian.net',
+        'auth',
+        'PROJ-100',
+      );
+
+      expect(result).toEqual({ total: 0, incomplete: 0 });
+    });
+
+    it('returns undefined on API failure', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() => Promise.resolve({ ok: false, status: 500 })),
+      );
+
+      const result = await fetchChildrenStatus(
+        'https://acme.atlassian.net',
+        'auth',
+        'PROJ-100',
+      );
+
+      expect(result).toBeUndefined();
+    });
+
+    it('returns undefined for invalid parent key', async () => {
+      const result = await fetchChildrenStatus(
+        'https://acme.atlassian.net',
+        'auth',
+        'invalid-key',
+      );
+
+      expect(result).toBeUndefined();
     });
   });
 });

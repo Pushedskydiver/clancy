@@ -1,11 +1,17 @@
-import { isValidRepo, pingGitHub } from '~/scripts/board/github/github.js';
+import {
+  fetchChildrenStatus as fetchGitHubChildrenStatus,
+  isValidRepo,
+  pingGitHub,
+} from '~/scripts/board/github/github.js';
 import {
   buildAuthHeader,
+  fetchChildrenStatus as fetchJiraChildrenStatus,
   isSafeJqlValue,
   pingJira,
   transitionIssue as transitionJiraIssue,
 } from '~/scripts/board/jira/jira.js';
 import {
+  fetchChildrenStatus as fetchLinearChildrenStatus,
   isValidTeamId,
   pingLinear,
   transitionIssue as transitionLinearIssue,
@@ -117,6 +123,48 @@ export async function transitionToStatus(
       );
       if (ok) console.log(`  → Transitioned to ${statusName}`);
       break;
+    }
+  }
+}
+
+// ─── Epic children status ───────────────────────────────────────────────────
+
+/**
+ * Fetch the children status of an epic/parent ticket on the board.
+ *
+ * Dispatches to the correct board module. Returns `{ total, incomplete }`
+ * for epic completion detection and single-child skip optimisation.
+ *
+ * @param config - The board configuration.
+ * @param parentKey - The parent ticket key (e.g., `'PROJ-100'`, `'#50'`, `'ENG-42'`).
+ * @param parentId - Optional parent UUID (Linear only).
+ * @returns The children status, or `undefined` on failure.
+ */
+export async function fetchEpicChildrenStatus(
+  config: BoardConfig,
+  parentKey: string,
+  parentId?: string,
+): Promise<{ total: number; incomplete: number } | undefined> {
+  switch (config.provider) {
+    case 'jira': {
+      const { env } = config;
+      const auth = buildAuthHeader(env.JIRA_USER, env.JIRA_API_TOKEN);
+      return fetchJiraChildrenStatus(env.JIRA_BASE_URL, auth, parentKey);
+    }
+
+    case 'github': {
+      const issueNumber = parseInt(parentKey.replace('#', ''), 10);
+      if (Number.isNaN(issueNumber)) return undefined;
+      return fetchGitHubChildrenStatus(
+        config.env.GITHUB_TOKEN,
+        config.env.GITHUB_REPO,
+        issueNumber,
+      );
+    }
+
+    case 'linear': {
+      if (!parentId) return undefined;
+      return fetchLinearChildrenStatus(config.env.LINEAR_API_KEY, parentId);
     }
   }
 }

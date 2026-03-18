@@ -50,6 +50,7 @@ vi.mock('~/scripts/board/jira/jira.js', () => ({
   buildAuthHeader: vi.fn(() => 'auth-header'),
   buildJql: vi.fn(() => 'jql-string'),
   extractAdfText: vi.fn(() => ''),
+  fetchChildrenStatus: vi.fn(() => Promise.resolve(undefined)),
   fetchTicket: vi.fn(),
   isSafeJqlValue: vi.fn(() => true),
   pingJira: vi.fn(() => Promise.resolve({ ok: true })),
@@ -58,6 +59,7 @@ vi.mock('~/scripts/board/jira/jira.js', () => ({
 
 vi.mock('~/scripts/board/github/github.js', () => ({
   closeIssue: vi.fn(() => Promise.resolve(true)),
+  fetchChildrenStatus: vi.fn(() => Promise.resolve(undefined)),
   fetchIssue: vi.fn(),
   isValidRepo: vi.fn(() => true),
   pingGitHub: vi.fn(() => Promise.resolve({ ok: true })),
@@ -79,10 +81,15 @@ vi.mock('~/scripts/shared/pull-request/github/github.js', () => ({
 }));
 
 vi.mock('~/scripts/board/linear/linear.js', () => ({
+  fetchChildrenStatus: vi.fn(() => Promise.resolve(undefined)),
   fetchIssue: vi.fn(),
   isValidTeamId: vi.fn(() => true),
   pingLinear: vi.fn(() => Promise.resolve({ ok: true })),
   transitionIssue: vi.fn(() => Promise.resolve(true)),
+}));
+
+vi.mock('node:child_process', () => ({
+  execFileSync: vi.fn(),
 }));
 
 vi.mock('~/scripts/shared/git-ops/git-ops.js', () => ({
@@ -94,6 +101,7 @@ vi.mock('~/scripts/shared/git-ops/git-ops.js', () => ({
   ensureBranch: vi.fn(),
   fetchRemoteBranch: vi.fn(() => true),
   pushBranch: vi.fn(() => true),
+  remoteBranchExists: vi.fn(() => false),
   squashMerge: vi.fn(() => true),
 }));
 
@@ -152,7 +160,11 @@ vi.mock('~/scripts/shared/pull-request/bitbucket/bitbucket.js', () => ({
 }));
 
 vi.mock('~/scripts/shared/pull-request/pr-body/pr-body.js', () => ({
+  buildEpicPrBody: vi.fn(() => 'Epic PR body'),
   buildPrBody: vi.fn(() => 'PR body'),
+  isEpicBranch: vi.fn(
+    (b: string) => b.startsWith('epic/') || b.startsWith('milestone/'),
+  ),
 }));
 
 const mockPreflight = vi.mocked(runPreflight);
@@ -309,35 +321,23 @@ describe('run', () => {
     expect(mockSquashMerge).not.toHaveBeenCalled();
   });
 
-  it('runs full Jira lifecycle', async () => {
+  it('runs full Jira lifecycle (parented ticket → epic branch PR)', async () => {
     setupJiraHappyPath();
 
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     await run([]);
     log.mockRestore();
 
-    // Branches
-    expect(mockEnsureBranch).toHaveBeenCalledWith('epic/proj-100', 'main');
-    expect(mockCheckout).toHaveBeenCalledWith('epic/proj-100');
+    // Branches: epic branch created, feature from it
     expect(mockCheckout).toHaveBeenCalledWith('feature/proj-123', true);
 
     // Claude
     expect(mockInvokeClaude).toHaveBeenCalled();
 
-    // Merge
-    expect(mockSquashMerge).toHaveBeenCalledWith(
-      'feature/proj-123',
-      'feat(PROJ-123): Add login page',
-    );
-    expect(mockDeleteBranch).toHaveBeenCalledWith('feature/proj-123');
-
-    // Progress
-    expect(mockAppendProgress).toHaveBeenCalledWith(
-      expect.any(String),
-      'PROJ-123',
-      'Add login page',
-      'DONE',
-    );
+    // PR flow: push (no squash merge)
+    expect(mockPushBranch).toHaveBeenCalledWith('feature/proj-123');
+    expect(mockSquashMerge).not.toHaveBeenCalled();
+    expect(mockDeleteBranch).not.toHaveBeenCalled();
   });
 
   it('runs full GitHub lifecycle with close', async () => {
@@ -356,20 +356,13 @@ describe('run', () => {
       'testuser',
     );
 
-    // Branches use milestone
-    expect(mockEnsureBranch).toHaveBeenCalledWith('milestone/sprint-3', 'main');
+    // Feature branch created
     expect(mockCheckout).toHaveBeenCalledWith('feature/issue-42', true);
 
-    // Close issue
-    expect(mockCloseIssue).toHaveBeenCalledWith('ghp_abc123', 'acme/app', 42);
-
-    // Progress
-    expect(mockAppendProgress).toHaveBeenCalledWith(
-      expect.any(String),
-      '#42',
-      'Fix bug',
-      'DONE',
-    );
+    // PR flow: push (no squash merge, no close — PR body has "Part of")
+    expect(mockPushBranch).toHaveBeenCalledWith('feature/issue-42');
+    expect(mockSquashMerge).not.toHaveBeenCalled();
+    expect(mockCloseIssue).not.toHaveBeenCalled();
   });
 
   it('sends notification when webhook is configured', async () => {
@@ -429,7 +422,7 @@ describe('run', () => {
     await run([]);
     log.mockRestore();
 
-    // Target branch is base branch (no epic)
+    // Standalone: branch from base
     expect(mockEnsureBranch).toHaveBeenCalledWith('main', 'main');
 
     // PR flow: push, no squash merge, no delete branch
@@ -444,20 +437,20 @@ describe('run', () => {
       'Standalone task',
       'PR_CREATED',
       1,
+      undefined,
     );
   });
 
-  it('uses epic flow when ticket has parent (squash merge)', async () => {
+  it('uses PR flow for parented tickets targeting epic branch', async () => {
     setupJiraHappyPath();
 
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     await run([]);
     log.mockRestore();
 
-    // Epic flow: squash merge + delete branch
-    expect(mockSquashMerge).toHaveBeenCalled();
-    expect(mockDeleteBranch).toHaveBeenCalled();
-    expect(mockPushBranch).not.toHaveBeenCalled();
+    // Epic branch flow: push + PR (no squash merge)
+    expect(mockPushBranch).toHaveBeenCalled();
+    expect(mockSquashMerge).not.toHaveBeenCalled();
   });
 
   it('logs PUSH_FAILED when push fails', async () => {
@@ -480,6 +473,8 @@ describe('run', () => {
       'PROJ-789',
       'Push fail test',
       'PUSH_FAILED',
+      undefined,
+      undefined,
     );
   });
 
@@ -510,6 +505,7 @@ describe('run', () => {
       'No milestone',
       'PR_CREATED',
       1,
+      undefined,
     );
   });
 
@@ -545,8 +541,8 @@ describe('run', () => {
     await run([]);
     log.mockRestore();
 
-    expect(mockEnsureBranch).toHaveBeenCalled();
     expect(mockInvokeClaude).toHaveBeenCalled();
+    expect(mockPushBranch).toHaveBeenCalled();
   });
 
   it('skips feasibility check when --skip-feasibility is passed', async () => {
@@ -557,8 +553,8 @@ describe('run', () => {
     log.mockRestore();
 
     expect(mockCheckFeasibility).not.toHaveBeenCalled();
-    expect(mockEnsureBranch).toHaveBeenCalled();
     expect(mockInvokeClaude).toHaveBeenCalled();
+    expect(mockPushBranch).toHaveBeenCalled();
   });
 
   it('handles unexpected errors gracefully', async () => {
@@ -622,6 +618,7 @@ describe('run', () => {
       'PR rework from review',
       'REWORK',
       99,
+      undefined,
     );
   });
 
@@ -803,6 +800,7 @@ describe('run', () => {
       'Pushed then manual PR',
       'REWORK',
       55,
+      undefined,
     );
   });
 
@@ -824,8 +822,8 @@ describe('run', () => {
     await run([]);
     log.mockRestore();
 
-    // Should scan for PR_CREATED, REWORK, PUSHED, and PUSH_FAILED
-    expect(mockFindEntriesWithStatus).toHaveBeenCalledTimes(4);
+    // Epic completion check (4 calls: PR_CREATED, REWORK, PUSHED, EPIC_PR_CREATED) + rework detection (4 calls)
+    expect(mockFindEntriesWithStatus).toHaveBeenCalledTimes(8);
     expect(mockFindEntriesWithStatus).toHaveBeenCalledWith(
       expect.any(String),
       'PR_CREATED',

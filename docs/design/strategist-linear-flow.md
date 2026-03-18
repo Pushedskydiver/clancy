@@ -364,7 +364,7 @@ Variables:
   "input": {
     "teamId": "<LINEAR_TEAM_ID>",
     "title": "<ticket title from decomposition>",
-    "description": "<ticket description from decomposition>",
+    "description": "Epic: ENG-42\n\n<ticket description from decomposition>",
     "parentId": "<UUID of ENG-42>",
     "stateId": "<backlog state UUID>",
     "labelIds": ["<CLANCY_LABEL UUID>", "<component label UUID>", "<mode label UUID>"],
@@ -372,6 +372,8 @@ Variables:
   }
 }
 ```
+
+**Epic reference:** The description always starts with `Epic: {parent-identifier}` (e.g., `Epic: ENG-42`). This text convention enables cross-platform epic completion detection — `fetchChildrenStatus` searches for this reference rather than relying on Linear's parent/child API (which requires UUIDs not available in the progress flow).
 
 **Step 8 — Link dependencies:**
 

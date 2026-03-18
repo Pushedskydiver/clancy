@@ -45,9 +45,8 @@ When in doubt: "Is the primary deliverable a code change committed to this repo?
 
 ### Git workflow
 - Read GIT.md before every run — follow its conventions exactly
-- Default (if GIT.md is silent): one feature branch per ticket `feature/{ticket-key-lowercase}`, squash merge into target branch, conventional commits `feat(TICKET-123): summary`
-- Target branch is auto-detected from the ticket: if it has a parent epic, Clancy branches from and merges into `epic/{epic-key}` (created from `CLANCY_BASE_BRANCH` if it doesn't exist); otherwise branches from `CLANCY_BASE_BRANCH` directly
-- Delete ticket branch locally after merge — never push deletes
+- Default (if GIT.md is silent): one feature branch per ticket `feature/{ticket-key-lowercase}`, push and create a PR, conventional commits `feat(TICKET-123): summary`
+- Target branch is auto-detected from the ticket: if it has a parent epic, PR targets `epic/{epic-key}` (created from `CLANCY_BASE_BRANCH` if it doesn't exist); otherwise PR targets `CLANCY_BASE_BRANCH` directly
 
 ### Progress
 Log completed tickets to `.clancy/progress.txt`:

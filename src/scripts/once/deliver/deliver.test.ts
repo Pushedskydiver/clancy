@@ -3,9 +3,17 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import type { BoardConfig } from '~/scripts/shared/env-schema/env-schema.js';
 
 import type { FetchedTicket } from '../types/types.js';
-import { deliverViaEpicMerge, deliverViaPullRequest } from './deliver.js';
+import {
+  deliverEpicToBase,
+  deliverViaPullRequest,
+  ensureEpicBranch,
+} from './deliver.js';
 
 // ─── Mocks ───────────────────────────────────────────────────────────────────
+
+vi.mock('node:child_process', () => ({
+  execFileSync: vi.fn(),
+}));
 
 vi.mock('~/scripts/board/github/github.js', () => ({
   closeIssue: vi.fn(() => Promise.resolve(true)),
@@ -21,18 +29,24 @@ vi.mock('~/scripts/board/linear/linear.js', () => ({
 }));
 
 vi.mock('~/scripts/shared/git-ops/git-ops.js', () => ({
+  branchExists: vi.fn(() => false),
   checkout: vi.fn(),
-  deleteBranch: vi.fn(),
+  fetchRemoteBranch: vi.fn(() => true),
   pushBranch: vi.fn(() => true),
-  squashMerge: vi.fn(() => true),
+  remoteBranchExists: vi.fn(() => false),
 }));
 
 vi.mock('~/scripts/shared/progress/progress.js', () => ({
   appendProgress: vi.fn(),
+  findEntriesWithStatus: vi.fn(() => []),
 }));
 
 vi.mock('~/scripts/shared/pull-request/pr-body/pr-body.js', () => ({
+  buildEpicPrBody: vi.fn(() => 'Epic PR body'),
   buildPrBody: vi.fn(() => 'PR body'),
+  isEpicBranch: vi.fn(
+    (b: string) => b.startsWith('epic/') || b.startsWith('milestone/'),
+  ),
 }));
 
 vi.mock('~/scripts/shared/remote/remote.js', () => ({
@@ -74,13 +88,15 @@ vi.mock('~/scripts/shared/format/format.js', () => ({
   formatDuration: vi.fn(() => '1m 30s'),
 }));
 
-const { checkout, deleteBranch, pushBranch, squashMerge } =
-  await import('~/scripts/shared/git-ops/git-ops.js');
+const {
+  branchExists,
+  checkout,
+  fetchRemoteBranch,
+  pushBranch,
+  remoteBranchExists,
+} = await import('~/scripts/shared/git-ops/git-ops.js');
 const { appendProgress } =
   await import('~/scripts/shared/progress/progress.js');
-const { closeIssue } = await import('~/scripts/board/github/github.js');
-const { transitionIssue: transitionJiraIssue } =
-  await import('~/scripts/board/jira/jira.js');
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -96,14 +112,6 @@ const jiraConfig: BoardConfig = {
   },
 };
 
-const githubConfig: BoardConfig = {
-  provider: 'github',
-  env: {
-    GITHUB_TOKEN: 'ghp_abc123',
-    GITHUB_REPO: 'acme/app',
-  },
-};
-
 const ticket: FetchedTicket = {
   key: 'PROJ-1',
   title: 'Add login',
@@ -112,67 +120,41 @@ const ticket: FetchedTicket = {
   blockers: 'None',
 };
 
-const ghTicket: FetchedTicket = {
-  key: '#42',
-  title: 'Fix bug',
-  description: 'Bug description.',
-  parentInfo: 'Sprint 3',
-  blockers: 'None',
-};
+// ─── Tests: ensureEpicBranch ────────────────────────────────────────────────
 
-// ─── Tests: deliverViaEpicMerge ──────────────────────────────────────────────
-
-describe('deliverViaEpicMerge', () => {
+describe('ensureEpicBranch', () => {
   beforeEach(() => vi.clearAllMocks());
 
-  it('squash merges, deletes branch, and logs DONE', async () => {
-    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-    await deliverViaEpicMerge(
-      jiraConfig,
-      ticket,
-      'feature/proj-1',
-      'epic/proj-100',
-    );
-    log.mockRestore();
+  it('fetches from remote when branch exists on remote', () => {
+    vi.mocked(remoteBranchExists).mockReturnValue(true);
 
-    expect(checkout).toHaveBeenCalledWith('epic/proj-100');
-    expect(squashMerge).toHaveBeenCalledWith(
-      'feature/proj-1',
-      'feat(PROJ-1): Add login',
-    );
-    expect(deleteBranch).toHaveBeenCalledWith('feature/proj-1');
-    expect(appendProgress).toHaveBeenCalledWith(
-      expect.any(String),
-      'PROJ-1',
-      'Add login',
-      'DONE',
-    );
+    const result = ensureEpicBranch('epic/proj-100', 'main');
+
+    expect(result).toBe(true);
+    expect(fetchRemoteBranch).toHaveBeenCalledWith('epic/proj-100');
   });
 
-  it('transitions Jira ticket to Done when CLANCY_STATUS_DONE is set', async () => {
+  it('refuses when local branch exists but not on remote (migration guard)', () => {
+    vi.mocked(remoteBranchExists).mockReturnValue(false);
+    vi.mocked(branchExists).mockReturnValue(true);
+
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-    await deliverViaEpicMerge(
-      jiraConfig,
-      ticket,
-      'feature/proj-1',
-      'epic/proj-100',
-    );
+    const result = ensureEpicBranch('epic/proj-100', 'main');
     log.mockRestore();
 
-    expect(transitionJiraIssue).toHaveBeenCalled();
+    expect(result).toBe(false);
   });
 
-  it('closes GitHub issue after epic merge', async () => {
+  it('creates from origin/baseBranch and pushes when branch does not exist', () => {
+    vi.mocked(remoteBranchExists).mockReturnValue(false);
+    vi.mocked(branchExists).mockReturnValue(false);
+
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-    await deliverViaEpicMerge(
-      githubConfig,
-      ghTicket,
-      'feature/issue-42',
-      'milestone/sprint-3',
-    );
+    const result = ensureEpicBranch('epic/proj-100', 'main');
     log.mockRestore();
 
-    expect(closeIssue).toHaveBeenCalledWith('ghp_abc123', 'acme/app', 42);
+    expect(result).toBe(true);
+    expect(pushBranch).toHaveBeenCalledWith('epic/proj-100');
   });
 });
 
@@ -200,6 +182,30 @@ describe('deliverViaPullRequest', () => {
       'Add login',
       'PR_CREATED',
       1,
+      undefined,
+    );
+  });
+
+  it('passes parent key to appendProgress', async () => {
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await deliverViaPullRequest(
+      jiraConfig,
+      ticket,
+      'feature/proj-1',
+      'epic/proj-100',
+      Date.now(),
+      false,
+      'PROJ-100',
+    );
+    log.mockRestore();
+
+    expect(appendProgress).toHaveBeenCalledWith(
+      expect.any(String),
+      'PROJ-1',
+      'Add login',
+      'PR_CREATED',
+      1,
+      'PROJ-100',
     );
   });
 
@@ -222,27 +228,12 @@ describe('deliverViaPullRequest', () => {
       'PROJ-1',
       'Add login',
       'PUSH_FAILED',
+      undefined,
+      undefined,
     );
   });
 
   it('skips progress log when skipLog is true', async () => {
-    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-    await deliverViaPullRequest(
-      jiraConfig,
-      ticket,
-      'feature/proj-1',
-      'main',
-      Date.now(),
-      true,
-    );
-    log.mockRestore();
-
-    expect(appendProgress).not.toHaveBeenCalled();
-  });
-
-  it('skips progress log on push failure when skipLog is true', async () => {
-    vi.mocked(pushBranch).mockReturnValue(false);
-
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     await deliverViaPullRequest(
       jiraConfig,
@@ -269,5 +260,41 @@ describe('deliverViaPullRequest', () => {
     log.mockRestore();
 
     expect(checkout).toHaveBeenCalledWith('main');
+  });
+});
+
+// ─── Tests: deliverEpicToBase ────────────────────────────────────────────────
+
+describe('deliverEpicToBase', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('creates epic PR and logs EPIC_PR_CREATED', async () => {
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const result = await deliverEpicToBase(
+      jiraConfig,
+      'PROJ-100',
+      'Customer portal',
+      'epic/proj-100',
+      'main',
+    );
+    log.mockRestore();
+
+    expect(result).toBe(true);
+    expect(appendProgress).toHaveBeenCalledWith(
+      expect.any(String),
+      'PROJ-100',
+      'Customer portal',
+      'EPIC_PR_CREATED',
+      1,
+    );
+  });
+});
+
+// ─── Tests: deliverViaEpicMerge is removed ──────────────────────────────────
+
+describe('deliverViaEpicMerge removal', () => {
+  it('does not export deliverViaEpicMerge', async () => {
+    const deliver = await import('./deliver.js');
+    expect('deliverViaEpicMerge' in deliver).toBe(false);
   });
 });

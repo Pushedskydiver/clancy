@@ -7,6 +7,7 @@ import {
   fetchRemoteBranch,
   hasUncommittedChanges,
   pushBranch,
+  remoteBranchExists,
 } from './git-ops.js';
 
 vi.mock('node:child_process');
@@ -43,6 +44,33 @@ describe('git-ops', () => {
       });
 
       expect(branchExists('nonexistent')).toBe(false);
+    });
+  });
+
+  describe('remoteBranchExists', () => {
+    it('returns true when remote branch exists', () => {
+      mockExecFileSync.mockReturnValue('abc123\trefs/heads/epic/proj-100\n');
+
+      expect(remoteBranchExists('epic/proj-100')).toBe(true);
+      expect(mockExecFileSync).toHaveBeenCalledWith(
+        'git',
+        ['ls-remote', '--heads', 'origin', 'epic/proj-100'],
+        expect.objectContaining({ encoding: 'utf8' }),
+      );
+    });
+
+    it('returns false when remote branch does not exist', () => {
+      mockExecFileSync.mockReturnValue('');
+
+      expect(remoteBranchExists('nonexistent')).toBe(false);
+    });
+
+    it('returns false when ls-remote fails (network error)', () => {
+      mockExecFileSync.mockImplementation(() => {
+        throw new Error('Could not resolve host');
+      });
+
+      expect(remoteBranchExists('epic/proj-100')).toBe(false);
     });
   });
 

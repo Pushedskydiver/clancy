@@ -1,9 +1,10 @@
 /**
  * Unified once orchestrator — replaces all three `clancy-once-*.sh` scripts.
  *
- * Full lifecycle: preflight → detect board → fetch ticket → compute branches →
- * [dry-run gate] → feasibility check → create branch → transition In Progress →
- * invoke Claude → squash merge → transition Done → log → notify.
+ * Full lifecycle: preflight → detect board → [epic completion check] →
+ * fetch ticket → compute branches → [dry-run gate] → feasibility check →
+ * create branch → transition In Progress → invoke Claude → push + PR →
+ * log → notify.
  *
  * All errors exit with code 0 (not 1). This is intentional — the AFK runner
  * detects stop conditions by parsing stdout, not exit codes.
@@ -31,6 +32,7 @@ import { runPreflight } from '~/scripts/shared/preflight/preflight.js';
 import {
   appendProgress,
   countReworkCycles,
+  findEntriesWithStatus,
 } from '~/scripts/shared/progress/progress.js';
 import {
   buildPrompt,
@@ -39,14 +41,16 @@ import {
 import { bold, dim, green, red, yellow } from '~/utils/ansi/ansi.js';
 
 import {
+  fetchEpicChildrenStatus,
   pingBoard,
   sharedEnv,
   transitionToStatus,
   validateInputs,
 } from './board-ops/board-ops.js';
 import {
-  deliverViaEpicMerge,
+  deliverEpicToBase,
   deliverViaPullRequest,
+  ensureEpicBranch,
 } from './deliver/deliver.js';
 import { fetchTicket } from './fetch-ticket/fetch-ticket.js';
 import { fetchReworkFromPrReview, postReworkActions } from './rework/rework.js';
@@ -122,6 +126,66 @@ export async function run(argv: string[]): Promise<void> {
     }
 
     console.log(green('✅ Preflight passed'));
+
+    // 4a. Epic completion check — scan for epics whose children are all done
+    // This runs at the START of each iteration to catch epics where child PRs
+    // were merged since the last run. The check cannot run after child delivery
+    // because the just-delivered child is still "In Review", not "Done".
+    // Best-effort — errors are swallowed so the run continues.
+    try {
+      const prEntries = findEntriesWithStatus(process.cwd(), 'PR_CREATED');
+      const reworkEntries = findEntriesWithStatus(process.cwd(), 'REWORK');
+      const pushedEntries = findEntriesWithStatus(process.cwd(), 'PUSHED');
+      const allEntries = [...prEntries, ...reworkEntries, ...pushedEntries];
+
+      // Skip epics that already have an EPIC_PR_CREATED entry
+      const epicDone = new Set(
+        findEntriesWithStatus(process.cwd(), 'EPIC_PR_CREATED').map(
+          (e) => e.key,
+        ),
+      );
+
+      const parentKeys = new Set(
+        allEntries
+          .map((e) => e.parent)
+          .filter((p): p is string => Boolean(p))
+          .filter((p) => !epicDone.has(p)),
+      );
+      const baseBranch = config.env.CLANCY_BASE_BRANCH ?? 'main';
+
+      for (const parentKey of parentKeys) {
+        const status = await fetchEpicChildrenStatus(config, parentKey);
+        if (status && status.incomplete === 0 && status.total > 0) {
+          const epicBranch = computeTargetBranch(
+            config.provider,
+            baseBranch,
+            parentKey,
+          );
+
+          const epicOk = await deliverEpicToBase(
+            config,
+            parentKey,
+            parentKey, // title fallback — see WARNING #4 in review
+            epicBranch,
+            baseBranch,
+          );
+
+          if (epicOk) {
+            console.log(green(`  ✓ Epic ${parentKey} complete — PR created`));
+          } else {
+            console.log(
+              yellow(
+                `⚠ Epic PR creation failed for ${parentKey}. Create manually:\n` +
+                  `  git push origin ${epicBranch}\n` +
+                  `  Then create a PR targeting ${baseBranch}`,
+              ),
+            );
+          }
+        }
+      }
+    } catch {
+      // Best-effort — epic completion check failure shouldn't block the run
+    }
 
     // 5. Check rework — PR-based detection, then fresh ticket
     let isRework = false;
@@ -250,23 +314,59 @@ export async function run(argv: string[]): Promise<void> {
 
     // 10. Git: set up branches
     originalBranch = currentBranch();
+    const hasParent = ticket.parentInfo !== 'none';
+
+    // Single-child skip: if epic has exactly 1 child and this is it,
+    // skip the epic branch and deliver directly to base.
+    let skipEpicBranch = false;
+    if (hasParent && !isRework) {
+      const childrenStatus = await fetchEpicChildrenStatus(
+        config,
+        ticket.parentInfo,
+        ticket.linearIssueId,
+      );
+      if (childrenStatus && childrenStatus.total === 1) {
+        skipEpicBranch = true;
+      }
+    }
+
+    // Effective target: epic branch (parented) or base branch (standalone/single-child)
+    const effectiveTarget =
+      hasParent && !skipEpicBranch ? targetBranch : baseBranch;
 
     if (isRework) {
       // PR-flow rework: try to fetch the existing feature branch from remote
-      ensureBranch(targetBranch, baseBranch);
+      if (hasParent && !skipEpicBranch) {
+        // Ensure epic branch exists for rework targeting it
+        const epicReady = ensureEpicBranch(targetBranch, baseBranch);
+        if (!epicReady) {
+          if (originalBranch) checkout(originalBranch);
+          return;
+        }
+      } else {
+        ensureBranch(effectiveTarget, baseBranch);
+      }
       const fetched = fetchRemoteBranch(ticketBranch);
 
       if (fetched) {
         checkout(ticketBranch);
       } else {
-        // Branch missing from remote — create fresh branch from target
-        checkout(targetBranch);
+        checkout(effectiveTarget);
         checkout(ticketBranch, true);
       }
-    } else {
-      // Normal flow
-      ensureBranch(targetBranch, baseBranch);
+    } else if (hasParent && !skipEpicBranch) {
+      // Epic branch flow: ensure epic branch, create feature from it
+      const epicReady = ensureEpicBranch(targetBranch, baseBranch);
+      if (!epicReady) {
+        if (originalBranch) checkout(originalBranch);
+        return;
+      }
       checkout(targetBranch);
+      checkout(ticketBranch, true);
+    } else {
+      // Standalone or single-child: branch from base
+      ensureBranch(baseBranch, baseBranch);
+      checkout(baseBranch);
       checkout(ticketBranch, true);
     }
 
@@ -312,8 +412,9 @@ export async function run(argv: string[]): Promise<void> {
       return;
     }
 
-    // 13. Deliver — epic merge or PR flow
-    const hasParent = ticket.parentInfo !== 'none';
+    // 13. Deliver — all paths use PR flow (targeting epic branch or base branch)
+    const parentKey =
+      hasParent && !skipEpicBranch ? ticket.parentInfo : undefined;
 
     if (isRework) {
       // PR-flow rework: push to existing branch, PR updates automatically
@@ -321,12 +422,20 @@ export async function run(argv: string[]): Promise<void> {
         config,
         ticket,
         ticketBranch,
-        targetBranch,
+        effectiveTarget,
         startTime,
         true,
+        parentKey,
       );
       if (!delivered) {
-        appendProgress(process.cwd(), ticket.key, ticket.title, 'PUSH_FAILED');
+        appendProgress(
+          process.cwd(),
+          ticket.key,
+          ticket.title,
+          'PUSH_FAILED',
+          undefined,
+          parentKey,
+        );
         return;
       }
 
@@ -337,6 +446,7 @@ export async function run(argv: string[]): Promise<void> {
         ticket.title,
         'REWORK',
         reworkPrNumber,
+        parentKey,
       );
 
       // Post-rework actions (all best-effort)
@@ -349,15 +459,16 @@ export async function run(argv: string[]): Promise<void> {
           reworkReviewers,
         );
       }
-    } else if (hasParent) {
-      await deliverViaEpicMerge(config, ticket, ticketBranch, targetBranch);
     } else {
+      // Fresh ticket: deliver via PR (to epic branch or base branch)
       const delivered = await deliverViaPullRequest(
         config,
         ticket,
         ticketBranch,
-        targetBranch,
+        effectiveTarget,
         startTime,
+        false,
+        parentKey,
       );
       if (!delivered) return;
     }

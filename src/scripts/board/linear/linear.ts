@@ -2,7 +2,7 @@
  * Clancy Linear board script.
  *
  * Fetches an issue from Linear's GraphQL API, creates branches,
- * invokes Claude, squash merges, transitions status, and sends notifications.
+ * invokes Claude, pushes feature branches, and creates PRs.
  *
  * Important: Linear personal API keys do NOT use "Bearer" prefix.
  * Only OAuth tokens use "Bearer". This is intentional per Linear docs.
@@ -206,6 +206,62 @@ export async function fetchIssue(env: LinearEnv): Promise<
     issueId: issue.id,
     parentIdentifier: issue.parent?.identifier,
   };
+}
+
+/** Result of checking children status for a parent issue. */
+export type ChildrenStatus = { total: number; incomplete: number };
+
+/**
+ * Fetch the children status of a Linear parent issue.
+ *
+ * Queries the parent's children and counts total vs incomplete
+ * (state.type not in ["completed", "canceled"]). Used to determine
+ * if all children are done.
+ *
+ * @param apiKey - The Linear personal API key.
+ * @param parentId - The Linear parent issue UUID.
+ * @returns The children status, or `undefined` on failure.
+ */
+export async function fetchChildrenStatus(
+  apiKey: string,
+  parentId: string,
+): Promise<ChildrenStatus | undefined> {
+  const query = `
+    query($issueId: String!) {
+      issue(id: $issueId) {
+        children {
+          nodes {
+            state { type }
+          }
+        }
+      }
+    }
+  `;
+
+  const raw = await linearGraphql(apiKey, query, { issueId: parentId });
+
+  if (!raw || typeof raw !== 'object') return undefined;
+
+  const data = raw as {
+    data?: {
+      issue?: {
+        children?: {
+          nodes?: Array<{ state?: { type?: string } }>;
+        };
+      };
+    };
+  };
+
+  const nodes = data.data?.issue?.children?.nodes;
+  if (!nodes) return undefined;
+
+  const total = nodes.length;
+  const doneTypes = new Set(['completed', 'canceled']);
+  const incomplete = nodes.filter(
+    (n) => !n.state?.type || !doneTypes.has(n.state.type),
+  ).length;
+
+  return { total, incomplete };
 }
 
 /**

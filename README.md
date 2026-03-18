@@ -2,7 +2,7 @@
 
 **Autonomous, board-driven development for Claude Code.**
 
-[![npm](https://img.shields.io/npm/v/chief-clancy?style=for-the-badge&color=cb3837)](https://www.npmjs.com/package/chief-clancy) [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE) [![Tests](https://img.shields.io/badge/tests-473%20passing-brightgreen?style=for-the-badge)](docs/TESTING.md) [![GitHub Stars](https://img.shields.io/github/stars/Pushedskydiver/clancy?style=for-the-badge)](https://github.com/Pushedskydiver/clancy/stargazers)
+[![npm](https://img.shields.io/npm/v/chief-clancy?style=for-the-badge&color=cb3837)](https://www.npmjs.com/package/chief-clancy) [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE) [![Tests](https://img.shields.io/badge/tests-507%20passing-brightgreen?style=for-the-badge)](docs/TESTING.md) [![GitHub Stars](https://img.shields.io/github/stars/Pushedskydiver/clancy?style=for-the-badge)](https://github.com/Pushedskydiver/clancy/stargazers)
 
 > [!WARNING]
 > Clancy is in early development. Expect bugs, breaking changes, and rough edges. If you hit an issue, please [open a bug report](https://github.com/Pushedskydiver/clancy/issues/new).
@@ -30,7 +30,7 @@ Clancy does four things:
 1. **Scaffolds itself** into a project — scripts, docs, CLAUDE.md, .clancy/.env
 2. **Scans your codebase** with 5 parallel specialist agents and writes 10 structured docs that Claude reads before every run
 3. **Plans tickets** — fetches backlog tickets, explores the codebase, and generates structured implementation plans posted as comments for human review
-4. **Runs autonomously** — picking one ticket per loop from your Kanban board, implementing it, committing, and either squash-merging (epic flow) or pushing and creating a PR (standalone ticket flow)
+4. **Runs autonomously** — picking one ticket per loop from your Kanban board, implementing it, committing, and creating a PR (targeting an epic branch for parented tickets, or the base branch for standalone tickets)
 
 One ticket per run. Fresh context window every iteration. No context rot.
 
@@ -63,7 +63,7 @@ Clancy is powerful but not magic. Here's what to expect:
 
 **Ticket quality matters more than you think.** A vague ticket produces vague implementation. Clancy works best when tickets have a clear summary, a description that explains the _why_, and concrete acceptance criteria. Use `/clancy:review` to score a ticket before running — it'll tell you exactly what's missing.
 
-**You still own the code.** When a ticket has a parent epic, Clancy squash-merges locally — review the commit before pushing. When a ticket has no parent, Clancy pushes the feature branch and creates a pull request for you to review. Either way, treat it like code from a junior developer who works very fast — it needs a sanity check, not a full rewrite.
+**You still own the code.** Clancy pushes a feature branch and creates a pull request for every ticket — targeting an epic branch for parented tickets, or the base branch for standalone ones. When all children of an epic are done, Clancy creates a final PR from the epic branch to your base branch. Either way, treat it like code from a junior developer who works very fast — it needs a sanity check, not a full rewrite.
 
 **Some tickets will need a retry.** If Claude gets stuck or produces something obviously wrong, delete the branch and run `/clancy:once` again. Fresh context, fresh attempt. If it fails twice on the same ticket, the ticket probably needs more detail.
 

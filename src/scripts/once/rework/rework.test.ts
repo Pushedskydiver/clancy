@@ -140,6 +140,56 @@ describe('fetchReworkFromPrReview', () => {
     expect(result!.reviewers).toEqual(['alice']);
   });
 
+  it('preserves parent info from progress entry', async () => {
+    vi.mocked(findEntriesWithStatus).mockReturnValue([
+      {
+        timestamp: '2026-03-14 10:00',
+        key: 'PROJ-101',
+        summary: 'Child ticket',
+        status: 'PR_CREATED',
+        prNumber: 42,
+        parent: 'PROJ-100',
+      },
+    ]);
+    vi.mocked(mockCheckGitHubPrReviewState).mockResolvedValue({
+      changesRequested: true,
+      prNumber: 42,
+      prUrl: 'https://github.com/o/r/pull/42',
+      reviewers: ['bob'],
+    });
+    vi.mocked(mockFetchGitHubPrReviewComments).mockResolvedValue([
+      'Fix the test',
+    ]);
+
+    const result = await fetchReworkFromPrReview(jiraConfig);
+
+    expect(result).toBeDefined();
+    expect(result!.ticket.parentInfo).toBe('PROJ-100');
+  });
+
+  it('defaults parentInfo to none when parent not in progress entry', async () => {
+    vi.mocked(findEntriesWithStatus).mockReturnValue([
+      {
+        timestamp: '2026-03-14 10:00',
+        key: 'PROJ-5',
+        summary: 'Standalone',
+        status: 'PR_CREATED',
+      },
+    ]);
+    vi.mocked(mockCheckGitHubPrReviewState).mockResolvedValue({
+      changesRequested: true,
+      prNumber: 10,
+      prUrl: 'https://github.com/o/r/pull/10',
+      reviewers: [],
+    });
+    vi.mocked(mockFetchGitHubPrReviewComments).mockResolvedValue(['Fix it']);
+
+    const result = await fetchReworkFromPrReview(jiraConfig);
+
+    expect(result).toBeDefined();
+    expect(result!.ticket.parentInfo).toBe('none');
+  });
+
   it('returns undefined when checkPrReviewState returns undefined', async () => {
     vi.mocked(findEntriesWithStatus).mockReturnValue([
       {
