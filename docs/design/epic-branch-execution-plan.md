@@ -79,7 +79,7 @@ Depends on Waves 1 and 2. This is the core change.
 | Step | Files | Change |
 |---|---|---|
 | **4a** | `docs/design/strategist-visual-flows.md` | Add epic branch mention to approve-brief Step 12 summary |
-| **4b** | `docs/VISUAL-ARCHITECTURE.md` | Update diagram 7 (Delivery Paths) to show epic branch flow |
+| **4b** | `docs/VISUAL-ARCHITECTURE.md` | Update diagram 2 (Ticket Lifecycle — remove EpicMerge → squash path, both paths use PR), diagram 3 (Once Orchestrator — HasParent path creates PR targeting epic branch, not squash merge), and diagram 7 (Delivery Paths — rename title, show epic branch flow). All three diagrams reference the old `deliverViaEpicMerge` model. |
 | **4c** | `docs/ARCHITECTURE.md` | Update `deliver.ts` description (remove `deliverViaEpicMerge` reference) |
 | **4d** | `CHANGELOG.md`, `package.json`, `package-lock.json` | Version bump + changelog entry with migration guidance |
 | **4e** | `README.md` | Update test badge count |
