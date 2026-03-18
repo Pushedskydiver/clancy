@@ -357,7 +357,10 @@ export async function run(argv: string[]): Promise<void> {
     } else if (hasParent && !skipEpicBranch) {
       // Epic branch flow: ensure epic branch, create feature from it
       const epicReady = ensureEpicBranch(targetBranch, baseBranch);
-      if (!epicReady) return;
+      if (!epicReady) {
+        if (originalBranch) checkout(originalBranch);
+        return;
+      }
       checkout(targetBranch);
       checkout(ticketBranch, true);
     } else {

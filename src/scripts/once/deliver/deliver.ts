@@ -318,9 +318,13 @@ export async function deliverEpicToBase(
   const allPrCreated = findEntriesWithStatus(process.cwd(), 'PR_CREATED');
   const allDone = findEntriesWithStatus(process.cwd(), 'DONE');
   const allReworked = findEntriesWithStatus(process.cwd(), 'REWORK');
-  const childEntries = [...allPrCreated, ...allDone, ...allReworked].filter(
-    (e) => e.parent === epicKey,
-  );
+  const allPushed = findEntriesWithStatus(process.cwd(), 'PUSHED');
+  const childEntries = [
+    ...allPrCreated,
+    ...allDone,
+    ...allReworked,
+    ...allPushed,
+  ].filter((e) => e.parent === epicKey);
 
   const platformOverride = sharedEnv(config).CLANCY_GIT_PLATFORM;
   const remote = detectRemote(platformOverride);
