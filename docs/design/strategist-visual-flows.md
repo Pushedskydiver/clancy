@@ -319,12 +319,19 @@ on {date}"  (Part 3)
 │    Otherwise                 -> HUMAN GRILL  │
 │                                              │
 │  HUMAN GRILL:                                │
-│    Interview the user exhaustively.          │
-│    Walk the "design tree" — ask about scope, │
-│    users, constraints, edge cases, deps.     │
-│    Explore codebase between questions.       │
+│    Interview the user RELENTLESSLY.          │
+│    Walk each branch of the design tree to    │
+│    its conclusion before moving to the next. │
+│    Explore codebase instead of asking when   │
+│    the answer is in the code.                │
+│    Two-way: user can ask questions back —    │
+│    research codebase/board/web and answer.   │
+│    Push back on vague answers. If user says  │
+│    "just pick something", explain trade-offs │
+│    and make them choose.                     │
+│    Do NOT generate the brief until the grill │
+│    is complete. Zero ambiguity is the goal.  │
 │    Multi-round: answers spawn follow-ups.    │
-│    Continue until no open questions remain.   │
 │    Typical: 5-20 questions over 2-5 rounds.  │
 │                                              │
 │  AI-GRILL:                                   │
@@ -532,22 +539,64 @@ Batch mode (/clancy:brief 3) always implies AI-GRILL.
 Human Grill Behaviour
 ──────────────────────────────────────────────────────────────────
 
-  1. After gathering the idea (step 2), interview the user:
+  CORE PRINCIPLE (from Matt Pocock's "grill me" skill):
+
+    "Interview me relentlessly about every aspect of this plan
+     until we reach a shared understanding. Walk down each branch
+     of the design tree, resolving dependencies between decisions
+     one by one. If a question can be answered by exploring the
+     codebase, explore the codebase instead."
+
+  RULES:
+
+  1. Be RELENTLESS. Do not accept vague answers. If the user says
+     "it should be fast", ask "what's the latency budget? 100ms?
+     500ms? Per-request or p99?" If they say "just pick something",
+     explain the trade-offs and make them choose.
+
+  2. Walk each branch of the design tree to its CONCLUSION before
+     moving to the next. Don't jump between topics — follow each
+     thread until it's fully resolved.
+
+  3. Explore the codebase instead of asking when the answer is in
+     the code. Don't ask "do you have an auth module?" — check.
+     Then ask informed follow-ups: "I see src/auth/sso-provider.ts
+     uses SAML. Should the new feature use the same provider?"
+
+  4. This is a TWO-WAY conversation. The user can ask questions
+     back at any time:
+     - "What does the codebase currently use?" → explore and answer
+     - "What do other projects typically do?" → web research
+     - "Are there related tickets?" → board query
+     - "What would you recommend?" → give an informed opinion with
+       trade-offs, then let the user decide
+
+  5. Answers spawn follow-up questions (multi-round):
+     "We want SSO" → "SAML or OIDC?" → "OIDC" →
+     "Which provider? No OIDC client in codebase yet."
+
+  6. Do NOT generate the brief until the grill is complete. The
+     goal is ZERO AMBIGUITY before a single ticket is written.
+     Push back if the user tries to rush: "We still have open
+     questions about X and Y. Let's resolve those first."
+
+  7. Stop when you reach a SHARED UNDERSTANDING — both sides
+     agree they understand the full scope, constraints, and
+     decisions. Not just "no more questions" but genuine mutual
+     comprehension.
+
+  8. The resolved answers feed into the ## Discovery section.
+
+  QUESTION CATEGORIES:
      - Scope: "What's in and what's out?"
      - Users: "Who uses this? What are the personas?"
      - Constraints: "Performance budget? Browser support? Auth?"
      - Edge cases: "What happens when X is empty / fails / times out?"
      - Dependencies: "Does this depend on other in-flight work?"
-  2. Explore the codebase between questions to verify/inform
-     (e.g. user says "we have a notification service" — check it)
-  3. Resolve dependencies between decisions one by one
-     (e.g. "you said SSO — does that mean the dashboard
-      also needs role-based access?")
-  4. Answers may spawn follow-up questions (multi-round):
-     "We want SSO" → "SAML or OIDC?" → "OIDC" →
-     "Which provider? No OIDC client in codebase yet."
-  5. Continue until no open questions remain
-  6. The resolved answers feed into the ## Discovery section
+     - Existing code: "How does this interact with {module}?"
+     - Data: "What's the data model? Volume? Retention?"
+     - Security: "Who can access this? What's the auth boundary?"
+     - Observability: "How will you know if this breaks?"
 
   Typical: 5-20 clarifying questions over 2-5 rounds.
 ```
@@ -558,9 +607,14 @@ Human Grill Behaviour
 AI-Grill Behaviour
 ──────────────────────────────────────────────────────────────────
 
-  1. Strategist generates 10-15 clarifying questions
-     (same categories as human grill: scope, users,
-      constraints, edge cases, dependencies)
+  Same relentless energy as the human grill, but directed at
+  the strategist itself via a devil's advocate agent.
+
+  1. Strategist generates 10-15 clarifying questions using the
+     same categories as the human grill (scope, users,
+     constraints, edge cases, dependencies, existing code,
+     data, security, observability).
+
   2. Devil's advocate agent answers each question using:
      - Codebase context (always — explore affected areas,
        read .clancy/docs/, check existing patterns)
@@ -570,9 +624,18 @@ AI-Grill Behaviour
        technology, patterns, or third-party integrations.
        Same trigger as Step 4: --research flag forces it,
        otherwise judgement-based)
-  3. Single pass — no multi-round loop. If an answer raises
-     a follow-up, resolve it within the same pass.
-  4. Classify each question:
+
+  3. The agent must NOT accept its own vague answers. If the
+     codebase doesn't clearly answer a question, don't guess —
+     flag it as an Open Question. Walk each branch to its
+     conclusion within the single pass.
+
+  4. Single pass — no multi-round loop. If an answer raises
+     a follow-up, resolve it within the same pass. The agent
+     must be thorough enough in one pass that a second would
+     add nothing.
+
+  5. Classify each question:
      - Answerable (>80% confidence, or technical decision
        with clear codebase precedent)
        → ## Discovery with source tag

@@ -79,8 +79,8 @@ Run `npm test && npm run typecheck && npm run lint`. Fix any issues.
 - Stale brief hook extension
 - `--dry-run` for approve-brief
 - Strategist in init/settings/scaffold/help
-- **Grill phase (dual-mode)** — human grill (interactive, multi-round) and AI-grill (autonomous, single-pass with devil's advocate agent). Mode determined by `--afk` flag or `CLANCY_MODE` env var
-- **AI-grill** — devil's advocate agent answers clarifying questions using codebase + board + web research. Produces `## Discovery` section with source tags
+- **Grill phase (dual-mode)** — relentless interrogation inspired by Matt Pocock's "grill me" skill. Human grill (interactive, two-way, multi-round — pushes back on vague answers, refuses to generate brief until shared understanding) and AI-grill (autonomous, single-pass with devil's advocate agent — same intensity directed at itself). Mode determined by `--afk` flag or `CLANCY_MODE` env var
+- **AI-grill** — devil's advocate agent answers clarifying questions using codebase + board + web research. Does not accept its own vague answers. Produces `## Discovery` section with source tags
 - **`CLANCY_MODE` env var** — persistent `interactive` (default) or `afk` mode. `--afk` flag for per-invocation override
 - **Discovery section** — Q&A from grill phase with source tags (human/codebase/board/web) in every brief
 - **Vertical slice decomposition** — validation rule enforcing end-to-end slices, not horizontal layers
