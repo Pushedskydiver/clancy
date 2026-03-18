@@ -150,7 +150,9 @@ flowchart TD
         P4 --> P5["Branch freshness check"]
     end
 
-    P5 --> FetchTicket
+    P5 --> EpicScan
+
+    EpicScan["Epic completion scan\n(check if any epics have\nall children done → create\nepic PR if so)"] --> FetchTicket
 
     subgraph FetchTicket["Fetch Ticket"]
         F1["Query board for next ticket"] -->|None found| Stop3["No tickets — all done"]
@@ -176,15 +178,7 @@ flowchart TD
     InvokeClaude -->|Success| PRDeliver["Push feature branch\nCreate PR/MR\nTransition → Review"]
     InvokeClaude -->|Fail| Stop6["Claude session failed ✗"]
 
-    PRDeliver --> EpicCheck{"Has parent\n(epic branch)?"}
-
-    EpicCheck -->|Yes| ChildrenDone{"All children\ndone?"}
-    EpicCheck -->|No| Log["Log to progress.txt"]
-
-    ChildrenDone -->|Yes| EpicPR["Create epic PR\nepic branch → base branch"]
-    ChildrenDone -->|No| Log
-
-    EpicPR --> Log
+    PRDeliver --> Log["Log to progress.txt"]
 
     Log --> Notify["Send notification\n(webhook, if configured)"]
     Notify --> End(["Done"])
@@ -237,7 +231,7 @@ flowchart TD
     Confirm -->|No| Cancel["Cancelled"]
     Confirm -->|Yes| Create
 
-    Create["Create tickets on board\n(sequential, 500ms delay)\nLabels: clancy:afk / clancy:hitl"]
+    Create["Create tickets on board\n(sequential, 500ms delay)\nLabels: clancy:afk / clancy:hitl\nDescription includes Epic: {key}"]
     Create --> Link["Link dependencies\n(blocking relationships)"]
     Link --> MarkApproved["Mark brief .approved"]
     MarkApproved --> Summary["Display summary\n→ Next: /clancy:plan"]
