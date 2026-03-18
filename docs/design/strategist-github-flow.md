@@ -300,7 +300,7 @@ Determine complexity from issue title + body:
 
 ### Step 5 — Generate brief
 
-Using the brief template from the design doc. The `Source` field records the origin:
+Using the brief template from the design doc. Include `## Discovery` section with Q&A from the grill phase (each answer tagged with source: human, codebase, board, or web). Include `## Open Questions` for any unresolved questions. The `Source` field records the origin:
 ```markdown
 **Source:** [#50] Redesign settings page
 ```

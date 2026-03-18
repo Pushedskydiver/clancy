@@ -126,7 +126,7 @@ Compare `issue.team.id` against `LINEAR_TEAM_ID` from env. If they don't match, 
 No additional Linear API calls. Codebase exploration only (read `.clancy/docs/`, explore affected areas). Web research if triggered by judgement or `--research` flag.
 
 **Step 4 — Generate brief:**
-Pure local computation. No API calls.
+Pure local computation. No API calls. Include `## Discovery` section with Q&A from the grill phase (each answer tagged with source: human, codebase, board, or web). Include `## Open Questions` for any unresolved questions.
 
 **Step 5 — Save brief:**
 Write to `.clancy/briefs/{YYYY-MM-DD}-{slug}.md`. No API calls.

@@ -36,7 +36,9 @@ INVOCATION                                    RESOLVED MODE
 /clancy:brief --list                       -> Inventory display (no brief generated)
 /clancy:brief --epic PROJ-50 "Add dark mode" -> Inline text + epic hint (for approve)
 /clancy:brief --epic PROJ-50 PROJ-123      -> --epic IGNORED (board ticket = source is parent)
-/clancy:brief 3                            -> Batch mode (3 tickets from queue)
+/clancy:brief --afk "Add dark mode"        -> Inline text + AI-grill (no human questions)
+/clancy:brief --afk PROJ-123              -> Board ticket + AI-grill
+/clancy:brief 3                            -> Batch mode (3 tickets from queue, implies --afk)
 ```
 
 ### Input Parsing Decision Tree
@@ -308,29 +310,36 @@ on {date}"  (Part 3)
                        │
                        v
 ┌──────────────────────────────────────────────┐
-│  Step 2a: GRILL PHASE (interactive only)     │
+│  Step 2a: GRILL PHASE                        │
 │                                              │
-│  Running interactively (human present)?      │
-│    NO (AFK/batch) -> skip to step 2b         │
-│    YES -> interview the user exhaustively:   │
+│  Determine grill mode:                       │
+│    --afk flag passed?        -> AI-GRILL     │
+│    CLANCY_MODE=afk in env?   -> AI-GRILL     │
+│    Batch mode (N tickets)?   -> AI-GRILL     │
+│    Otherwise                 -> HUMAN GRILL  │
 │                                              │
-│  Walk the "design tree":                     │
-│    - Ask clarifying questions about scope,   │
-│      users, constraints, edge cases          │
-│    - Explore the codebase to verify/inform   │
-│      claims made during the conversation     │
-│    - Resolve dependencies between decisions  │
-│    - Continue until no open questions remain  │
+│  HUMAN GRILL:                                │
+│    Interview the user exhaustively.          │
+│    Walk the "design tree" — ask about scope, │
+│    users, constraints, edge cases, deps.     │
+│    Explore codebase between questions.       │
+│    Multi-round: answers spawn follow-ups.    │
+│    Continue until no open questions remain.   │
+│    Typical: 5-20 questions over 2-5 rounds.  │
 │                                              │
-│  Typical output: 5-20 clarifying questions   │
-│  resolved before brief generation begins.    │
+│  AI-GRILL:                                   │
+│    Strategist generates 10-15 questions.     │
+│    Devil's advocate agent answers each using: │
+│      - Codebase context (always)             │
+│      - Board context (always)                │
+│      - Web research (when relevant)          │
+│    Single pass — no multi-round loop.        │
+│    Answerable → ## Discovery                 │
+│    Not answerable → ## Open Questions        │
 │                                              │
-│  AFK auto-resolve: when running in AFK/batch │
-│  mode, the strategist uses its own judgement  │
-│  + codebase context to resolve open          │
-│  questions. Unresolvable questions are listed │
-│  in a ## Open Questions section of the brief │
-│  for the PO to address during review.        │
+│  Both modes produce:                         │
+│    ## Discovery (Q&A with source tags)       │
+│    ## Open Questions (if any remain)         │
 └──────────────────────┬───────────────────────┘
                        │
                        v
@@ -413,6 +422,8 @@ on {date}"  (Part 3)
 │  Using brief template:                       │
 │    - Problem Statement                       │
 │    - Goals / Non-Goals                       │
+│    - Discovery (Q&A from grill phase,        │
+│      with source tags — see guidance below)  │
 │    - Background Research (codebase + web)     │
 │    - Related Existing Work                   │
 │    - User Stories (behaviour-driven, see     │
@@ -420,8 +431,7 @@ on {date}"  (Part 3)
 │    - Technical Considerations                │
 │    - Ticket Decomposition (max 10 rows,      │
 │      vertical slices, HITL/AFK tags)         │
-│    - Open Questions (if any remain from      │
-│      grill phase — AFK mode only)            │
+│    - Open Questions (unresolved from grill)  │
 │    - Success Criteria                        │
 │    - Risks                                   │
 └──────────────────────┬───────────────────────┘
@@ -489,11 +499,39 @@ on {date}"  (Part 3)
 
 The grill phase is inspired by the "design tree" concept (Frederick P. Brooks, *The Design of Design*). The goal is to walk every branch of the design tree systematically before generating the brief, resolving ambiguity upfront rather than encoding it into vague tickets.
 
+#### Mode Detection
+
 ```
-Grill Phase Behaviour
+Grill Mode Decision
 ──────────────────────────────────────────────────────────────────
 
-INTERACTIVE MODE (human present):
+  --afk flag passed?
+       |
+  +----+----+
+  Yes       No
+  |         |
+  v         v
+AI-GRILL  CLANCY_MODE env var?
+           |
+      +----+----+
+      "afk"     unset / "interactive"
+      |         |
+      v         v
+   AI-GRILL   HUMAN GRILL
+
+Batch mode (/clancy:brief 3) always implies AI-GRILL.
+```
+
+- `--afk` flag: per-invocation override. Useful for automation pipelines (e.g. Telegram bot → Claude → Clancy).
+- `CLANCY_MODE`: persistent default in `.clancy/.env`. Set once during `/clancy:init`, applies to all runs. Values: `interactive` (default) or `afk`.
+- The flag takes precedence over the env var.
+
+#### Human Grill
+
+```
+Human Grill Behaviour
+──────────────────────────────────────────────────────────────────
+
   1. After gathering the idea (step 2), interview the user:
      - Scope: "What's in and what's out?"
      - Users: "Who uses this? What are the personas?"
@@ -505,18 +543,81 @@ INTERACTIVE MODE (human present):
   3. Resolve dependencies between decisions one by one
      (e.g. "you said SSO — does that mean the dashboard
       also needs role-based access?")
-  4. Continue until no open questions remain
-  5. The resolved answers feed directly into the brief
+  4. Answers may spawn follow-up questions (multi-round):
+     "We want SSO" → "SAML or OIDC?" → "OIDC" →
+     "Which provider? No OIDC client in codebase yet."
+  5. Continue until no open questions remain
+  6. The resolved answers feed into the ## Discovery section
 
   Typical: 5-20 clarifying questions over 2-5 rounds.
+```
 
-AFK / BATCH MODE (no human):
-  1. Auto-resolve questions using codebase context + board context
-  2. List any genuinely unresolvable questions in the brief:
-     ## Open Questions
-     - [ ] Should the portal support SSO or email/password only?
-     - [ ] Is the 50ms latency budget per-request or p99?
-  3. The PO addresses these during brief review (feedback loop)
+#### AI-Grill
+
+```
+AI-Grill Behaviour
+──────────────────────────────────────────────────────────────────
+
+  1. Strategist generates 10-15 clarifying questions
+     (same categories as human grill: scope, users,
+      constraints, edge cases, dependencies)
+  2. Devil's advocate agent answers each question using:
+     - Codebase context (always — explore affected areas,
+       read .clancy/docs/, check existing patterns)
+     - Board context (always — parent ticket, related
+       tickets, existing children)
+     - Web research (when question involves external
+       technology, patterns, or third-party integrations.
+       Same trigger as Step 4: --research flag forces it,
+       otherwise judgement-based)
+  3. Single pass — no multi-round loop. If an answer raises
+     a follow-up, resolve it within the same pass.
+  4. Classify each question:
+     - Answerable (>80% confidence, or technical decision
+       with clear codebase precedent)
+       → ## Discovery with source tag
+     - Not answerable (business decision, ambiguous
+       requirements, no codebase precedent, involves
+       money/legal/compliance/security policy)
+       → ## Open Questions for PO
+
+  Typical: 10-15 questions, 8-12 resolved, 2-4 open.
+```
+
+#### Discovery Section Format
+
+Both grill modes produce a `## Discovery` section in the brief. Each Q&A includes a source tag so the PO can instantly see which decisions were human-confirmed vs AI-inferred.
+
+```
+Discovery Section
+──────────────────────────────────────────────────────────────────
+
+## Discovery
+
+Q: Should we support system preference detection?
+A: Yes — the codebase already uses `prefers-color-scheme` in
+   `src/styles/media.ts`. (Source: codebase)
+
+Q: Class strategy or media strategy for Tailwind?
+A: Class strategy — the existing theme toggle in `src/components/
+   ThemeProvider.tsx` uses class-based switching. (Source: codebase)
+
+Q: Should dark mode persist across sessions?
+A: Yes, store in localStorage. User confirmed. (Source: human)
+
+Q: What's the industry standard for dark mode colour contrast?
+A: WCAG AA requires 4.5:1 ratio for normal text. (Source: web)
+
+## Open Questions
+- [ ] Should dark mode apply to emails/PDFs or just the web UI?
+- [ ] Should portal users see all org data or only their team's?
+      (No RBAC policy found in codebase or ticket — needs PO input)
+
+Source tags:
+  (Source: human)    — answered by user during human grill
+  (Source: codebase) — answered from codebase exploration
+  (Source: board)    — answered from board ticket/related tickets
+  (Source: web)      — answered from web research
 ```
 
 ### Step 5: Brief Template — Detailed Guidance

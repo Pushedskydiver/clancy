@@ -434,6 +434,24 @@ If `N` or enter: do not add `CLANCY_TDD` to `.clancy/.env`.
 
 ---
 
+### Q3g (all boards): Grill mode
+
+Only ask this if the Strategist role is enabled (via `CLANCY_ROLES`).
+
+Output:
+
+```
+How should /clancy:brief handle clarifying questions?
+
+[1] Interactive (default) — asks you directly
+[2] AFK — AI resolves questions autonomously (for automation pipelines)
+```
+
+If [1] or enter: do not add `CLANCY_MODE` to `.clancy/.env` (uses default `interactive`).
+If [2]: store `CLANCY_MODE=afk` in `.clancy/.env`.
+
+---
+
 ### Q4: Base branch (auto-detect)
 
 Silently detect the base branch — do not ask unless detection fails:
