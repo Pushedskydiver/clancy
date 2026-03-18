@@ -1,9 +1,10 @@
 /**
  * Unified once orchestrator — replaces all three `clancy-once-*.sh` scripts.
  *
- * Full lifecycle: preflight → detect board → fetch ticket → compute branches →
- * [dry-run gate] → feasibility check → create branch → transition In Progress →
- * invoke Claude → squash merge → transition Done → log → notify.
+ * Full lifecycle: preflight → detect board → [epic completion check] →
+ * fetch ticket → compute branches → [dry-run gate] → feasibility check →
+ * create branch → transition In Progress → invoke Claude → push + PR →
+ * log → notify.
  *
  * All errors exit with code 0 (not 1). This is intentional — the AFK runner
  * detects stop conditions by parsing stdout, not exit codes.
@@ -31,6 +32,7 @@ import { runPreflight } from '~/scripts/shared/preflight/preflight.js';
 import {
   appendProgress,
   countReworkCycles,
+  findEntriesWithStatus,
 } from '~/scripts/shared/progress/progress.js';
 import {
   buildPrompt,
@@ -124,6 +126,54 @@ export async function run(argv: string[]): Promise<void> {
     }
 
     console.log(green('✅ Preflight passed'));
+
+    // 4a. Epic completion check — scan for epics whose children are all done
+    // This runs at the START of each iteration to catch epics where child PRs
+    // were merged since the last run. The check cannot run after child delivery
+    // because the just-delivered child is still "In Review", not "Done".
+    // Best-effort — errors are swallowed so the run continues.
+    try {
+      const prEntries = findEntriesWithStatus(process.cwd(), 'PR_CREATED');
+      const reworkEntries = findEntriesWithStatus(process.cwd(), 'REWORK');
+      const allEntries = [...prEntries, ...reworkEntries];
+      const parentKeys = new Set(
+        allEntries.map((e) => e.parent).filter((p): p is string => Boolean(p)),
+      );
+      const baseBranch = config.env.CLANCY_BASE_BRANCH ?? 'main';
+
+      for (const parentKey of parentKeys) {
+        const status = await fetchEpicChildrenStatus(config, parentKey);
+        if (status && status.incomplete === 0 && status.total > 0) {
+          const epicBranch = computeTargetBranch(
+            config.provider,
+            baseBranch,
+            parentKey,
+          );
+
+          const epicOk = await deliverEpicToBase(
+            config,
+            parentKey,
+            parentKey, // title fallback — see WARNING #4 in review
+            epicBranch,
+            baseBranch,
+          );
+
+          if (epicOk) {
+            console.log(green(`  ✓ Epic ${parentKey} complete — PR created`));
+          } else {
+            console.log(
+              yellow(
+                `⚠ Epic PR creation failed for ${parentKey}. Create manually:\n` +
+                  `  git push origin ${epicBranch}\n` +
+                  `  Then create a PR targeting ${baseBranch}`,
+              ),
+            );
+          }
+        }
+      }
+    } catch {
+      // Best-effort — epic completion check failure shouldn't block the run
+    }
 
     // 5. Check rework — PR-based detection, then fresh ticket
     let isRework = false;
@@ -403,35 +453,6 @@ export async function run(argv: string[]): Promise<void> {
         parentKey,
       );
       if (!delivered) return;
-
-      // 13a. Epic completion check — if all children are done, create epic PR
-      if (hasParent && !skipEpicBranch) {
-        const childrenStatus = await fetchEpicChildrenStatus(
-          config,
-          ticket.parentInfo,
-          ticket.linearIssueId,
-        );
-
-        if (childrenStatus && childrenStatus.incomplete === 0) {
-          const epicOk = await deliverEpicToBase(
-            config,
-            ticket.parentInfo,
-            ticket.parentInfo, // title fallback — the epic key
-            targetBranch,
-            baseBranch,
-          );
-
-          if (!epicOk) {
-            console.log(
-              yellow(
-                `⚠ Epic PR creation failed. Create manually:\n` +
-                  `  git push origin ${targetBranch}\n` +
-                  `  Then create a PR targeting ${baseBranch}`,
-              ),
-            );
-          }
-        }
-      }
     }
 
     const elapsed = formatDuration(Date.now() - startTime);

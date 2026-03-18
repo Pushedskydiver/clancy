@@ -88,6 +88,7 @@ export function ensureEpicBranch(
       console.log(
         yellow(`⚠ Created ${epicBranch} locally but could not push to origin.`),
       );
+      return false;
     } else {
       console.log(green(`  ✓ Created epic branch ${epicBranch}`));
     }
