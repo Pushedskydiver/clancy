@@ -7,6 +7,15 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.5.13] — 2026-03-18
+
+### Added
+
+- **Glossary** (`docs/GLOSSARY.md`) — ubiquitous language for the project. Defines terms for roles, delivery model, orchestrator, strategist, planner, and infrastructure. Referenced by Claude and subagents via CLAUDE.md.
+- **Key documentation table** in `CLAUDE.md` — links to architecture, visual diagrams, conventions, testing, git strategy, design docs, role descriptions, and guides. Ensures agents can discover all project documentation.
+
+---
+
 ## [0.5.12] — 2026-03-18
 
 ### ✨ Features
