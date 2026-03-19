@@ -659,27 +659,36 @@ Print the full brief to stdout, followed by the sign-off:
 ### Next steps (board-sourced)
 
 ```
-Next steps:
-  To answer open questions or request changes:
-    • Comment on {KEY} on your board, then re-run /clancy:brief {KEY} to revise
-    • Or add a ## Feedback section to the brief file and re-run
-  To approve: /clancy:approve-brief {KEY}
-  To start over: /clancy:brief --fresh {KEY}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Next Steps
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Answer open questions or request changes:
+    • Comment on {KEY} on your board
+    • Or add a ## Feedback section to the brief file
+    Then re-run: /clancy:brief {KEY}
+
+  Approve:       /clancy:approve-brief {KEY}
+  Start over:    /clancy:brief --fresh {KEY}
 ```
 
 ### Next steps (inline text / from file)
 
 ```
-Next steps:
-  To answer open questions or request changes:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Next Steps
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  Answer open questions or request changes:
     • Add a ## Feedback section to:
-      .clancy/briefs/{date}-{slug}.md
+        .clancy/briefs/{date}-{slug}.md
     • Or create a companion file:
-      .clancy/briefs/{date}-{slug}.feedback.md
-    Then re-run /clancy:brief to revise.
-  To approve: /clancy:approve-brief {slug}
-  To attach to a parent: /clancy:approve-brief {slug} --epic {KEY}
-  To start over: /clancy:brief --fresh
+        .clancy/briefs/{date}-{slug}.feedback.md
+    Then re-run: /clancy:brief
+
+  Approve:       /clancy:approve-brief {slug}
+  With parent:   /clancy:approve-brief {slug} --epic {KEY}
+  Start over:    /clancy:brief --fresh
 ```
 
 ---
