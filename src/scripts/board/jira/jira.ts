@@ -349,11 +349,12 @@ export async function fetchChildrenStatus(
   if (!ISSUE_KEY_PATTERN.test(parentKey)) return undefined;
 
   try {
-    // Mode 1: Try Epic: text convention
+    // Mode 1: Try Epic: text convention (scoped to project to avoid cross-project matches)
+    const projectPrefix = parentKey.split('-')[0];
     const epicTextResult = await fetchChildrenByJql(
       baseUrl,
       auth,
-      `description ~ "Epic: ${parentKey}"`,
+      `project = "${projectPrefix}" AND description ~ "Epic: ${parentKey}"`,
     );
 
     if (epicTextResult && epicTextResult.total > 0) return epicTextResult;

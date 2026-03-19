@@ -60,8 +60,8 @@ Log completed tickets to `.clancy/progress.txt`:
 Planning entries use: `YYYY-MM-DD HH:MM | TICKET-KEY | PLAN | S/M/L`
 Revised plan entries use: `YYYY-MM-DD HH:MM | TICKET-KEY | REVISED | S/M/L`
 Plan approval entries use: `YYYY-MM-DD HH:MM | TICKET-KEY | APPROVE_PLAN | —`
-Brief entries use: `YYYY-MM-DD HH:MM | TICKET-KEY | BRIEF | S/M/L`
-Brief approval entries use: `YYYY-MM-DD HH:MM | TICKET-KEY | APPROVE_BRIEF | —`
+Brief entries use: `YYYY-MM-DD HH:MM | BRIEF | {slug} | {N} proposed tickets`
+Brief approval entries use: `YYYY-MM-DD HH:MM | APPROVE_BRIEF | {slug} | {N} tickets created`
 Failed comment posts use: `YYYY-MM-DD HH:MM | TICKET-KEY | POST_FAILED | {reason}`
 
 ### Design context

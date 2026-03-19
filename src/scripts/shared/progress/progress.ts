@@ -125,7 +125,7 @@ function parseProgressFile(projectRoot: string): ProgressEntry[] {
       entries.push({
         timestamp,
         key: parts[2]!,
-        summary: parts[3] ?? '',
+        summary: parts.slice(3).join(' | '),
         status: parts[1] as ProgressStatus,
       });
       continue;

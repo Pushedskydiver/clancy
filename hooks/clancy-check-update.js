@@ -74,9 +74,19 @@ child.unref();
 // Best-effort: detect unapproved briefs older than 7 days, write count to cache file.
 try {
   const briefsDir = path.join(cwd, '.clancy', 'briefs');
-  if (fs.existsSync(briefsDir)) {
+  const staleFile = path.join(cwd, '.clancy', '.brief-stale-count');
+
+  if (!fs.existsSync(briefsDir)) {
+    // No briefs dir — clear any stale cache so old counts don't linger
+    try { fs.unlinkSync(staleFile); } catch { /* may not exist */ }
+  } else {
     const files = fs.readdirSync(briefsDir);
-    const mdFiles = files.filter(f => f.endsWith('.md') && !f.endsWith('.md.approved'));
+    // Only count brief files (YYYY-MM-DD-slug.md), exclude .feedback.md and .approved markers
+    const mdFiles = files.filter(f =>
+      f.endsWith('.md') &&
+      !f.endsWith('.md.approved') &&
+      !f.endsWith('.feedback.md')
+    );
     const now = Date.now();
     const sevenDays = 7 * 24 * 60 * 60 * 1000;
     let staleCount = 0;
@@ -97,7 +107,6 @@ try {
       }
     }
 
-    const staleFile = path.join(cwd, '.clancy', '.brief-stale-count');
     fs.writeFileSync(staleFile, String(staleCount));
   }
 } catch {
