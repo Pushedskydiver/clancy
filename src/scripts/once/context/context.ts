@@ -42,9 +42,6 @@ export type RunContext = {
 
   // Populated by lock-write phase
   lockOwner?: boolean;
-
-  // Derived from config
-  tdd?: boolean;
 };
 
 /** Create the initial RunContext from process arguments. */
