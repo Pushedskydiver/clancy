@@ -95,6 +95,82 @@ export function createJiraBoard(env: JiraEnv): Board {
       return ok;
     },
 
+    async ensureLabel() {
+      // No-op — Jira auto-creates labels on use.
+    },
+
+    async addLabel(issueKey: string, label: string) {
+      try {
+        const res = await fetch(
+          `${env.JIRA_BASE_URL}/rest/api/3/issue/${issueKey}?fields=labels`,
+          { headers: { Authorization: auth, Accept: 'application/json' } },
+        );
+
+        if (!res.ok) {
+          console.warn(`⚠ addLabel GET failed: HTTP ${res.status}`);
+          return;
+        }
+
+        const json = (await res.json()) as {
+          fields?: { labels?: string[] };
+        };
+        const current = json.fields?.labels ?? [];
+
+        if (current.includes(label)) return;
+
+        await fetch(`${env.JIRA_BASE_URL}/rest/api/3/issue/${issueKey}`, {
+          method: 'PUT',
+          headers: {
+            Authorization: auth,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            fields: { labels: [...current, label] },
+          }),
+        });
+      } catch (err) {
+        console.warn(
+          `⚠ addLabel failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    },
+
+    async removeLabel(issueKey: string, label: string) {
+      try {
+        const res = await fetch(
+          `${env.JIRA_BASE_URL}/rest/api/3/issue/${issueKey}?fields=labels`,
+          { headers: { Authorization: auth, Accept: 'application/json' } },
+        );
+
+        if (!res.ok) {
+          console.warn(`⚠ removeLabel GET failed: HTTP ${res.status}`);
+          return;
+        }
+
+        const json = (await res.json()) as {
+          fields?: { labels?: string[] };
+        };
+        const current = json.fields?.labels ?? [];
+
+        if (!current.includes(label)) return;
+
+        await fetch(`${env.JIRA_BASE_URL}/rest/api/3/issue/${issueKey}`, {
+          method: 'PUT',
+          headers: {
+            Authorization: auth,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            fields: { labels: current.filter((l) => l !== label) },
+          }),
+        });
+      } catch (err) {
+        console.warn(
+          `⚠ removeLabel failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    },
+
     sharedEnv() {
       return env;
     },

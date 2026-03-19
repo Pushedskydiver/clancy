@@ -41,6 +41,9 @@ describe('preflight', () => {
       fetchBlockerStatus: vi.fn(),
       fetchChildrenStatus: vi.fn(),
       transitionTicket: vi.fn(),
+      ensureLabel: vi.fn(),
+      addLabel: vi.fn(),
+      removeLabel: vi.fn(),
       sharedEnv: vi.fn(() => ({})),
     });
   });
@@ -83,6 +86,9 @@ describe('preflight', () => {
       fetchBlockerStatus: vi.fn(),
       fetchChildrenStatus: vi.fn(),
       transitionTicket: vi.fn(),
+      ensureLabel: vi.fn(),
+      addLabel: vi.fn(),
+      removeLabel: vi.fn(),
       sharedEnv: vi.fn(() => ({})),
     });
 
@@ -110,6 +116,9 @@ describe('preflight', () => {
       fetchBlockerStatus: vi.fn(),
       fetchChildrenStatus: vi.fn(),
       transitionTicket: vi.fn(),
+      ensureLabel: vi.fn(),
+      addLabel: vi.fn(),
+      removeLabel: vi.fn(),
       sharedEnv: vi.fn(() => ({})),
     });
 

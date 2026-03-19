@@ -245,6 +245,123 @@ describe('github-board', () => {
     });
   });
 
+  describe('ensureLabel', () => {
+    it('does nothing when label already exists', async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce(new Response('{}', { status: 200 }));
+
+      const board = createGitHubBoard(baseEnv);
+      await board.ensureLabel('clancy:build');
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(fetchSpy.mock.calls[0][0]).toContain('/labels/clancy%3Abuild');
+    });
+
+    it('creates label when 404', async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce(new Response('', { status: 404 }))
+        .mockResolvedValueOnce(new Response('{}', { status: 201 }));
+
+      const board = createGitHubBoard(baseEnv);
+      await board.ensureLabel('clancy:build');
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      expect(fetchSpy.mock.calls[1][1]?.method).toBe('POST');
+    });
+
+    it('does not throw on network error', async () => {
+      vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('network'));
+
+      const board = createGitHubBoard(baseEnv);
+      await expect(board.ensureLabel('clancy:build')).resolves.toBeUndefined();
+    });
+  });
+
+  describe('addLabel', () => {
+    it('calls ensureLabel then adds label to issue', async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, 'fetch')
+        // ensureLabel GET
+        .mockResolvedValueOnce(new Response('{}', { status: 200 }))
+        // addLabel POST
+        .mockResolvedValueOnce(new Response('{}', { status: 200 }));
+
+      const board = createGitHubBoard(baseEnv);
+      await board.addLabel('#42', 'clancy:build');
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      expect(fetchSpy.mock.calls[1][0]).toContain('/issues/42/labels');
+      expect(fetchSpy.mock.calls[1][1]?.method).toBe('POST');
+    });
+
+    it('does not throw for non-numeric issue key', async () => {
+      // ensureLabel GET
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response('{}', { status: 200 }),
+      );
+
+      const board = createGitHubBoard(baseEnv);
+      await expect(
+        board.addLabel('#abc', 'clancy:build'),
+      ).resolves.toBeUndefined();
+    });
+
+    it('does not throw on network error', async () => {
+      vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('network'));
+
+      const board = createGitHubBoard(baseEnv);
+      await expect(
+        board.addLabel('#42', 'clancy:build'),
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('removeLabel', () => {
+    it('sends DELETE request for the label', async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce(new Response('', { status: 200 }));
+
+      const board = createGitHubBoard(baseEnv);
+      await board.removeLabel('#42', 'clancy:build');
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      expect(fetchSpy.mock.calls[0][0]).toContain(
+        '/issues/42/labels/clancy%3Abuild',
+      );
+      expect(fetchSpy.mock.calls[0][1]?.method).toBe('DELETE');
+    });
+
+    it('ignores 404 (label not on issue)', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response('', { status: 404 }),
+      );
+
+      const board = createGitHubBoard(baseEnv);
+      await expect(
+        board.removeLabel('#42', 'clancy:build'),
+      ).resolves.toBeUndefined();
+    });
+
+    it('does not throw for non-numeric issue key', async () => {
+      const board = createGitHubBoard(baseEnv);
+      await expect(
+        board.removeLabel('#abc', 'clancy:build'),
+      ).resolves.toBeUndefined();
+    });
+
+    it('does not throw on network error', async () => {
+      vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('network'));
+
+      const board = createGitHubBoard(baseEnv);
+      await expect(
+        board.removeLabel('#42', 'clancy:build'),
+      ).resolves.toBeUndefined();
+    });
+  });
+
   describe('sharedEnv', () => {
     it('returns the env object', () => {
       const board = createGitHubBoard(baseEnv);

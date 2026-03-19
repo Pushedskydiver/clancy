@@ -25,5 +25,8 @@ export type Board = {
     parentId?: string,
   ): Promise<{ total: number; incomplete: number } | undefined>;
   transitionTicket(ticket: FetchedTicket, status: string): Promise<boolean>;
+  ensureLabel(label: string): Promise<void>;
+  addLabel(issueKey: string, label: string): Promise<void>;
+  removeLabel(issueKey: string, label: string): Promise<void>;
   sharedEnv(): Record<string, string | undefined>;
 };
