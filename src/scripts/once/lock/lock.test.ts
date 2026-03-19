@@ -178,4 +178,10 @@ describe('isLockStale', () => {
 
     expect(isLockStale(lock)).toBe(false);
   });
+
+  it('returns true when startedAt is invalid', () => {
+    const lock = makeLockData({ startedAt: 'not-a-date' });
+
+    expect(isLockStale(lock)).toBe(true);
+  });
 });

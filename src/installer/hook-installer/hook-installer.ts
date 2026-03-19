@@ -177,7 +177,7 @@ export function installHooks(options: HookInstallerOptions): boolean {
     );
     registerHook(
       hooks,
-      'Notification',
+      'PostCompact',
       `node ${JSON.stringify(postCompactScript)}`,
     );
 

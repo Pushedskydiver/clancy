@@ -589,7 +589,7 @@ export async function run(argv: string[]): Promise<void> {
     try {
       const lock = readLock(process.cwd());
       if (lock) {
-        const tokenRate = parseInt(config.env.CLANCY_TOKEN_RATE ?? '6600', 10);
+        const tokenRate = Number(config.env.CLANCY_TOKEN_RATE ?? '6600');
         appendCostEntry(
           process.cwd(),
           ticket.key,

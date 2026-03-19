@@ -93,6 +93,17 @@ describe('clancy-branch-guard', () => {
       const result = runBash('git push origin');
       expect(result.decision).toBe('approve');
     });
+
+    it('allows git push origin main-feature (not exact branch match)', () => {
+      const result = runBash('git push origin main-feature');
+      expect(result.decision).toBe('approve');
+    });
+
+    it('blocks CLANCY_BASE_BRANCH when set', () => {
+      const result = runBash('git push origin staging', { CLANCY_BASE_BRANCH: 'staging' });
+      expect(result.decision).toBe('block');
+      expect(result.reason).toContain('staging');
+    });
   });
 
   // ── git reset ───────────────────────────────────────────────

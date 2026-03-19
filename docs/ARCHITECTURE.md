@@ -224,7 +224,7 @@ After `/clancy:init` + `/clancy:map-codebase`:
   docs/                 — 10 structured docs (read before every run)
   progress.txt          — append-only completion log
   costs.log             — duration-based token cost estimates per ticket
-  clancy.lock           — lock file for crash recovery (transient, deleted on success)
+  lock.json           — lock file for crash recovery (transient, deleted on success)
   session-report.md     — AFK session summary (generated after /clancy:run)
   .env                  — board credentials (gitignored)
   .env.example          — credential template

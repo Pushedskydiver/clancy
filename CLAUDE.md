@@ -121,7 +121,7 @@ Spin up a review agent at every necessary phase — not just after code. Review 
 - `Epic: {key}` description convention: child tickets include this text for cross-platform epic completion detection
 - `CLANCY_BRIEF_ISSUE_TYPE`, `CLANCY_BRIEF_EPIC`, `CLANCY_COMPONENT` env vars configure strategist ticket creation
 - Verification gates: agent-based Stop hook runs lint/test/typecheck before delivery, self-healing retry up to `CLANCY_FIX_RETRIES` (default 2)
-- Lock file (`.clancy/clancy.lock`): prevents double-runs, enables crash recovery via PID check + resume detection
+- Lock file (`.clancy/lock.json`): prevents double-runs, enables crash recovery via PID check + resume detection
 - Branch guard hook: PreToolUse hook blocks force push, protected branch push, destructive resets. Configurable via `CLANCY_BRANCH_GUARD`
 - Time guard: PostToolUse warnings at 80%/100% of `CLANCY_TIME_LIMIT` (default 30 min), integrated into context-monitor hook
 - Cost logging: duration-based token estimate per ticket appended to `.clancy/costs.log` using `CLANCY_TOKEN_RATE` (default 6600 tokens/min)

@@ -63,13 +63,13 @@ describe('clancy-post-compact', () => {
     expect(raw).not.toBe('');
 
     const output = JSON.parse(raw);
-    expect(output.additionalContext).toContain('CONTEXT RESTORED');
-    expect(output.additionalContext).toContain('PROJ-42');
-    expect(output.additionalContext).toContain('Add post-compact hook');
-    expect(output.additionalContext).toContain('feature/proj-42');
-    expect(output.additionalContext).toContain('targeting main');
-    expect(output.additionalContext).toContain('Parent: PROJ-10');
-    expect(output.additionalContext).toContain('Continue your implementation');
+    expect(output.hookSpecificOutput.additionalContext).toContain('CONTEXT RESTORED');
+    expect(output.hookSpecificOutput.additionalContext).toContain('PROJ-42');
+    expect(output.hookSpecificOutput.additionalContext).toContain('Add post-compact hook');
+    expect(output.hookSpecificOutput.additionalContext).toContain('feature/proj-42');
+    expect(output.hookSpecificOutput.additionalContext).toContain('targeting main');
+    expect(output.hookSpecificOutput.additionalContext).toContain('Parent: PROJ-10');
+    expect(output.hookSpecificOutput.additionalContext).toContain('Continue your implementation');
   });
 
   it('exits silently when no lock file exists', () => {
@@ -96,7 +96,7 @@ describe('clancy-post-compact', () => {
     const raw = runHook({ cwd: tmpDir });
     const output = JSON.parse(raw);
     // The description in context should be truncated
-    const descMatch = output.additionalContext.match(/Requirements: (A+)/);
+    const descMatch = output.hookSpecificOutput.additionalContext.match(/Requirements: (A+)/);
     expect(descMatch).not.toBeNull();
     expect(descMatch![1].length).toBe(2000);
   });
@@ -109,7 +109,7 @@ describe('clancy-post-compact', () => {
 
     const raw = runHook({ cwd: tmpDir });
     const output = JSON.parse(raw);
-    expect(output.additionalContext).not.toContain('Parent:');
+    expect(output.hookSpecificOutput.additionalContext).not.toContain('Parent:');
   });
 
   it('omits requirements line when description is empty', () => {
@@ -120,9 +120,9 @@ describe('clancy-post-compact', () => {
 
     const raw = runHook({ cwd: tmpDir });
     const output = JSON.parse(raw);
-    expect(output.additionalContext).not.toContain('Requirements:');
+    expect(output.hookSpecificOutput.additionalContext).not.toContain('Requirements:');
     // Should still have the core context
-    expect(output.additionalContext).toContain('PROJ-42');
+    expect(output.hookSpecificOutput.additionalContext).toContain('PROJ-42');
   });
 
   it('omits requirements line when description is undefined', () => {
@@ -133,7 +133,7 @@ describe('clancy-post-compact', () => {
 
     const raw = runHook({ cwd: tmpDir });
     const output = JSON.parse(raw);
-    expect(output.additionalContext).not.toContain('Requirements:');
-    expect(output.additionalContext).toContain('PROJ-42');
+    expect(output.hookSpecificOutput.additionalContext).not.toContain('Requirements:');
+    expect(output.hookSpecificOutput.additionalContext).toContain('PROJ-42');
   });
 });

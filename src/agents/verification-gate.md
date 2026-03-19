@@ -30,7 +30,7 @@ Read `.clancy/verify-attempt.txt` from the project root. If the file does not ex
 
 ### Step 4 — Check max retries
 
-Read the `CLANCY_FIX_RETRIES` environment variable. Default to `2` if not set. If the current attempt number is strictly greater than the max retries value, max retries have been exhausted. Delete `.clancy/verify-attempt.txt` if it exists, then respond immediately:
+Read the `CLANCY_FIX_RETRIES` environment variable. Default to `2` if not set. If the current attempt number is strictly greater than the max retries value, max retries have been exhausted. Keep `.clancy/verify-attempt.txt` in place (the delivery flow reads it to add a verification warning to the PR body). Respond immediately:
 
 ```json
 {"decision": "allow"}
@@ -121,4 +121,4 @@ Never crash or leave the stop unresolved. The gate is a safety net, not a hard b
 - No other output format is accepted. Do not wrap the JSON in markdown code fences in your final response.
 - Truncate command output to 500 lines maximum per check. Prefer the tail (last N lines) — error summaries are usually at the end.
 - Sequential execution only — run one check at a time so failures are clearly attributed.
-- Clean up `.clancy/verify-attempt.txt` on success or max-retries-exhausted. Never leave stale state.
+- Clean up `.clancy/verify-attempt.txt` on success only. On max-retries-exhausted, keep the file so the delivery flow can detect it and add a verification warning to the PR body.

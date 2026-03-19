@@ -42,7 +42,10 @@ process.stdin.on('end', () => {
     ].filter(Boolean).join('\n');
 
     process.stdout.write(JSON.stringify({
-      additionalContext: context,
+      hookSpecificOutput: {
+        hookEventName: 'PostCompact',
+        additionalContext: context,
+      },
     }));
   } catch {
     process.exit(0); // Best-effort — never crash

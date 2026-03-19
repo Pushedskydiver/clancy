@@ -32,7 +32,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Tests
 
-- 579 → 761 (182 new tests)
+- 579 → 764 (185 new tests)
 
 ---
 

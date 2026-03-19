@@ -6,8 +6,12 @@
 
 'use strict';
 
-// Protected branch names — pushes to these are blocked
+// Protected branch names — pushes to these are blocked.
+// CLANCY_BASE_BRANCH is added dynamically if set and not already in the list.
 const PROTECTED_BRANCHES = ['main', 'master', 'develop'];
+if (process.env.CLANCY_BASE_BRANCH && !PROTECTED_BRANCHES.includes(process.env.CLANCY_BASE_BRANCH)) {
+  PROTECTED_BRANCHES.push(process.env.CLANCY_BASE_BRANCH);
+}
 
 /**
  * Check whether a command string contains a dangerous git operation.
@@ -27,10 +31,13 @@ function checkCommand(cmd) {
 
     // --- git push to protected branches ---
     // Pattern: git push <remote> <protected-branch>
-    // We look for "git push" followed by any remote name, then a protected branch
+    // We look for "git push" followed by any remote name, then a protected branch.
+    // The branch must be a standalone token — \b treats hyphens as word boundaries,
+    // so we match the branch as a complete whitespace-delimited token instead.
     for (const branch of PROTECTED_BRANCHES) {
       // Matches: git push origin main, git push origin main:main, etc.
-      const pattern = new RegExp(`\\bgit\\s+push\\s+\\S+\\s+${branch}\\b`);
+      // Does NOT match: git push origin main-feature
+      const pattern = new RegExp(`\\bgit\\s+push\\s+\\S+\\s+${branch}(?:\\s|$|:)`);
       if (pattern.test(cmd)) {
         return `Blocked: direct push to protected branch '${branch}'. Create a PR instead.`;
       }

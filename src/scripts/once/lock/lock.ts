@@ -69,6 +69,8 @@ export function isLockStale(lock: LockData): boolean {
   // threshold — Clancy sessions never run that long. A false negative here means
   // the user sees "another session is running" and must manually delete lock.json.
   const lockAge = Date.now() - new Date(lock.startedAt).getTime();
+  if (Number.isNaN(lockAge)) return true; // Invalid timestamp — can't trust it
+
   const twentyFourHours = 24 * 60 * 60 * 1000;
   if (lockAge > twentyFourHours) return true;
 

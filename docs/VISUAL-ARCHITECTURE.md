@@ -141,7 +141,7 @@ What happens inside `/clancy:once` (and each iteration of `/clancy:run`).
 flowchart TD
     Start(["/clancy:once"]) --> LockCheck
 
-    LockCheck{"Lock file\nexists?"} -->|No| AcquireLock["Acquire lock\n(.clancy/clancy.lock)"]
+    LockCheck{"Lock file\nexists?"} -->|No| AcquireLock["Acquire lock\n(.clancy/lock.json)"]
     LockCheck -->|"Yes — PID alive"| Stop0["Another session running ✗"]
     LockCheck -->|"Yes — PID dead"| Resume["Resume crashed session\n(read ticket + branch from lock)"]
 
@@ -347,7 +347,7 @@ graph TD
         pkg["package.json\n({'type':'module'})"]
         progress["progress.txt\n(run log)"]
         costslog["costs.log\n(token cost estimates)"]
-        lockfile["clancy.lock\n(crash recovery)"]
+        lockfile["lock.json\n(crash recovery)"]
         sessionrpt["session-report.md\n(AFK summary)"]
         claudemd["CLAUDE.md\n(project instructions)"]
 

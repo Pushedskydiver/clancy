@@ -208,7 +208,7 @@ The verification gate uses a specialist agent prompt (`src/agents/verification-g
 
 ## Crash recovery
 
-Clancy uses a lock file (`.clancy/clancy.lock`) to prevent double-runs and recover from crashes.
+Clancy uses a lock file (`.clancy/lock.json`) to prevent double-runs and recover from crashes.
 
 ### Lock file lifecycle
 
