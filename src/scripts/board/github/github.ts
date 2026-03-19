@@ -209,27 +209,10 @@ export async function fetchIssues(
 
   // HITL/AFK filtering: exclude issues with clancy:hitl label
   // GitHub Issues API doesn't support label exclusion natively, so filter client-side.
-  // The labels field isn't in our schema, so we re-check the raw data.
   if (excludeHitl) {
-    const rawArray = json as Array<{ labels?: Array<{ name?: string }> }>;
-    const hitlNumbers = new Set(
-      rawArray
-        .filter((item) => item.labels?.some((l) => l.name === 'clancy:hitl'))
-        .map((_, i) => i),
+    issues = issues.filter(
+      (issue) => !issue.labels?.some((l) => l.name === 'clancy:hitl'),
     );
-    // Map from parsed data index back to raw index — they share the same order
-    const rawIssueIndices = new Map<number, number>();
-    let rawIdx = 0;
-    for (const item of parsed.data) {
-      if (!item.pull_request) {
-        rawIssueIndices.set(item.number, rawIdx);
-      }
-      rawIdx++;
-    }
-    issues = issues.filter((issue) => {
-      const ri = rawIssueIndices.get(issue.number);
-      return ri === undefined || !hitlNumbers.has(ri);
-    });
   }
 
   return issues.slice(0, limit).map((issue) => ({
