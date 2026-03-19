@@ -40,6 +40,8 @@ async function fetchCandidates(
   config: BoardConfig,
   excludeHitl: boolean,
 ): Promise<FetchedTicket[]> {
+  // Provider-specific API calls + field mapping — not a Board concern
+  // because each board returns different raw shapes that need normalising.
   switch (config.provider) {
     case 'jira': {
       const { env } = config;
@@ -126,6 +128,8 @@ async function isBlocked(
   config: BoardConfig,
   ticket: FetchedTicket,
 ): Promise<boolean> {
+  // Provider-specific blocker APIs — each board has a unique mechanism
+  // (Jira: issueLinks, GitHub: body parsing, Linear: relations GraphQL).
   switch (config.provider) {
     case 'jira': {
       const { env } = config;
