@@ -64,7 +64,10 @@ export function isLockStale(lock: LockData): boolean {
   // If PID is dead, lock is stale
   if (!isPidAlive(lock.pid)) return true;
 
-  // If PID is alive but lock is older than 24 hours, treat as PID reuse
+  // If PID is alive but lock is older than 24 hours, treat as PID reuse.
+  // Note: PID reuse can happen faster on busy systems, but 24h is a practical
+  // threshold — Clancy sessions never run that long. A false negative here means
+  // the user sees "another session is running" and must manually delete lock.json.
   const lockAge = Date.now() - new Date(lock.startedAt).getTime();
   const twentyFourHours = 24 * 60 * 60 * 1000;
   if (lockAge > twentyFourHours) return true;

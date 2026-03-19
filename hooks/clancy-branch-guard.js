@@ -63,7 +63,8 @@ function checkCommand(cmd) {
   }
 
   // --- git restore . (discard all changes) ---
-  if (/\bgit\s+restore\s+\./.test(cmd)) {
+  // Only block bare "git restore ." (all files), not "git restore ./specific-file"
+  if (/\bgit\s+restore\s+\.(?:\s*$|\s*[;&|])/.test(cmd)) {
     return 'Blocked: git restore . discards all uncommitted changes.';
   }
 
