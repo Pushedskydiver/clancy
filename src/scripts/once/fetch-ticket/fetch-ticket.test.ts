@@ -288,6 +288,68 @@ describe('fetchTicket — blocker-aware multi-candidate', () => {
     expect(result).toBeUndefined();
   });
 
+  it('skips blocked GitHub candidate and returns second unblocked one', async () => {
+    vi.mocked(mockFetchGitHubIssues).mockResolvedValue([
+      {
+        key: '#41',
+        title: 'Blocked issue',
+        description: 'Blocked by #10.',
+        provider: 'github',
+        milestone: 'Sprint 3',
+      },
+      {
+        key: '#42',
+        title: 'Unblocked issue',
+        description: 'No blockers.',
+        provider: 'github',
+        milestone: 'Sprint 3',
+      },
+    ]);
+
+    vi.mocked(mockGitHubBlockerStatus)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false);
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const result = await fetchTicket(githubConfig);
+    log.mockRestore();
+
+    expect(result).toBeDefined();
+    expect(result?.key).toBe('#42');
+  });
+
+  it('skips blocked Linear candidate and returns second unblocked one', async () => {
+    vi.mocked(mockFetchLinearIssues).mockResolvedValue([
+      {
+        key: 'LIN-4',
+        title: 'Blocked task',
+        description: 'Blocked.',
+        provider: 'linear',
+        parentIdentifier: 'LIN-1',
+        issueId: 'uuid-blocked',
+      },
+      {
+        key: 'LIN-5',
+        title: 'Unblocked task',
+        description: 'Free.',
+        provider: 'linear',
+        parentIdentifier: 'LIN-1',
+        issueId: 'uuid-free',
+      },
+    ]);
+
+    vi.mocked(mockLinearBlockerStatus)
+      .mockResolvedValueOnce(true)
+      .mockResolvedValueOnce(false);
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const result = await fetchTicket(linearConfig);
+    log.mockRestore();
+
+    expect(result).toBeDefined();
+    expect(result?.key).toBe('LIN-5');
+  });
+
   it('returns single unblocked GitHub candidate', async () => {
     vi.mocked(mockFetchGitHubIssues).mockResolvedValue([
       {
