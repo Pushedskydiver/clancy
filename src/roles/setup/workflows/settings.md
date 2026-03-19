@@ -9,6 +9,7 @@ View and change Clancy configuration. Reads `.clancy/.env`, shows current values
 This workflow runs inside a Claude Code session. Accept natural language alongside option codes:
 - "G1", "max iterations", "change iterations" → all resolve to the max iterations setting
 - "enable planner", "R1", "planner" → all resolve to the Planner role toggle
+- "enable strategist", "R2", "strategist" → all resolve to the Strategist role toggle
 - "switch board", "S" → switch board flow
 - If a response is ambiguous, ask for clarification
 
@@ -73,6 +74,14 @@ Linear
 
 Roles
   [R1] Planner           {✅ enabled / ─ disabled}
+  [R2] Strategist        {✅ enabled / ─ disabled}
+
+{If Strategist enabled:}
+Strategist
+  [T1] Brief epic        {CLANCY_BRIEF_EPIC if set, else "off"}
+{If Jira:}
+  [T2] Issue type        {CLANCY_BRIEF_ISSUE_TYPE:-Task}
+  [T3] Component         {CLANCY_COMPONENT if set, else "off"}
 
 {If Planner enabled:}
 Planner
@@ -391,6 +400,86 @@ If disabling:
 - Remove `planner` from `CLANCY_ROLES` in `.clancy/.env` (if empty after removal, remove the line entirely)
 - Keep planner-specific settings (CLANCY_PLAN_STATUS, etc.) in `.clancy/.env` so re-enabling is frictionless
 - Show `✅ Planner role disabled. Re-run the installer to apply: npx chief-clancy@latest --local (or --global)`
+
+---
+
+### [R2] Strategist role
+
+```
+Strategist role — currently: {enabled / disabled}
+The Strategist generates strategic briefs and creates tickets on the board.
+Commands: /clancy:brief, /clancy:approve-brief
+
+[1] Enable
+[2] Disable
+[3] Cancel
+```
+
+If enabling:
+- Add `strategist` to `CLANCY_ROLES` in `.clancy/.env` (create the key if it doesn't exist, append if other roles are listed)
+- Show `✅ Strategist role enabled. Re-run the installer to apply: npx chief-clancy@latest --local (or --global)`
+
+If disabling:
+- Remove `strategist` from `CLANCY_ROLES` in `.clancy/.env` (if empty after removal, remove the line entirely)
+- Keep strategist-specific settings (CLANCY_BRIEF_EPIC, CLANCY_BRIEF_ISSUE_TYPE, CLANCY_COMPONENT) in `.clancy/.env` so re-enabling is frictionless
+- Show `✅ Strategist role disabled. Re-run the installer to apply: npx chief-clancy@latest --local (or --global)`
+
+---
+
+### [T1] Brief epic
+
+Only shown when Strategist is enabled.
+
+```
+Brief epic — current: {value or "off"}
+Default parent epic/milestone for briefs created from text or file input.
+
+[1] Set epic key (e.g. PROJ-100, #42, ENG-50)
+[2] Off (no default parent)
+[3] Cancel
+```
+
+If [1]: prompt `What epic key should /clancy:brief parent tickets under?` then write `CLANCY_BRIEF_EPIC=<value>` to `.clancy/.env`. Wrap in double quotes.
+If [2]: remove `CLANCY_BRIEF_EPIC` from `.clancy/.env`.
+
+---
+
+### [T2] Issue type (Jira only)
+
+Only shown when Strategist is enabled and board is Jira.
+
+```
+Brief issue type — current: {value or "Task"}
+Issue type used when /clancy:brief creates tickets on the board.
+
+[1] Task (default)
+[2] Story
+[3] Enter a different value
+[4] Cancel
+```
+
+If [1]: remove `CLANCY_BRIEF_ISSUE_TYPE` from `.clancy/.env` (uses default).
+If [2]: write `CLANCY_BRIEF_ISSUE_TYPE="Story"` to `.clancy/.env`.
+If [3]: prompt `What issue type should /clancy:brief use?` then write `CLANCY_BRIEF_ISSUE_TYPE=<value>` to `.clancy/.env`. Wrap in double quotes.
+
+---
+
+### [T3] Component
+
+Only shown when Strategist is enabled.
+
+```
+Component — current: {value or "off"}
+Auto-set on tickets created by /clancy:brief.
+Only affects ticket creation — does not filter the implementation queue.
+
+[1] Set component name
+[2] Off (no component)
+[3] Cancel
+```
+
+If [1]: prompt `What component should /clancy:brief set on created tickets?` then write `CLANCY_COMPONENT=<value>` to `.clancy/.env`. Wrap in double quotes.
+If [2]: remove `CLANCY_COMPONENT` from `.clancy/.env`.
 
 ---
 

@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  fetchBlockerStatus,
   fetchChildrenStatus,
   isValidRepo,
   resetUsernameCache,
@@ -154,6 +155,226 @@ describe('github', () => {
       const result = await fetchChildrenStatus('ghp_test', 'owner/repo', 50);
 
       expect(result).toBeUndefined();
+    });
+  });
+
+  describe('fetchChildrenStatus — dual-mode (Epic: text + native fallback)', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('finds children via Epic: text search when present', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve([
+                { body: 'Epic: #50\nSome description', state: 'open' },
+                {
+                  body: 'Epic: #50\nAnother child',
+                  state: 'closed',
+                },
+                { body: 'Unrelated issue', state: 'open' },
+                {
+                  body: 'Epic: #50',
+                  pull_request: {},
+                  state: 'open',
+                },
+              ]),
+          }),
+        ),
+      );
+
+      const result = await fetchChildrenStatus('ghp_test', 'owner/repo', 50);
+
+      // 2 real issues with Epic: #50 (excludes PR and unrelated)
+      expect(result).toBeDefined();
+      expect(result!.total).toBeGreaterThanOrEqual(2);
+    });
+
+    it('falls back to Parent: search when Epic: returns no results', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve([
+                { body: 'Parent: #50', state: 'open' },
+                { body: 'Parent: #50', state: 'closed' },
+              ]),
+          }),
+        ),
+      );
+
+      const result = await fetchChildrenStatus('ghp_test', 'owner/repo', 50);
+
+      expect(result).toEqual({ total: 2, incomplete: 1 });
+    });
+
+    it('returns zero counts when neither method finds children', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve([]),
+          }),
+        ),
+      );
+
+      const result = await fetchChildrenStatus('ghp_test', 'owner/repo', 50);
+
+      expect(result).toEqual({ total: 0, incomplete: 0 });
+    });
+  });
+
+  describe('fetchBlockerStatus', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('returns false (unblocked) when issue body has no blockers', async () => {
+      const result = await fetchBlockerStatus(
+        'ghp_test',
+        'owner/repo',
+        42,
+        'A normal issue with no blocker references.',
+      );
+
+      expect(result).toBe(false);
+    });
+
+    it('returns false when all blockers are closed', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          // Fetch blocker #10
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ state: 'closed' }),
+          })
+          // Fetch blocker #11
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ state: 'closed' }),
+          }),
+      );
+
+      const result = await fetchBlockerStatus(
+        'ghp_test',
+        'owner/repo',
+        42,
+        'Blocked by #10\nBlocked by #11',
+      );
+
+      expect(result).toBe(false);
+    });
+
+    it('returns true when one blocker is still open', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          // Fetch blocker #10
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ state: 'closed' }),
+          })
+          // Fetch blocker #11
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ state: 'open' }),
+          }),
+      );
+
+      const result = await fetchBlockerStatus(
+        'ghp_test',
+        'owner/repo',
+        42,
+        'Blocked by #10\nBlocked by #11',
+      );
+
+      expect(result).toBe(true);
+    });
+
+    it('returns true with mixed blockers (some open, some closed)', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ state: 'closed' }),
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ state: 'open' }),
+          })
+          // Note: implementation returns true early on first open, may not reach #12
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ state: 'closed' }),
+          }),
+      );
+
+      const result = await fetchBlockerStatus(
+        'ghp_test',
+        'owner/repo',
+        42,
+        'Blocked by #10\nBlocked by #11\nBlocked by #12',
+      );
+
+      expect(result).toBe(true);
+    });
+
+    it('returns false (fail-open) on API failure', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({ ok: false, status: 500 }),
+      );
+
+      // Even with blockers in body, if API fails for all, returns false
+      const result = await fetchBlockerStatus(
+        'ghp_test',
+        'owner/repo',
+        42,
+        'Blocked by #10',
+      );
+
+      // API returns !ok, so `continue` is called — no blocker found unresolved
+      expect(result).toBe(false);
+    });
+
+    it('returns false (fail-open) on network error', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockRejectedValue(new Error('ECONNREFUSED')),
+      );
+
+      const result = await fetchBlockerStatus(
+        'ghp_test',
+        'owner/repo',
+        42,
+        'Blocked by #10',
+      );
+
+      expect(result).toBe(false);
+    });
+
+    it('ignores self-references in blockers', async () => {
+      // Blocked by #42 is self-referential (issue #42 checking itself)
+      const result = await fetchBlockerStatus(
+        'ghp_test',
+        'owner/repo',
+        42,
+        'Blocked by #42',
+      );
+
+      expect(result).toBe(false);
     });
   });
 });

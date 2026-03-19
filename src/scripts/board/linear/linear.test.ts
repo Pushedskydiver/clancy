@@ -1,6 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  fetchBlockerStatus,
   fetchChildrenStatus,
   fetchIssue,
   isValidTeamId,
@@ -241,6 +242,342 @@ describe('linear', () => {
       const result = await fetchChildrenStatus('lin_key', 'parent-uuid');
 
       expect(result).toBeUndefined();
+    });
+  });
+
+  describe('fetchChildrenStatus — dual-mode (Epic: text + native fallback)', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('finds children via Epic: text search when parentIdentifier provided', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                data: {
+                  issueSearch: {
+                    nodes: [
+                      { state: { type: 'completed' } },
+                      { state: { type: 'started' } },
+                      { state: { type: 'unstarted' } },
+                    ],
+                  },
+                },
+              }),
+          }),
+        ),
+      );
+
+      const result = await fetchChildrenStatus(
+        'lin_key',
+        'parent-uuid',
+        'ENG-42',
+      );
+
+      expect(result).toEqual({ total: 3, incomplete: 2 });
+    });
+
+    it('falls back to native children query when text search returns 0', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          // First call: text search returns empty
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                data: {
+                  issueSearch: {
+                    nodes: [],
+                  },
+                },
+              }),
+          })
+          // Second call: native children query
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                data: {
+                  issue: {
+                    children: {
+                      nodes: [
+                        { state: { type: 'completed' } },
+                        { state: { type: 'started' } },
+                      ],
+                    },
+                  },
+                },
+              }),
+          }),
+      );
+
+      const result = await fetchChildrenStatus(
+        'lin_key',
+        'parent-uuid',
+        'ENG-42',
+      );
+
+      expect(result).toEqual({ total: 2, incomplete: 1 });
+    });
+
+    it('skips text search when parentIdentifier not provided', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                data: {
+                  issue: {
+                    children: {
+                      nodes: [
+                        { state: { type: 'completed' } },
+                        { state: { type: 'started' } },
+                      ],
+                    },
+                  },
+                },
+              }),
+          }),
+        ),
+      );
+
+      // Without parentIdentifier, goes straight to native API
+      const result = await fetchChildrenStatus('lin_key', 'parent-uuid');
+
+      expect(result).toEqual({ total: 2, incomplete: 1 });
+    });
+
+    it('returns zero counts when neither method finds children', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                data: {
+                  issueSearch: { nodes: [] },
+                },
+              }),
+          })
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () =>
+              Promise.resolve({
+                data: {
+                  issue: {
+                    children: { nodes: [] },
+                  },
+                },
+              }),
+          }),
+      );
+
+      const result = await fetchChildrenStatus(
+        'lin_key',
+        'parent-uuid',
+        'ENG-42',
+      );
+
+      expect(result).toEqual({ total: 0, incomplete: 0 });
+    });
+  });
+
+  describe('fetchBlockerStatus', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('returns false (unblocked) when issue has no relations', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              data: {
+                issue: {
+                  relations: {
+                    nodes: [],
+                  },
+                },
+              },
+            }),
+        }),
+      );
+
+      const result = await fetchBlockerStatus('lin_key', 'issue-uuid');
+
+      expect(result).toBe(false);
+    });
+
+    it('returns false when all blockers are completed', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              data: {
+                issue: {
+                  relations: {
+                    nodes: [
+                      {
+                        type: 'blocks',
+                        relatedIssue: {
+                          state: { type: 'completed' },
+                        },
+                      },
+                      {
+                        type: 'blocks',
+                        relatedIssue: {
+                          state: { type: 'canceled' },
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            }),
+        }),
+      );
+
+      const result = await fetchBlockerStatus('lin_key', 'issue-uuid');
+
+      expect(result).toBe(false);
+    });
+
+    it('returns true when one blocker is unresolved', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              data: {
+                issue: {
+                  relations: {
+                    nodes: [
+                      {
+                        type: 'blocks',
+                        relatedIssue: {
+                          state: { type: 'started' },
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            }),
+        }),
+      );
+
+      const result = await fetchBlockerStatus('lin_key', 'issue-uuid');
+
+      expect(result).toBe(true);
+    });
+
+    it('returns true with mixed blockers (some completed, some not)', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              data: {
+                issue: {
+                  relations: {
+                    nodes: [
+                      {
+                        type: 'blocks',
+                        relatedIssue: {
+                          state: { type: 'completed' },
+                        },
+                      },
+                      {
+                        type: 'blocks',
+                        relatedIssue: {
+                          state: { type: 'unstarted' },
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            }),
+        }),
+      );
+
+      const result = await fetchBlockerStatus('lin_key', 'issue-uuid');
+
+      expect(result).toBe(true);
+    });
+
+    it('returns false (fail-open) on API failure', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({ ok: false, status: 500 }),
+      );
+
+      const result = await fetchBlockerStatus('lin_key', 'issue-uuid');
+
+      expect(result).toBe(false);
+    });
+
+    it('returns false (fail-open) on network error', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockRejectedValue(new Error('ECONNREFUSED')),
+      );
+
+      const result = await fetchBlockerStatus('lin_key', 'issue-uuid');
+
+      expect(result).toBe(false);
+    });
+
+    it('ignores non-blocks relation types', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              data: {
+                issue: {
+                  relations: {
+                    nodes: [
+                      {
+                        type: 'related',
+                        relatedIssue: {
+                          state: { type: 'started' },
+                        },
+                      },
+                      {
+                        type: 'duplicate',
+                        relatedIssue: {
+                          state: { type: 'unstarted' },
+                        },
+                      },
+                    ],
+                  },
+                },
+              },
+            }),
+        }),
+      );
+
+      const result = await fetchBlockerStatus('lin_key', 'issue-uuid');
+
+      expect(result).toBe(false);
     });
   });
 });

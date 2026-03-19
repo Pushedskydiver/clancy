@@ -42,7 +42,40 @@ export const jiraTransitionsResponseSchema = z.object({
   transitions: z.array(jiraTransitionSchema),
 });
 
+/** Schema for a single issue link with full status info (used by fetchBlockerStatus). */
+const jiraBlockerIssueLinkSchema = z.object({
+  type: z.optional(z.object({ name: z.optional(z.string()) })),
+  inwardIssue: z.optional(
+    z.object({
+      key: z.optional(z.string()),
+      fields: z.optional(
+        z.object({
+          status: z.optional(
+            z.object({
+              statusCategory: z.optional(
+                z.object({ key: z.optional(z.string()) }),
+              ),
+            }),
+          ),
+        }),
+      ),
+    }),
+  ),
+});
+
+/** Response from `GET /rest/api/3/issue/{key}?fields=issuelinks`. */
+export const jiraIssueLinksResponseSchema = z.object({
+  fields: z.optional(
+    z.object({
+      issuelinks: z.optional(z.array(jiraBlockerIssueLinkSchema)),
+    }),
+  ),
+});
+
 export type JiraSearchResponse = z.infer<typeof jiraSearchResponseSchema>;
 export type JiraTransitionsResponse = z.infer<
   typeof jiraTransitionsResponseSchema
+>;
+export type JiraIssueLinksResponse = z.infer<
+  typeof jiraIssueLinksResponseSchema
 >;

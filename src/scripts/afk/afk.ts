@@ -101,6 +101,7 @@ export async function runAfkLoop(
       encoding: 'utf8',
       stdio: ['inherit', 'pipe', 'inherit'],
       cwd: process.cwd(),
+      env: { ...process.env, CLANCY_AFK_MODE: '1' },
     });
 
     const output = result.stdout ?? '';

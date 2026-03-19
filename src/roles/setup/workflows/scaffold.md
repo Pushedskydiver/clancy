@@ -412,6 +412,17 @@ MAX_ITERATIONS=5
 # Can also be overridden per-invocation with --afk flag.
 # CLANCY_MODE=interactive
 
+# ─── Optional: Strategist ───────────────────────────────────────────────────
+# Issue type for tickets created by /clancy:brief (Jira only, default: Task)
+# CLANCY_BRIEF_ISSUE_TYPE="Task"
+
+# Default parent epic for briefs created from text or file input
+# CLANCY_BRIEF_EPIC="PROJ-100"
+
+# Auto-set on tickets created by /clancy:brief.
+# Only affects ticket creation — does not filter the implementation queue.
+# CLANCY_COMPONENT="frontend"
+
 # ─── Optional: Planner queue ─────────────────────────────────────────────────
 # Status for backlog tickets that /clancy:plan fetches from (default: Backlog)
 # Only used if Planner role is enabled via CLANCY_ROLES
@@ -497,6 +508,14 @@ MAX_ITERATIONS=20
 # Can also be overridden per-invocation with --afk flag.
 # CLANCY_MODE=interactive
 
+# ─── Optional: Strategist ───────────────────────────────────────────────────
+# Default parent epic/milestone for briefs created from text or file input
+# CLANCY_BRIEF_EPIC="#42"
+
+# Auto-set on tickets created by /clancy:brief.
+# Only affects ticket creation — does not filter the implementation queue.
+# CLANCY_COMPONENT="frontend"
+
 # ─── Optional: Skip comments ──────────────────────────────────────────────
 # When Clancy skips a ticket (irrelevant/infeasible), post a comment explaining why
 # Set to "false" to disable skip comments
@@ -578,6 +597,14 @@ MAX_ITERATIONS=20
 # "interactive" (default) — asks the human. "afk" — AI-grill resolves autonomously.
 # Can also be overridden per-invocation with --afk flag.
 # CLANCY_MODE=interactive
+
+# ─── Optional: Strategist ───────────────────────────────────────────────────
+# Default parent epic for briefs created from text or file input
+# CLANCY_BRIEF_EPIC="ENG-50"
+
+# Auto-set on tickets created by /clancy:brief.
+# Only affects ticket creation — does not filter the implementation queue.
+# CLANCY_COMPONENT="frontend"
 
 # ─── Optional: Git host (PR creation) ───────────────────────────────────────
 # When an issue has no parent, Clancy pushes the feature branch and creates a

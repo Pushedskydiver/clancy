@@ -9,6 +9,7 @@ import type {
 
 import type { FetchedTicket } from '../types/types.js';
 import {
+  fetchEpicChildrenStatus,
   pingBoard,
   sharedEnv,
   transitionToStatus,
@@ -22,23 +23,31 @@ vi.mock('~/scripts/board/jira/jira.js', () => ({
   isSafeJqlValue: vi.fn((v: string) => !/[;'"\\]/.test(v)),
   pingJira: vi.fn(() => Promise.resolve({ ok: true })),
   transitionIssue: vi.fn(() => Promise.resolve(true)),
+  fetchChildrenStatus: vi.fn(),
 }));
 
 vi.mock('~/scripts/board/github/github.js', () => ({
   isValidRepo: vi.fn((r: string) => /^[^/]+\/[^/]+$/.test(r)),
   pingGitHub: vi.fn(() => Promise.resolve({ ok: true })),
+  fetchChildrenStatus: vi.fn(),
 }));
 
 vi.mock('~/scripts/board/linear/linear.js', () => ({
   isValidTeamId: vi.fn((id: string) => /^[a-f0-9-]+$/i.test(id)),
   pingLinear: vi.fn(() => Promise.resolve({ ok: true })),
   transitionIssue: vi.fn(() => Promise.resolve(true)),
+  fetchChildrenStatus: vi.fn(),
 }));
 
-const { pingJira } = await import('~/scripts/board/jira/jira.js');
-const { pingGitHub } = await import('~/scripts/board/github/github.js');
-const { pingLinear, transitionIssue: transitionLinearIssue } =
-  await import('~/scripts/board/linear/linear.js');
+const { pingJira, fetchChildrenStatus: mockJiraChildrenStatus } =
+  await import('~/scripts/board/jira/jira.js');
+const { pingGitHub, fetchChildrenStatus: mockGitHubChildrenStatus } =
+  await import('~/scripts/board/github/github.js');
+const {
+  pingLinear,
+  transitionIssue: transitionLinearIssue,
+  fetchChildrenStatus: mockLinearChildrenStatus,
+} = await import('~/scripts/board/linear/linear.js');
 const { transitionIssue: transitionJiraIssue } =
   await import('~/scripts/board/jira/jira.js');
 
@@ -205,5 +214,106 @@ describe('transitionToStatus', () => {
     const linTicket: FetchedTicket = { ...ticket, key: 'LIN-2' };
     await transitionToStatus(linearConfig, linTicket, 'Done');
     expect(transitionLinearIssue).not.toHaveBeenCalled();
+  });
+});
+
+// ─── fetchEpicChildrenStatus — dual-mode dispatch ─────────────────────────
+
+describe('fetchEpicChildrenStatus', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('dispatches to Jira fetchChildrenStatus', async () => {
+    vi.mocked(mockJiraChildrenStatus).mockResolvedValue({
+      total: 5,
+      incomplete: 2,
+    });
+
+    const result = await fetchEpicChildrenStatus(jiraConfig, 'PROJ-100');
+
+    expect(result).toEqual({ total: 5, incomplete: 2 });
+    expect(mockJiraChildrenStatus).toHaveBeenCalledWith(
+      'https://example.atlassian.net',
+      'Basic auth',
+      'PROJ-100',
+    );
+  });
+
+  it('dispatches to GitHub fetchChildrenStatus', async () => {
+    vi.mocked(mockGitHubChildrenStatus).mockResolvedValue({
+      total: 3,
+      incomplete: 1,
+    });
+
+    const result = await fetchEpicChildrenStatus(githubConfig, '#50');
+
+    expect(result).toEqual({ total: 3, incomplete: 1 });
+    expect(mockGitHubChildrenStatus).toHaveBeenCalledWith(
+      'ghp_abc123',
+      'acme/app',
+      50,
+    );
+  });
+
+  it('dispatches to Linear fetchChildrenStatus with parentId', async () => {
+    vi.mocked(mockLinearChildrenStatus).mockResolvedValue({
+      total: 4,
+      incomplete: 0,
+    });
+
+    const result = await fetchEpicChildrenStatus(
+      linearConfig,
+      'ENG-42',
+      'linear-uuid-123',
+    );
+
+    expect(result).toEqual({ total: 4, incomplete: 0 });
+    expect(mockLinearChildrenStatus).toHaveBeenCalledWith(
+      'lin_abc',
+      'linear-uuid-123',
+      'ENG-42',
+    );
+  });
+
+  it('returns undefined for Linear when no parentId provided', async () => {
+    const result = await fetchEpicChildrenStatus(linearConfig, 'ENG-42');
+
+    expect(result).toBeUndefined();
+    expect(mockLinearChildrenStatus).not.toHaveBeenCalled();
+  });
+
+  it('returns undefined for invalid GitHub parent key', async () => {
+    const result = await fetchEpicChildrenStatus(githubConfig, 'not-a-number');
+
+    expect(result).toBeUndefined();
+  });
+
+  it('returns undefined when Jira board module returns undefined', async () => {
+    vi.mocked(mockJiraChildrenStatus).mockResolvedValue(undefined);
+
+    const result = await fetchEpicChildrenStatus(jiraConfig, 'PROJ-100');
+
+    expect(result).toBeUndefined();
+  });
+
+  it('returns zero counts when no children found (Jira)', async () => {
+    vi.mocked(mockJiraChildrenStatus).mockResolvedValue({
+      total: 0,
+      incomplete: 0,
+    });
+
+    const result = await fetchEpicChildrenStatus(jiraConfig, 'PROJ-100');
+
+    expect(result).toEqual({ total: 0, incomplete: 0 });
+  });
+
+  it('returns zero counts when no children found (GitHub)', async () => {
+    vi.mocked(mockGitHubChildrenStatus).mockResolvedValue({
+      total: 0,
+      incomplete: 0,
+    });
+
+    const result = await fetchEpicChildrenStatus(githubConfig, '#50');
+
+    expect(result).toEqual({ total: 0, incomplete: 0 });
   });
 });

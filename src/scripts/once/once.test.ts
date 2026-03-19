@@ -2,10 +2,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   closeIssue,
-  fetchIssue as fetchGitHubIssue,
+  fetchIssues as fetchGitHubIssues,
   resolveUsername,
 } from '~/scripts/board/github/github.js';
-import { fetchTicket as fetchJiraTicket } from '~/scripts/board/jira/jira.js';
+import { fetchTickets as fetchJiraTickets } from '~/scripts/board/jira/jira.js';
 import { invokeClaudeSession } from '~/scripts/shared/claude-cli/claude-cli.js';
 import { detectBoard } from '~/scripts/shared/env-schema/env-schema.js';
 import { checkFeasibility } from '~/scripts/shared/feasibility/feasibility.js';
@@ -52,6 +52,8 @@ vi.mock('~/scripts/board/jira/jira.js', () => ({
   extractAdfText: vi.fn(() => ''),
   fetchChildrenStatus: vi.fn(() => Promise.resolve(undefined)),
   fetchTicket: vi.fn(),
+  fetchTickets: vi.fn(() => Promise.resolve([])),
+  fetchBlockerStatus: vi.fn(() => Promise.resolve(false)),
   isSafeJqlValue: vi.fn(() => true),
   pingJira: vi.fn(() => Promise.resolve({ ok: true })),
   transitionIssue: vi.fn(() => Promise.resolve(true)),
@@ -61,6 +63,8 @@ vi.mock('~/scripts/board/github/github.js', () => ({
   closeIssue: vi.fn(() => Promise.resolve(true)),
   fetchChildrenStatus: vi.fn(() => Promise.resolve(undefined)),
   fetchIssue: vi.fn(),
+  fetchIssues: vi.fn(() => Promise.resolve([])),
+  fetchBlockerStatus: vi.fn(() => Promise.resolve(false)),
   isValidRepo: vi.fn(() => true),
   pingGitHub: vi.fn(() => Promise.resolve({ ok: true })),
   resolveUsername: vi.fn(() => Promise.resolve('testuser')),
@@ -83,6 +87,8 @@ vi.mock('~/scripts/shared/pull-request/github/github.js', () => ({
 vi.mock('~/scripts/board/linear/linear.js', () => ({
   fetchChildrenStatus: vi.fn(() => Promise.resolve(undefined)),
   fetchIssue: vi.fn(),
+  fetchIssues: vi.fn(() => Promise.resolve([])),
+  fetchBlockerStatus: vi.fn(() => Promise.resolve(false)),
   isValidTeamId: vi.fn(() => true),
   pingLinear: vi.fn(() => Promise.resolve({ ok: true })),
   transitionIssue: vi.fn(() => Promise.resolve(true)),
@@ -169,8 +175,8 @@ vi.mock('~/scripts/shared/pull-request/pr-body/pr-body.js', () => ({
 
 const mockPreflight = vi.mocked(runPreflight);
 const mockDetectBoard = vi.mocked(detectBoard);
-const mockFetchJira = vi.mocked(fetchJiraTicket);
-const mockFetchGitHub = vi.mocked(fetchGitHubIssue);
+const mockFetchJira = vi.mocked(fetchJiraTickets);
+const mockFetchGitHub = vi.mocked(fetchGitHubIssues);
 const mockInvokeClaude = vi.mocked(invokeClaudeSession);
 const mockSquashMerge = vi.mocked(squashMerge);
 const mockCheckout = vi.mocked(checkout);
@@ -214,14 +220,16 @@ function setupJiraHappyPath() {
     },
   });
 
-  mockFetchJira.mockResolvedValue({
-    key: 'PROJ-123',
-    title: 'Add login page',
-    description: 'Create a login page.',
-    provider: 'jira',
-    epicKey: 'PROJ-100',
-    blockers: [],
-  });
+  mockFetchJira.mockResolvedValue([
+    {
+      key: 'PROJ-123',
+      title: 'Add login page',
+      description: 'Create a login page.',
+      provider: 'jira',
+      epicKey: 'PROJ-100',
+      blockers: [],
+    },
+  ]);
 }
 
 function setupGitHubHappyPath() {
@@ -241,13 +249,15 @@ function setupGitHubHappyPath() {
     },
   });
 
-  mockFetchGitHub.mockResolvedValue({
-    key: '#42',
-    title: 'Fix bug',
-    description: 'There is a bug.',
-    provider: 'github',
-    milestone: 'Sprint 3',
-  });
+  mockFetchGitHub.mockResolvedValue([
+    {
+      key: '#42',
+      title: 'Fix bug',
+      description: 'There is a bug.',
+      provider: 'github',
+      milestone: 'Sprint 3',
+    },
+  ]);
 }
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
@@ -300,7 +310,7 @@ describe('run', () => {
 
   it('stops when no tickets found', async () => {
     setupJiraHappyPath();
-    mockFetchJira.mockResolvedValue(undefined);
+    mockFetchJira.mockResolvedValue([]);
 
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     await run([]);
@@ -354,6 +364,7 @@ describe('run', () => {
       'acme/app',
       undefined,
       'testuser',
+      false, // excludeHitl
     );
 
     // Feature branch created
@@ -410,13 +421,15 @@ describe('run', () => {
         GITHUB_TOKEN: 'ghp_test',
       },
     });
-    mockFetchJira.mockResolvedValue({
-      key: 'PROJ-456',
-      title: 'Standalone task',
-      description: 'No epic.',
-      provider: 'jira',
-      blockers: [],
-    });
+    mockFetchJira.mockResolvedValue([
+      {
+        key: 'PROJ-456',
+        title: 'Standalone task',
+        description: 'No epic.',
+        provider: 'jira',
+        blockers: [],
+      },
+    ]);
 
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     await run([]);
@@ -455,13 +468,15 @@ describe('run', () => {
 
   it('logs PUSH_FAILED when push fails', async () => {
     setupJiraHappyPath();
-    mockFetchJira.mockResolvedValue({
-      key: 'PROJ-789',
-      title: 'Push fail test',
-      description: 'Test',
-      provider: 'jira',
-      blockers: [],
-    });
+    mockFetchJira.mockResolvedValue([
+      {
+        key: 'PROJ-789',
+        title: 'Push fail test',
+        description: 'Test',
+        provider: 'jira',
+        blockers: [],
+      },
+    ]);
     mockPushBranch.mockReturnValue(false);
 
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -481,12 +496,14 @@ describe('run', () => {
   it('GitHub PR flow: push + create PR, do not close issue', async () => {
     setupGitHubHappyPath();
     // No milestone = no parent = PR flow
-    mockFetchGitHub.mockResolvedValue({
-      key: '#99',
-      title: 'No milestone',
-      description: 'Test',
-      provider: 'github',
-    });
+    mockFetchGitHub.mockResolvedValue([
+      {
+        key: '#99',
+        title: 'No milestone',
+        description: 'Test',
+        provider: 'github',
+      },
+    ]);
 
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     await run([]);
@@ -585,7 +602,7 @@ describe('run', () => {
       },
     });
     // No fresh tickets
-    mockFetchJira.mockResolvedValue(undefined);
+    mockFetchJira.mockResolvedValue([]);
     // PR_CREATED entry in progress
     mockFindEntriesWithStatus.mockReturnValue([
       {
@@ -685,7 +702,7 @@ describe('run', () => {
         GITHUB_TOKEN: 'ghp_test',
       },
     });
-    mockFetchJira.mockResolvedValue(undefined);
+    mockFetchJira.mockResolvedValue([]);
     mockFindEntriesWithStatus.mockReturnValue([
       {
         timestamp: '2026-03-14 10:00',
@@ -727,7 +744,7 @@ describe('run', () => {
         GITHUB_TOKEN: 'ghp_test',
       },
     });
-    mockFetchJira.mockResolvedValue(undefined);
+    mockFetchJira.mockResolvedValue([]);
     mockFindEntriesWithStatus.mockReturnValue([
       {
         timestamp: '2026-03-14 10:00',
@@ -764,7 +781,7 @@ describe('run', () => {
         GITHUB_TOKEN: 'ghp_test',
       },
     });
-    mockFetchJira.mockResolvedValue(undefined);
+    mockFetchJira.mockResolvedValue([]);
     // Return PUSHED entry only on the 'PUSHED' call
     mockFindEntriesWithStatus.mockImplementation(
       (_root: string, status: string) => {
@@ -854,7 +871,7 @@ describe('run', () => {
         GITHUB_TOKEN: 'ghp_test',
       },
     });
-    mockFetchJira.mockResolvedValue(undefined);
+    mockFetchJira.mockResolvedValue([]);
     mockFindEntriesWithStatus.mockReturnValue([
       {
         timestamp: '2026-03-14 10:00',
@@ -896,7 +913,7 @@ describe('run', () => {
         GITHUB_TOKEN: 'ghp_test',
       },
     });
-    mockFetchJira.mockResolvedValue(undefined);
+    mockFetchJira.mockResolvedValue([]);
     mockFindEntriesWithStatus.mockReturnValue([
       {
         timestamp: '2026-03-14 10:00',
@@ -933,7 +950,7 @@ describe('run', () => {
         GITHUB_TOKEN: 'ghp_test',
       },
     });
-    mockFetchJira.mockResolvedValue(undefined);
+    mockFetchJira.mockResolvedValue([]);
     mockFindEntriesWithStatus.mockReturnValue([
       {
         timestamp: '2026-03-14 10:00',

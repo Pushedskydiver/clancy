@@ -4,6 +4,7 @@ import {
   buildAuthHeader,
   buildJql,
   extractAdfText,
+  fetchBlockerStatus,
   fetchChildrenStatus,
   fetchTicket,
   isSafeJqlValue,
@@ -74,6 +75,21 @@ describe('jira', () => {
     it('does not join ORDER BY with AND', () => {
       const jql = buildJql('PROJ', 'To Do');
       expect(jql).not.toContain('AND ORDER BY');
+    });
+
+    it('excludes clancy:hitl label when excludeHitl is true', () => {
+      const jql = buildJql('PROJ', 'To Do', undefined, undefined, true);
+      expect(jql).toContain('labels != "clancy:hitl"');
+    });
+
+    it('does not exclude clancy:hitl when excludeHitl is false', () => {
+      const jql = buildJql('PROJ', 'To Do', undefined, undefined, false);
+      expect(jql).not.toContain('clancy:hitl');
+    });
+
+    it('does not exclude clancy:hitl when excludeHitl is not provided', () => {
+      const jql = buildJql('PROJ', 'To Do');
+      expect(jql).not.toContain('clancy:hitl');
     });
   });
 
@@ -390,6 +406,306 @@ describe('jira', () => {
       );
 
       expect(result).toBeUndefined();
+    });
+  });
+
+  describe('fetchChildrenStatus — dual-mode (Epic: text + native fallback)', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('finds children via Epic: text search when present', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          // First call: text search for description ~ "Epic: PROJ-100"
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ total: 3 }),
+          })
+          // Second call: text search incomplete
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ total: 1 }),
+          }),
+      );
+
+      const result = await fetchChildrenStatus(
+        'https://acme.atlassian.net',
+        'auth',
+        'PROJ-100',
+      );
+
+      expect(result).toEqual({ total: 3, incomplete: 1 });
+    });
+
+    it('falls back to native parent query when text search returns 0', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          // First call: text search returns 0 (no Epic: in description)
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ total: 0 }),
+          })
+          // Second call: native parent query — total
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ total: 4 }),
+          })
+          // Third call: native parent query — incomplete
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ total: 2 }),
+          }),
+      );
+
+      const result = await fetchChildrenStatus(
+        'https://acme.atlassian.net',
+        'auth',
+        'PROJ-100',
+      );
+
+      expect(result).toEqual({ total: 4, incomplete: 2 });
+    });
+
+    it('returns zero counts when neither method finds children', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi
+          .fn()
+          // Text search: 0
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ total: 0 }),
+          })
+          // Native fallback: 0
+          .mockResolvedValueOnce({
+            ok: true,
+            json: () => Promise.resolve({ total: 0 }),
+          }),
+      );
+
+      const result = await fetchChildrenStatus(
+        'https://acme.atlassian.net',
+        'auth',
+        'PROJ-100',
+      );
+
+      expect(result).toEqual({ total: 0, incomplete: 0 });
+    });
+  });
+
+  describe('fetchBlockerStatus', () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it('returns false (unblocked) when ticket has no blockers', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              fields: {
+                issuelinks: [],
+              },
+            }),
+        }),
+      );
+
+      const result = await fetchBlockerStatus(
+        'https://acme.atlassian.net',
+        'auth',
+        'PROJ-10',
+      );
+
+      expect(result).toBe(false);
+    });
+
+    it('returns false when all blockers are resolved (Done)', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              fields: {
+                issuelinks: [
+                  {
+                    type: { name: 'Blocks' },
+                    inwardIssue: {
+                      key: 'PROJ-5',
+                      fields: {
+                        status: { statusCategory: { key: 'done' } },
+                      },
+                    },
+                  },
+                  {
+                    type: { name: 'Blocks' },
+                    inwardIssue: {
+                      key: 'PROJ-6',
+                      fields: {
+                        status: { statusCategory: { key: 'done' } },
+                      },
+                    },
+                  },
+                ],
+              },
+            }),
+        }),
+      );
+
+      const result = await fetchBlockerStatus(
+        'https://acme.atlassian.net',
+        'auth',
+        'PROJ-10',
+      );
+
+      expect(result).toBe(false);
+    });
+
+    it('returns true when one blocker is unresolved', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              fields: {
+                issuelinks: [
+                  {
+                    type: { name: 'Blocks' },
+                    inwardIssue: {
+                      key: 'PROJ-5',
+                      fields: {
+                        status: {
+                          statusCategory: { key: 'indeterminate' },
+                        },
+                      },
+                    },
+                  },
+                ],
+              },
+            }),
+        }),
+      );
+
+      const result = await fetchBlockerStatus(
+        'https://acme.atlassian.net',
+        'auth',
+        'PROJ-10',
+      );
+
+      expect(result).toBe(true);
+    });
+
+    it('returns true when blockers are mixed (some resolved, some not)', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              fields: {
+                issuelinks: [
+                  {
+                    type: { name: 'Blocks' },
+                    inwardIssue: {
+                      key: 'PROJ-5',
+                      fields: {
+                        status: { statusCategory: { key: 'done' } },
+                      },
+                    },
+                  },
+                  {
+                    type: { name: 'Blocks' },
+                    inwardIssue: {
+                      key: 'PROJ-6',
+                      fields: {
+                        status: { statusCategory: { key: 'new' } },
+                      },
+                    },
+                  },
+                ],
+              },
+            }),
+        }),
+      );
+
+      const result = await fetchBlockerStatus(
+        'https://acme.atlassian.net',
+        'auth',
+        'PROJ-10',
+      );
+
+      expect(result).toBe(true);
+    });
+
+    it('returns false (fail-open) on API failure', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({ ok: false, status: 500 }),
+      );
+
+      const result = await fetchBlockerStatus(
+        'https://acme.atlassian.net',
+        'auth',
+        'PROJ-10',
+      );
+
+      expect(result).toBe(false);
+    });
+
+    it('returns false (fail-open) on network error', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockRejectedValue(new Error('ECONNREFUSED')),
+      );
+
+      const result = await fetchBlockerStatus(
+        'https://acme.atlassian.net',
+        'auth',
+        'PROJ-10',
+      );
+
+      expect(result).toBe(false);
+    });
+
+    it('ignores non-Blocks link types', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn().mockResolvedValue({
+          ok: true,
+          json: () =>
+            Promise.resolve({
+              fields: {
+                issuelinks: [
+                  {
+                    type: { name: 'Relates' },
+                    inwardIssue: {
+                      key: 'PROJ-5',
+                      fields: {
+                        status: { statusCategory: { key: 'new' } },
+                      },
+                    },
+                  },
+                ],
+              },
+            }),
+        }),
+      );
+
+      const result = await fetchBlockerStatus(
+        'https://acme.atlassian.net',
+        'auth',
+        'PROJ-10',
+      );
+
+      expect(result).toBe(false);
     });
   });
 });

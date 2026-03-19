@@ -8,6 +8,11 @@ At the start of each session, read `~/.claude/cache/clancy-update-check.json` (u
 `⚠ Clancy update available: v{installed} → v{latest}. Run /clancy:update to upgrade.`
 Then continue normally. If the file is missing or unreadable, continue silently.
 
+### Stale brief check
+At the start of each session, read `.clancy/.brief-stale-count` (use the Read tool). If it exists and contains a number greater than 0, display exactly:
+`⚠ {N} unapproved brief(s) older than 7 days. Run /clancy:approve-brief to review them.`
+Then continue normally. If the file is missing or unreadable, continue silently.
+
 ### Docs
 Before every run, read these core docs from `.clancy/docs/`:
 - STACK.md — tech stack and dependencies
@@ -55,6 +60,8 @@ Log completed tickets to `.clancy/progress.txt`:
 Planning entries use: `YYYY-MM-DD HH:MM | TICKET-KEY | PLAN | S/M/L`
 Revised plan entries use: `YYYY-MM-DD HH:MM | TICKET-KEY | REVISED | S/M/L`
 Approval entries use: `YYYY-MM-DD HH:MM | TICKET-KEY | APPROVE | —`
+Brief entries use: `YYYY-MM-DD HH:MM | TICKET-KEY | BRIEF | S/M/L`
+Brief approval entries use: `YYYY-MM-DD HH:MM | TICKET-KEY | APPROVE_BRIEF | —`
 Failed comment posts use: `YYYY-MM-DD HH:MM | TICKET-KEY | POST_FAILED | {reason}`
 
 ### Design context

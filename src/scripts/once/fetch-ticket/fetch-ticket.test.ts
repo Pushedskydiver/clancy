@@ -8,24 +8,34 @@ import { fetchTicket } from './fetch-ticket.js';
 
 vi.mock('~/scripts/board/jira/jira.js', () => ({
   buildAuthHeader: vi.fn(() => 'Basic auth'),
-  fetchTicket: vi.fn(),
+  fetchTickets: vi.fn(() => Promise.resolve([])),
+  fetchBlockerStatus: vi.fn(() => Promise.resolve(false)),
 }));
 
 vi.mock('~/scripts/board/github/github.js', () => ({
-  fetchIssue: vi.fn(),
+  fetchIssues: vi.fn(() => Promise.resolve([])),
   resolveUsername: vi.fn(() => Promise.resolve('testuser')),
+  fetchBlockerStatus: vi.fn(() => Promise.resolve(false)),
 }));
 
 vi.mock('~/scripts/board/linear/linear.js', () => ({
-  fetchIssue: vi.fn(),
+  fetchIssues: vi.fn(() => Promise.resolve([])),
+  fetchBlockerStatus: vi.fn(() => Promise.resolve(false)),
 }));
 
-const { fetchTicket: mockFetchJira } =
-  await import('~/scripts/board/jira/jira.js');
-const { fetchIssue: mockFetchGitHub, resolveUsername: mockResolveUsername } =
-  await import('~/scripts/board/github/github.js');
-const { fetchIssue: mockFetchLinear } =
-  await import('~/scripts/board/linear/linear.js');
+const {
+  fetchTickets: mockFetchJiraTickets,
+  fetchBlockerStatus: mockJiraBlockerStatus,
+} = await import('~/scripts/board/jira/jira.js');
+const {
+  fetchIssues: mockFetchGitHubIssues,
+  resolveUsername: mockResolveUsername,
+  fetchBlockerStatus: mockGitHubBlockerStatus,
+} = await import('~/scripts/board/github/github.js');
+const {
+  fetchIssues: mockFetchLinearIssues,
+  fetchBlockerStatus: mockLinearBlockerStatus,
+} = await import('~/scripts/board/linear/linear.js');
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -61,14 +71,16 @@ describe('fetchTicket', () => {
   beforeEach(() => vi.clearAllMocks());
 
   it('returns FetchedTicket from Jira response', async () => {
-    vi.mocked(mockFetchJira).mockResolvedValue({
-      key: 'PROJ-10',
-      title: 'Add login',
-      description: 'Create login page.',
-      provider: 'jira',
-      epicKey: 'PROJ-1',
-      blockers: ['PROJ-5'],
-    });
+    vi.mocked(mockFetchJiraTickets).mockResolvedValue([
+      {
+        key: 'PROJ-10',
+        title: 'Add login',
+        description: 'Create login page.',
+        provider: 'jira',
+        epicKey: 'PROJ-1',
+        blockers: ['PROJ-5'],
+      },
+    ]);
 
     const result = await fetchTicket(jiraConfig);
 
@@ -82,46 +94,52 @@ describe('fetchTicket', () => {
   });
 
   it('returns Jira ticket with no blockers', async () => {
-    vi.mocked(mockFetchJira).mockResolvedValue({
-      key: 'PROJ-11',
-      title: 'Clean up',
-      description: 'Refactor.',
-      provider: 'jira',
-      epicKey: 'PROJ-1',
-      blockers: [],
-    });
+    vi.mocked(mockFetchJiraTickets).mockResolvedValue([
+      {
+        key: 'PROJ-11',
+        title: 'Clean up',
+        description: 'Refactor.',
+        provider: 'jira',
+        epicKey: 'PROJ-1',
+        blockers: [],
+      },
+    ]);
 
     const result = await fetchTicket(jiraConfig);
     expect(result?.blockers).toBe('None');
   });
 
   it('returns Jira ticket with no epic', async () => {
-    vi.mocked(mockFetchJira).mockResolvedValue({
-      key: 'PROJ-12',
-      title: 'Standalone',
-      description: 'No epic.',
-      provider: 'jira',
-      blockers: [],
-    });
+    vi.mocked(mockFetchJiraTickets).mockResolvedValue([
+      {
+        key: 'PROJ-12',
+        title: 'Standalone',
+        description: 'No epic.',
+        provider: 'jira',
+        blockers: [],
+      },
+    ]);
 
     const result = await fetchTicket(jiraConfig);
     expect(result?.parentInfo).toBe('none');
   });
 
   it('returns undefined when Jira has no tickets', async () => {
-    vi.mocked(mockFetchJira).mockResolvedValue(undefined);
+    vi.mocked(mockFetchJiraTickets).mockResolvedValue([]);
     const result = await fetchTicket(jiraConfig);
     expect(result).toBeUndefined();
   });
 
   it('returns FetchedTicket from GitHub response with milestone as parent', async () => {
-    vi.mocked(mockFetchGitHub).mockResolvedValue({
-      key: '#42',
-      title: 'Fix bug',
-      description: 'Bug description.',
-      provider: 'github',
-      milestone: 'Sprint 3',
-    });
+    vi.mocked(mockFetchGitHubIssues).mockResolvedValue([
+      {
+        key: '#42',
+        title: 'Fix bug',
+        description: 'Bug description.',
+        provider: 'github',
+        milestone: 'Sprint 3',
+      },
+    ]);
 
     const result = await fetchTicket(githubConfig);
 
@@ -136,32 +154,36 @@ describe('fetchTicket', () => {
   });
 
   it('returns GitHub ticket with no milestone', async () => {
-    vi.mocked(mockFetchGitHub).mockResolvedValue({
-      key: '#99',
-      title: 'No milestone',
-      description: 'Test.',
-      provider: 'github',
-    });
+    vi.mocked(mockFetchGitHubIssues).mockResolvedValue([
+      {
+        key: '#99',
+        title: 'No milestone',
+        description: 'Test.',
+        provider: 'github',
+      },
+    ]);
 
     const result = await fetchTicket(githubConfig);
     expect(result?.parentInfo).toBe('none');
   });
 
   it('returns undefined when GitHub has no issues', async () => {
-    vi.mocked(mockFetchGitHub).mockResolvedValue(undefined);
+    vi.mocked(mockFetchGitHubIssues).mockResolvedValue([]);
     const result = await fetchTicket(githubConfig);
     expect(result).toBeUndefined();
   });
 
   it('returns FetchedTicket from Linear response', async () => {
-    vi.mocked(mockFetchLinear).mockResolvedValue({
-      key: 'LIN-5',
-      title: 'Linear task',
-      description: 'Do something.',
-      provider: 'linear',
-      parentIdentifier: 'LIN-1',
-      issueId: 'uuid-abc',
-    });
+    vi.mocked(mockFetchLinearIssues).mockResolvedValue([
+      {
+        key: 'LIN-5',
+        title: 'Linear task',
+        description: 'Do something.',
+        provider: 'linear',
+        parentIdentifier: 'LIN-1',
+        issueId: 'uuid-abc',
+      },
+    ]);
 
     const result = await fetchTicket(linearConfig);
 
@@ -177,8 +199,235 @@ describe('fetchTicket', () => {
   });
 
   it('returns undefined when Linear has no issues', async () => {
-    vi.mocked(mockFetchLinear).mockResolvedValue(undefined);
+    vi.mocked(mockFetchLinearIssues).mockResolvedValue([]);
     const result = await fetchTicket(linearConfig);
     expect(result).toBeUndefined();
+  });
+});
+
+// ─── Multi-candidate blocker-aware pickup ─────────────────────────────────
+
+describe('fetchTicket — blocker-aware multi-candidate', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('returns first candidate when it is unblocked', async () => {
+    vi.mocked(mockFetchJiraTickets).mockResolvedValue([
+      {
+        key: 'PROJ-10',
+        title: 'First ticket',
+        description: 'Desc.',
+        provider: 'jira',
+        epicKey: 'PROJ-1',
+        blockers: [],
+      },
+    ]);
+    vi.mocked(mockJiraBlockerStatus).mockResolvedValue(false);
+
+    const result = await fetchTicket(jiraConfig);
+
+    expect(result).toBeDefined();
+    expect(result?.key).toBe('PROJ-10');
+  });
+
+  it('skips blocked Jira candidate and returns second unblocked one', async () => {
+    vi.mocked(mockFetchJiraTickets).mockResolvedValue([
+      {
+        key: 'PROJ-10',
+        title: 'Blocked ticket',
+        description: 'Desc.',
+        provider: 'jira',
+        epicKey: 'PROJ-1',
+        blockers: ['PROJ-5'],
+      },
+      {
+        key: 'PROJ-11',
+        title: 'Unblocked ticket',
+        description: 'Desc.',
+        provider: 'jira',
+        epicKey: 'PROJ-1',
+        blockers: [],
+      },
+    ]);
+
+    vi.mocked(mockJiraBlockerStatus)
+      .mockResolvedValueOnce(true) // first candidate is blocked
+      .mockResolvedValueOnce(false); // second candidate is unblocked
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const result = await fetchTicket(jiraConfig);
+    log.mockRestore();
+
+    expect(result).toBeDefined();
+    expect(result?.key).toBe('PROJ-11');
+  });
+
+  it('returns undefined when all Jira candidates are blocked', async () => {
+    vi.mocked(mockFetchJiraTickets).mockResolvedValue([
+      {
+        key: 'PROJ-10',
+        title: 'Blocked',
+        description: 'Desc.',
+        provider: 'jira',
+        blockers: ['PROJ-5'],
+      },
+    ]);
+    vi.mocked(mockJiraBlockerStatus).mockResolvedValue(true);
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const result = await fetchTicket(jiraConfig);
+    log.mockRestore();
+
+    expect(result).toBeUndefined();
+  });
+
+  it('returns undefined when no candidates in queue', async () => {
+    vi.mocked(mockFetchJiraTickets).mockResolvedValue([]);
+
+    const result = await fetchTicket(jiraConfig);
+
+    expect(result).toBeUndefined();
+  });
+
+  it('returns single unblocked GitHub candidate', async () => {
+    vi.mocked(mockFetchGitHubIssues).mockResolvedValue([
+      {
+        key: '#42',
+        title: 'Fix bug',
+        description: 'Bug description.',
+        provider: 'github',
+        milestone: 'Sprint 3',
+      },
+    ]);
+    vi.mocked(mockGitHubBlockerStatus).mockResolvedValue(false);
+
+    const result = await fetchTicket(githubConfig);
+
+    expect(result).toBeDefined();
+    expect(result?.key).toBe('#42');
+  });
+
+  it('returns single unblocked Linear candidate', async () => {
+    vi.mocked(mockFetchLinearIssues).mockResolvedValue([
+      {
+        key: 'LIN-5',
+        title: 'Linear task',
+        description: 'Do something.',
+        provider: 'linear',
+        parentIdentifier: 'LIN-1',
+        issueId: 'uuid-abc',
+      },
+    ]);
+    vi.mocked(mockLinearBlockerStatus).mockResolvedValue(false);
+
+    const result = await fetchTicket(linearConfig);
+
+    expect(result).toBeDefined();
+    expect(result?.key).toBe('LIN-5');
+  });
+});
+
+// ─── HITL/AFK queue filtering ─────────────────────────────────────────────
+
+describe('fetchTicket — HITL/AFK filtering', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('AFK mode: tickets with clancy:hitl label are excluded from queue', async () => {
+    vi.mocked(mockFetchJiraTickets).mockResolvedValue([
+      {
+        key: 'PROJ-20',
+        title: 'AFK-safe ticket',
+        description: 'Not HITL.',
+        provider: 'jira',
+        blockers: [],
+      },
+    ]);
+    vi.mocked(mockJiraBlockerStatus).mockResolvedValue(false);
+
+    const result = await fetchTicket(jiraConfig, { isAfk: true });
+
+    expect(result).toBeDefined();
+    expect(result?.key).toBe('PROJ-20');
+    // Verify the excludeHitl flag was passed through
+    expect(mockFetchJiraTickets).toHaveBeenCalledWith(
+      expect.any(String), // baseUrl
+      expect.any(String), // auth
+      'PROJ',
+      'To Do',
+      undefined, // sprint
+      undefined, // label
+      true, // excludeHitl
+    );
+  });
+
+  it('interactive mode: all tickets returned regardless of labels', async () => {
+    vi.mocked(mockFetchJiraTickets).mockResolvedValue([
+      {
+        key: 'PROJ-21',
+        title: 'HITL ticket',
+        description: 'Needs human input.',
+        provider: 'jira',
+        blockers: [],
+      },
+    ]);
+    vi.mocked(mockJiraBlockerStatus).mockResolvedValue(false);
+
+    const result = await fetchTicket(jiraConfig);
+
+    expect(result).toBeDefined();
+    expect(result?.key).toBe('PROJ-21');
+    // Verify excludeHitl is false in interactive mode
+    expect(mockFetchJiraTickets).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
+      'PROJ',
+      'To Do',
+      undefined,
+      undefined,
+      false, // excludeHitl
+    );
+  });
+
+  it('AFK mode with GitHub: hitl tickets excluded', async () => {
+    vi.mocked(mockFetchGitHubIssues).mockResolvedValue([
+      {
+        key: '#50',
+        title: 'AFK-safe issue',
+        description: 'Not HITL.',
+        provider: 'github',
+      },
+    ]);
+
+    const result = await fetchTicket(githubConfig, { isAfk: true });
+
+    expect(result).toBeDefined();
+    expect(result?.key).toBe('#50');
+    expect(mockFetchGitHubIssues).toHaveBeenCalledWith(
+      'ghp_abc123',
+      'acme/app',
+      undefined, // label
+      'testuser', // username
+      true, // excludeHitl
+    );
+  });
+
+  it('AFK mode with Linear: hitl tickets excluded', async () => {
+    vi.mocked(mockFetchLinearIssues).mockResolvedValue([
+      {
+        key: 'LIN-10',
+        title: 'AFK-safe task',
+        description: 'Not HITL.',
+        provider: 'linear',
+        issueId: 'uuid-xyz',
+      },
+    ]);
+
+    const result = await fetchTicket(linearConfig, { isAfk: true });
+
+    expect(result).toBeDefined();
+    expect(result?.key).toBe('LIN-10');
+    expect(mockFetchLinearIssues).toHaveBeenCalledWith(
+      expect.objectContaining({ LINEAR_API_KEY: 'lin_abc' }),
+      true, // excludeHitl
+    );
   });
 });

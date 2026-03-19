@@ -31,19 +31,21 @@ Each line has one of these formats:
 - `YYYY-MM-DD HH:MM | TICKET-KEY | APPROVE | —` — plan promoted to description
 - `YYYY-MM-DD HH:MM | TICKET-KEY | SKIPPED | {reason}` — ticket skipped
 - `YYYY-MM-DD HH:MM | TICKET-KEY | POST_FAILED | {reason}` — failed to post comment to board
+- `YYYY-MM-DD HH:MM | TICKET-KEY | BRIEF | {S/M/L}` — brief generated
+- `YYYY-MM-DD HH:MM | TICKET-KEY | APPROVE_BRIEF | —` — brief approved
 
 Parse each line:
 - Date (YYYY-MM-DD)
 - Time (HH:MM)
 - Ticket key (e.g. PROJ-42)
-- Action type (DONE, REVIEW, PLAN, REVISED, APPROVE, SKIPPED, POST_FAILED, or summary text)
+- Action type (DONE, REVIEW, PLAN, REVISED, APPROVE, SKIPPED, POST_FAILED, BRIEF, APPROVE_BRIEF, or summary text)
 - Detail (status, score, size, or reason)
 
 Extract:
 - Total DONE tickets
 - First and latest run dates
 - All DONE tickets from the current calendar week (Mon–Sun)
-- Counts for each action type: PLAN, REVISED, APPROVE, REVIEW, SKIPPED, POST_FAILED
+- Counts for each action type: PLAN, REVISED, APPROVE, REVIEW, SKIPPED, POST_FAILED, BRIEF, APPROVE_BRIEF
 - Epic key from ticket key — e.g. PROJ-42 → epic likely PROJ-10 (use parent field if logged, otherwise group by project prefix)
 
 ---
@@ -75,6 +77,8 @@ By epic:
 Plans generated: {N}      (only show if > 0)
 Plans revised: {N}        (only show if > 0)
 Plans approved: {N}       (only show if > 0)
+Briefs generated: {N}     (only show if > 0)
+Briefs approved: {N}      (only show if > 0)
 Reviews run: {N}          (only show if > 0)
 Tickets skipped: {N}      (only show if > 0)
 Post failures: {N}        (only show if > 0)
@@ -90,7 +94,7 @@ Full log: .clancy/progress.txt
 - Progress bars: ASCII, proportional to highest count, width 10 chars, `█` filled, `░` empty
 - Epic grouping: group by epic key in the ticket's parent field (from progress.txt if logged), or by project prefix if not available
 - Tickets without an epic: group under `(other)`
-- REVIEW, PLAN, REVISED, APPROVE, SKIPPED, and POST_FAILED lines: shown separately at the end as counts — not included in ticket count
+- REVIEW, PLAN, REVISED, APPROVE, BRIEF, APPROVE_BRIEF, SKIPPED, and POST_FAILED lines: shown separately at the end as counts — not included in ticket count
 
 ---
 

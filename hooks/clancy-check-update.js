@@ -69,3 +69,37 @@ const child = spawn(process.execPath, ['-e', `
 });
 
 child.unref();
+
+// --- Stale brief detection ---
+// Best-effort: detect unapproved briefs older than 7 days, write count to cache file.
+try {
+  const briefsDir = path.join(cwd, '.clancy', 'briefs');
+  if (fs.existsSync(briefsDir)) {
+    const files = fs.readdirSync(briefsDir);
+    const mdFiles = files.filter(f => f.endsWith('.md') && !f.endsWith('.md.approved'));
+    const now = Date.now();
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    let staleCount = 0;
+
+    for (const file of mdFiles) {
+      // Check there is no corresponding .approved marker
+      if (files.includes(file + '.approved')) continue;
+
+      // Parse date from filename prefix: YYYY-MM-DD-slug.md
+      const match = file.match(/^(\d{4}-\d{2}-\d{2})-/);
+      if (!match) continue;
+
+      const fileDate = new Date(match[1] + 'T00:00:00Z');
+      if (isNaN(fileDate.getTime())) continue;
+
+      if (now - fileDate.getTime() > sevenDays) {
+        staleCount++;
+      }
+    }
+
+    const staleFile = path.join(cwd, '.clancy', '.brief-stale-count');
+    fs.writeFileSync(staleFile, String(staleCount));
+  }
+} catch {
+  // Best-effort — never crash the hook
+}

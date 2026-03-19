@@ -516,15 +516,16 @@ Clancy includes the Implementer, Reviewer, and Setup roles by default. Optional 
 Clancy includes the Implementer, Reviewer, and Setup roles by default.
 You can enable additional roles:
 
-  [1] Planner   — Refine vague tickets into structured implementation plans
+  [1] Planner     — Refine vague tickets into structured implementation plans
+  [2] Strategist  — Generate strategic briefs and create tickets on the board
 
-Enter roles to enable (e.g. 1 or "all") or press Enter to skip:
+Enter roles to enable (e.g. 1, 2, "all") or press Enter to skip:
 ```
 
-Accept numbers, role names (e.g. "planner"), "all", or Enter to skip.
+Accept numbers, role names (e.g. "planner", "strategist"), "all", or Enter to skip.
 
 If any roles are selected:
-- Store as `CLANCY_ROLES="planner"` (comma-separated if multiple) in `.clancy/.env`
+- Store as `CLANCY_ROLES="planner,strategist"` (comma-separated if multiple) in `.clancy/.env`
 - The selected roles' commands and workflows will be installed on the next `npx chief-clancy` run
 
 If skipped (Enter): no `CLANCY_ROLES` line is written — only core roles are installed.
@@ -605,6 +606,54 @@ What status should Clancy transition to?
 
 If [1]: prompt for the value, store as `CLANCY_STATUS_PLANNED` in `.clancy/.env`. Wrap in double quotes.
 If [2]: skip — no `CLANCY_STATUS_PLANNED` line written.
+
+---
+
+## Step 4f (if Strategist role selected): Strategist config
+
+Only ask this if the user selected Strategist in Step 4c above (or if re-running init and `CLANCY_ROLES` already includes `strategist`).
+
+If the strategist role is not enabled, skip this step entirely.
+
+**All boards:** Output:
+
+```
+Default parent epic/milestone for briefs created from text or file input?
+This sets CLANCY_BRIEF_EPIC so tickets created by /clancy:brief are parented automatically.
+
+[1] Skip — no default parent (set per-brief or omit)
+[2] Enter an epic key (e.g. PROJ-100, #42, ENG-50)
+```
+
+If [1]: skip — no `CLANCY_BRIEF_EPIC` line written.
+If [2]: prompt for the value, store as `CLANCY_BRIEF_EPIC` in `.clancy/.env`. Wrap in double quotes.
+
+**Jira only:** Output:
+
+```
+What issue type should /clancy:brief use when creating tickets? [Task]
+
+[1] Task (default)
+[2] Story
+[3] Enter a different value
+```
+
+If [1] or enter: do not add `CLANCY_BRIEF_ISSUE_TYPE` to `.clancy/.env` (uses default `Task`).
+If [2]: store `CLANCY_BRIEF_ISSUE_TYPE="Story"` in `.clancy/.env`.
+If [3]: prompt for the value, store as `CLANCY_BRIEF_ISSUE_TYPE` in `.clancy/.env`. Wrap in double quotes.
+
+**All boards:** Output:
+
+```
+Auto-set a component on tickets created by /clancy:brief?
+Only affects ticket creation — does not filter the implementation queue.
+
+[1] Skip — no component
+[2] Enter a component name
+```
+
+If [1]: skip — no `CLANCY_COMPONENT` line written.
+If [2]: prompt for the value, store as `CLANCY_COMPONENT` in `.clancy/.env`. Wrap in double quotes.
 
 ---
 

@@ -164,7 +164,11 @@ export async function fetchEpicChildrenStatus(
 
     case 'linear': {
       if (!parentId) return undefined;
-      return fetchLinearChildrenStatus(config.env.LINEAR_API_KEY, parentId);
+      return fetchLinearChildrenStatus(
+        config.env.LINEAR_API_KEY,
+        parentId,
+        parentKey,
+      );
     }
   }
 }
