@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { Board } from '~/scripts/board/board.js';
 import {
   checkout,
   currentBranch,
@@ -7,7 +8,6 @@ import {
   fetchRemoteBranch,
 } from '~/scripts/shared/git-ops/git-ops.js';
 
-import { fetchEpicChildrenStatus } from '../board-ops/board-ops.js';
 import { createContext } from '../context/context.js';
 import { ensureEpicBranch } from '../deliver/deliver.js';
 import { writeLock } from '../lock/lock.js';
@@ -22,10 +22,6 @@ vi.mock('~/scripts/shared/git-ops/git-ops.js', () => ({
   fetchRemoteBranch: vi.fn(() => true),
 }));
 
-vi.mock('../board-ops/board-ops.js', () => ({
-  fetchEpicChildrenStatus: vi.fn(() => Promise.resolve(undefined)),
-}));
-
 vi.mock('../deliver/deliver.js', () => ({
   ensureEpicBranch: vi.fn(() => true),
 }));
@@ -38,15 +34,29 @@ const mockCurrentBranch = vi.mocked(currentBranch);
 const mockCheckout = vi.mocked(checkout);
 const mockEnsureBranch = vi.mocked(ensureBranch);
 const mockFetchRemoteBranch = vi.mocked(fetchRemoteBranch);
-const mockFetchChildren = vi.mocked(fetchEpicChildrenStatus);
 const mockEnsureEpicBranch = vi.mocked(ensureEpicBranch);
 const mockWriteLock = vi.mocked(writeLock);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function makeBoard(fetchChildrenStatus: any = vi.fn()) {
+  return {
+    ping: vi.fn(),
+    validateInputs: vi.fn(),
+    fetchTicket: vi.fn(),
+    fetchTickets: vi.fn(),
+    fetchBlockerStatus: vi.fn(),
+    fetchChildrenStatus,
+    transitionTicket: vi.fn(),
+    sharedEnv: vi.fn(() => ({})),
+  } as unknown as Board;
+}
+
 function makeCtx(overrides: Record<string, unknown> = {}) {
   const ctx = createContext([]);
   ctx.config = { provider: 'jira', env: {} } as never;
+  ctx.board = makeBoard();
   ctx.ticket = {
     key: 'PROJ-1',
     title: 'Test',
@@ -70,7 +80,6 @@ describe('branchSetup', () => {
     mockCurrentBranch.mockReturnValue('main');
     mockFetchRemoteBranch.mockReturnValue(true);
     mockEnsureEpicBranch.mockReturnValue(true);
-    mockFetchChildren.mockResolvedValue(undefined);
   });
 
   it('sets originalBranch from currentBranch', async () => {
@@ -144,9 +153,10 @@ describe('branchSetup', () => {
   });
 
   it('skips epic branch for single-child epic', async () => {
-    mockFetchChildren.mockResolvedValue({ total: 1, incomplete: 1 });
-
-    const ctx = makeCtx();
+    const mockFetchChildren = vi.fn(() =>
+      Promise.resolve({ total: 1, incomplete: 1 }),
+    );
+    const ctx = makeCtx({ board: makeBoard(mockFetchChildren) });
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     await branchSetup(ctx);
     log.mockRestore();

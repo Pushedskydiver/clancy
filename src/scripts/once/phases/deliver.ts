@@ -34,6 +34,7 @@ export async function deliver(ctx: RunContext): Promise<boolean> {
       ctx.startTime,
       true,
       parentKey,
+      ctx.board,
     );
     if (!delivered) {
       appendProgress(
@@ -77,6 +78,7 @@ export async function deliver(ctx: RunContext): Promise<boolean> {
       ctx.startTime,
       false,
       parentKey,
+      ctx.board,
     );
     if (!delivered) return false;
   }

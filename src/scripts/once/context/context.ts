@@ -6,6 +6,7 @@
  * fields at the top (a missing field means a pipeline ordering bug).
  */
 import type { BoardConfig } from '~/schemas/env.js';
+import type { Board } from '~/scripts/board/board.js';
 import type { FetchedTicket } from '~/scripts/once/types/types.js';
 
 // Phase function: mutates context, returns true to continue or false to exit.
@@ -22,6 +23,7 @@ export type RunContext = {
 
   // Populated by preflight phase
   config?: BoardConfig;
+  board?: Board;
 
   // Populated by rework/ticket-fetch phases
   ticket?: FetchedTicket;

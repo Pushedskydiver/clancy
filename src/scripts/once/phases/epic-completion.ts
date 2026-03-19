@@ -7,12 +7,12 @@ import { computeTargetBranch } from '~/scripts/shared/branch/branch.js';
 import { findEntriesWithStatus } from '~/scripts/shared/progress/progress.js';
 import { green, yellow } from '~/utils/ansi/ansi.js';
 
-import { fetchEpicChildrenStatus } from '../board-ops/board-ops.js';
 import type { RunContext } from '../context/context.js';
 import { deliverEpicToBase } from '../deliver/deliver.js';
 
 export async function epicCompletion(ctx: RunContext): Promise<boolean> {
   const config = ctx.config!;
+  const board = ctx.board!;
 
   try {
     const prEntries = findEntriesWithStatus(ctx.cwd, 'PR_CREATED');
@@ -34,7 +34,7 @@ export async function epicCompletion(ctx: RunContext): Promise<boolean> {
     const baseBranch = config.env.CLANCY_BASE_BRANCH ?? 'main';
 
     for (const parentKey of parentKeys) {
-      const status = await fetchEpicChildrenStatus(config, parentKey);
+      const status = await board.fetchChildrenStatus(parentKey);
       if (status && status.incomplete === 0 && status.total > 0) {
         const epicBranch = computeTargetBranch(
           config.provider,
@@ -48,6 +48,7 @@ export async function epicCompletion(ctx: RunContext): Promise<boolean> {
           parentKey, // title fallback — see WARNING #4 in review
           epicBranch,
           baseBranch,
+          board,
         );
 
         if (epicOk) {

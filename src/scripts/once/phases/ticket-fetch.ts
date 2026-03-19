@@ -9,13 +9,13 @@ import {
   computeTargetBranch,
   computeTicketBranch,
 } from '~/scripts/shared/branch/branch.js';
+import { sharedEnv } from '~/scripts/shared/env-schema/env-schema.js';
 import {
   appendProgress,
   countReworkCycles,
 } from '~/scripts/shared/progress/progress.js';
 import { bold, dim, yellow } from '~/utils/ansi/ansi.js';
 
-import { sharedEnv } from '../board-ops/board-ops.js';
 import type { RunContext } from '../context/context.js';
 import { fetchTicket } from '../fetch-ticket/fetch-ticket.js';
 

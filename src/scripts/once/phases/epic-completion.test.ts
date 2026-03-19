@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { Board } from '~/scripts/board/board.js';
 import { findEntriesWithStatus } from '~/scripts/shared/progress/progress.js';
 
-import { fetchEpicChildrenStatus } from '../board-ops/board-ops.js';
 import { createContext } from '../context/context.js';
 import { deliverEpicToBase } from '../deliver/deliver.js';
 import { epicCompletion } from './epic-completion.js';
@@ -13,17 +13,28 @@ vi.mock('~/scripts/shared/progress/progress.js', () => ({
   findEntriesWithStatus: vi.fn(() => []),
 }));
 
-vi.mock('../board-ops/board-ops.js', () => ({
-  fetchEpicChildrenStatus: vi.fn(() => Promise.resolve(undefined)),
-}));
-
 vi.mock('../deliver/deliver.js', () => ({
   deliverEpicToBase: vi.fn(() => Promise.resolve(true)),
 }));
 
 const mockFindEntries = vi.mocked(findEntriesWithStatus);
-const mockFetchChildren = vi.mocked(fetchEpicChildrenStatus);
 const mockDeliverEpic = vi.mocked(deliverEpicToBase);
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function makeBoard(fetchChildrenStatus: any = vi.fn()) {
+  return {
+    ping: vi.fn(),
+    validateInputs: vi.fn(),
+    fetchTicket: vi.fn(),
+    fetchTickets: vi.fn(),
+    fetchBlockerStatus: vi.fn(),
+    fetchChildrenStatus,
+    transitionTicket: vi.fn(),
+    sharedEnv: vi.fn(() => ({})),
+  } as unknown as Board;
+}
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
@@ -35,6 +46,7 @@ describe('epicCompletion', () => {
   it('always returns true (best-effort)', async () => {
     const ctx = createContext([]);
     ctx.config = { provider: 'jira', env: {} } as never;
+    ctx.board = makeBoard();
 
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     const result = await epicCompletion(ctx);
@@ -57,11 +69,14 @@ describe('epicCompletion', () => {
         ];
       return [];
     });
-    mockFetchChildren.mockResolvedValue({ total: 2, incomplete: 0 });
+    const mockFetchChildren = vi.fn(() =>
+      Promise.resolve({ total: 2, incomplete: 0 }),
+    );
     mockDeliverEpic.mockResolvedValue(true);
 
     const ctx = createContext([]);
     ctx.config = { provider: 'jira', env: {} } as never;
+    ctx.board = makeBoard(mockFetchChildren);
 
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     const result = await epicCompletion(ctx);
@@ -71,7 +86,7 @@ describe('epicCompletion', () => {
     expect(mockDeliverEpic).toHaveBeenCalled();
   });
 
-  it('returns true even when deliverEpicToBase throws', async () => {
+  it('returns true even when fetchChildrenStatus throws', async () => {
     mockFindEntries.mockImplementation((_root: string, status: string) => {
       if (status === 'PR_CREATED')
         return [
@@ -85,10 +100,13 @@ describe('epicCompletion', () => {
         ];
       return [];
     });
-    mockFetchChildren.mockRejectedValue(new Error('API error'));
+    const mockFetchChildren = vi.fn(() =>
+      Promise.reject(new Error('API error')),
+    );
 
     const ctx = createContext([]);
     ctx.config = { provider: 'jira', env: {} } as never;
+    ctx.board = makeBoard(mockFetchChildren);
 
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     const result = await epicCompletion(ctx);
@@ -98,6 +116,7 @@ describe('epicCompletion', () => {
   });
 
   it('skips epics that already have EPIC_PR_CREATED', async () => {
+    const mockFetchChildren = vi.fn(() => Promise.resolve(undefined));
     mockFindEntries.mockImplementation((_root: string, status: string) => {
       if (status === 'PR_CREATED')
         return [
@@ -123,6 +142,7 @@ describe('epicCompletion', () => {
 
     const ctx = createContext([]);
     ctx.config = { provider: 'jira', env: {} } as never;
+    ctx.board = makeBoard(mockFetchChildren);
 
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     await epicCompletion(ctx);

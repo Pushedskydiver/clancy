@@ -13,13 +13,12 @@ import {
 } from '~/scripts/shared/git-ops/git-ops.js';
 import { dim } from '~/utils/ansi/ansi.js';
 
-import { fetchEpicChildrenStatus } from '../board-ops/board-ops.js';
 import type { RunContext } from '../context/context.js';
 import { ensureEpicBranch } from '../deliver/deliver.js';
 import { writeLock } from '../lock/lock.js';
 
 export async function branchSetup(ctx: RunContext): Promise<boolean> {
-  const config = ctx.config!;
+  const board = ctx.board!;
   const ticket = ctx.ticket!;
   const ticketBranch = ctx.ticketBranch!;
   const targetBranch = ctx.targetBranch!;
@@ -33,8 +32,7 @@ export async function branchSetup(ctx: RunContext): Promise<boolean> {
   // skip the epic branch and deliver directly to base.
   let skipEpicBranch = false;
   if (hasParent && !isRework) {
-    const childrenStatus = await fetchEpicChildrenStatus(
-      config,
+    const childrenStatus = await board.fetchChildrenStatus(
       ticket.parentInfo,
       ticket.linearIssueId,
     );

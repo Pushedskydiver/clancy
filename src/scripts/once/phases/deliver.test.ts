@@ -64,6 +64,7 @@ describe('deliver', () => {
       expect.any(Number),
       false,
       undefined,
+      undefined,
     );
   });
 
@@ -94,6 +95,7 @@ describe('deliver', () => {
       'main',
       expect.any(Number),
       true,
+      undefined,
       undefined,
     );
     expect(mockAppendProgress).toHaveBeenCalledWith(
@@ -138,6 +140,7 @@ describe('deliver', () => {
       expect.any(Number),
       false,
       'EPIC-10',
+      undefined,
     );
   });
 

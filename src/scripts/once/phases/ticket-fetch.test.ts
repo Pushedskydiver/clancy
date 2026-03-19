@@ -20,7 +20,7 @@ vi.mock('~/scripts/shared/progress/progress.js', () => ({
   countReworkCycles: vi.fn(() => 0),
 }));
 
-vi.mock('../board-ops/board-ops.js', () => ({
+vi.mock('~/scripts/shared/env-schema/env-schema.js', () => ({
   sharedEnv: vi.fn(() => ({})),
 }));
 

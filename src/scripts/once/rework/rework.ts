@@ -1,6 +1,7 @@
 import { resolveUsername } from '~/scripts/board/github/github.js';
 import { computeTicketBranch } from '~/scripts/shared/branch/branch.js';
 import type { BoardConfig } from '~/scripts/shared/env-schema/env-schema.js';
+import { sharedEnv } from '~/scripts/shared/env-schema/env-schema.js';
 import { findEntriesWithStatus } from '~/scripts/shared/progress/progress.js';
 import {
   checkPrReviewState as checkBitbucketPrReviewState,
@@ -28,7 +29,6 @@ import {
 } from '~/scripts/shared/remote/remote.js';
 import { dim } from '~/utils/ansi/ansi.js';
 
-import { sharedEnv } from '../board-ops/board-ops.js';
 import { resolveGitToken } from '../git-token/git-token.js';
 import type { FetchedTicket } from '../types/types.js';
 

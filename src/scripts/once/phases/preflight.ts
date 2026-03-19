@@ -3,11 +3,11 @@
  *
  * Sets `ctx.config`. Returns `true` to continue, `false` for early exit.
  */
+import { createBoard } from '~/scripts/board/factory/factory.js';
 import { detectBoard } from '~/scripts/shared/env-schema/env-schema.js';
 import { runPreflight } from '~/scripts/shared/preflight/preflight.js';
 import { bold, dim, green } from '~/utils/ansi/ansi.js';
 
-import { pingBoard, validateInputs } from '../board-ops/board-ops.js';
 import type { RunContext } from '../context/context.js';
 
 export async function preflight(ctx: RunContext): Promise<boolean> {
@@ -43,9 +43,10 @@ export async function preflight(ctx: RunContext): Promise<boolean> {
   }
 
   const config = boardResult;
+  const board = createBoard(config);
 
   // 3. Validate board-specific inputs
-  const validationError = validateInputs(config);
+  const validationError = board.validateInputs();
 
   if (validationError) {
     console.log(validationError);
@@ -53,7 +54,7 @@ export async function preflight(ctx: RunContext): Promise<boolean> {
   }
 
   // 4. Ping board
-  const ping = await pingBoard(config);
+  const ping = await board.ping();
 
   if (!ping.ok) {
     console.log(ping.error);
@@ -63,5 +64,6 @@ export async function preflight(ctx: RunContext): Promise<boolean> {
   console.log(green('✅ Preflight passed'));
 
   ctx.config = config;
+  ctx.board = board;
   return true;
 }

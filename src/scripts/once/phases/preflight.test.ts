@@ -1,9 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { createBoard } from '~/scripts/board/factory/factory.js';
 import { detectBoard } from '~/scripts/shared/env-schema/env-schema.js';
 import { runPreflight } from '~/scripts/shared/preflight/preflight.js';
 
-import { pingBoard, validateInputs } from '../board-ops/board-ops.js';
 import { createContext } from '../context/context.js';
 import { preflight } from './preflight.js';
 
@@ -17,23 +17,32 @@ vi.mock('~/scripts/shared/env-schema/env-schema.js', () => ({
   detectBoard: vi.fn(),
 }));
 
-vi.mock('../board-ops/board-ops.js', () => ({
-  pingBoard: vi.fn(() => Promise.resolve({ ok: true })),
-  validateInputs: vi.fn(() => undefined),
+vi.mock('~/scripts/board/factory/factory.js', () => ({
+  createBoard: vi.fn(() => ({
+    ping: vi.fn(() => Promise.resolve({ ok: true })),
+    validateInputs: vi.fn(() => undefined),
+  })),
 }));
 
 const mockPreflight = vi.mocked(runPreflight);
 const mockDetectBoard = vi.mocked(detectBoard);
-const mockPingBoard = vi.mocked(pingBoard);
-const mockValidateInputs = vi.mocked(validateInputs);
+const mockCreateBoard = vi.mocked(createBoard);
 
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 describe('preflight', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockPingBoard.mockResolvedValue({ ok: true });
-    mockValidateInputs.mockReturnValue(undefined);
+    mockCreateBoard.mockReturnValue({
+      ping: vi.fn(() => Promise.resolve({ ok: true })),
+      validateInputs: vi.fn(() => undefined),
+      fetchTicket: vi.fn(),
+      fetchTickets: vi.fn(),
+      fetchBlockerStatus: vi.fn(),
+      fetchChildrenStatus: vi.fn(),
+      transitionTicket: vi.fn(),
+      sharedEnv: vi.fn(() => ({})),
+    });
   });
 
   it('returns false when preflight fails', async () => {
@@ -66,7 +75,16 @@ describe('preflight', () => {
       provider: 'jira',
       env: { JIRA_BASE_URL: 'x' },
     } as never);
-    mockValidateInputs.mockReturnValue('Invalid project key');
+    mockCreateBoard.mockReturnValue({
+      ping: vi.fn(() => Promise.resolve({ ok: true })),
+      validateInputs: vi.fn(() => 'Invalid project key'),
+      fetchTicket: vi.fn(),
+      fetchTickets: vi.fn(),
+      fetchBlockerStatus: vi.fn(),
+      fetchChildrenStatus: vi.fn(),
+      transitionTicket: vi.fn(),
+      sharedEnv: vi.fn(() => ({})),
+    });
 
     const ctx = createContext([]);
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -82,7 +100,18 @@ describe('preflight', () => {
       provider: 'jira',
       env: { JIRA_BASE_URL: 'x' },
     } as never);
-    mockPingBoard.mockResolvedValue({ ok: false, error: 'Connection refused' });
+    mockCreateBoard.mockReturnValue({
+      ping: vi.fn(() =>
+        Promise.resolve({ ok: false, error: 'Connection refused' }),
+      ),
+      validateInputs: vi.fn(() => undefined),
+      fetchTicket: vi.fn(),
+      fetchTickets: vi.fn(),
+      fetchBlockerStatus: vi.fn(),
+      fetchChildrenStatus: vi.fn(),
+      transitionTicket: vi.fn(),
+      sharedEnv: vi.fn(() => ({})),
+    });
 
     const ctx = createContext([]);
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -92,7 +121,7 @@ describe('preflight', () => {
     expect(result).toBe(false);
   });
 
-  it('sets ctx.config on success', async () => {
+  it('sets ctx.config and ctx.board on success', async () => {
     const config = {
       provider: 'jira' as const,
       env: {
@@ -112,5 +141,6 @@ describe('preflight', () => {
 
     expect(result).toBe(true);
     expect(ctx.config).toBe(config);
+    expect(ctx.board).toBeDefined();
   });
 });
