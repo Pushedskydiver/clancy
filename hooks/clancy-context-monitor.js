@@ -167,8 +167,10 @@ process.stdin.on('end', () => {
       }
     }
 
-    // ── Persist debounce state ──────────────────────────────────
-    fs.writeFileSync(warnPath, JSON.stringify(warnData));
+    // ── Persist debounce state (only when a threshold was reached) ──
+    if (messages.length > 0 || contextFired || warnData.callsSinceWarn > 0 || warnData.timeCallsSinceWarn > 0) {
+      fs.writeFileSync(warnPath, JSON.stringify(warnData));
+    }
 
     // ── Output ──────────────────────────────────────────────────
     if (messages.length === 0) process.exit(0);
