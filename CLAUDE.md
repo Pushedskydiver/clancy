@@ -81,6 +81,10 @@ Direct to main (no PR): design docs (`docs/design/`), glossary, architecture doc
 
 Always via branch + PR: TypeScript (`src/`, `hooks/`), tests, executable markdown (`src/roles/`, `src/templates/`, `src/agents/`), package.json, CHANGELOG.md, CI config (`.github/`).
 
+### Devil's advocate review
+
+After completing any non-trivial code work, spin up a review agent before committing. For wave-based work, review after each wave. The review agent checks: bugs, edge cases, stale references, missing tests, cross-doc consistency, backward compatibility, type safety, and code complexity. Docs-only changes skip this.
+
 ## Release checklist
 
 1. Include version bump (`package.json`) and `CHANGELOG.md` entry in the PR
