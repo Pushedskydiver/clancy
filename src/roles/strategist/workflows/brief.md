@@ -520,11 +520,18 @@ Using all gathered context (idea, grill output, research findings), generate the
 
 ### Re-brief revision
 
-If revising from feedback (Step 5), prepend a section before Problem Statement:
+If revising from feedback (Step 5):
+
+1. **Cross-reference feedback against Open Questions.** For each Open Question in the existing brief, check if the feedback contains an answer (exact or paraphrased — match by intent, not syntax). Resolved questions move to `## Discovery` with `(Source: human)` tag. Unresolved questions stay in `## Open Questions`.
+
+2. **Apply all other feedback** — changes to scope, goals, decomposition, user stories, etc.
+
+3. **Prepend a section** before Problem Statement:
 
 ```markdown
 ### Changes From Previous Brief
-{What feedback was addressed and how the brief changed}
+{What feedback was addressed and how the brief changed.
+ List resolved open questions explicitly.}
 ```
 
 ---
