@@ -609,67 +609,82 @@ All of the following must be shipped before v0.7.0:
 
 | Agent | Scope | Files | Tests |
 |---|---|---|---|
-| **1** | Lock file + schema + types | `src/schemas/env.ts` (add `CLANCY_FIX_RETRIES`, `CLANCY_VERIFY_COMMANDS`, `CLANCY_COST_LIMIT`, `CLANCY_TIME_LIMIT`, `CLANCY_BRANCH_GUARD`), `src/types/remote.ts` (add `COST_LIMIT`, `TIME_LIMIT`, `RESUMED` to ProgressStatus), `src/scripts/once/lock/lock.ts` (NEW — `writeLock`, `readLock`, `deleteLock`, `isLockStale`, `isPidAlive`) | `lock.test.ts`, `env-schema.test.ts` |
-| **2** | Branch guard hook | `hooks/clancy-branch-guard.js` (NEW) | `clancy-branch-guard.test.ts` (co-located in hooks/) |
-| **3** | Cost logging in once.ts | Duration + estimated token logging after delivery in `once.ts`, writing to `.clancy/costs.log` | `once.test.ts` (extend) |
+| **1** | Lock file + schema + types | `src/schemas/env.ts` (add `CLANCY_FIX_RETRIES`, `CLANCY_VERIFY_COMMANDS`, `CLANCY_TOKEN_RATE`, `CLANCY_TIME_LIMIT`, `CLANCY_BRANCH_GUARD`), `src/types/remote.ts` (add `TIME_LIMIT`, `RESUMED` to ProgressStatus), `src/scripts/once/lock/lock.ts` (NEW — `writeLock`, `readLock`, `deleteLock`, `isLockStale`, `isPidAlive`) | `lock.test.ts`, `env-schema.test.ts` |
+| **2** | Branch guard hook | `hooks/clancy-branch-guard.js` (NEW — PreToolUse, blocks force push, protected branches, destructive resets) | `clancy-branch-guard.test.ts` (co-located in hooks/) |
+| **3** | Cost logging module | `src/scripts/once/cost/cost.ts` (NEW — `appendCostEntry`, reads lock.json startedAt, writes to `.clancy/costs.log` with duration + estimated tokens) | `cost.test.ts` |
+
+**Note:** `CLANCY_ONCE_ACTIVE` is an internal runtime env var set by once.ts — do NOT add it to the Zod schema (it's not user-configured in .clancy/.env).
 
 ### Wave 1 Review
 
-- Do the new env vars compile in the Zod schema?
+- Do the new env vars compile in the Zod schema? Verify `CLANCY_TOKEN_RATE` (not `CLANCY_COST_LIMIT` — changed from token-based to duration-based)
 - Does the lock module handle all PID edge cases (dead process, PID reuse, corrupt JSON)?
-- Does the branch guard catch all blocked patterns? Test with piped commands, short flags, `--force-with-lease` allowlist.
-- Does the cost tracker handle missing lock file gracefully?
+- Does the branch guard catch all blocked patterns? Test with piped commands, short flags, `--force-with-lease` allowlist
+- Does the cost module handle missing lock file gracefully?
 - `npm test && npm run typecheck && npm run lint`
 
-### Wave 2 — Core Features (3 parallel agents)
+### Wave 2 — Hooks + Agent Prompt (3 parallel agents)
 
 | Agent | Scope | Files | Tests |
 |---|---|---|---|
-| **4** | PostCompact hook | `hooks/clancy-post-compact.js` (NEW) | `clancy-post-compact.test.ts` |
-| **5** | Time guard (extend context monitor) | `hooks/clancy-context-monitor.js` (add time guard logic, separate debounce) | `clancy-context-monitor.test.ts` (extend existing) |
-| **6** | Verification gate agent prompt | `src/agents/verification-gate.md` (NEW) | — (agent prompt, no unit test) |
+| **4** | PostCompact hook | `hooks/clancy-post-compact.js` (NEW — `type: "command"`, reads lock.json, outputs `additionalContext` with ticket key/branch/requirements. PostCompact is non-blocking — can inject context but cannot deny.) | `clancy-post-compact.test.ts` |
+| **5** | Time guard (extend context monitor) | `hooks/clancy-context-monitor.js` (add time guard logic — read `startedAt` from lock.json, separate debounce counter from context warnings, warn at 80% of `CLANCY_TIME_LIMIT`, critical at 100%) | `clancy-context-monitor.test.ts` (extend existing) |
+| **6** | Verification gate agent prompt | `src/agents/verification-gate.md` (NEW — the agent prompt for the Stop hook. Must: check `.clancy/lock.json` exists (allow stop immediately if not — not a Clancy run), read/increment `.clancy/verify-attempt.txt` for retry tracking, auto-detect check commands from package.json, run checks, return `{"decision": "block", "reason": "..."}` on failure or `{"decision": "allow"}` on success. Include escalation hints based on attempt number. Fail-open if agent itself errors.) | — (agent prompt, no unit test) |
+
+**Note on verification gate:** No `condition` syntax exists in Claude Code hooks. The agent checks `.clancy/lock.json` internally to determine if it should run verification. The `stop_hook_active` field in hook input prevents infinite loops. Set timeout to 120s+ in settings.json (default 60s is too short for test suites).
 
 ### Wave 2 Review
 
-- Does PostCompact hook read lock.json correctly? Handle missing file? Truncate long descriptions?
-- Does time guard use a separate debounce counter from context warnings? Does it read `startedAt` from lock.json?
-- Does the verification gate prompt include auto-detection logic, retry escalation hints, and the fail-open fallback?
+- Does PostCompact hook read lock.json correctly? Handle missing file? Truncate long descriptions to 2000 chars?
+- Does time guard use a SEPARATE debounce counter from context warnings? Does it read `startedAt` from lock.json correctly?
+- Does the verification gate prompt:
+  - Check for lock.json first (allow stop if missing)?
+  - Read/increment verify-attempt.txt?
+  - Include escalation hints (attempt 1: fix errors, attempt 2: consider revert)?
+  - Respect `CLANCY_FIX_RETRIES` max (allow stop after max reached even if tests still fail)?
+  - Include `CLANCY_VERIFY_COMMANDS` override check?
+  - Fail-open (allow stop) if the agent itself encounters errors?
 - `npm test && npm run typecheck && npm run lint`
 
 ### Wave 3 — Orchestrator Integration (2 agents)
 
 | Agent | Scope | Files | Tests |
 |---|---|---|---|
-| **7** | once.ts integration — lock file, resume detection, CLANCY_ONCE_ACTIVE | `src/scripts/once/once.ts` (add lock write/delete, startup check, resume detection, set `CLANCY_ONCE_ACTIVE` env var), `src/scripts/once/resume/resume.ts` (NEW — `detectResume`, `executeResume`) | `once.test.ts`, `resume.test.ts` |
-| **8** | afk.ts integration — session report, cost summary | `src/scripts/afk/afk.ts` (add session report generation after loop), `src/scripts/afk/report/report.ts` (NEW — `generateSessionReport`) | `afk.test.ts`, `report.test.ts` |
+| **7** | once.ts integration | `src/scripts/once/once.ts`: (1) Write lock.json AFTER branch creation (branch name must be known), (2) Delete lock.json + verify-attempt.txt in ALL exit paths (success, error, early return, catch block), (3) Startup check: if lock.json exists, check PID alive → abort or clean stale lock, (4) Resume detection after stale lock cleanup, (5) Set `CLANCY_ONCE_ACTIVE=1` in process.env before Claude invocation, unset after, (6) Call `appendCostEntry` after delivery. Also: `src/scripts/once/resume/resume.ts` (NEW — `detectResume`: check branch state + board ticket status before resuming, `executeResume`: commit/push/PR) | `once.test.ts`, `resume.test.ts` |
+| **8** | afk.ts integration | `src/scripts/afk/afk.ts` (add session report generation after loop completes), `src/scripts/afk/report/report.ts` (NEW — `generateSessionReport`: read progress.txt entries from this session, read costs.log, generate `.clancy/session-report.md`, send summary to webhook if configured) | `afk.test.ts`, `report.test.ts` |
 
 ### Wave 3 Review
 
 - Does once.ts write the lock file AFTER branch creation (not before — the branch name must be known)?
-- Does once.ts delete the lock file in ALL exit paths (success, error, early return)?
-- Does resume detection handle: (a) branch with uncommitted changes, (b) branch with unpushed commits, (c) already-delivered ticket?
-- Does `CLANCY_ONCE_ACTIVE` get set before Claude invocation and unset after?
+- Does once.ts delete lock.json AND verify-attempt.txt in ALL exit paths (success, error, early return, catch block)?
+- Does resume detection check board ticket status (still assigned, not Done/Cancelled, not blocked) before auto-resuming in AFK mode?
+- Does resume handle: (a) branch with uncommitted changes, (b) branch with unpushed commits, (c) already-delivered ticket (check progress.txt)?
+- Does `CLANCY_ONCE_ACTIVE` get set BEFORE Claude invocation and unset AFTER?
+- Does the cost entry get written even on partial delivery (e.g. push succeeded but PR creation failed)?
 - Does the session report handle zero completed tickets?
-- Does the AFK session report include token estimates from costs.log?
+- Does the AFK session report include duration + estimated tokens from costs.log?
 - `npm test && npm run typecheck && npm run lint`
 
-### Wave 4 — Integration (3 parallel agents)
+### Wave 4 — Integration + Docs (3 parallel agents)
 
 | Agent | Scope | Files | Tests |
 |---|---|---|---|
-| **9** | Installer + settings + scaffold | `src/installer/install.ts` (install new hooks, configure Stop hook in settings.json), `src/roles/setup/workflows/init.md` (add new env vars to init prompts), `src/roles/setup/workflows/settings.md` (add new env vars to settings), `src/roles/setup/workflows/scaffold.md` (add new env vars to .env.example) | — |
-| **10** | PR body integration — verification warnings | `src/scripts/shared/pull-request/pr-body/pr-body.ts` (add optional verification warning section), `src/scripts/once/deliver/deliver.ts` (pass verification result to PR body builder) | `pr-body.test.ts` |
-| **11** | Documentation | `docs/roles/IMPLEMENTER.md`, `docs/guides/CONFIGURATION.md`, `docs/ARCHITECTURE.md`, `CLAUDE.md`, `CHANGELOG.md`, `README.md`, `package.json`, `package-lock.json` | — |
+| **9** | Installer + settings + scaffold | `src/installer/install.ts` (install new hooks: branch-guard, post-compact. Configure Stop hook agent in settings.json — `type: "agent"`, prompt from `src/agents/verification-gate.md`, timeout 120s. Note: installer must handle the new agent hook shape, not just `type: "command"`), `src/roles/setup/workflows/init.md` (add `CLANCY_FIX_RETRIES`, `CLANCY_TIME_LIMIT`, `CLANCY_BRANCH_GUARD` to init prompts), `src/roles/setup/workflows/settings.md` (add new env vars to settings menu), `src/roles/setup/workflows/scaffold.md` (add new env vars to .env.example) | — |
+| **10** | PR body integration — verification warnings | `src/scripts/shared/pull-request/pr-body/pr-body.ts` (add optional verification warning section when checks failed after max retries), `src/scripts/once/deliver/deliver.ts` (read verify-attempt.txt to determine if verification failed, pass result to PR body builder) | `pr-body.test.ts` |
+| **11** | Documentation + release | `docs/roles/IMPLEMENTER.md` (verification gates, crash recovery), `docs/guides/CONFIGURATION.md` (new env vars), `docs/ARCHITECTURE.md` (lock module, hooks, cost logging), `docs/GLOSSARY.md` (new terms: verification gate, self-healing, lock file, resume, branch guard, time guard, cost log), `docs/VISUAL-ARCHITECTURE.md` (update diagrams), `CLAUDE.md` (key paths, technical details), `CHANGELOG.md`, `README.md` (test badge, feature list), `package.json` (version bump to 0.7.0), `package-lock.json` | — |
 
 ### Wave 4 Review — Final
 
 - Are all new hooks installed by the installer?
-- Is the Stop hook configured in settings.json with the correct condition?
+- Is the Stop hook configured in settings.json with `type: "agent"`, the correct prompt, and `timeout: 120`? (No `condition` field — doesn't exist)
+- Does the installer's `registerHook` function handle the agent hook shape (not just `type: "command"`)?
 - Are all new env vars in init, settings, scaffold, and the configuration guide?
-- Does the PR body show verification warnings correctly?
+- Does the PR body show verification warnings correctly (only when verify-attempt.txt indicates max retries reached)?
+- Are all new terms in the GLOSSARY?
 - Are all new files documented in ARCHITECTURE.md and CLAUDE.md?
+- Is the design folder README updated (reliable-autonomous-mode.md moved to shipped)?
 - Test count badge updated in README?
-- Version bump + CHANGELOG entry present?
+- Version bump + CHANGELOG entry present? Package-lock synced?
 - `npm test && npm run typecheck && npm run lint`
 
 ---
