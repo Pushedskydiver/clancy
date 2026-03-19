@@ -7,6 +7,35 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.7.0] — 2026-03-19
+
+### Added
+
+- **Verification gates** — agent-based Stop hook runs lint/test/typecheck before delivery
+- **Self-healing retry** — up to `CLANCY_FIX_RETRIES` attempts to fix failing checks (default 2, max 5)
+- **PostCompact hook** — re-injects ticket context after context compaction
+- **Branch guard hook** — blocks force push, protected branch push, destructive resets
+- **Time guard** — warns at 80%/100% of `CLANCY_TIME_LIMIT` per ticket (default 30 min)
+- **Crash recovery** — lock file prevents double-runs, resume detection recovers crashed sessions
+- **Cost logging** — duration-based token estimation per ticket (`.clancy/costs.log`)
+- **AFK session report** — summary of completed/failed tickets (`.clancy/session-report.md`)
+- **Verification gate agent prompt** (`src/agents/verification-gate.md`)
+- `CLANCY_FIX_RETRIES`, `CLANCY_VERIFY_COMMANDS`, `CLANCY_TOKEN_RATE`, `CLANCY_TIME_LIMIT`, `CLANCY_BRANCH_GUARD` env vars
+
+### Changed
+
+- `once.ts`: lock file lifecycle, `CLANCY_ONCE_ACTIVE` env var, cost logging after delivery
+- `afk.ts`: session report generation after loop completion
+- `context-monitor` hook: extended with time guard logic
+- PR body: includes verification warning when checks failed
+- Hook count: 4 → 6 hook files + 1 agent hook
+
+### Tests
+
+- 579 → 764 (185 new tests)
+
+---
+
 ## [0.6.0] — 2026-03-19
 
 ### Added

@@ -10,8 +10,12 @@ Autonomous, board-driven development for Claude Code. npm package: `chief-clancy
 | `src/installer/` | Installer modules (file-ops, hook-installer, manifest, prompts) |
 | `src/roles/` | Slash commands and workflows organised by role (planner, implementer, reviewer, setup, strategist) |
 | `src/roles/strategist/` | Strategist role — `/clancy:brief` and `/clancy:approve-brief` commands |
-| `src/scripts/once/` | Once orchestrator — 8 modules: types, board-ops, fetch-ticket, git-token, pr-creation, deliver, rework, once (runner) |
+| `src/scripts/once/` | Once orchestrator — 11 modules: types, board-ops, fetch-ticket, git-token, pr-creation, deliver, rework, lock, cost, resume, once (runner) |
+| `src/scripts/once/lock/` | Lock file management (acquire, release, stale detection) |
+| `src/scripts/once/cost/` | Duration-based token cost estimation + costs.log writer |
+| `src/scripts/once/resume/` | Crash recovery (resume detection, branch/ticket recovery) |
 | `src/scripts/afk/afk.ts` | AFK loop runner |
+| `src/scripts/afk/report/` | Session report generator (.clancy/session-report.md) |
 | `src/scripts/shared/` | Shared utilities (env-schema, branch, prompt, progress, etc.) |
 | `src/scripts/shared/pull-request/` | PR creation + rework comment detection (github, gitlab, bitbucket, post-pr, pr-body, rework-comment) |
 | `src/scripts/shared/remote/` | Remote git host detection (parseRemote, detectRemote, buildApiBaseUrl) |
@@ -20,9 +24,10 @@ Autonomous, board-driven development for Claude Code. npm package: `chief-clancy
 | `src/schemas/` | Zod schemas for API responses and env validation |
 | `src/types/` | Shared TypeScript types (board, remote, index) |
 | `src/templates/CLAUDE.md` | CLAUDE.md template injected into user projects |
-| `src/agents/` | 6 agent prompts — 5 specialists for `/clancy:map-codebase` + devil's advocate for `/clancy:brief` |
+| `src/agents/` | 7 agent prompts — 5 specialists for `/clancy:map-codebase` + devil's advocate for `/clancy:brief` + verification gate |
 | `src/agents/devils-advocate.md` | Devil's advocate agent prompt for AI-grill mode in `/clancy:brief` |
-| `hooks/` | 4 Node.js hooks (credential guard, context monitor, statusline, update check) |
+| `src/agents/verification-gate.md` | Verification gate agent — interprets lint/test/type errors, applies targeted fixes |
+| `hooks/` | 6 Node.js hooks + 1 agent hook (credential guard, branch guard, context monitor, statusline, update check, post-compact, verification gate) |
 | `registry/boards.json` | Board registry for community board integrations |
 
 ## Key documentation
@@ -115,3 +120,10 @@ Spin up a review agent at every necessary phase — not just after code. Review 
 - `CLANCY_MODE` env var (`interactive` | `afk`) controls grill mode detection — human grill in interactive, AI-grill (devil's advocate agent) in AFK
 - `Epic: {key}` description convention: child tickets include this text for cross-platform epic completion detection
 - `CLANCY_BRIEF_ISSUE_TYPE`, `CLANCY_BRIEF_EPIC`, `CLANCY_COMPONENT` env vars configure strategist ticket creation
+- Verification gates: agent-based Stop hook runs lint/test/typecheck before delivery, self-healing retry up to `CLANCY_FIX_RETRIES` (default 2)
+- Lock file (`.clancy/lock.json`): prevents double-runs, enables crash recovery via PID check + resume detection
+- Branch guard hook: PreToolUse hook blocks force push, protected branch push, destructive resets. Configurable via `CLANCY_BRANCH_GUARD`
+- Time guard: PostToolUse warnings at 80%/100% of `CLANCY_TIME_LIMIT` (default 30 min), integrated into context-monitor hook
+- Cost logging: duration-based token estimate per ticket appended to `.clancy/costs.log` using `CLANCY_TOKEN_RATE` (default 6600 tokens/min)
+- PostCompact hook: re-injects ticket context (key, description, branch) after Claude Code compacts the context window
+- Session report: `.clancy/session-report.md` generated after `/clancy:run` summarises completed/failed tickets

@@ -13,8 +13,14 @@ import {
 } from 'node:fs';
 import { join } from 'node:path';
 
+/** A command hook entry in Claude's settings.json. */
+type CommandHook = { type: 'command'; command: string };
+
+/** An agent hook entry in Claude's settings.json. */
+type AgentHook = { type: 'agent'; prompt: string; timeout: number };
+
 /** A single hook entry in Claude's settings.json. */
-type HookEntry = { hooks: { type: string; command: string }[] };
+type HookEntry = { hooks: (CommandHook | AgentHook)[] };
 
 /** Options for the hook installer. */
 type HookInstallerOptions = {
@@ -22,6 +28,8 @@ type HookInstallerOptions = {
   claudeConfigDir: string;
   /** Path to the directory containing compiled hook JS files. */
   hooksSourceDir: string;
+  /** Optional prompt text for the verification gate Stop agent hook. */
+  verificationGatePrompt?: string;
 };
 
 /**
@@ -39,11 +47,52 @@ function registerHook(
   if (!hooks[event]) hooks[event] = [];
 
   const already = hooks[event].some(
-    (h) => h.hooks && h.hooks.some((hh) => hh.command === command),
+    (h) =>
+      h.hooks &&
+      h.hooks.some(
+        (hh) =>
+          hh.type === 'command' && 'command' in hh && hh.command === command,
+      ),
   );
 
   if (!already) {
     hooks[event].push({ hooks: [{ type: 'command', command }] });
+  }
+}
+
+/**
+ * Add an agent hook to a settings event array if not already registered.
+ *
+ * Agent hooks are identified by their prompt content (first 100 chars) to
+ * avoid duplicates on re-install.
+ *
+ * @param hooks - The hooks record from settings.json.
+ * @param event - The hook event name (e.g., `'Stop'`).
+ * @param prompt - The agent prompt text.
+ * @param timeout - Timeout in seconds for the agent hook.
+ */
+function registerAgentHook(
+  hooks: Record<string, HookEntry[]>,
+  event: string,
+  prompt: string,
+  timeout: number,
+): void {
+  if (!hooks[event]) hooks[event] = [];
+
+  const fingerprint = prompt.slice(0, 100);
+  const already = hooks[event].some(
+    (h) =>
+      h.hooks &&
+      h.hooks.some(
+        (hh) =>
+          hh.type === 'agent' &&
+          'prompt' in hh &&
+          hh.prompt.slice(0, 100) === fingerprint,
+      ),
+  );
+
+  if (!already) {
+    hooks[event].push({ hooks: [{ type: 'agent', prompt, timeout }] });
   }
 }
 
@@ -76,6 +125,8 @@ export function installHooks(options: HookInstallerOptions): boolean {
     'clancy-statusline.js',
     'clancy-context-monitor.js',
     'clancy-credential-guard.js',
+    'clancy-branch-guard.js',
+    'clancy-post-compact.js',
   ];
 
   try {
@@ -113,10 +164,28 @@ export function installHooks(options: HookInstallerOptions): boolean {
     const statuslineScript = join(hooksInstallDir, 'clancy-statusline.js');
     const monitorScript = join(hooksInstallDir, 'clancy-context-monitor.js');
     const guardScript = join(hooksInstallDir, 'clancy-credential-guard.js');
+    const branchGuardScript = join(hooksInstallDir, 'clancy-branch-guard.js');
+    const postCompactScript = join(hooksInstallDir, 'clancy-post-compact.js');
 
     registerHook(hooks, 'SessionStart', `node ${JSON.stringify(updateScript)}`);
     registerHook(hooks, 'PostToolUse', `node ${JSON.stringify(monitorScript)}`);
     registerHook(hooks, 'PreToolUse', `node ${JSON.stringify(guardScript)}`);
+    registerHook(
+      hooks,
+      'PreToolUse',
+      `node ${JSON.stringify(branchGuardScript)}`,
+    );
+    registerHook(
+      hooks,
+      'PostCompact',
+      `node ${JSON.stringify(postCompactScript)}`,
+    );
+
+    // Verification gate: registered as a Stop agent hook with the prompt inline.
+    // The prompt is read from the agents directory at install time.
+    if (options.verificationGatePrompt) {
+      registerAgentHook(hooks, 'Stop', options.verificationGatePrompt, 120);
+    }
 
     // Statusline: registered as top-level key, not inside hooks
     if (!settings.statusLine) {

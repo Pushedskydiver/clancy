@@ -74,4 +74,6 @@ export type ProgressStatus =
   | 'REWORK'
   | 'EPIC_PR_CREATED'
   | 'BRIEF'
-  | 'APPROVE_BRIEF';
+  | 'APPROVE_BRIEF'
+  | 'TIME_LIMIT'
+  | 'RESUMED';

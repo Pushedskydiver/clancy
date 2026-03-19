@@ -139,7 +139,14 @@ What happens inside `/clancy:once` (and each iteration of `/clancy:run`).
 
 ```mermaid
 flowchart TD
-    Start(["/clancy:once"]) --> Preflight
+    Start(["/clancy:once"]) --> LockCheck
+
+    LockCheck{"Lock file\nexists?"} -->|No| AcquireLock["Acquire lock\n(.clancy/lock.json)"]
+    LockCheck -->|"Yes — PID alive"| Stop0["Another session running ✗"]
+    LockCheck -->|"Yes — PID dead"| Resume["Resume crashed session\n(read ticket + branch from lock)"]
+
+    AcquireLock --> Preflight
+    Resume --> Branch
 
     subgraph Preflight
         P1[".clancy/.env exists?"] -->|No| Stop1["Run /clancy:init first ✗"]
@@ -175,20 +182,35 @@ flowchart TD
 
     BuildPrompt["Build prompt\n(ticket + docs + TDD?)"] --> InvokeClaude["Invoke Claude session\n(claude -p --dangerously-skip-permissions)"]
 
-    InvokeClaude -->|Success| PRDeliver["Push feature branch\nCreate PR/MR\nTransition → Review"]
+    InvokeClaude -->|Success| VerifyGate
     InvokeClaude -->|Fail| Stop6["Claude session failed ✗"]
 
-    PRDeliver --> Log["Log to progress.txt"]
+    subgraph VerifyGate["Verification Gate"]
+        V1["Run lint/test/typecheck"] -->|Pass| VPass["Checks passed ✓"]
+        V1 -->|Fail| V2{"Retries\nremaining?"}
+        V2 -->|Yes| V3["Self-healing fix\n(feed errors to Claude)"]
+        V3 --> V1
+        V2 -->|No| VWarn["Deliver with\nverification warning"]
+    end
 
-    Log --> Notify["Send notification\n(webhook, if configured)"]
+    VPass --> PRDeliver["Push feature branch\nCreate PR/MR\nTransition → Review"]
+    VWarn --> PRDeliver
+
+    PRDeliver --> Log["Log to progress.txt"]
+    Log --> Cost["Cost log\n(.clancy/costs.log)"]
+    Cost --> ReleaseLock["Release lock file"]
+
+    ReleaseLock --> Notify["Send notification\n(webhook, if configured)"]
     Notify --> End(["Done"])
 
+    style Stop0 stroke:#c62828,stroke-width:2px
     style Stop1 stroke:#c62828,stroke-width:2px
     style Stop2 stroke:#c62828,stroke-width:2px
     style Stop3 stroke:#f9a825,stroke-width:2px
     style Stop4 stroke:#1565c0,stroke-width:2px
     style Stop5 stroke:#f9a825,stroke-width:2px
     style Stop6 stroke:#c62828,stroke-width:2px
+    style VerifyGate stroke:#2e7d32,stroke-width:2px
 ```
 
 ---
@@ -324,6 +346,9 @@ graph TD
         afkjs["clancy-afk.js\n(esbuild bundle)"]
         pkg["package.json\n({'type':'module'})"]
         progress["progress.txt\n(run log)"]
+        costslog["costs.log\n(token cost estimates)"]
+        lockfile["lock.json\n(crash recovery)"]
+        sessionrpt["session-report.md\n(AFK summary)"]
         claudemd["CLAUDE.md\n(project instructions)"]
 
         subgraph "docs/"

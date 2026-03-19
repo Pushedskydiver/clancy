@@ -29,12 +29,14 @@ export function isEpicBranch(targetBranch: string): boolean {
  * @param config - The board configuration.
  * @param ticket - The ticket being implemented.
  * @param targetBranch - The branch the PR targets (used to determine `Closes` vs `Part of`).
+ * @param verificationWarning - Optional warning text when verification checks failed after max retries. Included as a `## Verification Warning` section before the footer.
  * @returns The PR body as a markdown string.
  */
 export function buildPrBody(
   config: BoardConfig,
   ticket: Ticket,
   targetBranch?: string,
+  verificationWarning?: string,
 ): string {
   const lines: string[] = [];
   const isEpic = targetBranch ? isEpicBranch(targetBranch) : false;
@@ -59,6 +61,15 @@ export function buildPrBody(
     lines.push('## Description');
     lines.push('');
     lines.push(ticket.description);
+    lines.push('');
+  }
+
+  if (verificationWarning) {
+    lines.push('## ⚠ Verification Warning');
+    lines.push('');
+    lines.push(verificationWarning);
+    lines.push('');
+    lines.push('This PR may need manual fixes before merging.');
     lines.push('');
   }
 

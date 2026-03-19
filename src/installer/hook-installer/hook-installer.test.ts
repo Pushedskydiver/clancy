@@ -29,6 +29,8 @@ describe('installHooks', () => {
       'clancy-statusline.js',
       'clancy-context-monitor.js',
       'clancy-credential-guard.js',
+      'clancy-branch-guard.js',
+      'clancy-post-compact.js',
     ]) {
       writeFileSync(join(hooksSource, f), `// ${f}`);
     }
@@ -64,7 +66,8 @@ describe('installHooks', () => {
 
     expect(settings.hooks.SessionStart).toHaveLength(1);
     expect(settings.hooks.PostToolUse).toHaveLength(1);
-    expect(settings.hooks.PreToolUse).toHaveLength(1);
+    expect(settings.hooks.PreToolUse).toHaveLength(2);
+    expect(settings.hooks.PostCompact).toHaveLength(1);
     expect(settings.statusLine).toBeDefined();
     expect(settings.statusLine.type).toBe('command');
   });
@@ -79,7 +82,8 @@ describe('installHooks', () => {
 
     expect(settings.hooks.SessionStart).toHaveLength(1);
     expect(settings.hooks.PostToolUse).toHaveLength(1);
-    expect(settings.hooks.PreToolUse).toHaveLength(1);
+    expect(settings.hooks.PreToolUse).toHaveLength(2);
+    expect(settings.hooks.PostCompact).toHaveLength(1);
   });
 
   it('preserves existing settings', () => {
@@ -104,6 +108,51 @@ describe('installHooks', () => {
       hooksSourceDir: hooksSource,
     });
     expect(result).toBe(true);
+  });
+
+  it('registers the verification gate agent hook when prompt is provided', () => {
+    installHooks({
+      claudeConfigDir: claudeDir,
+      hooksSourceDir: hooksSource,
+      verificationGatePrompt: '# Verification Gate Agent\n\nYou are the gate.',
+    });
+
+    const settings = JSON.parse(
+      readFileSync(join(claudeDir, 'settings.json'), 'utf8'),
+    );
+
+    expect(settings.hooks.Stop).toHaveLength(1);
+    expect(settings.hooks.Stop[0].hooks[0].type).toBe('agent');
+    expect(settings.hooks.Stop[0].hooks[0].prompt).toContain(
+      'Verification Gate Agent',
+    );
+    expect(settings.hooks.Stop[0].hooks[0].timeout).toBe(120);
+  });
+
+  it('does not register Stop hook when no prompt is provided', () => {
+    installHooks({ claudeConfigDir: claudeDir, hooksSourceDir: hooksSource });
+
+    const settings = JSON.parse(
+      readFileSync(join(claudeDir, 'settings.json'), 'utf8'),
+    );
+
+    expect(settings.hooks.Stop).toBeUndefined();
+  });
+
+  it('does not duplicate the agent hook on re-install', () => {
+    const opts = {
+      claudeConfigDir: claudeDir,
+      hooksSourceDir: hooksSource,
+      verificationGatePrompt: '# Verification Gate Agent\n\nYou are the gate.',
+    };
+    installHooks(opts);
+    installHooks(opts);
+
+    const settings = JSON.parse(
+      readFileSync(join(claudeDir, 'settings.json'), 'utf8'),
+    );
+
+    expect(settings.hooks.Stop).toHaveLength(1);
   });
 
   it('returns false when source hooks are missing', () => {

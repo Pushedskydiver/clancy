@@ -1,4 +1,6 @@
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 
 import type { BoardConfig } from '~/scripts/shared/env-schema/env-schema.js';
 import { formatDuration } from '~/scripts/shared/format/format.js';
@@ -155,6 +157,21 @@ export async function deliverViaPullRequest(
 
   console.log(green(`  ✓ Pushed ${ticketBranch}`));
 
+  // Check for verification warnings (file exists when verification didn't fully pass)
+  let verificationWarning: string | undefined;
+  try {
+    const attemptPath = join(process.cwd(), '.clancy', 'verify-attempt.txt');
+    const attempt = readFileSync(attemptPath, 'utf8').trim();
+    const attemptNum = parseInt(attempt, 10);
+    if (attemptNum > 0) {
+      // The file exists = verification didn't fully pass. The number is
+      // the attempt counter (1 = ran once and failed, 2 = ran twice, etc.)
+      verificationWarning = `Verification checks did not fully pass (${attemptNum} attempt(s)). Review carefully.`;
+    }
+  } catch {
+    // No verify-attempt file — verification passed or wasn't run
+  }
+
   // Attempt PR/MR creation
   const platformOverride = sharedEnv(config).CLANCY_GIT_PLATFORM;
   const remote = detectRemote(platformOverride);
@@ -168,6 +185,7 @@ export async function deliverViaPullRequest(
       provider: config.provider,
     },
     targetBranch,
+    verificationWarning,
   );
 
   if (

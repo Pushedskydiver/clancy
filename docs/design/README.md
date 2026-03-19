@@ -26,8 +26,8 @@ Design docs for Clancy features — the "why" behind non-obvious decisions, edge
 | `strategist-github-flow.md` | GitHub Issues-specific scenarios, edge cases | v0.6.0 |
 | `strategist-execution-plan.md` | Build plan — **can be deleted** (v0.6.0 shipped) | v0.6.0 |
 
-### In progress (v0.7.0 — Reliable autonomous mode)
+### Shipped features (continued)
 
-| Document | Purpose |
-|---|---|
-| `reliable-autonomous-mode.md` | Verification gates, safety hooks, crash recovery — full design + execution plan |
+| Document | Feature | Version |
+|---|---|---|
+| `reliable-autonomous-mode.md` | Verification gates, safety hooks, crash recovery | v0.7.0 |

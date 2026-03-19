@@ -115,6 +115,49 @@ describe('buildPrBody', () => {
     expect(body).toContain('github.com/Pushedskydiver/clancy');
   });
 
+  it('does not include verification warning when not provided', () => {
+    const config: BoardConfig = {
+      provider: 'github',
+      env: { GITHUB_TOKEN: 'ghp_test', GITHUB_REPO: 'owner/repo' },
+    };
+    const ticket: Ticket = { ...baseTicket, key: '#1' };
+
+    const body = buildPrBody(config, ticket, 'main');
+    expect(body).not.toContain('Verification Warning');
+    expect(body).not.toContain('manual fixes before merging');
+  });
+
+  it('includes verification warning section when provided', () => {
+    const config: BoardConfig = {
+      provider: 'github',
+      env: { GITHUB_TOKEN: 'ghp_test', GITHUB_REPO: 'owner/repo' },
+    };
+    const ticket: Ticket = { ...baseTicket, key: '#1' };
+    const warning =
+      'Verification checks did not pass after 3 fix attempt(s). Review carefully.';
+
+    const body = buildPrBody(config, ticket, 'main', warning);
+    expect(body).toContain('## ⚠ Verification Warning');
+    expect(body).toContain(warning);
+    expect(body).toContain('This PR may need manual fixes before merging.');
+  });
+
+  it('places verification warning before rework instructions', () => {
+    const config: BoardConfig = {
+      provider: 'github',
+      env: { GITHUB_TOKEN: 'ghp_test', GITHUB_REPO: 'owner/repo' },
+    };
+    const ticket: Ticket = { ...baseTicket, key: '#1' };
+    const warning = 'Verification failed after 2 fix attempt(s).';
+
+    const body = buildPrBody(config, ticket, 'main', warning);
+    const warningIndex = body.indexOf('## ⚠ Verification Warning');
+    const reworkIndex = body.indexOf('Rework instructions');
+    expect(warningIndex).toBeGreaterThan(-1);
+    expect(reworkIndex).toBeGreaterThan(-1);
+    expect(warningIndex).toBeLessThan(reworkIndex);
+  });
+
   it('includes rework instructions in a collapsible details block', () => {
     const config: BoardConfig = {
       provider: 'github',
