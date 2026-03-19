@@ -31,3 +31,9 @@ Design docs for Clancy features — the "why" behind non-obvious decisions, edge
 | Document | Feature | Version |
 |---|---|---|
 | `reliable-autonomous-mode.md` | Verification gates, safety hooks, crash recovery | v0.7.0 |
+
+### In progress
+
+| Document | Feature | Target |
+|---|---|---|
+| `codebase-refactor.md` | Phase pipeline (once.ts decomposition), Board type abstraction, PR review client | Pre-v0.8.0 |
