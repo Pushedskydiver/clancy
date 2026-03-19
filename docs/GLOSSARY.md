@@ -56,7 +56,10 @@ Ubiquitous language for the Clancy project. Use these terms consistently in code
 | **AFK** | A ticket tagged as implementable autonomously by `/clancy:once` or `/clancy:run` without human intervention. |
 | **Ticket decomposition** | The table in a brief listing proposed child tickets with title, description, size, dependencies, and mode (AFK/HITL). Max 10 tickets. |
 | **Approve brief** | The act of converting a brief's decomposition into real tickets on the board. Creates child tickets, links dependencies, posts a tracking comment. |
-| **Epic reference convention** | Child tickets include `Epic: {key}` in their description. This text convention enables cross-platform epic completion detection. |
+| **Batch mode** | Running `/clancy:brief N` to brief multiple tickets from the queue in sequence (e.g. `/clancy:brief 3`). Implies AI-grill (no human questions). Max 10 per batch. |
+| **Stale brief** | An unapproved brief older than 7 days. The stale brief hook checks on SessionStart and warns the user. |
+| **Devil's advocate agent** | The agent prompt used during AI-grill to interrogate sources (codebase, board, web) and challenge its own answers. Lives in `src/agents/` alongside the map-codebase specialist agents. |
+| **Epic reference convention** | Child tickets include `Epic: {key}` in their description (e.g. `Epic: PROJ-100`, `Epic: #50`, `Epic: ENG-42`). This text convention enables cross-platform epic completion detection. |
 
 ## Planner
 

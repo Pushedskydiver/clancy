@@ -792,9 +792,9 @@ If `CLANCY_PLAN_STATE_TYPE` is set in `.clancy/.env`, use that state type instea
 **What happens:**
 
 1. Tickets 1 and 2 exist in Linear and are fully functional
-2. Ticket 3 creation is retried once (single retry with 1s delay)
-3. If retry fails, log the failure and continue to ticket 4
-4. After all attempts, report what succeeded and what failed
+2. Ticket 3 creation fails
+3. **Stop immediately** — do NOT attempt remaining tickets. A failure likely indicates a systemic issue (API outage, permission problem, rate limit). Continuing wastes rate limit budget and creates confusing partial state.
+4. Report partial success
 
 **What the user sees:**
 
@@ -802,15 +802,13 @@ If `CLANCY_PLAN_STATE_TYPE` is set in `.clancy/.env`, use that state type instea
   [1/4] ✅ ENG-43 — Set up WebSocket infrastructure
   [2/4] ✅ ENG-44 — Implement notification service
   [3/4] ✗ Failed to create "Add notification preferences UI" — Linear API error
-    Retrying...
-  [3/4] ✗ Retry failed.
-  [4/4] ✅ ENG-46 — Add notification badge component
+  -  #4 not attempted
 
-⚠ 3 of 4 tickets created. 1 failed:
-  • "Add notification preferences UI" — not created
+⚠ Partial creation: 2 of 4 tickets created
 
-The brief has NOT been marked as approved. Fix the issue and re-run /clancy:approve-brief ENG-42.
-Created tickets (ENG-43, ENG-44, ENG-46) will not be duplicated on re-run.
+Created tickets are live on Linear. To complete:
+  1. Fix the issue (check Linear status/permissions)
+  2. Re-run /clancy:approve-brief ENG-42 to resume creating remaining tickets
 ```
 
 **Idempotency for re-run:** Before creating each ticket, check if a child issue with the same title already exists under the parent. If it does, skip it and use the existing issue's UUID for dependency linking.

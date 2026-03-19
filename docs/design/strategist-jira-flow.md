@@ -1110,7 +1110,7 @@ These are added to `sharedEnvSchema` (not Jira-specific) since GitHub and Linear
 | Brief skipped (not relevant) | `YYYY-MM-DD HH:MM \| BRIEF \| {slug} \| SKIPPED — not relevant ({reason})` |
 | Brief skipped (ticket Done) | `YYYY-MM-DD HH:MM \| BRIEF \| {slug} \| SKIPPED — ticket is Done` |
 | Brief skipped (not found) | `YYYY-MM-DD HH:MM \| BRIEF \| {slug} \| SKIPPED — ticket not found` |
-| Brief revised | `YYYY-MM-DD HH:MM \| BRIEF \| {slug} \| REVISED — {N} proposed tickets` |
+| Brief revised | `YYYY-MM-DD HH:MM \| BRIEF \| {slug} \| REVISED - {N} proposed tickets` |
 | Approve full success | `YYYY-MM-DD HH:MM \| APPROVE_BRIEF \| {slug} \| {N} tickets created` |
 | Approve partial | `YYYY-MM-DD HH:MM \| APPROVE_BRIEF \| {slug} \| PARTIAL — {M} of {N} tickets created` |
 

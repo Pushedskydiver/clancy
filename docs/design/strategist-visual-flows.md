@@ -2201,14 +2201,17 @@ Auth/network failure                  (nothing logged)
 ### New Config Variables
 
 ```
-Variable                   Default      Platforms    Purpose
-─────────────────────────  ──────────── ─────────── ─────────────────────────────
-CLANCY_BRIEF_ISSUE_TYPE    Task         Jira only    Issue type for created tickets
-CLANCY_BRIEF_EPIC          (none)       All          Default parent for text/file briefs
-CLANCY_COMPONENT           (none)       All          Auto-set on created tickets:
-                                                       Jira: components[] field
-                                                       GitHub: component:{val} label
-                                                       Linear: component:{val} label
+Variable                   Default        Platforms    Purpose
+─────────────────────────  ────────────── ─────────── ─────────────────────────────
+CLANCY_MODE                interactive    All          Grill mode: "interactive" (human
+                                                         grill) or "afk" (AI-grill).
+                                                         Overridden by --afk flag.
+CLANCY_BRIEF_ISSUE_TYPE    Task           Jira only    Issue type for created tickets
+CLANCY_BRIEF_EPIC          (none)         All          Default parent for text/file briefs
+CLANCY_COMPONENT           (none)         All          Auto-set on created tickets:
+                                                         Jira: components[] field
+                                                         GitHub: component:{val} label
+                                                         Linear: component:{val} label
 ```
 
 ### File System Artifacts

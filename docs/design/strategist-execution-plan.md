@@ -23,7 +23,7 @@ All of the following shipped in v0.5.6–v0.5.12:
 | Agent | Chunks | Files | Tests | Complexity |
 |---|---|---|---|---|
 | **1** | Schema + types + progress parser | `src/schemas/env.ts` (add `CLANCY_BRIEF_ISSUE_TYPE`, `CLANCY_BRIEF_EPIC`, `CLANCY_COMPONENT`, `CLANCY_MODE` to shared schema), `src/types/remote.ts` (add `BRIEF`, `APPROVE_BRIEF` to ProgressStatus), `src/scripts/shared/progress/progress.ts` (update `parseProgressFile` to handle slug-based entries for BRIEF/APPROVE_BRIEF) | `env-schema.test.ts`, `progress.test.ts` | Small |
-| **2** | **Brief workflow** | `src/roles/strategist/workflows/brief.md` (NEW, ~500 lines) — includes grill phase (human + AI-grill), all 4 input modes, batch mode, 3 board platforms | — | **Large** |
+| **2** | **Brief workflow** | `src/roles/strategist/workflows/brief.md` (NEW, ~500 lines) — includes grill phase (human + AI-grill), all 4 input modes, batch mode, `--research`/`--afk`/`--fresh` flags, 3 board platforms | — | **Large** |
 | **3** | **Approve-brief workflow** | `src/roles/strategist/workflows/approve-brief.md` (NEW, ~400 lines) — includes topological sort, `Epic: {key}` embedding, mode labels, 3 board platforms | — | **Large** |
 
 Agents 2 and 3 are the critical path — they need the full design docs.

@@ -34,7 +34,7 @@ GitHub Issues has no native epic, parent/child, or dependency concepts. The work
 
 | Concept | GitHub Equivalent | Mechanism |
 |---------|------------------|-----------|
-| Epic / parent | Issue (the source issue) | Cross-referenced via "Parent: #N" in child body |
+| Epic / parent | Issue (the source issue) | Cross-referenced via "Epic: #N" and "Parent: #N" in child body |
 | Child tickets | Issues | Created via `POST /repos/{owner}/{repo}/issues` |
 | Dependencies | None (native) | "Depends on #N" text in issue body |
 | Component filter | Label | `component:{value}` label (e.g. `component:api`) |
@@ -160,7 +160,7 @@ Or check `X-RateLimit-Remaining` and `X-RateLimit-Reset` headers on every respon
 
 ### Zod schema for single issue fetch (extends existing `githubIssueSchema`)
 
-The existing `githubIssueSchema` in `src/schemas/github.ts` needs extending for the strategist:
+The existing `githubIssueSchema` in `src/schemas/github-issues.ts` needs extending for the strategist:
 
 ```typescript
 /** Extended schema for fetching a single issue (GET /repos/.../issues/{n}). */
@@ -523,7 +523,7 @@ Extract from the brief markdown:
 Validate:
 - Decomposition table must exist and have at least 1 row.
 - If 0 rows: `✗ Brief has no ticket decomposition. Edit the brief and add tickets.` Stop.
-- If >10 rows: `⚠ Brief proposes {N} tickets (max 10). Only the first 10 will be created.` Truncate.
+- If >10 rows: `⚠ Brief proposes {N} tickets (max recommended: 10). Large decompositions may indicate the idea should be split further.` Continue — the limit is advisory, not enforced.
 - If circular dependencies detected: `✗ Circular dependency between #N and #M.` Stop.
 - Topological sort by dependency graph so blockers are created before dependents.
 
@@ -650,7 +650,7 @@ Edit the local brief file `.clancy/briefs/2026-03-14-redesign-settings-page.md`:
 
 ### Step 9 — Mark approved
 
-Create marker file: `.clancy/briefs/2026-03-14-redesign-settings-page.approved`
+Create marker file: `.clancy/briefs/2026-03-14-redesign-settings-page.md.approved`
 
 Contents: timestamp only.
 ```
@@ -680,7 +680,7 @@ Next: run /clancy:plan to generate implementation plans.
 ### Step 11 — Log
 
 ```
-2026-03-14 10:45 | APPROVE_BRIEF | redesign-settings-page | 4 tickets created (#51, #52, #53, #54)
+2026-03-14 10:45 | APPROVE_BRIEF | redesign-settings-page | 4 tickets created
 ```
 
 ---
@@ -827,7 +827,7 @@ Revised brief posted as comment on #50.
 
 **Logged:**
 ```
-2026-03-14 11:00 | BRIEF | redesign-settings-page | 5 proposed tickets (revision)
+2026-03-14 11:00 | BRIEF | redesign-settings-page | REVISED - 5 proposed tickets
 ```
 
 ### 10c. Re-brief with --fresh flag
@@ -932,7 +932,7 @@ Brief "redesign-settings-page" is already approved (2026-03-14 10:45).
 Tickets were created: #51, #52, #53, #54
 
 To re-create tickets, delete the .approved marker:
-  rm .clancy/briefs/2026-03-14-redesign-settings-page.approved
+  rm .clancy/briefs/2026-03-14-redesign-settings-page.md.approved
 ```
 
 Stop. No duplicate tickets created.
@@ -1285,6 +1285,8 @@ The `--list` flag does a best-effort parse. If the decomposition table cannot be
 Each created child issue uses this markdown body format:
 
 ```markdown
+Epic: #{parent_number}
+
 ## {Title}
 
 {Description from decomposition table}
@@ -1318,14 +1320,19 @@ Dependencies in the decomposition table use local indices (`#1`, `#2`). These mu
 2. When creating ticket #3, resolve dependency `#1` -> `#51`.
 3. Write `Depends on #51` in the body.
 
-**Circular dependencies:** If the decomposition table has circular deps (A depends on B, B depends on A), create both issues but log a warning:
+**Circular dependencies:** If the decomposition table has circular deps (A depends on B, B depends on A), stop with an error:
 ```
-⚠ Circular dependency detected between tickets #2 and #3. Review manually.
+✗ Circular dependency detected between tickets #2 and #3. Edit the brief to resolve, then re-run.
 ```
+This is a data error in the brief that should be fixed before creating tickets.
 
 ### Parent cross-referencing
 
-The `**Parent:** #50` line in each child issue body creates a GitHub cross-reference. When viewing issue #50, GitHub will show "mentioned in #51, #52, #53, #54" in the timeline. This is the primary mechanism for parent-child linking on GitHub.
+Each child issue body contains two parent references:
+- `Epic: #50` — the standardised cross-platform convention used by `fetchChildrenStatus` for epic completion detection.
+- `**Parent:** #50` — creates a GitHub cross-reference. When viewing issue #50, GitHub will show "mentioned in #51, #52, #53, #54" in the timeline.
+
+Both are written on creation. The `Epic:` line is always first in the body (before the heading).
 
 ### Why not use GitHub Projects or Tasklists?
 
