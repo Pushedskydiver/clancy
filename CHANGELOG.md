@@ -7,6 +7,14 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.7.2] — 2026-03-19
+
+### Fixed
+
+- **AFK mode guard for `/clancy:brief`** — running `/clancy:brief --afk` (or with `CLANCY_MODE=afk`) without a ticket or idea now exits with a helpful message instead of prompting an absent human
+
+---
+
 ## [0.7.1] — 2026-03-19
 
 ### Changed
