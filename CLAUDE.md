@@ -83,7 +83,7 @@ Always via branch + PR: TypeScript (`src/`, `hooks/`), tests, executable markdow
 
 ### Devil's advocate review
 
-After completing any non-trivial code work, spin up a review agent before committing. For wave-based work, review after each wave. The review agent checks: bugs, edge cases, stale references, missing tests, cross-doc consistency, backward compatibility, type safety, and code complexity. Docs-only changes skip this.
+Spin up a review agent at every necessary phase — not just after code. Review design docs for gaps and contradictions. Review execution plans for ordering problems and missing scope. Review each implementation wave before the next builds on it. Review the final PR for cross-cutting concerns. If the work has decisions or logic that could be wrong, it gets reviewed.
 
 ## Release checklist
 
