@@ -215,6 +215,57 @@ clancy-afk.js (loop runner — bundled, self-contained)
        └─ Generate session report (.clancy/session-report.md)
 ```
 
+## Phase Pipeline (v0.7.1)
+
+The once orchestrator (`src/scripts/once/once.ts`, 110 lines) is a thin pipeline runner. Business logic lives in 13 composable phase functions under `src/scripts/once/phases/`:
+
+```
+RunContext (mutable shared state)
+  │
+  ├── Phase 0:  lock-check      — startup lock, stale detection, AFK resume
+  ├── Phase 1:  preflight       — env, board detection, validation, ping, banner
+  ├── Phase 2:  epic-completion  — scan for completed epics → auto-create epic PR
+  ├── Phase 3:  rework-detection — PR review feedback → rework ticket
+  ├── Phase 4:  ticket-fetch     — fetch unblocked ticket, compute branches, print info
+  ├── Phase 5:  dry-run          — print preview and exit if --dry-run
+  ├── Phase 6:  feasibility      — can this be implemented as code?
+  ├── Phase 7:  branch-setup     — git ops (epic branch, feature branch, lock write)
+  ├── Phase 8:  transition       — move ticket to In Progress
+  ├── Phase 9:  invoke           — build prompt, run Claude session
+  ├── Phase 10: deliver          — push branch, create PR, log progress
+  ├── Phase 11: cost             — duration-based token estimate → costs.log
+  └── Phase 12: cleanup          — completion print, webhook notification
+```
+
+Each phase has signature `(ctx: RunContext) => Promise<boolean> | boolean`. Returns `true` to continue, `false` for early exit. The `try/catch/finally` in `once.ts` handles branch restoration (`ctx.originalBranch`) and lock cleanup (`ctx.lockOwner`).
+
+## Board Type Abstraction (v0.7.1)
+
+All board operations go through a unified `Board` type (`src/scripts/board/board.ts`):
+
+```
+Board type (7 methods)
+  │
+  ├── ping()                → { ok, error? }
+  ├── validateInputs()      → string | undefined
+  ├── fetchTicket(opts)     → FetchedTicket | undefined
+  ├── fetchTickets(opts)    → FetchedTicket[]
+  ├── fetchBlockerStatus(t) → boolean
+  ├── fetchChildrenStatus() → { total, incomplete } | undefined
+  ├── transitionTicket()    → boolean
+  └── sharedEnv()           → Record<string, string | undefined>
+
+createBoard(config) — single switch on config.provider
+  │
+  ├── 'jira'   → createJiraBoard(env)    → plain object
+  ├── 'github' → createGitHubBoard(env)  → plain object
+  └── 'linear' → createLinearBoard(env)  → plain object
+```
+
+Each wrapper returns a plain object (no classes) that delegates to existing board module functions. The factory in `src/scripts/board/factory/factory.ts` is the **only** switch statement on `config.provider` in the system. Phases access the board via `ctx.board`.
+
+Adding a new board (v0.8.0) requires: one `*-board.ts` wrapper, one case in the factory, and the board module itself. No other files touched.
+
 ## What Gets Created in User Projects
 
 After `/clancy:init` + `/clancy:map-codebase`:

@@ -12,6 +12,9 @@ Interactive diagrams showing how roles, commands, and flows connect. Rendered na
 6. [File Artifacts](#6-file-artifacts--what-lives-in-clancy) — everything in `.clancy/`
 7. [Delivery Paths](#7-delivery-paths--pr-flow-with-epic-branches) — PR flow with epic branches
 8. [Prompt Building](#8-prompt-building--what-claude-receives) — what Claude gets for implementation and rework
+9. [Planner Flow](#9-planner-flow--plan-to-approval) — `/clancy:plan` and `/clancy:approve-plan`
+10. [Hook Architecture](#10-hook-architecture--events-and-hooks) — which hooks fire on which events
+11. [Grill Phase](#11-grill-phase--human-vs-ai-grill) — decision tree for grill mode
 
 ---
 
@@ -471,4 +474,136 @@ graph TD
 
     style TDDBlock stroke:#1565c0,stroke-width:2px
     style RTDDBlock stroke:#1565c0,stroke-width:2px
+```
+
+---
+
+## 9. Planner Flow — Plan to Approval
+
+The optional planning phase. Runs per-ticket after the strategist creates them.
+
+```mermaid
+flowchart TD
+    Start(["/clancy:plan"]) --> Preflight["Preflight\n(.clancy/.env, credentials)"]
+    Preflight --> Fetch["Fetch next unplanned ticket\nfrom board queue"]
+    Fetch -->|None| Done(["No tickets to plan"])
+    Fetch -->|Found| AutoDetect{"Existing plan\nfor this ticket?"}
+
+    AutoDetect -->|No| Research
+    AutoDetect -->|"Yes + feedback"| Revise["Revise plan\nwith feedback"]
+    AutoDetect -->|"Yes, no feedback"| AlreadyPlanned["Already planned.\nAdd feedback to revise."]
+
+    Research["Research codebase\n(read .clancy/docs/,\nexplore affected areas)"] --> Generate
+
+    Revise --> Generate
+
+    Generate["Generate implementation plan\n(steps, file changes,\ntest strategy, size estimate)"] --> Post["Post plan as comment\non ticket"]
+
+    Post --> Display["Display plan to user"]
+    Display --> Log["Log: PLAN entry\nin progress.txt"]
+    Log --> NextSteps(["Review → /clancy:approve-plan\nRevise → comment + re-run\nRestart → /clancy:plan --fresh"])
+
+    style AlreadyPlanned stroke:#f9a825,stroke-width:2px
+    style Done stroke:#f9a825,stroke-width:2px
+```
+
+### Approve-plan flow
+
+```mermaid
+flowchart LR
+    Approve(["/clancy:approve-plan"]) --> Load["Load plan from\nticket comments"]
+    Load --> Confirm{"User confirms\nplan looks good?"}
+    Confirm -->|"Y"| LogApprove["Log: APPROVE_PLAN\nin progress.txt"]
+    Confirm -->|"N"| Stop(["Aborted"])
+    LogApprove --> Ready(["Ticket ready for\nimplementation"])
+
+    style Stop stroke:#c62828,stroke-width:2px
+```
+
+---
+
+## 10. Hook Architecture — Events and Hooks
+
+Which hooks fire on which Claude Code events, and what they do.
+
+```mermaid
+flowchart TD
+    subgraph "Session Lifecycle"
+        SessionStart(["SessionStart"]) --> CheckUpdate["clancy-check-update.js\n• Version check\n• Stale brief detection"]
+    end
+
+    subgraph "Every Tool Call"
+        PreTool(["PreToolUse"]) --> CredGuard["clancy-credential-guard.js\n• Block secrets in file writes"]
+        PreTool --> BranchGuard["clancy-branch-guard.js\n• Block force push\n• Block push to main\n• Block destructive resets"]
+
+        PostTool(["PostToolUse"]) --> CtxMonitor["clancy-context-monitor.js\n• Context % warning (35%/25%)\n• Time guard warning (80%/100%)"]
+    end
+
+    subgraph "Notifications"
+        Notif(["Notification"]) --> Statusline["clancy-statusline.js\n• Context usage bar\n• Update available banner"]
+    end
+
+    subgraph "Context Management"
+        PostCompact(["PostCompact"]) --> Compact["clancy-post-compact.js\n• Re-inject ticket key,\n  branch, description\n  from lock.json"]
+    end
+
+    subgraph "Delivery Gate"
+        StopEvent(["Stop"]) --> VerifyGate["verification-gate agent\n• Run lint/test/typecheck\n• Self-healing retry\n• Block or allow delivery"]
+    end
+
+    CredGuard -.->|"deny"| Block1(["Tool blocked"])
+    BranchGuard -.->|"deny"| Block2(["Tool blocked"])
+    VerifyGate -.->|"block + reason"| Continue(["Claude fixes\nand retries"])
+
+    style Block1 stroke:#c62828,stroke-width:2px
+    style Block2 stroke:#c62828,stroke-width:2px
+    style VerifyGate stroke:#2e7d32,stroke-width:2px
+    style Continue stroke:#f9a825,stroke-width:2px
+```
+
+**Key rule:** All hooks are best-effort and fail-open. A crashing hook must never block the user's workflow.
+
+---
+
+## 11. Grill Phase — Human vs AI-Grill
+
+The decision tree inside `/clancy:brief` Step 2a.
+
+```mermaid
+flowchart TD
+    Start(["Grill Phase"]) --> AfkFlag{"--afk flag\npassed?"}
+
+    AfkFlag -->|Yes| AIGrill
+    AfkFlag -->|No| EnvCheck{"CLANCY_MODE\nenv var?"}
+
+    EnvCheck -->|"afk"| AIGrill
+    EnvCheck -->|"interactive / unset"| HumanGrill
+
+    subgraph HumanGrill["Human Grill (interactive)"]
+        H1["Generate clarifying questions\n(scope, users, constraints,\nedges, dependencies)"]
+        H2["For each question:\n• Provide recommended answer\n• User confirms or overrides"]
+        H3["User can ask back:\n• What does the codebase do?\n• What's the industry standard?\n• What would you recommend?"]
+        H4["Answers spawn follow-ups\n(multi-round, 2-5 rounds)"]
+        H5["Continue until zero\nopen questions remain"]
+
+        H1 --> H2 --> H3 --> H4 --> H5
+    end
+
+    subgraph AIGrill["AI-Grill (autonomous)"]
+        A1["Generate 10-15 questions\n(same categories as human)"]
+        A2["Devil's advocate agent\ninterrogates sources:\n• Codebase exploration\n• Board context\n• Web research"]
+        A3["Challenge own answers\n— flag conflicts between\nsources"]
+        A4["Self-follow-ups within\nsame pass (single pass)"]
+        A5["Classify each answer:\n>80% confident → Discovery\nConflict/unknown → Open Questions"]
+
+        A1 --> A2 --> A3 --> A4 --> A5
+    end
+
+    HumanGrill --> Output
+    AIGrill --> Output
+
+    Output["## Discovery\nQ&A with source tags:\n(human/codebase/board/web)\n\n## Open Questions\nUnresolvable items for PO"]
+
+    style HumanGrill stroke:#1565c0,stroke-width:2px
+    style AIGrill stroke:#2e7d32,stroke-width:2px
 ```
