@@ -44,7 +44,7 @@ The PR body will include a verification warning — delivery should not be block
 
 ### Step 5 — Detect check commands
 
-First check for the `CLANCY_VERIFY_COMMANDS` environment variable. If set, use its value as a comma-separated list of npm script names to run (e.g. `lint,test,typecheck`). Skip auto-detection.
+First check for the `CLANCY_VERIFY_COMMANDS` environment variable. If set, use its value as a comma-separated list of **full shell commands** to run (e.g. `npm run lint,npm test,npm run typecheck`). Execute each command directly via Bash — do NOT wrap in `npm run`. Skip auto-detection.
 
 If `CLANCY_VERIFY_COMMANDS` is not set, read `package.json` and inspect the `scripts` object. Auto-detect checks by matching script names:
 

@@ -29,6 +29,7 @@ export function isEpicBranch(targetBranch: string): boolean {
  * @param config - The board configuration.
  * @param ticket - The ticket being implemented.
  * @param targetBranch - The branch the PR targets (used to determine `Closes` vs `Part of`).
+ * @param verificationWarning - Optional warning text when verification checks failed after max retries. Included as a `## Verification Warning` section before the footer.
  * @returns The PR body as a markdown string.
  */
 export function buildPrBody(

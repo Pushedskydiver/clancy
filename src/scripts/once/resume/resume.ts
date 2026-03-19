@@ -198,7 +198,9 @@ export async function executeResume(
           lock.ticketTitle,
           'RESUMED',
           pr.number,
-          lock.parentKey || undefined,
+          lock.parentKey && lock.parentKey !== 'none'
+            ? lock.parentKey
+            : undefined,
         );
       } else {
         console.log(dim('  Branch pushed — create a PR manually.'));
@@ -208,7 +210,9 @@ export async function executeResume(
           lock.ticketTitle,
           'RESUMED',
           undefined,
-          lock.parentKey || undefined,
+          lock.parentKey && lock.parentKey !== 'none'
+            ? lock.parentKey
+            : undefined,
         );
       }
     } else {
@@ -218,7 +222,9 @@ export async function executeResume(
         lock.ticketTitle,
         'RESUMED',
         undefined,
-        lock.parentKey || undefined,
+        lock.parentKey && lock.parentKey !== 'none'
+          ? lock.parentKey
+          : undefined,
       );
     }
 

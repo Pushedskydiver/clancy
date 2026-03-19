@@ -464,6 +464,7 @@ export async function run(argv: string[]): Promise<void> {
         ticketBranch: ticketBranch,
         targetBranch: effectiveTarget,
         parentKey: ticket.parentInfo,
+        description: (ticket.description ?? '').slice(0, 2000),
         startedAt: new Date().toISOString(),
       });
       lockOwner = true;

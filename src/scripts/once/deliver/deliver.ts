@@ -164,10 +164,9 @@ export async function deliverViaPullRequest(
     const attempt = readFileSync(attemptPath, 'utf8').trim();
     const attemptNum = parseInt(attempt, 10);
     if (attemptNum > 0) {
-      // The verification gate writes the *next* attempt number on failure,
-      // so the file contains attemptNum = actual attempts + 1. Subtract 1 for display.
-      const actualAttempts = Math.max(1, attemptNum - 1);
-      verificationWarning = `Verification checks did not pass after ${actualAttempts} fix attempt(s). Review carefully.`;
+      // The file exists = verification didn't fully pass. The number is
+      // the attempt counter (1 = ran once and failed, 2 = ran twice, etc.)
+      verificationWarning = `Verification checks did not fully pass (${attemptNum} attempt(s)). Review carefully.`;
     }
   } catch {
     // No verify-attempt file — verification passed or wasn't run

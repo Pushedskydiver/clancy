@@ -14,6 +14,7 @@ export type LockData = {
   ticketBranch: string;
   targetBranch: string;
   parentKey: string;
+  description?: string; // Truncated ticket description for PostCompact context injection
   startedAt: string; // ISO 8601
 };
 
