@@ -2,7 +2,7 @@
 
 ## Overview
 
-~30 files (4 new, ~26 modified) + ~12 test files. 4 waves, 9 agents total. The strategist is a **pure markdown workflow** — no runtime TypeScript like `once.ts`. The installer picks up roles dynamically from `src/roles/`. Also includes blocker-aware ticket pickup in the implementer (runtime TypeScript change), `fetchChildrenStatus` dual-mode rewrite, and HITL/AFK queue filtering.
+~30 files (4 new, ~26 modified) + ~12 test files. 4 waves, 12 implementation agents + 5 review agents. The strategist is a **pure markdown workflow** — no runtime TypeScript like `once.ts`. The installer picks up roles dynamically from `src/roles/`. Also includes blocker-aware ticket pickup in the implementer (runtime TypeScript change), `fetchChildrenStatus` dual-mode rewrite, and HITL/AFK queue filtering.
 
 ## Prerequisites
 
@@ -25,8 +25,9 @@ All of the following shipped in v0.5.6–v0.5.12:
 | **1** | Schema + types + progress parser | `src/schemas/env.ts` (add `CLANCY_BRIEF_ISSUE_TYPE`, `CLANCY_BRIEF_EPIC`, `CLANCY_COMPONENT`, `CLANCY_MODE` to shared schema), `src/types/remote.ts` (add `BRIEF`, `APPROVE_BRIEF` to ProgressStatus), `src/scripts/shared/progress/progress.ts` (update `parseProgressFile` to handle slug-based entries for BRIEF/APPROVE_BRIEF) | `env-schema.test.ts`, `progress.test.ts` | Small |
 | **2** | **Brief workflow** | `src/roles/strategist/workflows/brief.md` (NEW, ~500 lines) — includes grill phase (human + AI-grill), all 4 input modes, batch mode, `--research`/`--afk`/`--fresh` flags, 3 board platforms | — | **Large** |
 | **3** | **Approve-brief workflow** | `src/roles/strategist/workflows/approve-brief.md` (NEW, ~400 lines) — includes topological sort, `Epic: {key}` embedding, mode labels, 3 board platforms | — | **Large** |
+| **DA** | **Devil's advocate agent prompt** | `src/agents/devils-advocate.md` (NEW) — the prompt used by the AI-grill during `/clancy:brief --afk`. Must instruct the agent to interrogate codebase/board/web, challenge its own answers, flag conflicts, and classify questions as resolved vs open. Follow the existing `src/agents/` prompt style. | — | Small |
 
-Agents 2 and 3 are the critical path — they need the full design docs.
+Agents 2 and 3 are the critical path — they need the full design docs. Agent DA has no code dependencies and can run in parallel.
 
 **Note on Agent 2 complexity:** The brief workflow handles 4 input modes × 3 boards × dual grill mode. Consider splitting into two sub-agents if context window is a concern: one for the grill phase + brief generation, one for board-specific API calls (comment posting, feedback detection, re-brief flow).
 
@@ -48,6 +49,7 @@ Spin up a review agent after Wave 1 completes. Scope:
 | **5** | Setup integration + scaffold | `src/roles/setup/commands/help.md`, `src/roles/setup/workflows/init.md` (add `CLANCY_MODE`, strategist toggle), `src/roles/setup/workflows/settings.md`, `src/roles/setup/workflows/scaffold.md` (add new env vars to .env.example templates). **Note:** `CLANCY_COMPONENT` prompt should clarify it only affects ticket creation, not queue filtering. | — |
 | **6** | Reviewer logs + stale brief hook + template | `src/roles/reviewer/workflows/logs.md`, `hooks/clancy-check-update.js` (**stale brief detection** — scan `.clancy/briefs/` for unapproved files > 7 days old), `src/templates/CLAUDE.md` | — |
 | **7** | Implementer: blocker check + HITL filter + fetchChildrenStatus | See detailed scope below | `jira.test.ts`, `github.test.ts`, `linear.test.ts`, `fetch-ticket.test.ts` |
+| **T7** | **Test writer for Agent 7** | Dedicated test agent for the runtime TypeScript changes. Writes thorough edge-case tests for: `fetchBlockerStatus` (all 3 boards — no blockers, all resolved, some unresolved, API failure), `fetchTicket` multi-candidate (first unblocked, first blocked + second unblocked, all blocked), HITL/AFK filtering (AFK skips HITL, interactive picks up any), `fetchChildrenStatus` dual-mode (Epic: text found, fallback to native, mixed children). References the design docs' edge cases and the review checklist. | `board-ops.test.ts`, `fetch-ticket.test.ts` (shared with Agent 7) |
 
 #### Agent 7 — Detailed Scope
 
@@ -126,12 +128,20 @@ Spin up a review agent after Wave 2 completes. This is the most critical review 
 - **Init/settings:** Are all new env vars prompted with correct descriptions and defaults?
 - Run `npm test && npm run typecheck && npm run lint`.
 
-### Wave 3 — Documentation (2 parallel agents)
+Also spin up a **cross-platform consistency checker** agent:
+- Grep for all Jira/GitHub/Linear code paths in the brief and approve-brief workflows
+- Verify identical error handling patterns across all 3 boards (same stop/warn behaviour)
+- Verify all 3 `fetchBlockerStatus` implementations handle the same edge cases
+- Verify all 3 `fetchChildrenStatus` dual-mode implementations use the same fallback logic
+- Check that mode labels (`clancy:afk`, `clancy:hitl`) are referenced consistently in all board modules
+
+### Wave 3 — Documentation (3 parallel agents)
 
 | Agent | Chunks | Files |
 |---|---|---|
 | **8** | Role doc + cross-cutting docs | `docs/roles/STRATEGIST.md` (NEW), `docs/ARCHITECTURE.md`, `docs/VISUAL-ARCHITECTURE.md`, `docs/roles/SETUP.md`, `docs/guides/CONFIGURATION.md`, `docs/GLOSSARY.md` |
 | **9** | README + project + release | `README.md`, `CLAUDE.md`, `CHANGELOG.md`, `package.json`, `package-lock.json` |
+| **SW** | **Stale reference sweeper** | Full codebase grep for outdated patterns. Check ALL files (not just those being edited) for: old squash-merge delivery refs, `github.ts` (should be `github-issues.ts`), outdated test counts, wrong version numbers, `Parent:` without `Epic:` in strategist context, any `CLANCY_MODE` refs without corresponding Zod schema. Fix or flag. | — |
 
 ### Wave 3 Review — Devil's Advocate
 
