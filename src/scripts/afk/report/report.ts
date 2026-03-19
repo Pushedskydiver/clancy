@@ -100,6 +100,7 @@ const COMPLETED_STATUSES = new Set([
   'PR_CREATED',
   'PUSHED',
   'EPIC_PR_CREATED',
+  'RESUMED',
 ]);
 
 /** Statuses that indicate a failed/skipped ticket. */
