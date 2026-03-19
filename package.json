@@ -29,7 +29,10 @@
   },
   "main": "dist/installer/install.js",
   "files": [
-    "dist/",
+    "dist/bundle/",
+    "dist/installer/",
+    "dist/scripts/shared/env-parser/",
+    "dist/utils/ansi/",
     "hooks/*.js",
     "hooks/package.json",
     "src/roles/",
