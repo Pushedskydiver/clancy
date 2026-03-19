@@ -50,6 +50,13 @@ export const sharedEnvSchema = z.object({
   CLANCY_BRIEF_ISSUE_TYPE: z.optional(z.string()),
   CLANCY_BRIEF_EPIC: z.optional(z.string()),
   CLANCY_COMPONENT: z.optional(z.string()),
+
+  // Reliable autonomous mode
+  CLANCY_FIX_RETRIES: z.optional(z.string()),
+  CLANCY_VERIFY_COMMANDS: z.optional(z.string()),
+  CLANCY_TOKEN_RATE: z.optional(z.string()),
+  CLANCY_TIME_LIMIT: z.optional(z.string()),
+  CLANCY_BRANCH_GUARD: z.optional(z.string()),
 });
 
 // ─── Board-specific schemas ──────────────────────────────────────────────────

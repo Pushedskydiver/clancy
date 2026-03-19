@@ -364,5 +364,81 @@ describe('detectBoard', () => {
       expect(result.env.CLANCY_BRIEF_EPIC).toBeUndefined();
       expect(result.env.CLANCY_COMPONENT).toBeUndefined();
     });
+
+    it('passes through reliable autonomous mode vars for Jira', () => {
+      const result = detectBoard(
+        jiraEnv({
+          CLANCY_FIX_RETRIES: '3',
+          CLANCY_VERIFY_COMMANDS: 'npm test,npm run lint',
+          CLANCY_TOKEN_RATE: '0.01',
+          CLANCY_TIME_LIMIT: '30',
+          CLANCY_BRANCH_GUARD: 'true',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_FIX_RETRIES).toBe('3');
+      expect(result.env.CLANCY_VERIFY_COMMANDS).toBe('npm test,npm run lint');
+      expect(result.env.CLANCY_TOKEN_RATE).toBe('0.01');
+      expect(result.env.CLANCY_TIME_LIMIT).toBe('30');
+      expect(result.env.CLANCY_BRANCH_GUARD).toBe('true');
+    });
+
+    it('passes through reliable autonomous mode vars for GitHub', () => {
+      const result = detectBoard(
+        githubEnv({
+          CLANCY_FIX_RETRIES: '5',
+          CLANCY_VERIFY_COMMANDS: 'npm test',
+          CLANCY_TOKEN_RATE: '0.02',
+          CLANCY_TIME_LIMIT: '60',
+          CLANCY_BRANCH_GUARD: 'false',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_FIX_RETRIES).toBe('5');
+      expect(result.env.CLANCY_VERIFY_COMMANDS).toBe('npm test');
+      expect(result.env.CLANCY_TOKEN_RATE).toBe('0.02');
+      expect(result.env.CLANCY_TIME_LIMIT).toBe('60');
+      expect(result.env.CLANCY_BRANCH_GUARD).toBe('false');
+    });
+
+    it('passes through reliable autonomous mode vars for Linear', () => {
+      const result = detectBoard(
+        linearEnv({
+          CLANCY_FIX_RETRIES: '2',
+          CLANCY_VERIFY_COMMANDS: 'npm run typecheck',
+          CLANCY_TOKEN_RATE: '0.005',
+          CLANCY_TIME_LIMIT: '45',
+          CLANCY_BRANCH_GUARD: 'true',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_FIX_RETRIES).toBe('2');
+      expect(result.env.CLANCY_VERIFY_COMMANDS).toBe('npm run typecheck');
+      expect(result.env.CLANCY_TOKEN_RATE).toBe('0.005');
+      expect(result.env.CLANCY_TIME_LIMIT).toBe('45');
+      expect(result.env.CLANCY_BRANCH_GUARD).toBe('true');
+    });
+
+    it('reliable autonomous mode vars are optional — config parses without them', () => {
+      const result = detectBoard(githubEnv());
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_FIX_RETRIES).toBeUndefined();
+      expect(result.env.CLANCY_VERIFY_COMMANDS).toBeUndefined();
+      expect(result.env.CLANCY_TOKEN_RATE).toBeUndefined();
+      expect(result.env.CLANCY_TIME_LIMIT).toBeUndefined();
+      expect(result.env.CLANCY_BRANCH_GUARD).toBeUndefined();
+    });
   });
 });
