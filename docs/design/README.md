@@ -24,6 +24,12 @@ Design decisions for Clancy features — the "why" behind non-obvious choices. T
 | `reliable-autonomous-mode.md` | Verification gates, safety hooks, crash recovery, Claude Code hook API research | v0.7.0 |
 | `codebase-refactor.md` | Phase pipeline, Board type abstraction, switch elimination | v0.7.1 |
 
+### In progress
+
+| Document | Feature | Target |
+|---|---|---|
+| `pipeline-labels.md` | Pipeline stage labels (clancy:brief → clancy:plan → clancy:build) | Pre-v0.8.0 |
+
 ### Deleted after shipping
 
 - Strategist execution plan + 4 platform flow docs (v0.6.0) — implementation lives in `src/roles/strategist/workflows/`
