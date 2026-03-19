@@ -248,6 +248,6 @@ The branch guard hook (`clancy-branch-guard.js`) is a PreToolUse hook that block
 - **Protected branches** — blocks direct push to `main`, `master`, and `CLANCY_BASE_BRANCH` (all work goes through feature branches)
 - **Destructive resets** — blocks `git reset --hard`, `git clean -fd`, and `git checkout .` on protected branches
 
-The branch guard is best-effort — it catches common destructive patterns but does not intercept every possible git invocation. It runs as a PreToolUse hook on Bash and Execute commands, inspecting the command string before execution.
+The branch guard is best-effort — it catches common destructive patterns but does not intercept every possible git invocation. It runs as a PreToolUse hook on Bash tool calls, inspecting the command string before execution.
 
 Enable or disable via `CLANCY_BRANCH_GUARD` (default: `true`). Set to `false` to disable all branch guard checks.

@@ -30,7 +30,11 @@ Read `.clancy/verify-attempt.txt` from the project root. If the file does not ex
 
 ### Step 4 — Check max retries
 
-Read the `CLANCY_FIX_RETRIES` environment variable. Default to `2` if not set. The first attempt (attempt 1) ALWAYS runs verification. On subsequent attempts, check if retries are exhausted: if the current attempt is greater than `maxRetries + 1`, max retries have been exhausted (attempt 1 = initial check, attempts 2 through maxRetries+1 = fix retries). When exhausted, keep `.clancy/verify-attempt.txt` in place (the delivery flow reads it to add a verification warning to the PR body). Respond immediately:
+Read the `CLANCY_FIX_RETRIES` environment variable. Default to `2` if not set.
+
+**Special case: `CLANCY_FIX_RETRIES=0`** means "verify once but never retry." On attempt 1, run checks normally. If they fail, write `1` to `.clancy/verify-attempt.txt` and respond with `{"decision": "allow"}` — do NOT block. The PR body will include the verification warning. On attempt 2+, allow immediately.
+
+**Normal case: `CLANCY_FIX_RETRIES >= 1`** — The first attempt (attempt 1) ALWAYS runs verification. On subsequent attempts, check if retries are exhausted: if the current attempt is greater than `maxRetries + 1`, max retries have been exhausted (attempt 1 = initial check, attempts 2 through maxRetries+1 = fix retries). When exhausted, keep `.clancy/verify-attempt.txt` in place (the delivery flow reads it to add a verification warning to the PR body). Respond immediately:
 
 ```json
 {"decision": "allow"}

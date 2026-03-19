@@ -37,7 +37,9 @@ function checkCommand(cmd) {
     for (const branch of PROTECTED_BRANCHES) {
       // Matches: git push origin main, git push origin main:main, etc.
       // Does NOT match: git push origin main-feature
-      const pattern = new RegExp(`\\bgit\\s+push\\s+\\S+\\s+${branch}(?:\\s|$|:)`);
+      // Escape regex metacharacters in branch name (e.g. release/1.0 → release\/1\.0)
+      const escaped = branch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const pattern = new RegExp(`\\bgit\\s+push\\s+\\S+\\s+${escaped}(?:\\s|$|:)`);
       if (pattern.test(cmd)) {
         return `Blocked: direct push to protected branch '${branch}'. Create a PR instead.`;
       }

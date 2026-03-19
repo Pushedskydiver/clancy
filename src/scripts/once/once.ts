@@ -142,11 +142,10 @@ export async function run(argv: string[]): Promise<void> {
                 resumeInfo,
               );
               if (resumed) {
-                console.log(
-                  green(
-                    `  ✓ Resumed ${existingLock.ticketKey} — continuing to next ticket`,
-                  ),
-                );
+                console.log(green(`  ✓ Resumed ${existingLock.ticketKey}`));
+                // Return after resume — one ticket per invocation.
+                // The AFK runner will start the next iteration for a fresh ticket.
+                return;
               }
             }
           }
