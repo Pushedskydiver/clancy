@@ -82,38 +82,77 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 
 ---
 
-## v0.6.0 — Strategist role (next)
+## v0.6.0 — Strategist role ✅
 
 - `/clancy:brief` — take a vague idea (from a board ticket, inline text, or local file), research the codebase and web, produce a structured strategic brief with ticket decomposition
-- `/clancy:approve-brief` — create tickets on the board from an approved brief (new capability: ticket creation via Jira, GitHub, Linear APIs)
-- Input sources: board ticket (original becomes epic/parent), inline text, `--from` file, interactive prompt
-- Adaptive research agents (1-4) — scales with idea complexity; codebase exploration + judgement-based web research
-- `--research` flag to force web research; `--force` to re-brief with feedback
-- `--list` flag to show all briefs with age, status, and stale warnings
-- Brief selection via conversational inference, numeric index, or slug match
-- Brief stored locally in `.clancy/briefs/` + as board comment when sourced from a ticket
-- Stale brief detection — extends SessionStart hook to warn on unapproved drafts older than 7 days
-- Dependency linking on ticket creation: Jira issueLinks, Linear issueRelations, GitHub cross-references
+- `/clancy:approve-brief` — create tickets on the board from an approved brief (ticket creation via Jira, GitHub, Linear APIs)
+- Grill phase — human grill (interactive, relentless, two-way) and AI-grill (devil's advocate agent, `--afk` flag / `CLANCY_MODE=afk`)
+- Discovery section with source tags (human/codebase/board/web) in every brief
+- Vertical slice decomposition with validation rule against horizontal layers
+- HITL/AFK classification per ticket with `clancy:afk`/`clancy:hitl` labels
+- Blocker-aware ticket pickup — `fetchBlockerStatus` on all 3 boards, skip blocked tickets
+- `fetchChildrenStatus` dual-mode — `Epic: {key}` text convention + native API fallback
+- HITL/AFK queue filtering — AFK mode skips `clancy:hitl` tickets
+- Stale brief detection hook, new role hints in `/clancy:update`
 - New env vars: `CLANCY_MODE`, `CLANCY_BRIEF_ISSUE_TYPE`, `CLANCY_BRIEF_EPIC`, `CLANCY_COMPONENT`
 
 ---
 
-## v0.7.0 — Visual verification
+## v0.7.0 — Reliable autonomous mode (next)
 
-- Playwright CLI integration — token-efficient alternative to Playwright MCP for visual checks. Init wizard offers CLI (recommended) or MCP mode. CLI uses `playwright-cli` commands (navigate, screenshot) instead of writing test scripts, with session isolation per ticket
-- Lighthouse CI — optional enhancement to audit performance, accessibility, SEO, and best practices after UI ticket implementation. Returns a focused score summary, pairs with Playwright CLI for screenshot + audit in one pass
-- axe-core CLI — optional enhancement for automated accessibility testing after UI changes. Verifies against `.clancy/docs/ACCESSIBILITY.md` conventions with specific violation reporting
+Make AFK mode production-grade. Every feature in this version makes autonomous operation safer and higher quality. Inspired by GSD 1/2 verification gates, Claude Code's new hook types, and Devin's self-healing.
+
+### Verification gates
+- **Agent-based Stop hook** — runs lint/test/typecheck after implementation, before delivery. Uses Claude Code's `type: "agent"` hook on `Stop` event. Auto-detects commands from `package.json` scripts
+- **Self-healing retry** — if tests fail, attempt a fix cycle (up to N retries, configurable via `CLANCY_FIX_RETRIES`, default 2). If still failing, deliver with a warning in the PR body. Inspired by GSD 1's node repair (RETRY/DECOMPOSE/PRUNE strategy)
+- **PostCompact hook** — re-inject current ticket key, branch, and requirements after context compaction. Uses Claude Code's `PostCompact` event. Prevents context loss mid-ticket
+
+### Safety hooks
+- **Cost tracker** — per-ticket token usage logged to `.clancy/costs.log`. Configurable budget alert via `CLANCY_COST_LIMIT`. Summary in progress entries
+- **Branch guard** — `PreToolUse` hook blocking `git push --force`, pushes to protected branches, destructive resets (`git reset --hard`, `git clean -fd`). Essential for `--dangerously-skip-permissions`
+- **Time guard** — configurable per-ticket time limit via `CLANCY_TIME_LIMIT` (default 30 min). Warn at 80%, abort at 100%. Prevents runaway sessions burning tokens on infeasible work
+
+### Crash recovery
+- **Lock file** — `.clancy/lock.json` with PID, ticket key, and timestamp. On startup: if PID is dead, clean up and proceed; if alive, abort with message
+- **Resume detection** — check for in-progress feature branches with uncommitted/unpushed work. Offer to resume instead of picking a new ticket
+- **AFK session report** — after completing N tickets, generate a summary: what was done, what failed, estimated cost, next steps. Useful for async teams to review overnight AFK runs
 
 ---
 
-## v0.8.0 — Board ecosystem
+## v0.8.0 — Team readiness
 
-- Community board contributions
+Make Clancy work for teams, not just solo developers.
+
+### Board ecosystem
 - Shortcut (formerly Clubhouse) support
 - Notion database support
 - Azure DevOps support
 - Board auto-detection: Clancy detects which board is configured without asking
 - `/clancy:reapply-patches` — guided restore of user-modified files backed up during updates
+
+### Team features
+- **Ticket claim check** — before picking a ticket, verify it is not already "In Progress" (claimed by another instance or human). Skip if claimed
+- **Quality feedback tracking** — record review cycles, CI pass rate, and rework count per ticket. Surface in `/clancy:logs` as quality trends. Identify problematic ticket types
+- **Desktop notification hook** — `Notification` event hook when Claude needs input. Essential for HITL workflows
+- **Quiet hours hook** — block AFK runs outside configured hours (`CLANCY_QUIET_HOURS=22:00-07:00`)
+- **Drift detector hook** — compare local `.clancy/` config against installed version. Warn if hooks or scripts are stale
+
+---
+
+## v0.9.0 — Output quality
+
+Make Clancy's code output genuinely good, not just functional.
+
+### Visual verification
+- Playwright CLI integration — token-efficient alternative to Playwright MCP for visual checks. Init wizard offers CLI (recommended) or MCP mode
+- Lighthouse CI — performance, accessibility, SEO, best practices audit after UI ticket implementation
+- axe-core CLI — automated accessibility testing after UI changes
+
+### Quality improvements
+- **Security scanning pre-PR gate** — run `npm audit`, secret scanning, and optionally CodeQL/Semgrep before creating a PR. Inspired by PAUL's security commands and Trail of Bits security skills
+- **Bug triage role** — new optional role inspired by Matt Pocock's `triage-issue`. Investigates a bug report, explores the codebase, creates an actionable ticket with a TDD fix plan
+- **Auto-refresh docs** — run `/clancy:update-docs` periodically or after N tickets completed. Inspired by Devin's DeepWiki
+- **Review automation** — confidence self-check before delivery. Below-threshold PRs flagged as "needs careful review"
 
 ---
 
@@ -124,27 +163,18 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 - Polished init wizard with auto-detection for common setups
 - Complete documentation site
 - npm package integrity checks
-- Sentry CLI — optional enhancement to check for new errors after ticket completion. Flags regressions in the progress log and triggers notifications during AFK mode
+- Sentry CLI — optional error monitoring after ticket completion
 
 ---
 
-## v1.1.0 — Review automation
+## v2.0.0 — Multi-agent + platform
 
-- `/clancy:run --review` — confidence check before each ticket, pause if below threshold
-- `CLANCY_AUTO_REVIEW=true` env var to enable by default
-- `CLANCY_REVIEW_THRESHOLD=N` to set minimum score for auto-run
-- Ticket quality trends in `/clancy:logs`
-
----
-
-## v2.0.0 — Multi-agent
-
-- Parallel ticket implementation (multiple tickets simultaneously)
-- Dependency graph awareness — don't start a ticket blocked by another
-- PR creation and review request automation
-- Automatic test run after implementation
-- Agent specialisation: frontend agent, backend agent, infra agent
-- Team-mode: multiple Claude Code instances coordinating via shared queue
+- **Worktree-based parallel execution** — use Claude Code's native `--worktree` flag to run multiple tickets simultaneously. Each ticket gets an isolated branch and working directory
+- **Remote question routing** — route HITL questions to Slack/Telegram/webhook during AFK mode instead of skipping HITL tickets. Inspired by GSD 2's Telegram adapter
+- **Claude Code plugin distribution** — repackage Clancy as a native Claude Code plugin (`claude plugin install chief-clancy`)
+- **Agent teams coordination** — lead agent delegates to specialist teammates (frontend, backend, infra) using Claude Code's agent teams feature
+- **Model profiles** — `CLANCY_MODEL_PROFILE=quality|balanced|budget` controls which model tier each phase uses (cheap for research, expensive for implementation)
+- **Subagent persistent memory** — accumulated codebase knowledge persists across tickets, reducing re-exploration
 
 ---
 
@@ -155,3 +185,4 @@ These have been considered and deliberately excluded:
 - **GUI / web dashboard** — Clancy is a CLI tool. The terminal is the UI.
 - **Built-in LLM** — Clancy uses Claude Code. It is not an LLM runtime.
 - **Branch protection bypass** — Clancy follows your repo's git conventions as documented in GIT.md. It never bypasses hooks or protection rules.
+- **Standalone CLI rewrite** — Clancy runs inside Claude Code where the user already is. A standalone binary (like GSD 2) would lose this advantage and require maintaining a separate agent loop.
