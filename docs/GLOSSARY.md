@@ -41,7 +41,7 @@ Ubiquitous language for the Clancy project. Use these terms consistently in code
 | **Feasibility check** | After fetching a ticket, Clancy assesses whether the work is achievable in the current codebase context. Skippable with `--skip-feasibility`. |
 | **Rework** | Automatic re-implementation triggered by PR review comments. Inline code comments always trigger; conversation comments need `Rework:` prefix. |
 | **Max rework guard** | Safety limit: `CLANCY_MAX_REWORK` (default 3) caps the number of rework cycles per ticket to prevent infinite loops. |
-| **Progress entry** | A line in `.clancy/progress.txt` recording a completed action. Statuses: `DONE`, `SKIPPED`, `PR_CREATED`, `PUSHED`, `PUSH_FAILED`, `LOCAL`, `PLAN`, `APPROVE`, `REWORK`, `EPIC_PR_CREATED`, `BRIEF`, `APPROVE_BRIEF`. |
+| **Progress entry** | A line in `.clancy/progress.txt` recording a completed action. Statuses: `DONE`, `SKIPPED`, `PR_CREATED`, `PUSHED`, `PUSH_FAILED`, `LOCAL`, `PLAN`, `APPROVE_PLAN`, `REWORK`, `EPIC_PR_CREATED`, `BRIEF`, `APPROVE_BRIEF`. |
 | **TDD mode** | Test-driven development mode enabled by `CLANCY_TDD=true`. The implementer writes tests first (red), implements (green), then refactors. |
 
 ## Strategist (v0.6.0)
