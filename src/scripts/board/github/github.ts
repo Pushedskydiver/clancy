@@ -335,29 +335,32 @@ async function fetchChildrenByBodyRef(
   repo: string,
   bodyRef: string,
 ): Promise<ChildrenStatus | undefined> {
-  // Use GitHub Search API — scales to repos with thousands of issues.
-  // The Issues list endpoint is limited to 100 per page with no body search.
-  const query = `"${bodyRef}" repo:${repo} is:issue`;
-  const searchParams = new URLSearchParams({
-    q: query,
-    per_page: '100',
+  // Use GitHub Search API with total_count for accurate counts.
+  // Two queries: one for all children, one for open (incomplete) children.
+  const headers = githubHeaders(token);
+
+  const allQuery = `"${bodyRef}" repo:${repo} is:issue`;
+  const allParams = new URLSearchParams({ q: allQuery, per_page: '1' });
+  const allResponse = await fetch(`${GITHUB_API}/search/issues?${allParams}`, {
+    headers,
   });
-  const searchResponse = await fetch(
-    `${GITHUB_API}/search/issues?${searchParams}`,
-    { headers: githubHeaders(token) },
+  if (!allResponse.ok) return undefined;
+
+  const allResult = (await allResponse.json()) as { total_count?: number };
+  const total = allResult.total_count ?? 0;
+
+  if (total === 0) return { total: 0, incomplete: 0 };
+
+  const openQuery = `"${bodyRef}" repo:${repo} is:issue is:open`;
+  const openParams = new URLSearchParams({ q: openQuery, per_page: '1' });
+  const openResponse = await fetch(
+    `${GITHUB_API}/search/issues?${openParams}`,
+    { headers },
   );
-  if (!searchResponse.ok) return undefined;
+  if (!openResponse.ok) return { total, incomplete: total }; // assume all open on failure
 
-  const searchResult = (await searchResponse.json()) as {
-    items?: Array<{ state?: string; pull_request?: unknown }>;
-  };
-
-  const children = (searchResult.items ?? []).filter(
-    (item) => !item.pull_request,
-  );
-
-  const total = children.length;
-  const incomplete = children.filter((c) => c.state === 'open').length;
+  const openResult = (await openResponse.json()) as { total_count?: number };
+  const incomplete = openResult.total_count ?? 0;
 
   return { total, incomplete };
 }

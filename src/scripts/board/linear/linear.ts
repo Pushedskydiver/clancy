@@ -199,7 +199,7 @@ export async function fetchIssues(
           filter: {
             ${filterParts.join('\n            ')}
           }
-          first: ${limit}
+          first: ${excludeHitl ? limit * 3 : limit}
           orderBy: priority
         ) {
           nodes {
@@ -233,29 +233,15 @@ export async function fetchIssues(
 
   if (!nodes?.length) return [];
 
-  // HITL/AFK filtering: exclude issues with clancy:hitl label
+  // HITL/AFK filtering: exclude issues with clancy:hitl label (using parsed schema data)
   if (excludeHitl) {
-    // Access raw response data for label info (schema doesn't include labels)
-    const rawData = raw as {
-      data?: {
-        viewer?: {
-          assignedIssues?: {
-            nodes?: Array<{
-              id: string;
-              labels?: { nodes?: Array<{ name?: string }> };
-            }>;
-          };
-        };
-      };
-    };
-    const rawNodes = rawData.data?.viewer?.assignedIssues?.nodes ?? [];
-    const hitlIds = new Set(
-      rawNodes
-        .filter((n) => n.labels?.nodes?.some((l) => l.name === 'clancy:hitl'))
-        .map((n) => n.id),
+    nodes = nodes.filter(
+      (n) => !n.labels?.nodes?.some((l) => l.name === 'clancy:hitl'),
     );
-    nodes = nodes.filter((n) => !hitlIds.has(n.id));
   }
+
+  // Trim to requested limit after filtering
+  nodes = nodes.slice(0, limit);
 
   return nodes.map((issue) => ({
     key: issue.identifier,

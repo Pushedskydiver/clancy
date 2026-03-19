@@ -163,6 +163,11 @@ function parseProgressFile(projectRoot: string): ProgressEntry[] {
 
     if (!status) continue;
 
+    // Backward compat: old progress.txt entries may use 'APPROVE' (renamed to APPROVE_PLAN in v0.6.0)
+    if (status === ('APPROVE' as ProgressStatus)) {
+      status = 'APPROVE_PLAN';
+    }
+
     entries.push({
       timestamp,
       key,

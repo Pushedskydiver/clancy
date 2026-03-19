@@ -107,23 +107,19 @@ describe('github', () => {
       vi.unstubAllGlobals();
     });
 
-    it('returns total and incomplete counts from issues', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(() =>
-          Promise.resolve({
-            ok: true,
-            json: () =>
-              Promise.resolve({
-                items: [
-                  { body: 'Parent: #50', state: 'open' },
-                  { body: 'Parent: #50', state: 'closed' },
-                  { body: 'Parent: #50', state: 'open' },
-                ],
-              }),
-          }),
-        ),
-      );
+    it('returns total and incomplete counts from search API', async () => {
+      const mockFetch = vi.fn();
+      // First call: all children (total_count)
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ total_count: 3 }),
+      });
+      // Second call: open children (incomplete)
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ total_count: 2 }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
 
       const result = await fetchChildrenStatus('ghp_test', 'owner/repo', 50);
 
@@ -136,7 +132,7 @@ describe('github', () => {
         vi.fn(() =>
           Promise.resolve({
             ok: true,
-            json: () => Promise.resolve({ items: [] }),
+            json: () => Promise.resolve({ total_count: 0 }),
           }),
         ),
       );
@@ -164,21 +160,18 @@ describe('github', () => {
     });
 
     it('finds children via Epic: text search when present', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(() =>
-          Promise.resolve({
-            ok: true,
-            json: () =>
-              Promise.resolve({
-                items: [
-                  { body: 'Epic: #50\nSome description', state: 'open' },
-                  { body: 'Epic: #50\nAnother child', state: 'closed' },
-                ],
-              }),
-          }),
-        ),
-      );
+      const mockFetch = vi.fn();
+      // First call: all Epic: children
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ total_count: 2 }),
+      });
+      // Second call: open Epic: children
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ total_count: 1 }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
 
       const result = await fetchChildrenStatus('ghp_test', 'owner/repo', 50);
 
@@ -189,21 +182,20 @@ describe('github', () => {
 
     it('falls back to Parent: search when Epic: returns no results', async () => {
       const mockFetch = vi.fn();
-      // First call (Epic: search) returns no results
+      // First call: Epic: search returns 0
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () => Promise.resolve({ items: [] }),
+        json: () => Promise.resolve({ total_count: 0 }),
       });
-      // Second call (Parent: search fallback) returns results
+      // Second call: Parent: all children
       mockFetch.mockResolvedValueOnce({
         ok: true,
-        json: () =>
-          Promise.resolve({
-            items: [
-              { body: 'Parent: #50', state: 'open' },
-              { body: 'Parent: #50', state: 'closed' },
-            ],
-          }),
+        json: () => Promise.resolve({ total_count: 2 }),
+      });
+      // Third call: Parent: open children
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ total_count: 1 }),
       });
       vi.stubGlobal('fetch', mockFetch);
 
@@ -218,7 +210,7 @@ describe('github', () => {
         vi.fn(() =>
           Promise.resolve({
             ok: true,
-            json: () => Promise.resolve({ items: [] }),
+            json: () => Promise.resolve({ total_count: 0 }),
           }),
         ),
       );

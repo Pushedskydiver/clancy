@@ -17,6 +17,15 @@ const linearIssueNodeSchema = z.object({
       }),
     ),
   ),
+  labels: z.optional(
+    z.object({
+      nodes: z.array(
+        z.object({
+          name: z.string(),
+        }),
+      ),
+    }),
+  ),
 });
 
 /** Response from the `viewer.assignedIssues` GraphQL query. */
