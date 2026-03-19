@@ -357,7 +357,7 @@ Scan `.clancy/briefs/` for an existing brief matching this idea:
 
 1. **Local brief file** — check for `## Feedback` section appended to `.clancy/briefs/{date}-{slug}.md`
 2. **Companion file** — check for `.clancy/briefs/{date}-{slug}.feedback.md`
-3. **Board comments** (board-sourced only) — find the most recent `Clancy Strategic Brief` comment on the source ticket. Collect all comments posted AFTER it.
+3. **Board comments** (board-sourced only) — fetch ALL comments on the source ticket. Scan each comment body for the text `Clancy Strategic Brief` (case-insensitive, match anywhere in the body — it may appear as `# Clancy Strategic Brief`, `## Clancy Strategic Brief`, or just the text). The most recent matching comment is the brief. Collect all comments posted AFTER it as feedback.
 
 Board comment feedback filtering per platform:
 - **GitHub:** comments where `created_at` > brief comment's `created_at` AND `user.login` != resolved username (via `GET /user`)
@@ -744,7 +744,7 @@ Briefs saved to .clancy/briefs/. Run /clancy:approve-brief to create tickets.
 - The `--list` flag is an inventory display only — no brief generated, no API calls beyond the local filesystem.
 - Batch mode (`/clancy:brief 3`) implies AI-grill — each ticket is briefed autonomously.
 - All board API calls are best-effort — if a comment fails to post, print the brief and warn. The local file is the source of truth.
-- The `## Clancy Strategic Brief` marker in comments is used by both `/clancy:brief` (to detect existing briefs) and `/clancy:approve-brief` (to find the brief).
+- The `Clancy Strategic Brief` text in comments is the marker used by both `/clancy:brief` (to detect existing briefs and feedback) and `/clancy:approve-brief` (to find the brief). Search case-insensitively and match regardless of heading level (`#`, `##`, or plain text).
 - Jira uses ADF for comments (with `codeBlock` fallback). GitHub and Linear accept Markdown directly.
 - Linear personal API keys do NOT use `Bearer` prefix.
 - Jira uses the new `POST /rest/api/3/search/jql` endpoint (old GET `/search` removed Aug 2025).
