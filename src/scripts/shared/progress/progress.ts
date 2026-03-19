@@ -105,8 +105,23 @@ function parseProgressFile(projectRoot: string): ProgressEntry[] {
     const parts = trimmed.split(' | ');
     if (parts.length < 4) continue;
 
-    // Fixed positions: timestamp, key, then everything else
+    // Fixed position: timestamp is always first
     const timestamp = parts[0]!;
+
+    // BRIEF / APPROVE_BRIEF entries use a slug-based format:
+    //   timestamp | STATUS | slug | detail
+    // Standard entries use:
+    //   timestamp | key | summary | STATUS [| pr:N] [| parent:KEY]
+    if (parts[1] === 'BRIEF' || parts[1] === 'APPROVE_BRIEF') {
+      entries.push({
+        timestamp,
+        key: parts[2]!,
+        summary: parts[3] ?? '',
+        status: parts[1] as ProgressStatus,
+      });
+      continue;
+    }
+
     const key = parts[1]!;
 
     // Scan remaining segments for named prefixes and status

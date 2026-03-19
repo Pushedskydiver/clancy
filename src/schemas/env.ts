@@ -44,6 +44,12 @@ export const sharedEnvSchema = z.object({
 
   // Implementation mode
   CLANCY_TDD: z.optional(z.string()),
+
+  // Strategist role
+  CLANCY_MODE: z.optional(z.string()),
+  CLANCY_BRIEF_ISSUE_TYPE: z.optional(z.string()),
+  CLANCY_BRIEF_EPIC: z.optional(z.string()),
+  CLANCY_COMPONENT: z.optional(z.string()),
 });
 
 // ─── Board-specific schemas ──────────────────────────────────────────────────

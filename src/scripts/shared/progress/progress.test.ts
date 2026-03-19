@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto';
-import { mkdirSync, readFileSync, rmSync } from 'node:fs';
+import { mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -389,5 +389,131 @@ describe('findEntriesWithStatus', () => {
     // @ts-expect-error — intentionally passing invalid case to verify case-sensitivity
     expect(findEntriesWithStatus(root, 'Pr_Created')).toHaveLength(0);
     expect(findEntriesWithStatus(root, 'PR_CREATED')).toHaveLength(1);
+  });
+});
+
+describe('slug-based BRIEF/APPROVE_BRIEF entries', () => {
+  const dirs: string[] = [];
+
+  function makeTempRoot(): string {
+    const dir = join(tmpdir(), `clancy-progress-test-${randomUUID()}`);
+    mkdirSync(join(dir, '.clancy'), { recursive: true });
+    dirs.push(dir);
+    return dir;
+  }
+
+  function writeProgress(root: string, content: string): void {
+    writeFileSync(join(root, '.clancy', 'progress.txt'), content, 'utf8');
+  }
+
+  afterEach(() => {
+    for (const dir of dirs) {
+      rmSync(dir, { recursive: true, force: true });
+    }
+    dirs.length = 0;
+  });
+
+  it('parses a BRIEF entry with slug-based format', () => {
+    const root = makeTempRoot();
+    writeProgress(
+      root,
+      '2024-01-15 14:30 | BRIEF | add-customer-portal | 6 proposed tickets\n',
+    );
+
+    const entry = findLastEntry(root, 'add-customer-portal');
+    expect(entry).toBeDefined();
+    expect(entry!.status).toBe('BRIEF');
+    expect(entry!.key).toBe('add-customer-portal');
+    expect(entry!.summary).toBe('6 proposed tickets');
+  });
+
+  it('parses an APPROVE_BRIEF entry with slug-based format', () => {
+    const root = makeTempRoot();
+    writeProgress(
+      root,
+      '2024-01-15 14:30 | APPROVE_BRIEF | add-customer-portal | 4 tickets created\n',
+    );
+
+    const entry = findLastEntry(root, 'add-customer-portal');
+    expect(entry).toBeDefined();
+    expect(entry!.status).toBe('APPROVE_BRIEF');
+    expect(entry!.key).toBe('add-customer-portal');
+    expect(entry!.summary).toBe('4 tickets created');
+  });
+
+  it('parses a REVISED BRIEF entry', () => {
+    const root = makeTempRoot();
+    writeProgress(
+      root,
+      '2024-01-15 14:30 | BRIEF | add-customer-portal | REVISED - 5 proposed tickets\n',
+    );
+
+    const entry = findLastEntry(root, 'add-customer-portal');
+    expect(entry).toBeDefined();
+    expect(entry!.status).toBe('BRIEF');
+    expect(entry!.summary).toBe('REVISED - 5 proposed tickets');
+  });
+
+  it('coexists with standard format entries', () => {
+    const root = makeTempRoot();
+    writeProgress(
+      root,
+      '2024-01-15 14:30 | BRIEF | add-customer-portal | 6 proposed tickets\n' +
+        '2024-01-15 14:35 | PROJ-123 | Add login page | DONE\n',
+    );
+
+    const briefEntry = findLastEntry(root, 'add-customer-portal');
+    expect(briefEntry).toBeDefined();
+    expect(briefEntry!.status).toBe('BRIEF');
+
+    const standardEntry = findLastEntry(root, 'PROJ-123');
+    expect(standardEntry).toBeDefined();
+    expect(standardEntry!.status).toBe('DONE');
+    expect(standardEntry!.summary).toBe('Add login page');
+  });
+
+  it('findLastEntry matches slug key case-insensitively', () => {
+    const root = makeTempRoot();
+    writeProgress(
+      root,
+      '2024-01-15 14:30 | BRIEF | add-customer-portal | 6 proposed tickets\n',
+    );
+
+    const entry = findLastEntry(root, 'ADD-CUSTOMER-PORTAL');
+    expect(entry).toBeDefined();
+    expect(entry!.key).toBe('add-customer-portal');
+  });
+
+  it('findEntriesWithStatus returns BRIEF entries', () => {
+    const root = makeTempRoot();
+    writeProgress(
+      root,
+      '2024-01-15 14:30 | BRIEF | add-customer-portal | 6 proposed tickets\n' +
+        '2024-01-15 14:35 | BRIEF | migrate-auth | 3 proposed tickets\n' +
+        '2024-01-15 14:40 | PROJ-1 | Add login | DONE\n',
+    );
+
+    const result = findEntriesWithStatus(root, 'BRIEF');
+    expect(result).toHaveLength(2);
+
+    const keys = result.map((e) => e.key);
+    expect(keys).toContain('add-customer-portal');
+    expect(keys).toContain('migrate-auth');
+  });
+
+  it('findEntriesWithStatus returns latest entry per slug key', () => {
+    const root = makeTempRoot();
+    writeProgress(
+      root,
+      '2024-01-15 14:30 | BRIEF | add-customer-portal | 6 proposed tickets\n' +
+        '2024-01-15 14:35 | APPROVE_BRIEF | add-customer-portal | 4 tickets created\n',
+    );
+
+    const briefResult = findEntriesWithStatus(root, 'BRIEF');
+    expect(briefResult).toHaveLength(0);
+
+    const approveResult = findEntriesWithStatus(root, 'APPROVE_BRIEF');
+    expect(approveResult).toHaveLength(1);
+    expect(approveResult[0]!.key).toBe('add-customer-portal');
   });
 });

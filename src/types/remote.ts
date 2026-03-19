@@ -72,4 +72,6 @@ export type ProgressStatus =
   | 'PLAN'
   | 'APPROVE'
   | 'REWORK'
-  | 'EPIC_PR_CREATED';
+  | 'EPIC_PR_CREATED'
+  | 'BRIEF'
+  | 'APPROVE_BRIEF';
