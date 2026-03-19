@@ -12,7 +12,10 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { fileURLToPath } from 'node:url';
 
 import { formatDuration } from '~/scripts/shared/format/format.js';
+import { sendNotification } from '~/scripts/shared/notify/notify.js';
 import { bold, dim, green, red } from '~/utils/ansi/ansi.js';
+
+import { generateSessionReport } from './report/report.js';
 
 /** Stop condition patterns matched against script output. */
 const STOP_PATTERNS = {
@@ -129,6 +132,7 @@ export async function runAfkLoop(
       console.log(
         dim(`  Total: ${i} iteration${i > 1 ? 's' : ''} in ${totalElapsed}`),
       );
+      generateAndSendReport(loopStart);
       return;
     }
 
@@ -148,6 +152,34 @@ export async function runAfkLoop(
   );
   console.log(dim('  "That\'s some good police work."'));
   console.log(dim('  Run clancy-afk again to continue.'));
+
+  generateAndSendReport(loopStart);
+}
+
+/**
+ * Generate a session report and optionally send a webhook notification.
+ */
+function generateAndSendReport(loopStart: number): void {
+  try {
+    const report = generateSessionReport(process.cwd(), loopStart, Date.now());
+    console.log('');
+    console.log(dim('─── Session Report ───'));
+    console.log(report);
+
+    const webhook = process.env.CLANCY_NOTIFY_WEBHOOK;
+    if (webhook) {
+      const lines = report.split('\n');
+      const summaryLines = lines.filter(
+        (l) => l.startsWith('- Tickets') || l.startsWith('- Total'),
+      );
+      const summary = `Clancy AFK: ${summaryLines.join('. ')}. Report: .clancy/session-report.md`;
+      sendNotification(webhook, summary).catch(() => {
+        // Best-effort — webhook failure shouldn't crash
+      });
+    }
+  } catch {
+    // Best-effort — report generation failure shouldn't crash the loop
+  }
 }
 
 // Main guard — self-execute when run directly (e.g. node .clancy/clancy-afk.js)

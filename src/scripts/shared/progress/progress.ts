@@ -98,7 +98,7 @@ export function appendProgress(
  *
  * Lines that don't match the minimum format are silently skipped.
  */
-function parseProgressFile(projectRoot: string): ProgressEntry[] {
+export function parseProgressFile(projectRoot: string): ProgressEntry[] {
   const filePath = join(projectRoot, '.clancy', 'progress.txt');
 
   let content: string;

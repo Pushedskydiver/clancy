@@ -11,7 +11,16 @@
 export function formatDuration(ms: number): string {
   const secs = Math.floor(ms / 1000);
   if (secs < 60) return `${secs}s`;
+
   const mins = Math.floor(secs / 60);
   const remSecs = secs % 60;
-  return remSecs > 0 ? `${mins}m ${remSecs}s` : `${mins}m`;
+
+  if (mins < 60) {
+    return remSecs > 0 ? `${mins}m ${remSecs}s` : `${mins}m`;
+  }
+
+  const hours = Math.floor(mins / 60);
+  const remMins = mins % 60;
+
+  return remMins > 0 ? `${hours}h ${remMins}m` : `${hours}h`;
 }

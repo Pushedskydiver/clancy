@@ -1,10 +1,10 @@
 /**
  * Unified once orchestrator — replaces all three `clancy-once-*.sh` scripts.
  *
- * Full lifecycle: preflight → detect board → [epic completion check] →
+ * Full lifecycle: lock check → preflight → detect board → [epic completion check] →
  * fetch ticket → compute branches → [dry-run gate] → feasibility check →
- * create branch → transition In Progress → invoke Claude → push + PR →
- * log → notify.
+ * create branch → write lock → transition In Progress → invoke Claude → push + PR →
+ * cost log → delete lock → notify.
  *
  * All errors exit with code 0 (not 1). This is intentional — the AFK runner
  * detects stop conditions by parsing stdout, not exit codes.
@@ -47,12 +47,21 @@ import {
   transitionToStatus,
   validateInputs,
 } from './board-ops/board-ops.js';
+import { appendCostEntry } from './cost/cost.js';
 import {
   deliverEpicToBase,
   deliverViaPullRequest,
   ensureEpicBranch,
 } from './deliver/deliver.js';
 import { fetchTicket } from './fetch-ticket/fetch-ticket.js';
+import {
+  deleteLock,
+  deleteVerifyAttempt,
+  isLockStale,
+  readLock,
+  writeLock,
+} from './lock/lock.js';
+import { detectResume, executeResume } from './resume/resume.js';
 import { fetchReworkFromPrReview, postReworkActions } from './rework/rework.js';
 import type { FetchedTicket } from './types/types.js';
 
@@ -83,6 +92,83 @@ export async function run(argv: string[]): Promise<void> {
   );
   console.log(dim('└──────────────────────────────────────┘'));
   console.log('');
+
+  // ── 0. Startup lock check ──────────────────────────────────────────────
+  // If a lock file exists from a previous run, check if it's still active
+  // or stale (crashed session). Only proceed if we can claim the lock.
+  let lockOwner = false;
+
+  const existingLock = readLock(process.cwd());
+  if (existingLock) {
+    if (!isLockStale(existingLock)) {
+      // Another active session — abort
+      console.log(
+        yellow(
+          `⚠ Another Clancy session is running (PID ${existingLock.pid}, ticket ${existingLock.ticketKey}). Aborting.`,
+        ),
+      );
+      return;
+    }
+
+    // Stale lock — clean up and check for resume
+    console.log(
+      dim(
+        `  Stale lock found (PID ${existingLock.pid}, ticket ${existingLock.ticketKey}). Cleaning up...`,
+      ),
+    );
+    deleteLock(process.cwd());
+    deleteVerifyAttempt(process.cwd());
+
+    // Resume detection — check if the ticket branch has recoverable work
+    try {
+      const resumeInfo = detectResume(existingLock);
+      if (resumeInfo) {
+        const isAfk = process.env.CLANCY_AFK_MODE === '1';
+        if (isAfk) {
+          console.log(
+            yellow(
+              `  ↻ Resuming crashed session: ${existingLock.ticketKey} on ${resumeInfo.branch}`,
+            ),
+          );
+
+          // Need board config for PR creation — run preflight + detect board
+          const preflight = runPreflight(process.cwd());
+          if (preflight.ok) {
+            const boardResult = detectBoard(preflight.env!);
+            if (typeof boardResult !== 'string') {
+              const resumed = await executeResume(
+                boardResult,
+                existingLock,
+                resumeInfo,
+              );
+              if (resumed) {
+                console.log(
+                  green(
+                    `  ✓ Resumed ${existingLock.ticketKey} — continuing to next ticket`,
+                  ),
+                );
+              }
+            }
+          }
+        } else {
+          console.log(
+            yellow(
+              `  Found in-progress work on ${resumeInfo.branch}.` +
+                (resumeInfo.hasUncommitted ? ' Has uncommitted changes.' : '') +
+                (resumeInfo.hasUnpushed ? ' Has unpushed commits.' : ''),
+            ),
+          );
+          console.log(
+            dim(
+              '  Run in AFK mode (CLANCY_AFK_MODE=1) to auto-resume, or handle manually.',
+            ),
+          );
+        }
+      }
+    } catch {
+      // Best-effort — resume detection failure shouldn't block the run
+    }
+  }
 
   let originalBranch: string | undefined;
 
@@ -370,6 +456,25 @@ export async function run(argv: string[]): Promise<void> {
       checkout(ticketBranch, true);
     }
 
+    // 10a. Write lock file — branch is now known
+    try {
+      writeLock(process.cwd(), {
+        pid: process.pid,
+        ticketKey: ticket.key,
+        ticketTitle: ticket.title,
+        ticketBranch: ticketBranch,
+        targetBranch: effectiveTarget,
+        parentKey: ticket.parentInfo,
+        startedAt: new Date().toISOString(),
+      });
+      lockOwner = true;
+    } catch {
+      // Best-effort — continue without crash protection
+      console.log(
+        dim('  (warning: could not write lock file — crash recovery disabled)'),
+      );
+    }
+
     // 11. Transition to In Progress (best-effort)
     const statusInProgress = config.env.CLANCY_STATUS_IN_PROGRESS;
     if (statusInProgress) {
@@ -403,7 +508,14 @@ export async function run(argv: string[]): Promise<void> {
       });
     }
 
-    const claudeOk = invokeClaudeSession(prompt, config.env.CLANCY_MODEL);
+    // Set CLANCY_ONCE_ACTIVE for hooks (verification gate, etc.)
+    process.env.CLANCY_ONCE_ACTIVE = '1';
+    let claudeOk: boolean;
+    try {
+      claudeOk = invokeClaudeSession(prompt, config.env.CLANCY_MODEL);
+    } finally {
+      delete process.env.CLANCY_ONCE_ACTIVE;
+    }
 
     if (!claudeOk) {
       console.log(
@@ -473,6 +585,22 @@ export async function run(argv: string[]): Promise<void> {
       if (!delivered) return;
     }
 
+    // 13a. Cost logging — record duration + estimated tokens
+    try {
+      const lock = readLock(process.cwd());
+      if (lock) {
+        const tokenRate = parseInt(config.env.CLANCY_TOKEN_RATE ?? '6600', 10);
+        appendCostEntry(
+          process.cwd(),
+          ticket.key,
+          lock.startedAt,
+          Number.isFinite(tokenRate) && tokenRate > 0 ? tokenRate : 6600,
+        );
+      }
+    } catch {
+      // Best-effort — cost logging failure shouldn't block completion
+    }
+
     const elapsed = formatDuration(Date.now() - startTime);
     console.log('');
     console.log(green(`🏁 ${ticket.key} complete`) + dim(` (${elapsed})`));
@@ -503,6 +631,12 @@ export async function run(argv: string[]): Promise<void> {
       } catch {
         // Ignore — branch restore is best-effort
       }
+    }
+  } finally {
+    // Clean up lock + verify-attempt in ALL exit paths (only if we created them)
+    if (lockOwner) {
+      deleteLock(process.cwd());
+      deleteVerifyAttempt(process.cwd());
     }
   }
 }
