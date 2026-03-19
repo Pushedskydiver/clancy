@@ -51,7 +51,7 @@ Parse the arguments passed to the command. Arguments can appear in any order.
 ### Input modes
 
 - **No input (no flags that consume arguments):** Interactive mode — but first check for `--afk`:
-  - If running in AFK mode (`--afk` flag OR `CLANCY_MODE=afk`): there is no human to answer. Display: `✗ Cannot run /clancy:brief in AFK mode without a ticket or idea. Use: /clancy:brief --afk PROJ-123, or /clancy:brief --afk "Add dark mode", or /clancy:brief 3 (batch mode — implies --afk).` Stop.
+  - If running in AFK mode (`--afk` flag OR `CLANCY_MODE=afk`): there is no human to answer. Display: `✗ Cannot run /clancy:brief in AFK mode without a ticket or idea. Use: /clancy:brief --afk #42 (GitHub) or PROJ-123 (Jira) or ENG-42 (Linear), or /clancy:brief --afk "Add dark mode", or /clancy:brief 3 (batch mode — implies --afk).` Stop.
   - Otherwise: prompt `What's the idea?` and parse the response. If the response looks like a ticket reference (`#42`, `PROJ-123`, `ENG-42`), switch to board ticket mode. Otherwise treat as inline text.
 - **Ticket key** (`PROJ-123`, `#42`, `ENG-42`): Board ticket mode — fetch the ticket from the board API. Validate format per platform:
   - `#N` — valid for GitHub only. If board is Jira or Linear: `The #N format is for GitHub Issues. Use a ticket key like PROJ-123.` Stop.
