@@ -34,7 +34,16 @@ import {
 } from '~/scripts/shared/pull-request/github/github.js';
 import { detectRemote } from '~/scripts/shared/remote/remote.js';
 
+import { appendCostEntry } from './cost/cost.js';
+import {
+  deleteLock,
+  deleteVerifyAttempt,
+  isLockStale,
+  readLock,
+  writeLock,
+} from './lock/lock.js';
 import { run } from './once.js';
+import { detectResume, executeResume } from './resume/resume.js';
 
 // ─── Mocks ───────────────────────────────────────────────────────────────────
 
@@ -165,6 +174,23 @@ vi.mock('~/scripts/shared/pull-request/bitbucket/bitbucket.js', () => ({
   fetchServerPrReviewComments: vi.fn(() => Promise.resolve([])),
 }));
 
+vi.mock('./lock/lock.js', () => ({
+  readLock: vi.fn(() => undefined),
+  writeLock: vi.fn(),
+  deleteLock: vi.fn(),
+  deleteVerifyAttempt: vi.fn(),
+  isLockStale: vi.fn(() => true),
+}));
+
+vi.mock('./cost/cost.js', () => ({
+  appendCostEntry: vi.fn(),
+}));
+
+vi.mock('./resume/resume.js', () => ({
+  detectResume: vi.fn(() => undefined),
+  executeResume: vi.fn(() => Promise.resolve(true)),
+}));
+
 vi.mock('~/scripts/shared/pull-request/pr-body/pr-body.js', () => ({
   buildEpicPrBody: vi.fn(() => 'Epic PR body'),
   buildPrBody: vi.fn(() => 'PR body'),
@@ -196,6 +222,14 @@ const mockFindEntriesWithStatus = vi.mocked(findEntriesWithStatus);
 const mockCheckGitHubPrReviewState = vi.mocked(checkGitHubPrReviewState);
 const mockFetchGitHubPrReviewComments = vi.mocked(fetchGitHubPrReviewComments);
 const mockRequestGitHubReview = vi.mocked(requestGitHubReview);
+const mockReadLock = vi.mocked(readLock);
+const mockWriteLock = vi.mocked(writeLock);
+const mockDeleteLock = vi.mocked(deleteLock);
+const mockDeleteVerifyAttempt = vi.mocked(deleteVerifyAttempt);
+const mockIsLockStale = vi.mocked(isLockStale);
+const mockAppendCostEntry = vi.mocked(appendCostEntry);
+const mockDetectResume = vi.mocked(detectResume);
+const mockExecuteResume = vi.mocked(executeResume);
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -276,6 +310,10 @@ describe('run', () => {
       repo: 'repo',
       hostname: 'github.com',
     });
+    mockInvokeClaude.mockReturnValue(true);
+    mockReadLock.mockReturnValue(undefined);
+    mockIsLockStale.mockReturnValue(true);
+    mockDetectResume.mockReturnValue(undefined);
     mockRequestGitHubReview.mockResolvedValue(true);
     mockCreateGitHubPr.mockResolvedValue({
       ok: true,
@@ -936,6 +974,235 @@ describe('run', () => {
     // Should fetch remote branch and checkout
     expect(mockFetchRemoteBranch).toHaveBeenCalledWith('feature/proj-300');
     expect(mockCheckout).toHaveBeenCalledWith('feature/proj-300');
+  });
+
+  // ─── Lock file integration ─────────────────────────────────────────────────
+
+  it('writes lock file after branch creation', async () => {
+    setupJiraHappyPath();
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run([]);
+    log.mockRestore();
+
+    expect(mockWriteLock).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.objectContaining({
+        pid: process.pid,
+        ticketKey: 'PROJ-123',
+        ticketTitle: 'Add login page',
+        ticketBranch: 'feature/proj-123',
+      }),
+    );
+  });
+
+  it('deletes lock file after successful delivery', async () => {
+    setupJiraHappyPath();
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run([]);
+    log.mockRestore();
+
+    expect(mockDeleteLock).toHaveBeenCalledWith(expect.any(String));
+    expect(mockDeleteVerifyAttempt).toHaveBeenCalledWith(expect.any(String));
+  });
+
+  it('deletes lock file on error', async () => {
+    setupJiraHappyPath();
+    // Force writeLock to succeed (so lockOwner = true), then blow up later
+    mockWriteLock.mockImplementation(() => {});
+    mockInvokeClaude.mockImplementation(() => {
+      throw new Error('Claude crashed');
+    });
+
+    const logErr = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run([]);
+    log.mockRestore();
+    logErr.mockRestore();
+
+    // finally block should clean up
+    expect(mockDeleteLock).toHaveBeenCalledWith(expect.any(String));
+    expect(mockDeleteVerifyAttempt).toHaveBeenCalledWith(expect.any(String));
+  });
+
+  it('aborts when another PID is active', async () => {
+    mockReadLock.mockReturnValue({
+      pid: 99999,
+      ticketKey: 'PROJ-999',
+      ticketTitle: 'Other task',
+      ticketBranch: 'feature/proj-999',
+      targetBranch: 'main',
+      parentKey: 'none',
+      startedAt: new Date().toISOString(),
+    });
+    mockIsLockStale.mockReturnValue(false);
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run([]);
+    log.mockRestore();
+
+    // Should abort before preflight
+    expect(mockDetectBoard).not.toHaveBeenCalled();
+    expect(mockInvokeClaude).not.toHaveBeenCalled();
+  });
+
+  it('cleans up stale lock and attempts resume in AFK mode', async () => {
+    const staleLock = {
+      pid: 11111,
+      ticketKey: 'PROJ-888',
+      ticketTitle: 'Stale task',
+      ticketBranch: 'feature/proj-888',
+      targetBranch: 'main',
+      parentKey: 'none',
+      startedAt: new Date().toISOString(),
+    };
+    // First call: return stale lock (startup check)
+    // Subsequent calls (cost logging): return undefined
+    mockReadLock.mockReturnValueOnce(staleLock).mockReturnValue(undefined);
+    mockIsLockStale.mockReturnValue(true);
+    mockDetectResume.mockReturnValue({
+      branch: 'feature/proj-888',
+      hasUncommitted: false,
+      hasUnpushed: true,
+    });
+    mockExecuteResume.mockResolvedValue(true);
+
+    // Enable AFK mode for auto-resume
+    process.env.CLANCY_AFK_MODE = '1';
+
+    setupJiraHappyPath();
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run([]);
+    log.mockRestore();
+
+    delete process.env.CLANCY_AFK_MODE;
+
+    // Should clean up stale lock
+    expect(mockDeleteLock).toHaveBeenCalledWith(expect.any(String));
+    expect(mockDeleteVerifyAttempt).toHaveBeenCalledWith(expect.any(String));
+
+    // Should attempt resume
+    expect(mockDetectResume).toHaveBeenCalledWith(staleLock);
+    expect(mockExecuteResume).toHaveBeenCalledWith(
+      expect.objectContaining({ provider: 'jira' }),
+      staleLock,
+      expect.objectContaining({ branch: 'feature/proj-888' }),
+    );
+  });
+
+  it('logs resume info without auto-resuming outside AFK mode', async () => {
+    const staleLock = {
+      pid: 22222,
+      ticketKey: 'PROJ-777',
+      ticketTitle: 'Stale non-AFK',
+      ticketBranch: 'feature/proj-777',
+      targetBranch: 'main',
+      parentKey: 'none',
+      startedAt: new Date().toISOString(),
+    };
+    mockReadLock.mockReturnValueOnce(staleLock).mockReturnValue(undefined);
+    mockIsLockStale.mockReturnValue(true);
+    mockDetectResume.mockReturnValue({
+      branch: 'feature/proj-777',
+      hasUncommitted: true,
+      hasUnpushed: false,
+    });
+
+    // Ensure AFK mode is OFF
+    delete process.env.CLANCY_AFK_MODE;
+
+    setupJiraHappyPath();
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run([]);
+    log.mockRestore();
+
+    // Should NOT call executeResume outside AFK mode
+    expect(mockExecuteResume).not.toHaveBeenCalled();
+
+    // Should still proceed with normal ticket flow
+    expect(mockInvokeClaude).toHaveBeenCalled();
+  });
+
+  // ─── CLANCY_ONCE_ACTIVE ───────────────────────────────────────────────────
+
+  it('sets CLANCY_ONCE_ACTIVE during Claude invocation', async () => {
+    setupJiraHappyPath();
+
+    let envDuringInvoke: string | undefined;
+    mockInvokeClaude.mockImplementation(() => {
+      envDuringInvoke = process.env.CLANCY_ONCE_ACTIVE;
+      return true;
+    });
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run([]);
+    log.mockRestore();
+
+    expect(envDuringInvoke).toBe('1');
+    // Should be cleaned up after
+    expect(process.env.CLANCY_ONCE_ACTIVE).toBeUndefined();
+  });
+
+  it('cleans up CLANCY_ONCE_ACTIVE even when Claude throws', async () => {
+    setupJiraHappyPath();
+    mockInvokeClaude.mockImplementation(() => {
+      throw new Error('Claude crashed');
+    });
+
+    const logErr = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run([]);
+    log.mockRestore();
+    logErr.mockRestore();
+
+    expect(process.env.CLANCY_ONCE_ACTIVE).toBeUndefined();
+  });
+
+  // ─── Cost logging ─────────────────────────────────────────────────────────
+
+  it('calls appendCostEntry after delivery', async () => {
+    setupJiraHappyPath();
+    // readLock returns data for cost logging (after the startup check returns undefined)
+    mockReadLock
+      .mockReturnValueOnce(undefined) // startup check
+      .mockReturnValue({
+        pid: process.pid,
+        ticketKey: 'PROJ-123',
+        ticketTitle: 'Add login page',
+        ticketBranch: 'feature/proj-123',
+        targetBranch: 'epic/proj-100',
+        parentKey: 'PROJ-100',
+        startedAt: '2026-03-19T10:00:00.000Z',
+      });
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run([]);
+    log.mockRestore();
+
+    expect(mockAppendCostEntry).toHaveBeenCalledWith(
+      expect.any(String),
+      'PROJ-123',
+      '2026-03-19T10:00:00.000Z',
+      6600, // default token rate
+    );
+  });
+
+  it('does not crash when lock file is missing during cost logging', async () => {
+    setupJiraHappyPath();
+    // readLock returns undefined for both startup and cost logging
+    mockReadLock.mockReturnValue(undefined);
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await run([]);
+    log.mockRestore();
+
+    // appendCostEntry should NOT be called (no lock data)
+    expect(mockAppendCostEntry).not.toHaveBeenCalled();
+    // But the run should complete successfully (push still happens)
+    expect(mockPushBranch).toHaveBeenCalled();
   });
 
   it('re-requests review after rework when reviewers are present', async () => {
