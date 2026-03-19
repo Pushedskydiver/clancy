@@ -130,6 +130,9 @@ export async function executeResume(
     checkout(resumeInfo.branch);
 
     // Commit uncommitted changes
+    // Note: git add -A stages everything. The credential guard hook doesn't
+    // run here (direct git, not via Claude). Acceptable for crash recovery —
+    // the branch was already in-flight from a Claude session.
     if (resumeInfo.hasUncommitted) {
       try {
         execFileSync('git', ['add', '-A'], { encoding: 'utf8' });
