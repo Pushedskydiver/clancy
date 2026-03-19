@@ -154,6 +154,8 @@ If the user picks [2], stop: `Cancelled. No changes made.`
 
 **If the user already confirmed via auto-select in Step 2, SKIP this step entirely** (avoid double-confirmation).
 
+**AFK mode:** If running in AFK mode (`--afk` flag or `CLANCY_MODE=afk`), skip the confirmation prompt and auto-confirm. Display the summary for logging purposes but proceed without waiting for input.
+
 Display a summary and ask for confirmation:
 
 ```
@@ -166,7 +168,7 @@ Planned: {date from plan}
 Promote this plan to the ticket description? [Y/n]
 ```
 
-If the user declines, stop:
+If the user declines (interactive only), stop:
 ```
 Cancelled. No changes made.
 ```

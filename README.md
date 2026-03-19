@@ -143,6 +143,9 @@ npx chief-clancy
 
 # 6. Go AFK
 /clancy:run
+
+# Fully autonomous (no prompts at any step):
+# /clancy:brief --afk #42 → /clancy:approve-brief --afk → /clancy:run
 ```
 
 ---

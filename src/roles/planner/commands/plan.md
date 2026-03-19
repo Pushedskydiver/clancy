@@ -6,6 +6,7 @@ Accepts optional arguments:
 - **Batch mode:** `/clancy:plan 3` — plan up to 3 tickets from the queue
 - **Specific ticket:** `/clancy:plan PROJ-123`, `/clancy:plan #42`, `/clancy:plan ENG-42` — plan a single ticket by key
 - **Fresh start:** `--fresh` — discard any existing plan and start over
+- **Skip confirmations:** `--afk` — auto-confirm all prompts (for automation)
 
 Examples:
 - `/clancy:plan` — plan 1 ticket from queue

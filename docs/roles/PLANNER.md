@@ -30,8 +30,10 @@ You can also toggle it via `/clancy:settings`.
 | `/clancy:plan 3` | Plan up to 3 tickets in batch mode (max 10) |
 | `/clancy:plan PROJ-123` | Plan a specific ticket by key (`PROJ-123`, `#42`, `ENG-42`) |
 | `/clancy:plan --fresh` | Discard any existing plan and start from scratch |
+| `/clancy:plan --afk` | Skip confirmations, auto-skip done/closed tickets (for automation) |
 | `/clancy:approve-plan` | Promote the oldest unapproved plan to the ticket description |
 | `/clancy:approve-plan PROJ-123` | Approve a specific ticket's plan |
+| `/clancy:approve-plan --afk` | Auto-confirm plan promotion without prompting (for automation) |
 
 Arguments can appear in any order (e.g. `/clancy:plan 3 --fresh` or `/clancy:plan --fresh PROJ-123`).
 

@@ -7,6 +7,23 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.7.2] — 2026-03-19
+
+### Added
+
+- **`--afk` flag for `/clancy:approve-brief`** — auto-confirm ticket creation without prompting, enabling fully autonomous brief-to-tickets flow
+- **`--afk` flag for `/clancy:plan`** — skip batch confirmations, auto-skip done/closed/canceled tickets
+- **`--afk` flag for `/clancy:approve-plan`** — auto-confirm plan promotion without prompting
+- **Open question cross-referencing** — re-brief revision now explicitly matches feedback against Open Questions, moving resolved ones to Discovery with `(Source: human)` tag
+
+### Fixed
+
+- **AFK mode guard for `/clancy:brief`** — running `/clancy:brief --afk` (or with `CLANCY_MODE=afk`) without a ticket or idea now exits with a helpful message instead of prompting an absent human
+- **Brief comment detection** — marker search is now case-insensitive and heading-level-agnostic (`#` vs `##` vs plain text)
+- **Next steps formatting** — improved readability with section headers and aligned commands
+
+---
+
 ## [0.7.1] — 2026-03-19
 
 ### Changed

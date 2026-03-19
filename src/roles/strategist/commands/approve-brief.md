@@ -8,6 +8,7 @@ Accepts optional arguments:
 - **By ticket:** `/clancy:approve-brief PROJ-123` — approve brief sourced from this ticket
 - **Set parent:** `--epic PROJ-50` — override or set the parent epic
 - **Preview:** `--dry-run` — show what would be created without making API calls
+- **Skip confirmation:** `--afk` — auto-confirm without prompting (for automation)
 
 Examples:
 - `/clancy:approve-brief` — auto-select (if only 1 unapproved brief)

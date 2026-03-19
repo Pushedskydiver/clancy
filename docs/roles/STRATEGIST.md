@@ -33,6 +33,8 @@ You can also toggle it via `/clancy:settings`.
 | `/clancy:brief --fresh` | Discard any existing brief and start from scratch |
 | `/clancy:approve-brief` | Create tickets on the board from the most recent unapproved brief |
 | `/clancy:approve-brief PROJ-123` | Approve a specific brief |
+| `/clancy:approve-brief --afk` | Auto-confirm ticket creation without prompting (for automation) |
+| `/clancy:approve-brief --dry-run` | Preview what would be created without making API calls |
 
 Arguments can appear in any order (e.g. `/clancy:brief 3 --afk` or `/clancy:brief --fresh PROJ-123`).
 
