@@ -30,7 +30,8 @@
   "main": "dist/installer/install.js",
   "files": [
     "dist/",
-    "hooks/",
+    "hooks/*.js",
+    "hooks/package.json",
     "src/roles/",
     "src/agents/",
     "src/templates/",
