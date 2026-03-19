@@ -151,7 +151,7 @@ export async function fetchIssue(env: LinearEnv): Promise<
     })
   | undefined
 > {
-  const results = await fetchIssues(env);
+  const results = await fetchIssues(env, false, 1);
   return results[0];
 }
 

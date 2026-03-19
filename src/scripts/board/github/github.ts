@@ -141,7 +141,7 @@ export async function fetchIssue(
 }
 
 /** GitHub issue with optional milestone. */
-export type GitHubTicket = Ticket & { milestone?: string; body?: string };
+export type GitHubTicket = Ticket & { milestone?: string };
 
 /**
  * Fetch multiple candidate issues from GitHub Issues.
@@ -221,7 +221,6 @@ export async function fetchIssues(
     description: issue.body ?? '',
     provider: 'github' as const,
     milestone: issue.milestone?.title,
-    body: issue.body ?? '',
   }));
 }
 
@@ -247,17 +246,17 @@ export async function fetchBlockerStatus(
 
   // Parse "Blocked by #N" references from the body
   const blockerPattern = /Blocked by #(\d+)/gi;
-  const blockerNumbers: number[] = [];
+  const blockerNumbers = new Set<number>();
   let match: RegExpExecArray | null;
 
   while ((match = blockerPattern.exec(body)) !== null) {
     const num = parseInt(match[1], 10);
     if (!Number.isNaN(num) && num !== issueNumber) {
-      blockerNumbers.push(num);
+      blockerNumbers.add(num);
     }
   }
 
-  if (!blockerNumbers.length) return false;
+  if (!blockerNumbers.size) return false;
 
   try {
     for (const blockerNum of blockerNumbers) {
@@ -270,6 +269,7 @@ export async function fetchBlockerStatus(
 
       const json = (await response.json()) as { state?: string };
 
+      // Short-circuit: one unresolved blocker is enough
       if (json.state !== 'closed') return true;
     }
 
