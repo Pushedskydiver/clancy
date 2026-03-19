@@ -212,6 +212,23 @@ Display completion message:
 View full changelog: github.com/Pushedskydiver/clancy/blob/main/CHANGELOG.md
 ```
 
+### New role hints
+
+After the completion message, check `.clancy/.env` for `CLANCY_ROLES` and display hints for any optional roles that are available but not enabled:
+
+- If `CLANCY_ROLES` does not include `planner`:
+  ```
+  💡 Planner role available — refine vague tickets into structured plans.
+     Run /clancy:settings to enable it.
+  ```
+- If `CLANCY_ROLES` does not include `strategist`:
+  ```
+  💡 Strategist role available — generate briefs, grill requirements, create tickets.
+     Run /clancy:settings to enable it.
+  ```
+- If `CLANCY_ROLES` is not set at all (env var missing), show both hints.
+- If all optional roles are already enabled, show nothing.
+
 ---
 
 ## Notes
@@ -219,3 +236,4 @@ View full changelog: github.com/Pushedskydiver/clancy/blob/main/CHANGELOG.md
 - If the user installed globally, the update applies globally
 - If the user installed locally, the update applies locally
 - After updating, restart Claude Code for new commands to take effect
+- New role hints are shown post-update so existing users discover features added in newer versions
