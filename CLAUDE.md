@@ -68,8 +68,16 @@ Examples:
 
 See [docs/GIT.md](docs/GIT.md) for full details. Summary:
 
-- `main` — production. Tagged releases. Never commit directly.
+- `main` — production. Tagged releases.
 - `feature/`, `fix/`, `chore/` — branch from `main`, PR back to `main`
+
+### Direct-to-main rule
+
+**If it runs, it needs a PR. If it's only read, direct to main is fine.**
+
+Direct to main (no PR): design docs (`docs/design/`), glossary, architecture docs (`docs/`), CLAUDE.md doc link updates, README badge/link fixes, typo corrections.
+
+Always via branch + PR: TypeScript (`src/`, `hooks/`), tests, executable markdown (`src/roles/`, `src/templates/`, `src/agents/`), package.json, CHANGELOG.md, CI config (`.github/`).
 
 ## Release checklist
 
