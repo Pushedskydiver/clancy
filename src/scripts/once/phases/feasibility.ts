@@ -1,5 +1,5 @@
 /**
- * Phase 5: Feasibility check — skipped for rework tickets and --skip-feasibility.
+ * Phase 6: Feasibility check — skipped for rework tickets and --skip-feasibility.
  *
  * Returns `true` to continue, `false` for early exit (ticket not feasible).
  */

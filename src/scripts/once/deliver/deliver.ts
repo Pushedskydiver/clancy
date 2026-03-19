@@ -127,7 +127,7 @@ export async function deliverViaPullRequest(
   startTime: number,
   skipLog = false,
   parent?: string,
-  board?: Board,
+  board?: Board, // Required in practice — all phase callers pass ctx.board
 ): Promise<boolean> {
   const pushed = pushBranch(ticketBranch);
 
@@ -320,7 +320,7 @@ export async function deliverViaPullRequest(
  * @param epicTitle - The epic ticket title.
  * @param epicBranch - The epic branch name (e.g., `'epic/proj-100'`).
  * @param baseBranch - The base branch name (e.g., `'main'`).
- * @param board - Optional Board instance for transitions.
+ * @param board - Board instance for transitions (required in practice — all callers pass ctx.board).
  * @returns `true` if the PR was created successfully.
  */
 export async function deliverEpicToBase(
@@ -329,7 +329,7 @@ export async function deliverEpicToBase(
   epicTitle: string,
   epicBranch: string,
   baseBranch: string,
-  board?: Board,
+  board?: Board, // Required in practice — all phase callers pass ctx.board
 ): Promise<boolean> {
   console.log('');
   console.log(green(`🎉 All children of ${epicKey} are done!`));

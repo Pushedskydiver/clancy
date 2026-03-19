@@ -32,6 +32,11 @@ export async function branchSetup(ctx: RunContext): Promise<boolean> {
   // skip the epic branch and deliver directly to base.
   let skipEpicBranch = false;
   if (hasParent && !isRework) {
+    // parentInfo is the parent identifier (e.g. 'ENG-42' for Linear).
+    // linearIssueId is the CHILD's UUID — not ideal as parentId, but the
+    // Board wrapper handles this: it uses parentInfo for Epic: text search
+    // (which works) and falls back to native API only if a real parent UUID
+    // is available. The text search path is the primary detection method.
     const childrenStatus = await board.fetchChildrenStatus(
       ticket.parentInfo,
       ticket.linearIssueId,

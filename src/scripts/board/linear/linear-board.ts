@@ -70,8 +70,16 @@ export function createLinearBoard(env: LinearEnv): Board {
     },
 
     async fetchChildrenStatus(parentKey: string, parentId?: string) {
-      if (!parentId) return undefined;
-      return fetchLinearChildrenStatus(env.LINEAR_API_KEY, parentId, parentKey);
+      // parentKey is the identifier (e.g. 'ENG-42') — used for Epic: text search.
+      // parentId is the UUID — used for native children API fallback.
+      // When parentId is missing, we can still try the Epic: text search.
+      // The native fallback will be skipped, which is acceptable since
+      // v0.6.0+ children always have Epic: in their description.
+      return fetchLinearChildrenStatus(
+        env.LINEAR_API_KEY,
+        parentId ?? parentKey, // fallback to identifier — text search works, native fallback may not
+        parentKey,
+      );
     },
 
     async transitionTicket(ticket: FetchedTicket, status: string) {

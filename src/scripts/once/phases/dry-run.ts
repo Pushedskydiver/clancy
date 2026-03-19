@@ -1,5 +1,5 @@
 /**
- * Phase 6: Dry-run gate — prints ticket info and exits when `--dry-run` is active.
+ * Phase 5: Dry-run gate — prints ticket info and exits when `--dry-run` is active.
  *
  * Returns `true` to continue, `false` for early exit (dry-run mode).
  */
