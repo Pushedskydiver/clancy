@@ -452,6 +452,51 @@ If [2]: store `CLANCY_MODE=afk` in `.clancy/.env`.
 
 ---
 
+### Q3h (all boards): Reliable autonomous mode
+
+Output:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Reliable Autonomous Mode
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+These settings control self-healing and safety limits for autonomous runs.
+```
+
+**Fix retries:**
+
+```
+Max self-healing attempts after a verification failure? [2]
+(Range: 0–5. When lint/test/typecheck fails, Clancy retries up to this many times before delivering anyway.)
+```
+
+If a number 0–5 is entered: store as `CLANCY_FIX_RETRIES` in `.clancy/.env`.
+If enter is pressed with no value: use default 2 — store `CLANCY_FIX_RETRIES=2` in `.clancy/.env`.
+If the value is outside 0–5: re-prompt.
+
+**Time limit:**
+
+```
+Per-ticket time limit in minutes? [30]
+(0 to disable. Clancy will stop working on a ticket after this many minutes.)
+```
+
+If a non-negative integer is entered: store as `CLANCY_TIME_LIMIT` in `.clancy/.env`.
+If enter is pressed with no value: use default 30 — store `CLANCY_TIME_LIMIT=30` in `.clancy/.env`.
+If the value is negative or not a number: re-prompt.
+
+**Branch guard:**
+
+```
+Enable branch guard hook? Prevents accidental commits to the base branch. [Y/n]
+```
+
+If `y`, `Y`, or enter: store `CLANCY_BRANCH_GUARD=true` in `.clancy/.env`.
+If `n` or `N`: store `CLANCY_BRANCH_GUARD=false` in `.clancy/.env`.
+
+---
+
 ### Q4: Base branch (auto-detect)
 
 Silently detect the base branch — do not ask unless detection fails:

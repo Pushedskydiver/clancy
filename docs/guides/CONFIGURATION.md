@@ -62,6 +62,39 @@ CLANCY_COMPONENT=backend
 
 `CLANCY_COMPONENT` limits the strategist's research and ticket scope to a specific component or platform area of the codebase.
 
+## Verification gates
+
+```
+CLANCY_FIX_RETRIES=2
+CLANCY_VERIFY_COMMANDS="npm test,npm run lint,npm run typecheck"
+```
+
+Clancy runs lint, test, and typecheck before delivery. If checks fail, Clancy retries up to `CLANCY_FIX_RETRIES` times (default 2, range 0–5). Set to `0` to disable self-healing (checks still run, but failures go straight to the PR with a warning). Override auto-detected commands with `CLANCY_VERIFY_COMMANDS`.
+
+## Time guard
+
+```
+CLANCY_TIME_LIMIT=30
+```
+
+Minutes allowed per ticket. At 80% a warning is injected; at 100% Clancy is told to commit and deliver. Set to `0` to disable. Default: 30.
+
+## Cost logging
+
+```
+CLANCY_TOKEN_RATE=6600
+```
+
+Estimated tokens per minute for duration-based cost logging. Each ticket's cost estimate is appended to `.clancy/costs.log`. Default: 6600.
+
+## Branch guard
+
+```
+CLANCY_BRANCH_GUARD=true
+```
+
+PreToolUse hook that blocks force push, direct push to protected branches, and destructive resets. Enabled by default. Set to `false` to disable.
+
 ## Notifications
 
 ```
@@ -142,6 +175,11 @@ Posts to Slack or Teams when a ticket completes. The payload format (Slack vs Te
 | `PLAYWRIGHT_STORYBOOK_COMMAND` | All | No | — | Storybook start command |
 | `PLAYWRIGHT_STORYBOOK_PORT` | All | No | — | Storybook port |
 | `PLAYWRIGHT_STARTUP_WAIT` | All | No | `15` | Seconds to wait for server |
+| `CLANCY_FIX_RETRIES` | All | No | `2` | Self-healing retry attempts when verification fails (range 0–5) |
+| `CLANCY_VERIFY_COMMANDS` | All | No | Auto-detect | Comma-separated verification commands (e.g. `npm test,npm run lint`) |
+| `CLANCY_TOKEN_RATE` | All | No | `6600` | Estimated tokens per minute for cost logging |
+| `CLANCY_TIME_LIMIT` | All | No | `30` | Minutes per ticket before time guard warnings (0 to disable) |
+| `CLANCY_BRANCH_GUARD` | All | No | `true` | Enable branch guard hook (blocks force push, protected branches, destructive resets) |
 
 **Note on rework detection:** Rework is detected automatically from PR comments: inline code comments always trigger rework, and conversation comments trigger with a `Rework:` prefix. On GitHub, a `CHANGES_REQUESTED` review state is an additional trigger. `CLANCY_MAX_REWORK` controls the safety limit for rework cycles.
 

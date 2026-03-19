@@ -42,9 +42,14 @@ clancy/
 │   │   │   ├── pr-creation.ts  — attemptPrCreation, buildManualPrUrl
 │   │   │   ├── deliver.ts      — deliverViaPullRequest, ensureEpicBranch, deliverEpicToBase
 │   │   │   ├── rework.ts       — fetchReworkFromPrReview, postReworkActions, buildReworkComment
-│   │   │   ├── once.ts         — run() orchestrator entry point
-│   │   │   └── once.test.ts    — integration tests
-│   │   ├── afk/afk.ts          — AFK loop runner
+│   │   │   ├── lock/            — lock file management (acquire, release, stale detection)
+│   │   │   ├── cost/            — duration-based token cost estimation + costs.log writer
+│   │   │   ├── resume/          — crash recovery (resume detection, branch/ticket recovery)
+│   │   │   ├── once.ts          — run() orchestrator entry point
+│   │   │   └── once.test.ts     — integration tests
+│   │   ├── afk/
+│   │   │   ├── afk.ts           — AFK loop runner
+│   │   │   └── report/          — session report generator (.clancy/session-report.md)
 │   │   ├── board/              — board-specific modules (jira, github, linear)
 │   │   └── shared/             — env-schema, branch, prompt, progress, etc.
 │   │       ├── pull-request/   — PR creation (github, gitlab, bitbucket, post-pr, pr-body, rework-comment)
@@ -55,18 +60,21 @@ clancy/
 │   │   ├── CLAUDE.md           — template injected into user's CLAUDE.md
 │   │   └── .env.example.*      — env templates per board
 │   ├── utils/                  — shared utilities (ansi, parse-json)
-│   └── agents/                 — 6 specialist agent prompts
+│   └── agents/                 — 7 specialist agent prompts
 │       ├── tech-agent.md       — writes STACK.md + INTEGRATIONS.md
 │       ├── arch-agent.md       — writes ARCHITECTURE.md
 │       ├── quality-agent.md    — writes CONVENTIONS.md + TESTING.md + GIT.md + DEFINITION-OF-DONE.md
 │       ├── design-agent.md     — writes DESIGN-SYSTEM.md + ACCESSIBILITY.md
 │       ├── concerns-agent.md   — writes CONCERNS.md
-│       └── devils-advocate.md  — AI-grill agent for /clancy:brief (interrogates codebase, board, web)
+│       ├── devils-advocate.md  — AI-grill agent for /clancy:brief (interrogates codebase, board, web)
+│       └── verification-gate.md — verification gate agent (interprets lint/test/type errors, applies fixes)
 ├── hooks/                      — Node.js hooks installed alongside commands (pre-built CommonJS)
 │   ├── clancy-credential-guard.js  — PreToolUse: blocks credential writes
-│   ├── clancy-context-monitor.js   — PostToolUse: warns on low context
+│   ├── clancy-context-monitor.js   — PostToolUse: warns on low context + time guard warnings
 │   ├── clancy-statusline.js        — Statusline: context bar + update notice
-│   └── clancy-check-update.js      — SessionStart: background version check
+│   ├── clancy-check-update.js      — SessionStart: background version check
+│   ├── clancy-branch-guard.js      — PreToolUse: blocks force push, protected branches, destructive resets
+│   └── clancy-post-compact.js      — PostCompact: re-injects ticket context after context compaction
 ├── registry/
 │   └── boards.json             — board definitions for community extensions
 └── docs/                       — project documentation (this directory)
@@ -153,14 +161,17 @@ The grill phase has two modes:
 
 ## Hook Architecture
 
-Four hooks run at different points in the Claude Code lifecycle:
+Six hook files plus one agent-based hook run at different points in the Claude Code lifecycle:
 
 | Hook | Event | Purpose |
 |---|---|---|
 | `clancy-credential-guard.js` | PreToolUse | Scans Write/Edit/MultiEdit for credentials, blocks if found |
-| `clancy-context-monitor.js` | PostToolUse | Reads bridge file, injects warning when context ≤ 35% |
+| `clancy-branch-guard.js` | PreToolUse | Blocks force push, protected branch push, destructive resets |
+| `clancy-context-monitor.js` | PostToolUse | Reads bridge file, injects warning when context ≤ 35% + time guard warnings at 80%/100% of `CLANCY_TIME_LIMIT` |
 | `clancy-statusline.js` | Statusline | Writes context metrics to bridge file, renders status bar |
 | `clancy-check-update.js` | SessionStart | Spawns background process to check npm for updates |
+| `clancy-post-compact.js` | PostCompact | Re-injects ticket context (key, description, branch) after context compaction |
+| Verification gate (agent) | Stop | Runs lint/test/typecheck before delivery, triggers self-healing retry on failure |
 
 The statusline and context monitor communicate via a bridge file in `$TMPDIR`:
 ```
@@ -177,8 +188,8 @@ The core work happens in TypeScript modules, bundled into self-contained scripts
 clancy-afk.js (loop runner — bundled, self-contained)
   └─ while i < MAX_ITERATIONS:
             run(argv)  ← once orchestrator
+              0.  Lock file check (acquire lock or resume crashed session)
               1.  Preflight checks (node, git, connectivity)
-              2.  Parse .clancy/.env → detectBoard() → BoardConfig
               3.  Validate board-specific inputs (JQL, repo format, team ID)
               4.  Ping board (connectivity + credentials)
               4a. Epic completion scan — check if any epics have all children done → create epic PR
@@ -192,10 +203,14 @@ clancy-afk.js (loop runner — bundled, self-contained)
               9.  Git: ensure epic branch (if parent), create feature branch
              10.  Transition ticket to In Progress
              11.  Build prompt + invoke Claude (claude --dangerously-skip-permissions)
-             12.  Push branch → create PR/MR (targets epic branch if parent, base branch otherwise)
-             13.  Log to .clancy/progress.txt (with parent:KEY for epic children)
-             14.  Send notification (if configured)
+             12.  Verification gate — run lint/test/typecheck, self-healing retry on failure
+             13.  Push branch → create PR/MR (targets epic branch if parent, base branch otherwise)
+             14.  Log to .clancy/progress.txt (with parent:KEY for epic children)
+             15.  Cost log — append duration-based token estimate to .clancy/costs.log
+             16.  Release lock file
+             17.  Send notification (if configured)
             if "No tickets found": break
+       └─ Generate session report (.clancy/session-report.md)
 ```
 
 ## What Gets Created in User Projects
@@ -208,6 +223,9 @@ After `/clancy:init` + `/clancy:map-codebase`:
   clancy-afk.js         — bundled AFK loop runner (self-contained, copied by installer)
   docs/                 — 10 structured docs (read before every run)
   progress.txt          — append-only completion log
+  costs.log             — duration-based token cost estimates per ticket
+  clancy.lock           — lock file for crash recovery (transient, deleted on success)
+  session-report.md     — AFK session summary (generated after /clancy:run)
   .env                  — board credentials (gitignored)
   .env.example          — credential template
 ```

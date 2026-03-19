@@ -436,6 +436,16 @@ MAX_ITERATIONS=5
 # Set to "false" to disable skip comments
 # CLANCY_SKIP_COMMENTS=true
 
+# ─── Optional: Reliable autonomous mode ───────────────────────────────────────
+# Max self-healing attempts after verification failure (default: 2, range 0-5)
+# CLANCY_FIX_RETRIES=2
+
+# Per-ticket time limit in minutes (default: 30, 0 to disable)
+# CLANCY_TIME_LIMIT=30
+
+# Prevent accidental commits to the base branch (default: true)
+# CLANCY_BRANCH_GUARD=true
+
 # ─── Optional: Notifications ──────────────────────────────────────────────────
 # Webhook URL for Slack or Teams notifications on ticket completion
 # CLANCY_NOTIFY_WEBHOOK=https://hooks.slack.com/services/your/webhook/url
@@ -520,6 +530,16 @@ MAX_ITERATIONS=20
 # When Clancy skips a ticket (irrelevant/infeasible), post a comment explaining why
 # Set to "false" to disable skip comments
 # CLANCY_SKIP_COMMENTS=true
+
+# ─── Optional: Reliable autonomous mode ───────────────────────────────────────
+# Max self-healing attempts after verification failure (default: 2, range 0-5)
+# CLANCY_FIX_RETRIES=2
+
+# Per-ticket time limit in minutes (default: 30, 0 to disable)
+# CLANCY_TIME_LIMIT=30
+
+# Prevent accidental commits to the base branch (default: true)
+# CLANCY_BRANCH_GUARD=true
 
 # ─── Optional: Notifications ──────────────────────────────────────────────────
 # Webhook URL for Slack or Teams notifications on ticket completion
@@ -615,6 +635,16 @@ MAX_ITERATIONS=20
 # BITBUCKET_TOKEN=your-app-password        # if your git host is Bitbucket
 # CLANCY_GIT_PLATFORM=gitlab               # override auto-detection (github/gitlab/bitbucket)
 # CLANCY_GIT_API_URL=https://gitlab.example.com/api/v4  # self-hosted git API base URL
+
+# ─── Optional: Reliable autonomous mode ───────────────────────────────────────
+# Max self-healing attempts after verification failure (default: 2, range 0-5)
+# CLANCY_FIX_RETRIES=2
+
+# Per-ticket time limit in minutes (default: 30, 0 to disable)
+# CLANCY_TIME_LIMIT=30
+
+# Prevent accidental commits to the base branch (default: true)
+# CLANCY_BRANCH_GUARD=true
 
 # ─── Optional: Skip comments ──────────────────────────────────────────────
 # When Clancy skips a ticket (irrelevant/infeasible), post a comment explaining why

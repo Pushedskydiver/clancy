@@ -44,6 +44,7 @@ const PKG = require('../../package.json') as { version: string };
 const ROLES_SRC = join(__dirname, '..', '..', 'src', 'roles');
 const HOOKS_SRC = join(__dirname, '..', '..', 'hooks');
 const BUNDLE_SRC = join(__dirname, '..', 'bundle');
+const AGENTS_SRC = join(__dirname, '..', '..', 'src', 'agents');
 
 const _homeDir = process.env.HOME ?? process.env.USERPROFILE;
 
@@ -490,9 +491,17 @@ async function main(): Promise<void> {
         ? join(homeDir, '.claude')
         : join(process.cwd(), '.claude');
 
+    // Read verification gate agent prompt (best-effort — skip if missing)
+    let verificationGatePrompt: string | undefined;
+    const gatePromptPath = join(AGENTS_SRC, 'verification-gate.md');
+    if (existsSync(gatePromptPath)) {
+      verificationGatePrompt = readFileSync(gatePromptPath, 'utf8');
+    }
+
     installHooks({
       claudeConfigDir,
       hooksSourceDir: HOOKS_SRC,
+      verificationGatePrompt,
     });
 
     printSuccess(enabledRoles);

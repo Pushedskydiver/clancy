@@ -55,6 +55,9 @@ General
   [G4] Max rework        {CLANCY_MAX_REWORK:-3}
   [G5] TDD mode          {on if CLANCY_TDD=true, else off}
   [G6] Grill mode         {CLANCY_MODE:-interactive}
+  [G7] Fix retries        {CLANCY_FIX_RETRIES:-2}          self-healing attempts after verification failure
+  [G8] Time limit         {CLANCY_TIME_LIMIT:-30}          per-ticket time limit in minutes (0 = disabled)
+  [G9] Branch guard       {on if CLANCY_BRANCH_GUARD=true or unset, off if false}
 
 {If Jira:}
 Jira
@@ -211,6 +214,59 @@ Controls how /clancy:brief handles clarifying questions before generating a brie
 
 If [1]: remove `CLANCY_MODE` from `.clancy/.env` (uses default).
 If [2]: write `CLANCY_MODE=afk` to `.clancy/.env`.
+
+---
+
+### [G7] Fix retries
+
+```
+Fix retries — current: {value or 2}
+Max self-healing attempts after a verification failure (lint/test/typecheck).
+When exhausted, Clancy delivers anyway with a warning in the PR body.
+
+[1] 2 (default)
+[2] Enter a different number (0–5)
+[3] Cancel
+```
+
+Validate the input is an integer between 0 and 5. If invalid, re-prompt.
+
+If [1]: remove `CLANCY_FIX_RETRIES` from `.clancy/.env` (uses default).
+If [2]: prompt `How many fix retries?` then write `CLANCY_FIX_RETRIES=<value>` to `.clancy/.env`.
+
+---
+
+### [G8] Time limit
+
+```
+Time limit — current: {value or 30} minutes
+Per-ticket time limit. Clancy stops working on a ticket after this many minutes.
+Set to 0 to disable.
+
+[1] 30 minutes (default)
+[2] Enter a different number
+[3] Cancel
+```
+
+Validate the input is a non-negative integer. If invalid, re-prompt.
+
+If [1]: remove `CLANCY_TIME_LIMIT` from `.clancy/.env` (uses default).
+If [2]: prompt `Time limit in minutes? (0 to disable)` then write `CLANCY_TIME_LIMIT=<value>` to `.clancy/.env`.
+
+---
+
+### [G9] Branch guard
+
+```
+Branch guard — current: {on/off}
+Prevents accidental commits to the base branch during autonomous runs.
+
+[1] Enable (default)
+[2] Disable
+```
+
+If [1]: write `CLANCY_BRANCH_GUARD=true` to `.clancy/.env`.
+If [2]: write `CLANCY_BRANCH_GUARD=false` to `.clancy/.env`.
 
 ---
 

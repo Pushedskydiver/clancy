@@ -164,3 +164,90 @@ After `CLANCY_MAX_REWORK` cycles (default: 3) on the same ticket, Clancy logs `S
 ```
 
 Clancy reads `GIT.md` before every run and follows whatever conventions are documented there. The defaults above apply on greenfield projects or when GIT.md is silent.
+
+## Verification gates
+
+Before delivering any ticket (push + PR), Clancy runs a verification gate — an agent-based Stop hook that executes lint, test, and typecheck commands against the working tree.
+
+### How it works
+
+1. The Stop hook fires after the Claude implementation session completes
+2. It runs the project's verification commands (auto-detected from `package.json` scripts, or overridden via `CLANCY_VERIFY_COMMANDS`)
+3. If all checks pass, delivery proceeds normally
+4. If any check fails, Clancy enters a **self-healing retry** loop
+
+### Self-healing retry
+
+When verification fails, Clancy attempts to fix the issue automatically:
+
+1. The failing command output is fed back to Claude as context
+2. Claude analyses the failure and applies a fix
+3. The verification gate runs again
+4. This repeats up to `CLANCY_FIX_RETRIES` times (default: 2, max: 5)
+5. If all retries are exhausted, the ticket is delivered with a verification warning in the PR body
+
+The retry count is configurable via `.clancy/.env` or `/clancy:settings`. Set `CLANCY_FIX_RETRIES=0` to disable self-healing entirely (verification still runs, but failures go straight to the PR with a warning).
+
+### Verification commands
+
+By default, Clancy auto-detects verification commands from `package.json`:
+
+- `npm test` (if a `test` script exists)
+- `npm run lint` (if a `lint` script exists)
+- `npm run typecheck` (if a `typecheck` script exists)
+
+Override with `CLANCY_VERIFY_COMMANDS` — a comma-separated list of commands:
+
+```
+CLANCY_VERIFY_COMMANDS="npm test,npm run lint,npm run typecheck"
+```
+
+### Verification gate agent
+
+The verification gate uses a specialist agent prompt (`src/agents/verification-gate.md`) that understands how to interpret lint errors, test failures, and type errors, and apply targeted fixes without regressing other changes.
+
+## Crash recovery
+
+Clancy uses a lock file (`.clancy/clancy.lock`) to prevent double-runs and recover from crashes.
+
+### Lock file lifecycle
+
+1. When `/clancy:once` starts, it writes a lock file containing the ticket key, branch name, timestamp, and PID
+2. The lock file is deleted on successful completion (after delivery + logging)
+3. If the process crashes, the lock file remains
+
+### Resume detection
+
+On startup, if a lock file exists:
+
+1. Clancy checks whether the PID in the lock file is still running
+2. If the PID is alive → blocks with "Another Clancy session is running" (prevents double-runs)
+3. If the PID is dead → the previous session crashed. Clancy enters **resume mode**:
+   - Reads the ticket key and branch from the lock file
+   - Checks out the existing feature branch
+   - Skips ticket fetch and branch creation
+   - Resumes from the implementation step (or verification, depending on how far the previous session got)
+
+The `CLANCY_ONCE_ACTIVE` environment variable is set during execution so hooks and subprocesses can detect an active session.
+
+## Time guard
+
+Clancy tracks elapsed time per ticket and warns when approaching the configured limit.
+
+- At **80%** of `CLANCY_TIME_LIMIT` (default: 30 minutes), a PostToolUse warning is injected: "Time warning — 80% of time limit reached. Wrap up current work."
+- At **100%**, a final warning is injected: "Time limit reached. Commit current progress and proceed to delivery."
+- Set `CLANCY_TIME_LIMIT=0` to disable the time guard entirely
+
+The time guard is integrated into the context-monitor hook (`clancy-context-monitor.js`) and uses the same bridge file mechanism as context warnings.
+
+## Branch guard
+
+The branch guard hook (`clancy-branch-guard.js`) is a PreToolUse hook that blocks dangerous git operations:
+
+- **Force push** — blocks `git push --force` and `git push -f` (prevents overwriting remote history)
+- **Protected branches** — blocks direct push to `main`, `master`, and `CLANCY_BASE_BRANCH` (all work goes through feature branches)
+- **Destructive resets** — blocks `git reset --hard`, `git clean -fd`, and `git checkout .` on protected branches
+
+The branch guard is best-effort — it catches common destructive patterns but does not intercept every possible git invocation. It runs as a PreToolUse hook on Bash and Execute commands, inspecting the command string before execution.
+
+Enable or disable via `CLANCY_BRANCH_GUARD` (default: `true`). Set to `false` to disable all branch guard checks.

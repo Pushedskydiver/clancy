@@ -2,7 +2,7 @@
 
 **Autonomous, board-driven development for Claude Code.**
 
-[![npm](https://img.shields.io/npm/v/chief-clancy?style=for-the-badge&color=cb3837)](https://www.npmjs.com/package/chief-clancy) [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE) [![Tests](https://img.shields.io/badge/tests-579%20passing-brightgreen?style=for-the-badge)](docs/TESTING.md) [![GitHub Stars](https://img.shields.io/github/stars/Pushedskydiver/clancy?style=for-the-badge)](https://github.com/Pushedskydiver/clancy/stargazers)
+[![npm](https://img.shields.io/npm/v/chief-clancy?style=for-the-badge&color=cb3837)](https://www.npmjs.com/package/chief-clancy) [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE) [![Tests](https://img.shields.io/badge/tests-678%20passing-brightgreen?style=for-the-badge)](docs/TESTING.md) [![GitHub Stars](https://img.shields.io/github/stars/Pushedskydiver/clancy?style=for-the-badge)](https://github.com/Pushedskydiver/clancy/stargazers)
 
 > [!WARNING]
 > Clancy is in early development. Expect bugs, breaking changes, and rough edges. If you hit an issue, please [open a bug report](https://github.com/Pushedskydiver/clancy/issues/new).
@@ -25,13 +25,14 @@ Named after Chief Clancy Wiggum (The Simpsons) — built on the [Ralph technique
 
 ## What it does
 
-Clancy does five things:
+Clancy does six things:
 
 1. **Scaffolds itself** into a project — scripts, docs, CLAUDE.md, .clancy/.env
 2. **Scans your codebase** with 5 parallel specialist agents and writes 10 structured docs that Claude reads before every run
 3. **Writes strategy briefs** — interviews you (or runs a devil's advocate AI-grill in AFK mode), decomposes work into vertical slices with HITL/AFK classification, and creates board tickets with blocking dependencies
 4. **Plans tickets** — fetches backlog tickets, explores the codebase, and generates structured implementation plans posted as comments for human review
 5. **Runs autonomously** — picking one ticket per loop from your Kanban board (skipping blocked candidates), implementing it, committing, and creating a PR (targeting an epic branch for parented tickets, or the base branch for standalone tickets)
+6. **Verifies before delivery** — runs lint, test, and typecheck via verification gates with self-healing retry, guards against force push and destructive resets, and recovers from crashes via lock file detection
 
 Brief → approve → plan → implement. One ticket per run. Fresh context window every iteration. No context rot.
 
