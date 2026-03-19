@@ -53,6 +53,20 @@ vi.mock('~/scripts/shared/preflight/preflight.js', () => ({
 
 vi.mock('~/scripts/shared/env-schema/env-schema.js', () => ({
   detectBoard: vi.fn(),
+  sharedEnv: vi.fn((config: { env: Record<string, string> }) => config.env),
+}));
+
+vi.mock('~/scripts/board/factory/factory.js', () => ({
+  createBoard: vi.fn(() => ({
+    ping: vi.fn(() => Promise.resolve({ ok: true })),
+    validateInputs: vi.fn(() => undefined),
+    fetchTicket: vi.fn(() => Promise.resolve(undefined)),
+    fetchTickets: vi.fn(() => Promise.resolve([])),
+    fetchBlockerStatus: vi.fn(() => Promise.resolve(false)),
+    fetchChildrenStatus: vi.fn(() => Promise.resolve(undefined)),
+    transitionTicket: vi.fn(() => Promise.resolve(true)),
+    sharedEnv: vi.fn(() => ({})),
+  })),
 }));
 
 vi.mock('~/scripts/board/jira/jira.js', () => ({

@@ -34,10 +34,11 @@ clancy/
 │   │       ├── commands/       — init, settings, doctor, help, etc.
 │   │       └── workflows/      — scaffold, init, map-codebase, etc.
 │   ├── scripts/
-│   │   ├── once/               — once orchestrator (8 modules)
+│   │   ├── once/               — once orchestrator (phase pipeline)
+│   │   │   ├── context/        — RunContext type, Phase type, createContext factory
+│   │   │   ├── phases/         — 13 phase functions (lock-check → cleanup)
 │   │   │   ├── types.ts        — FetchedTicket type
-│   │   │   ├── board-ops.ts    — sharedEnv, pingBoard, validateInputs, transitionToStatus, fetchEpicChildrenStatus (dual-mode)
-│   │   │   ├── fetch-ticket.ts — board-specific ticket fetch dispatch (with HITL/AFK filtering + blocker checks)
+│   │   │   ├── fetch-ticket.ts — ticket fetch with blocker checks + HITL/AFK filtering
 │   │   │   ├── git-token.ts    — resolveGitToken
 │   │   │   ├── pr-creation.ts  — attemptPrCreation, buildManualPrUrl
 │   │   │   ├── deliver.ts      — deliverViaPullRequest, ensureEpicBranch, deliverEpicToBase
@@ -156,7 +157,8 @@ The grill phase has two modes:
 |---|---|---|
 | `fetchBlockerStatus` | `src/scripts/board/{jira,github,linear}/` | Per-board blocker check — returns whether a ticket's blocking dependencies are resolved |
 | `fetchTickets` / `fetchIssues` | `src/scripts/board/{jira,github,linear}/` | Plural variants — fetch multiple candidate tickets (used by batch mode and queue filtering) |
-| `fetchChildrenStatus` | `src/scripts/once/board-ops/` | Dual-mode: returns children statuses for epic completion detection (used by both implementer and strategist) |
+| `fetchChildrenStatus` | `src/scripts/board/{jira,github,linear}/` + Board type | Dual-mode: returns children statuses for epic completion detection. Accessed via `Board.fetchChildrenStatus()` |
+| `createBoard` | `src/scripts/board/factory/` | Factory — single switch on `config.provider`, returns a Board instance |
 | `fetchCandidates` | `src/scripts/once/fetch-ticket/` | Dispatches to per-board fetch, applies HITL/AFK filtering based on `isAfk` option |
 
 ## Hook Architecture

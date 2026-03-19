@@ -292,7 +292,7 @@ These are fine as-is and should not be touched during this refactor:
 
 ## Migration Strategy
 
-The key constraint: **every commit must pass all 764 tests.** No "break then fix" steps.
+The key constraint: **every commit must pass all existing tests.** No "break then fix" steps.
 
 ### Phase pipeline migration
 

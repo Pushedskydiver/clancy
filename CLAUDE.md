@@ -10,7 +10,7 @@ Autonomous, board-driven development for Claude Code. npm package: `chief-clancy
 | `src/installer/` | Installer modules (file-ops, hook-installer, manifest, prompts) |
 | `src/roles/` | Slash commands and workflows organised by role (planner, implementer, reviewer, setup, strategist) |
 | `src/roles/strategist/` | Strategist role — `/clancy:brief` and `/clancy:approve-brief` commands |
-| `src/scripts/once/` | Once orchestrator — 11 modules: types, board-ops, fetch-ticket, git-token, pr-creation, deliver, rework, lock, cost, resume, once (runner) |
+| `src/scripts/once/` | Once orchestrator — phase pipeline (13 phases in `phases/`), context (`context/`), plus modules: types, fetch-ticket, git-token, pr-creation, deliver, rework, lock, cost, resume |
 | `src/scripts/once/lock/` | Lock file management (acquire, release, stale detection) |
 | `src/scripts/once/cost/` | Duration-based token cost estimation + costs.log writer |
 | `src/scripts/once/resume/` | Crash recovery (resume detection, branch/ticket recovery) |
@@ -37,6 +37,7 @@ Autonomous, board-driven development for Claude Code. npm package: `chief-clancy
 | [docs/GLOSSARY.md](docs/GLOSSARY.md) | Ubiquitous language — term definitions for roles, delivery, orchestrator, strategist |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture, module map, function inventory |
 | [docs/VISUAL-ARCHITECTURE.md](docs/VISUAL-ARCHITECTURE.md) | Mermaid diagrams — role interactions, ticket lifecycle, delivery paths |
+| [docs/LIFECYCLE.md](docs/LIFECYCLE.md) | End-to-end ticket flow — strategy → planning → implementation → epic completion, with human touchpoints |
 | [docs/CONVENTIONS.md](docs/CONVENTIONS.md) | Code conventions, naming patterns, TypeScript/hook rules |
 | [docs/TESTING.md](docs/TESTING.md) | Testing strategy, co-location rules, coverage thresholds |
 | [docs/GIT.md](docs/GIT.md) | Branch strategy, merge conventions |

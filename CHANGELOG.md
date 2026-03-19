@@ -7,6 +7,21 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.7.1] — 2026-03-19
+
+### Changed
+
+- **Phase pipeline** — decompose `once.ts` (650 lines) into 13 composable phase functions under `src/scripts/once/phases/`. Orchestrator is now 110 lines.
+- **Board type abstraction** — unified `Board` type with `createBoard()` factory. Single switch statement replaces 6+ scattered switches in `board-ops.ts`.
+- **Delete `board-ops.ts`** — 174 lines of switch dispatch + 319 lines of tests removed. All board operations now go through `ctx.board.*` method calls.
+- **Env templates** — `.env.example` files updated with strategist (v0.6.0) and reliable autonomous mode (v0.7.0) env vars.
+
+### Tests
+
+- 764 → 853 (89 new tests from phase files + board wrappers, net of deleted board-ops tests)
+
+---
+
 ## [0.7.0] — 2026-03-19
 
 ### Added

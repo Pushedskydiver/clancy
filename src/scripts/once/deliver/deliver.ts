@@ -2,7 +2,9 @@ import { execFileSync } from 'node:child_process';
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import type { Board } from '~/scripts/board/board.js';
 import type { BoardConfig } from '~/scripts/shared/env-schema/env-schema.js';
+import { sharedEnv } from '~/scripts/shared/env-schema/env-schema.js';
 import { formatDuration } from '~/scripts/shared/format/format.js';
 import {
   branchExists,
@@ -22,14 +24,11 @@ import {
 import { detectRemote } from '~/scripts/shared/remote/remote.js';
 import { dim, green, red, yellow } from '~/utils/ansi/ansi.js';
 
-import { sharedEnv, transitionToStatus } from '../board-ops/board-ops.js';
 import {
   attemptPrCreation,
   buildManualPrUrl,
 } from '../pr-creation/pr-creation.js';
 import type { FetchedTicket } from '../types/types.js';
-
-// ─── Epic branch management ─────────────────────────────────────────────────
 
 /**
  * Ensure the epic branch exists locally and on the remote.
@@ -128,6 +127,7 @@ export async function deliverViaPullRequest(
   startTime: number,
   skipLog = false,
   parent?: string,
+  board?: Board, // Required in practice — all phase callers pass ctx.board
 ): Promise<boolean> {
   const pushed = pushBranch(ticketBranch);
 
@@ -294,11 +294,11 @@ export async function deliverViaPullRequest(
 
   // Transition to In Review (not Done — PR hasn't been merged yet)
   // For GitHub Issues: do NOT close — PR body has "Closes #N" (or "Part of") for auto-close on merge
-  if (config.provider !== 'github') {
+  if (config.provider !== 'github' && board) {
     const statusReview =
       config.env.CLANCY_STATUS_REVIEW ?? config.env.CLANCY_STATUS_DONE;
     if (statusReview) {
-      await transitionToStatus(config, ticket, statusReview);
+      await board.transitionTicket(ticket, statusReview);
     }
   }
 
@@ -320,6 +320,7 @@ export async function deliverViaPullRequest(
  * @param epicTitle - The epic ticket title.
  * @param epicBranch - The epic branch name (e.g., `'epic/proj-100'`).
  * @param baseBranch - The base branch name (e.g., `'main'`).
+ * @param board - Board instance for transitions (required in practice — all callers pass ctx.board).
  * @returns `true` if the PR was created successfully.
  */
 export async function deliverEpicToBase(
@@ -328,6 +329,7 @@ export async function deliverEpicToBase(
   epicTitle: string,
   epicBranch: string,
   baseBranch: string,
+  board?: Board, // Required in practice — all phase callers pass ctx.board
 ): Promise<boolean> {
   console.log('');
   console.log(green(`🎉 All children of ${epicKey} are done!`));
@@ -383,12 +385,11 @@ export async function deliverEpicToBase(
     );
 
     // Transition epic ticket to Review
-    if (config.provider !== 'github') {
+    if (config.provider !== 'github' && board) {
       const statusReview =
         config.env.CLANCY_STATUS_REVIEW ?? config.env.CLANCY_STATUS_DONE;
       if (statusReview) {
-        await transitionToStatus(
-          config,
+        await board.transitionTicket(
           {
             key: epicKey,
             title: epicTitle,

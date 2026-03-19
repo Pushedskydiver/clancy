@@ -1,6 +1,7 @@
 import { execFileSync } from 'node:child_process';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { sharedEnv } from '~/scripts/shared/env-schema/env-schema.js';
 import {
   branchExists,
   checkout,
@@ -10,7 +11,6 @@ import {
 import { appendProgress } from '~/scripts/shared/progress/progress.js';
 import { detectRemote } from '~/scripts/shared/remote/remote.js';
 
-import { sharedEnv } from '../board-ops/board-ops.js';
 import type { LockData } from '../lock/lock.js';
 import { attemptPrCreation } from '../pr-creation/pr-creation.js';
 import { detectResume, executeResume } from './resume.js';
@@ -49,7 +49,7 @@ vi.mock('~/scripts/shared/remote/remote.js', () => ({
   })),
 }));
 
-vi.mock('../board-ops/board-ops.js', () => ({
+vi.mock('~/scripts/shared/env-schema/env-schema.js', () => ({
   sharedEnv: vi.fn(() => ({})),
 }));
 

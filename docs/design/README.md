@@ -1,39 +1,34 @@
 # Design Documents
 
-Design docs for Clancy features — the "why" behind non-obvious decisions, edge cases, and platform-specific flows.
+Design decisions for Clancy features — the "why" behind non-obvious choices. The code is the source of truth for "what" and "how."
 
 ## What belongs here
 
-- **Design docs** — flows, edge cases, API contracts, platform differences. Created before building a feature. Kept permanently as reference for why things work the way they do.
-- **Execution plans** — wave structure, file lists, build order. Created before building, **deleted after the feature ships**. These are temporary build checklists, not permanent reference.
+- **Design decisions** — the reasoning behind non-obvious choices. Created before building, **trimmed to decisions-only after shipping**. Full flows, edge cases, and API details belong in the code and tests.
+- **In-progress design docs** — full detail while being built. Trimmed after shipping.
+- **Execution plans** — wave structure, file lists, build order. **Deleted after the feature ships.**
 
 ## Lifecycle
 
-1. **Before building:** Create design doc(s) + execution plan for the feature
-2. **During building:** Reference both — the design doc for decisions, the execution plan for build order
-3. **After shipping:** Delete the execution plan. Keep the design docs. Update them if the implementation diverged from the original design.
+1. **Before building:** Create design doc(s) + execution plan
+2. **During building:** Reference both
+3. **After shipping:** Delete execution plans. Trim design docs to decisions-only (problem, solution, key decisions). The implementation is now the truth.
 
 ## Current documents
 
-### Shipped features
+### Shipped features (decisions only)
 
 | Document | Feature | Version |
 |---|---|---|
 | `epic-branch-workflow.md` | PR-based delivery, epic branches, epic completion detection | v0.5.12 |
-| `strategist-visual-flows.md` | Complete flow diagrams for `/clancy:brief` and `/clancy:approve-brief` across all platforms | v0.6.0 |
-| `strategist-jira-flow.md` | Jira-specific scenarios, API calls, ADF format, edge cases | v0.6.0 |
-| `strategist-linear-flow.md` | Linear-specific scenarios, GraphQL operations, edge cases | v0.6.0 |
-| `strategist-github-flow.md` | GitHub Issues-specific scenarios, edge cases | v0.6.0 |
-| `strategist-execution-plan.md` | Build plan — **can be deleted** (v0.6.0 shipped) | v0.6.0 |
-
-### Shipped features (continued)
-
-| Document | Feature | Version |
-|---|---|---|
-| `reliable-autonomous-mode.md` | Verification gates, safety hooks, crash recovery | v0.7.0 |
+| `reliable-autonomous-mode.md` | Verification gates, safety hooks, crash recovery, Claude Code hook API research | v0.7.0 |
 
 ### In progress
 
 | Document | Feature | Target |
 |---|---|---|
 | `codebase-refactor.md` | Phase pipeline (once.ts decomposition), Board type abstraction, PR review client | Pre-v0.8.0 |
+
+### Deleted after shipping
+
+- Strategist execution plan + 4 platform flow docs (v0.6.0) — implementation lives in `src/roles/strategist/workflows/`

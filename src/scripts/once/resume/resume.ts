@@ -8,6 +8,7 @@
 import { execFileSync } from 'node:child_process';
 
 import type { BoardConfig } from '~/scripts/shared/env-schema/env-schema.js';
+import { sharedEnv } from '~/scripts/shared/env-schema/env-schema.js';
 import {
   branchExists,
   checkout,
@@ -19,7 +20,6 @@ import { buildPrBody } from '~/scripts/shared/pull-request/pr-body/pr-body.js';
 import { detectRemote } from '~/scripts/shared/remote/remote.js';
 import { dim, green, yellow } from '~/utils/ansi/ansi.js';
 
-import { sharedEnv } from '../board-ops/board-ops.js';
 import type { LockData } from '../lock/lock.js';
 import { attemptPrCreation } from '../pr-creation/pr-creation.js';
 

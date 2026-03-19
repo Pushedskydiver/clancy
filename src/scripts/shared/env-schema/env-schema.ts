@@ -4,7 +4,7 @@
  * Validates env vars against Zod schemas and returns a typed
  * discriminated union for the detected board provider.
  */
-import type { BoardConfig } from '~/schemas/env.js';
+import type { BoardConfig, SharedEnv } from '~/schemas/env.js';
 import {
   githubEnvSchema,
   jiraEnvSchema,
@@ -73,4 +73,9 @@ export function detectBoard(raw: Record<string, string>): BoardConfig | string {
   }
 
   return '✗ No board detected — set Jira, GitHub, or Linear credentials in .clancy/.env';
+}
+
+/** Type-safe access to shared env vars across all board configs. */
+export function sharedEnv(config: BoardConfig): SharedEnv {
+  return config.env;
 }
