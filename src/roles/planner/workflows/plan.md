@@ -66,7 +66,7 @@ Parse the arguments passed to the command:
 
 If N > 10: `Maximum batch size is 10. Planning 10 tickets.`
 
-If N >= 5: display a confirmation:
+If N >= 5: display a confirmation (skip in AFK mode — `--afk` flag or `CLANCY_MODE=afk`):
 ```
 Planning {N} tickets — each requires codebase exploration. Continue? [Y/n]
 ```
@@ -92,7 +92,7 @@ RESPONSE=$(curl -s \
 
 Validate the response:
 - If `pull_request` field is present (not null): `#{N} is a PR, not an issue.` Stop.
-- If `state` is `closed`: warn `Issue #${N} is closed. Plan anyway? [y/N]`
+- If `state` is `closed`: warn `Issue #${N} is closed. Plan anyway? [y/N]` (in AFK mode: skip this ticket — do not plan closed issues unattended)
 
 #### Jira — Fetch specific ticket
 
@@ -104,7 +104,7 @@ RESPONSE=$(curl -s \
 ```
 
 Validate the response:
-- If `fields.status.statusCategory.key` is `done`: warn `Ticket is done. Plan anyway? [y/N]`
+- If `fields.status.statusCategory.key` is `done`: warn `Ticket is done. Plan anyway? [y/N]` (in AFK mode: skip this ticket)
 - If `fields.issuetype.name` is `Epic`: note `This is an epic.` (continue normally)
 
 #### Linear — Fetch specific issue
@@ -124,8 +124,8 @@ query {
 
 Validate the response:
 - If `nodes` is empty: `Issue {KEY} not found on Linear.` Stop.
-- If `state.type` is `completed`: warn `Issue is completed. Plan anyway? [y/N]`
-- If `state.type` is `canceled`: warn `Issue is canceled. Plan anyway? [y/N]`
+- If `state.type` is `completed`: warn `Issue is completed. Plan anyway? [y/N]` (in AFK mode: skip this ticket)
+- If `state.type` is `canceled`: warn `Issue is canceled. Plan anyway? [y/N]` (in AFK mode: skip this ticket)
 
 Then skip to Step 3b with this single ticket.
 
