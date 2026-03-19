@@ -69,3 +69,46 @@ const child = spawn(process.execPath, ['-e', `
 });
 
 child.unref();
+
+// --- Stale brief detection ---
+// Best-effort: detect unapproved briefs older than 7 days, write count to cache file.
+try {
+  const briefsDir = path.join(cwd, '.clancy', 'briefs');
+  const staleFile = path.join(cwd, '.clancy', '.brief-stale-count');
+
+  if (!fs.existsSync(briefsDir)) {
+    // No briefs dir — clear any stale cache so old counts don't linger
+    try { fs.unlinkSync(staleFile); } catch { /* may not exist */ }
+  } else {
+    const files = fs.readdirSync(briefsDir);
+    // Only count brief files (YYYY-MM-DD-slug.md), exclude .feedback.md and .approved markers
+    const mdFiles = files.filter(f =>
+      f.endsWith('.md') &&
+      !f.endsWith('.md.approved') &&
+      !f.endsWith('.feedback.md')
+    );
+    const now = Date.now();
+    const sevenDays = 7 * 24 * 60 * 60 * 1000;
+    let staleCount = 0;
+
+    for (const file of mdFiles) {
+      // Check there is no corresponding .approved marker
+      if (files.includes(file + '.approved')) continue;
+
+      // Parse date from filename prefix: YYYY-MM-DD-slug.md
+      const match = file.match(/^(\d{4}-\d{2}-\d{2})-/);
+      if (!match) continue;
+
+      const fileDate = new Date(match[1] + 'T00:00:00Z');
+      if (isNaN(fileDate.getTime())) continue;
+
+      if (now - fileDate.getTime() > sevenDays) {
+        staleCount++;
+      }
+    }
+
+    fs.writeFileSync(staleFile, String(staleCount));
+  }
+} catch {
+  // Best-effort — never crash the hook
+}

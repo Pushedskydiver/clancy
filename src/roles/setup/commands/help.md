@@ -22,6 +22,13 @@ integration, structured codebase docs, and a git workflow built for team develop
 | `/clancy:plan --fresh` | Discard any existing plan and start from scratch |
 | `/clancy:approve-plan` | Promote an approved plan to the ticket description |
 
+### Strategist *(optional — enable via `CLANCY_ROLES=strategist` in `.clancy/.env`)*
+
+| Command | Description |
+|---|---|
+| `/clancy:brief` | Generate a strategic brief (research + grill + decomposition) |
+| `/clancy:approve-brief` | Convert a brief into tickets on the board |
+
 ### Implementer
 
 | Command | Description |

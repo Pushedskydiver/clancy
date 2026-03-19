@@ -41,8 +41,8 @@ export function formatTimestamp(date: Date): string {
  * Creates the file and parent directories if they don't exist.
  *
  * @param projectRoot - The root directory of the project.
- * @param key - The ticket key (e.g., `'PROJ-123'`, `'#42'`).
- * @param summary - The ticket summary/title.
+ * @param key - The ticket key (e.g., `'PROJ-123'`, `'#42'`) or brief slug (e.g., `'add-dark-mode'`) for BRIEF/APPROVE_BRIEF statuses.
+ * @param summary - The ticket summary/title, or detail text for brief entries (e.g., `'4 proposed tickets'`).
  * @param status - The completion status.
  *
  * @example
@@ -52,6 +52,9 @@ export function formatTimestamp(date: Date): string {
  *
  * appendProgress('/path/to/project', 'PROJ-101', 'Add login', 'PR_CREATED', 42, 'PROJ-100');
  * // Appends: "2024-01-15 14:30 | PROJ-101 | Add login | PR_CREATED | pr:42 | parent:PROJ-100"
+ *
+ * appendProgress('/path/to/project', 'add-dark-mode', '4 proposed tickets', 'BRIEF');
+ * // Appends: "2024-01-15 14:30 | BRIEF | add-dark-mode | 4 proposed tickets"
  * ```
  */
 export function appendProgress(
@@ -67,6 +70,15 @@ export function appendProgress(
   mkdirSync(dirname(filePath), { recursive: true });
 
   const timestamp = formatTimestamp(new Date());
+
+  // BRIEF/APPROVE_BRIEF use slug-based format: timestamp | STATUS | slug | detail
+  if (status === 'BRIEF' || status === 'APPROVE_BRIEF') {
+    const line = `${timestamp} | ${status} | ${key} | ${summary}\n`;
+    appendFileSync(filePath, line, 'utf8');
+    return;
+  }
+
+  // Standard format: timestamp | key | summary | STATUS [| pr:N] [| parent:KEY]
   const prSuffix = prNumber != null ? ` | pr:${prNumber}` : '';
   const parentSuffix = parent ? ` | parent:${parent}` : '';
   const line = `${timestamp} | ${key} | ${summary} | ${status}${prSuffix}${parentSuffix}\n`;
@@ -105,8 +117,23 @@ function parseProgressFile(projectRoot: string): ProgressEntry[] {
     const parts = trimmed.split(' | ');
     if (parts.length < 4) continue;
 
-    // Fixed positions: timestamp, key, then everything else
+    // Fixed position: timestamp is always first
     const timestamp = parts[0]!;
+
+    // BRIEF / APPROVE_BRIEF entries use a slug-based format:
+    //   timestamp | STATUS | slug | detail
+    // Standard entries use:
+    //   timestamp | key | summary | STATUS [| pr:N] [| parent:KEY]
+    if (parts[1] === 'BRIEF' || parts[1] === 'APPROVE_BRIEF') {
+      entries.push({
+        timestamp,
+        key: parts[2]!,
+        summary: parts.slice(3).join(' | '),
+        status: parts[1] as ProgressStatus,
+      });
+      continue;
+    }
+
     const key = parts[1]!;
 
     // Scan remaining segments for named prefixes and status
@@ -138,6 +165,11 @@ function parseProgressFile(projectRoot: string): ProgressEntry[] {
     }
 
     if (!status) continue;
+
+    // Backward compat: old progress.txt entries may use 'APPROVE' (renamed to APPROVE_PLAN in v0.6.0)
+    if ((status as string) === 'APPROVE') {
+      status = 'APPROVE_PLAN';
+    }
 
     entries.push({
       timestamp,

@@ -136,6 +136,32 @@ export async function fetchIssue(
   label?: string,
   username?: string,
 ): Promise<(Ticket & { milestone?: string }) | undefined> {
+  const results = await fetchIssues(token, repo, label, username, false, 1);
+  return results[0];
+}
+
+/** GitHub issue with optional milestone. */
+export type GitHubTicket = Ticket & { milestone?: string };
+
+/**
+ * Fetch multiple candidate issues from GitHub Issues.
+ *
+ * @param token - The GitHub personal access token.
+ * @param repo - The repository in `owner/repo` format.
+ * @param label - Optional label to filter issues.
+ * @param username - The GitHub username for assignee filtering.
+ * @param excludeHitl - If `true`, excludes issues with the `clancy:hitl` label (client-side).
+ * @param limit - Maximum number of results to return (default: 5).
+ * @returns Array of fetched tickets (may be empty).
+ */
+export async function fetchIssues(
+  token: string,
+  repo: string,
+  label?: string,
+  username?: string,
+  excludeHitl?: boolean,
+  limit = 5,
+): Promise<GitHubTicket[]> {
   let response: Response;
 
   const params = new URLSearchParams({
@@ -154,12 +180,12 @@ export async function fetchIssue(
     console.warn(
       `⚠ GitHub API request failed: ${err instanceof Error ? err.message : String(err)}`,
     );
-    return undefined;
+    return [];
   }
 
   if (!response.ok) {
     console.warn(`⚠ GitHub API returned HTTP ${response.status}`);
-    return undefined;
+    return [];
   }
 
   let json: unknown;
@@ -168,40 +194,100 @@ export async function fetchIssue(
     json = await response.json();
   } catch {
     console.warn('⚠ GitHub API returned invalid JSON');
-    return undefined;
+    return [];
   }
 
   const parsed = githubIssuesResponseSchema.safeParse(json);
 
   if (!parsed.success) {
     console.warn(`⚠ Unexpected GitHub response shape: ${parsed.error.message}`);
-    return undefined;
+    return [];
   }
 
   // Filter out pull requests
-  const issues = parsed.data.filter((item) => !item.pull_request);
+  let issues = parsed.data.filter((item) => !item.pull_request);
 
-  if (!issues.length) return undefined;
+  // HITL/AFK filtering: exclude issues with clancy:hitl label
+  // GitHub Issues API doesn't support label exclusion natively, so filter client-side.
+  if (excludeHitl) {
+    issues = issues.filter(
+      (issue) => !issue.labels?.some((l) => l.name === 'clancy:hitl'),
+    );
+  }
 
-  const issue = issues[0];
-
-  return {
+  return issues.slice(0, limit).map((issue) => ({
     key: `#${issue.number}`,
     title: issue.title,
     description: issue.body ?? '',
-    provider: 'github',
+    provider: 'github' as const,
     milestone: issue.milestone?.title,
-  };
+  }));
+}
+
+/**
+ * Check whether a GitHub issue is blocked by unresolved blockers.
+ *
+ * Parses the issue body for `Blocked by #N` lines and checks if any
+ * of those issues are still open.
+ *
+ * @param token - The GitHub personal access token.
+ * @param repo - The repository in `owner/repo` format.
+ * @param issueNumber - The issue number to check.
+ * @param body - The issue body text.
+ * @returns `true` if any blocker is unresolved, `false` otherwise.
+ */
+export async function fetchBlockerStatus(
+  token: string,
+  repo: string,
+  issueNumber: number,
+  body: string,
+): Promise<boolean> {
+  if (!isValidRepo(repo)) return false;
+
+  // Parse "Blocked by #N" references from the body
+  const blockerPattern = /Blocked by #(\d+)/gi;
+  const blockerNumbers = new Set<number>();
+  let match: RegExpExecArray | null;
+
+  while ((match = blockerPattern.exec(body)) !== null) {
+    const num = parseInt(match[1], 10);
+    if (!Number.isNaN(num) && num !== issueNumber) {
+      blockerNumbers.add(num);
+    }
+  }
+
+  if (!blockerNumbers.size) return false;
+
+  try {
+    for (const blockerNum of blockerNumbers) {
+      const response = await fetch(
+        `${GITHUB_API}/repos/${repo}/issues/${blockerNum}`,
+        { headers: githubHeaders(token) },
+      );
+
+      if (!response.ok) continue;
+
+      const json = (await response.json()) as { state?: string };
+
+      // Short-circuit: one unresolved blocker is enough
+      if (json.state !== 'closed') return true;
+    }
+
+    return false;
+  } catch {
+    return false;
+  }
 }
 
 /** Result of checking children status for an epic/milestone. */
 export type ChildrenStatus = { total: number; incomplete: number };
 
 /**
- * Fetch the children status of a GitHub parent issue.
+ * Fetch the children status of a GitHub parent issue (dual-mode).
  *
- * Searches for issues whose body contains `Parent: #{parentNumber}` and
- * counts total vs open. Used to determine if all children are done.
+ * Tries the `Epic: #{parentNumber}` text convention first. If no results,
+ * falls back to the native `Parent: #{parentNumber}` convention for
+ * backward compatibility with pre-v0.6.0 children.
  *
  * @param token - The GitHub personal access token.
  * @param repo - The repository in `owner/repo` format.
@@ -216,36 +302,67 @@ export async function fetchChildrenStatus(
   if (!isValidRepo(repo)) return undefined;
 
   try {
-    // Fetch all issues (open + closed) and filter for parent reference
-    const allParams = new URLSearchParams({
-      state: 'all',
-      per_page: '100',
-    });
-    const allResponse = await fetch(
-      `${GITHUB_API}/repos/${repo}/issues?${allParams}`,
-      { headers: githubHeaders(token) },
-    );
-    if (!allResponse.ok) return undefined;
-
-    const allIssues = (await allResponse.json()) as Array<{
-      body?: string | null;
-      pull_request?: unknown;
-      state?: string;
-    }>;
-
-    const parentRef = `Parent: #${parentNumber}`;
-    const children = allIssues.filter(
-      (issue) =>
-        !issue.pull_request && issue.body && issue.body.includes(parentRef),
+    // Mode 1: Try Epic: text convention
+    const epicTextResult = await fetchChildrenByBodyRef(
+      token,
+      repo,
+      `Epic: #${parentNumber}`,
     );
 
-    const total = children.length;
-    const incomplete = children.filter((c) => c.state === 'open').length;
+    if (epicTextResult && epicTextResult.total > 0) return epicTextResult;
 
-    return { total, incomplete };
+    // Mode 2: Fall back to native Parent: convention
+    return await fetchChildrenByBodyRef(
+      token,
+      repo,
+      `Parent: #${parentNumber}`,
+    );
   } catch {
     return undefined;
   }
+}
+
+/**
+ * Fetch children status by searching for a body reference string.
+ *
+ * @param token - The GitHub personal access token.
+ * @param repo - The repository in `owner/repo` format.
+ * @param bodyRef - The body reference string to search for.
+ * @returns The children status, or `undefined` on failure.
+ */
+async function fetchChildrenByBodyRef(
+  token: string,
+  repo: string,
+  bodyRef: string,
+): Promise<ChildrenStatus | undefined> {
+  // Use GitHub Search API with total_count for accurate counts.
+  // Two queries: one for all children, one for open (incomplete) children.
+  const headers = githubHeaders(token);
+
+  const allQuery = `"${bodyRef}" repo:${repo} is:issue`;
+  const allParams = new URLSearchParams({ q: allQuery, per_page: '1' });
+  const allResponse = await fetch(`${GITHUB_API}/search/issues?${allParams}`, {
+    headers,
+  });
+  if (!allResponse.ok) return undefined;
+
+  const allResult = (await allResponse.json()) as { total_count?: number };
+  const total = allResult.total_count ?? 0;
+
+  if (total === 0) return { total: 0, incomplete: 0 };
+
+  const openQuery = `"${bodyRef}" repo:${repo} is:issue is:open`;
+  const openParams = new URLSearchParams({ q: openQuery, per_page: '1' });
+  const openResponse = await fetch(
+    `${GITHUB_API}/search/issues?${openParams}`,
+    { headers },
+  );
+  if (!openResponse.ok) return { total, incomplete: total }; // assume all open on failure
+
+  const openResult = (await openResponse.json()) as { total_count?: number };
+  const incomplete = openResult.total_count ?? 0;
+
+  return { total, incomplete };
 }
 
 /**

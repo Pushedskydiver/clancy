@@ -2,7 +2,7 @@
 
 **Autonomous, board-driven development for Claude Code.**
 
-[![npm](https://img.shields.io/npm/v/chief-clancy?style=for-the-badge&color=cb3837)](https://www.npmjs.com/package/chief-clancy) [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE) [![Tests](https://img.shields.io/badge/tests-507%20passing-brightgreen?style=for-the-badge)](docs/TESTING.md) [![GitHub Stars](https://img.shields.io/github/stars/Pushedskydiver/clancy?style=for-the-badge)](https://github.com/Pushedskydiver/clancy/stargazers)
+[![npm](https://img.shields.io/npm/v/chief-clancy?style=for-the-badge&color=cb3837)](https://www.npmjs.com/package/chief-clancy) [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE) [![Tests](https://img.shields.io/badge/tests-579%20passing-brightgreen?style=for-the-badge)](docs/TESTING.md) [![GitHub Stars](https://img.shields.io/github/stars/Pushedskydiver/clancy?style=for-the-badge)](https://github.com/Pushedskydiver/clancy/stargazers)
 
 > [!WARNING]
 > Clancy is in early development. Expect bugs, breaking changes, and rough edges. If you hit an issue, please [open a bug report](https://github.com/Pushedskydiver/clancy/issues/new).
@@ -25,14 +25,15 @@ Named after Chief Clancy Wiggum (The Simpsons) — built on the [Ralph technique
 
 ## What it does
 
-Clancy does four things:
+Clancy does five things:
 
 1. **Scaffolds itself** into a project — scripts, docs, CLAUDE.md, .clancy/.env
 2. **Scans your codebase** with 5 parallel specialist agents and writes 10 structured docs that Claude reads before every run
-3. **Plans tickets** — fetches backlog tickets, explores the codebase, and generates structured implementation plans posted as comments for human review
-4. **Runs autonomously** — picking one ticket per loop from your Kanban board, implementing it, committing, and creating a PR (targeting an epic branch for parented tickets, or the base branch for standalone tickets)
+3. **Writes strategy briefs** — interviews you (or runs a devil's advocate AI-grill in AFK mode), decomposes work into vertical slices with HITL/AFK classification, and creates board tickets with blocking dependencies
+4. **Plans tickets** — fetches backlog tickets, explores the codebase, and generates structured implementation plans posted as comments for human review
+5. **Runs autonomously** — picking one ticket per loop from your Kanban board (skipping blocked candidates), implementing it, committing, and creating a PR (targeting an epic branch for parented tickets, or the base branch for standalone tickets)
 
-One ticket per run. Fresh context window every iteration. No context rot.
+Brief → approve → plan → implement. One ticket per run. Fresh context window every iteration. No context rot.
 
 ---
 
@@ -149,6 +150,8 @@ npx chief-clancy
 
 | Command                | Description                                                              |
 | ---------------------- | ------------------------------------------------------------------------ |
+| `/clancy:brief` ²      | Grill phase → strategy brief → vertical slice decomposition → tickets    |
+| `/clancy:approve-brief` ² | Review and approve a strategy brief, then create board tickets         |
 | `/clancy:plan` ¹       | Refine backlog tickets into structured implementation plans              |
 | `/clancy:plan 3` ¹     | Plan up to 3 tickets in batch mode                                       |
 | `/clancy:approve-plan` ¹ | Promote an approved plan to the ticket description                     |
@@ -169,6 +172,7 @@ npx chief-clancy
 | `/clancy:help`         | Command reference                                                        |
 
 ¹ Planner is an optional role — see [Roles](#roles) below.
+² Strategist is an optional role — see [Roles](#roles) below.
 
 ---
 
@@ -182,12 +186,13 @@ Clancy organises its commands into **roles** — each role handles a different s
 | **Reviewer** | Score ticket readiness and track progress | `/clancy:review`, `/clancy:status`, `/clancy:logs` |
 | **Setup** | Configure and maintain Clancy | `/clancy:init`, `/clancy:settings`, `/clancy:doctor`, etc. |
 | **Planner** *(optional)* | Refine backlog tickets into structured implementation plans | `/clancy:plan`, `/clancy:approve-plan` |
+| **Strategist** *(optional)* | Grill → brief → vertical slices → board tickets | `/clancy:brief`, `/clancy:approve-brief` |
 
-**Core roles** (Implementer, Reviewer, Setup) are always installed. **Optional roles** (Planner) are opt-in — add them to `CLANCY_ROLES` in `.clancy/.env` and re-run the installer:
+**Core roles** (Implementer, Reviewer, Setup) are always installed. **Optional roles** (Planner, Strategist) are opt-in — add them to `CLANCY_ROLES` in `.clancy/.env` and re-run the installer:
 
 ```bash
-# Enable the Planner role
-echo 'CLANCY_ROLES="planner"' >> .clancy/.env
+# Enable optional roles
+echo 'CLANCY_ROLES="planner,strategist"' >> .clancy/.env
 npx chief-clancy@latest --local   # or --global
 ```
 
@@ -199,6 +204,7 @@ Each role has detailed documentation:
 - [Reviewer](docs/roles/REVIEWER.md) — scores ticket readiness, tracks progress
 - [Setup & Maintenance](docs/roles/SETUP.md) — init wizard, settings, diagnostics, codebase mapping
 - [Planner](docs/roles/PLANNER.md) — refines backlog tickets into structured implementation plans
+- [Strategist](docs/roles/STRATEGIST.md) — grill phase, strategy briefs, vertical slice decomposition, board ticket creation
 
 For a visual overview of how roles, commands, and flows connect, see the [Visual Architecture](docs/VISUAL-ARCHITECTURE.md) diagrams.
 

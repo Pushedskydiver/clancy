@@ -160,7 +160,7 @@ Jira:
 
 GitHub:
   GET /repos/{owner}/{repo}/issues?state=open
-  Filter: body contains "Parent: #100"
+  Filter: body contains "Epic: #100" (falls back to "Parent: #100" for pre-v0.6.0 children)
   If results.length === 0 → all done
 
 Linear:
@@ -277,7 +277,7 @@ Existing statuses remain unchanged — `PR_CREATED`, `REWORK`, `DONE` etc. all w
 | `src/scripts/shared/pull-request/pr-body/pr-body.ts` | Add `targetBranch` param to `buildPrBody`. When `isEpicBranch(targetBranch)` is true, emit `Part of {key}` instead of `Closes {key}` (prevents GitHub auto-close before epic reaches base). Add `buildEpicPrBody` for the final epic PR (lists all child PRs with links). |
 | `src/types/remote.ts` | Add `EPIC_PR_CREATED`, `EPIC_COMPLETE` to `ProgressStatus` type. |
 | `src/scripts/board/jira/jira.ts` | Add `fetchChildrenStatus(config, parentKey)` — returns `{ total: number; incomplete: number }`. JQL: `parent = {KEY}` for total, filtered by `statusCategory != 'done'` for incomplete. |
-| `src/scripts/board/github/github.ts` | Add `fetchChildrenStatus(config, parentIssueNumber)` — returns `{ total: number; incomplete: number }`. GET `/issues?state=all`, filter body for `Parent: #{N}`. |
+| `src/scripts/board/github/github.ts` | Add `fetchChildrenStatus(config, parentIssueNumber)` — returns `{ total: number; incomplete: number }`. GET `/issues?state=all`, filter body for `Epic: #{N}` (falls back to `Parent: #{N}` for pre-v0.6.0 children). |
 | `src/scripts/board/linear/linear.ts` | Add `fetchChildrenStatus(config, parentUuid)` — returns `{ total: number; incomplete: number }`. GraphQL: parent's children, count all and filter `state.type` not in `["completed", "canceled"]`. |
 | `docs/design/strategist-visual-flows.md` | Add epic branch mention to approve-brief summary output (Step 12). |
 

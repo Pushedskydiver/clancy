@@ -8,6 +8,8 @@
  * Only OAuth tokens use "Bearer". This is intentional per Linear docs.
  */
 import {
+  linearIssueRelationsResponseSchema,
+  linearIssueSearchResponseSchema,
   linearIssueUpdateResponseSchema,
   linearIssuesResponseSchema,
   linearViewerResponseSchema,
@@ -149,21 +151,55 @@ export async function fetchIssue(env: LinearEnv): Promise<
     })
   | undefined
 > {
+  const results = await fetchIssues(env, false, 1);
+  return results[0];
+}
+
+/** Linear ticket with issue ID and optional parent info. */
+export type LinearTicket = Ticket & {
+  issueId: string;
+  parentIdentifier?: string;
+};
+
+/**
+ * Fetch multiple candidate issues from Linear.
+ *
+ * @param env - The Linear environment variables.
+ * @param excludeHitl - If `true`, excludes issues with the `clancy:hitl` label.
+ * @param limit - Maximum number of results to return (default: 5).
+ * @returns Array of fetched tickets (may be empty).
+ */
+export async function fetchIssues(
+  env: LinearEnv,
+  excludeHitl?: boolean,
+  limit = 5,
+): Promise<LinearTicket[]> {
   const label = env.CLANCY_LABEL?.trim();
   const hasLabel = Boolean(label);
 
   const labelFilter = hasLabel ? 'labels: { name: { eq: $label } }' : '';
 
+  // Build variable declarations for the query
+  const varDecls = [
+    '$teamId: String!',
+    ...(hasLabel ? ['$label: String!'] : []),
+  ];
+
+  // Build filter parts
+  const filterParts = [
+    'state: { type: { eq: "unstarted" } }',
+    'team: { id: { eq: $teamId } }',
+    labelFilter,
+  ].filter(Boolean);
+
   const query = `
-    query($teamId: String!${hasLabel ? ', $label: String!' : ''}) {
+    query(${varDecls.join(', ')}) {
       viewer {
         assignedIssues(
           filter: {
-            state: { type: { eq: "unstarted" } }
-            team: { id: { eq: $teamId } }
-            ${labelFilter}
+            ${filterParts.join('\n            ')}
           }
-          first: 1
+          first: ${excludeHitl ? limit * 3 : limit}
           orderBy: priority
         ) {
           nodes {
@@ -172,6 +208,7 @@ export async function fetchIssue(env: LinearEnv): Promise<
             title
             description
             parent { identifier title }
+            labels { nodes { name } }
           }
         }
       }
@@ -189,40 +226,161 @@ export async function fetchIssue(env: LinearEnv): Promise<
 
   if (!parsed.success) {
     console.warn(`⚠ Unexpected Linear response shape: ${parsed.error.message}`);
-    return undefined;
+    return [];
   }
 
-  const nodes = parsed.data.data?.viewer?.assignedIssues?.nodes;
+  let nodes = parsed.data.data?.viewer?.assignedIssues?.nodes;
 
-  if (!nodes?.length) return undefined;
+  if (!nodes?.length) return [];
 
-  const issue = nodes[0];
+  // HITL/AFK filtering: exclude issues with clancy:hitl label (using parsed schema data)
+  if (excludeHitl) {
+    nodes = nodes.filter(
+      (n) => !n.labels?.nodes?.some((l) => l.name === 'clancy:hitl'),
+    );
+  }
 
-  return {
+  // Trim to requested limit after filtering
+  nodes = nodes.slice(0, limit);
+
+  return nodes.map((issue) => ({
     key: issue.identifier,
     title: issue.title,
     description: issue.description ?? '',
-    provider: 'linear',
+    provider: 'linear' as const,
     issueId: issue.id,
     parentIdentifier: issue.parent?.identifier,
-  };
+  }));
+}
+
+/**
+ * Check whether a Linear issue is blocked by unresolved blockers.
+ *
+ * Queries the issue's relations for `blockedBy` type relationships and checks
+ * if any blocking issues have an unresolved state (not "completed" or "canceled").
+ *
+ * @param apiKey - The Linear personal API key.
+ * @param issueId - The Linear issue UUID.
+ * @returns `true` if any blocker is unresolved, `false` otherwise.
+ */
+export async function fetchBlockerStatus(
+  apiKey: string,
+  issueId: string,
+): Promise<boolean> {
+  const query = `
+    query($issueId: String!) {
+      issue(id: $issueId) {
+        relations {
+          nodes {
+            type
+            relatedIssue {
+              state { type }
+            }
+          }
+        }
+      }
+    }
+  `;
+
+  const raw = await linearGraphql(apiKey, query, { issueId });
+  const parsed = linearIssueRelationsResponseSchema.safeParse(raw);
+
+  if (!parsed.success) return false;
+
+  const relations = parsed.data.data?.issue?.relations?.nodes ?? [];
+  const doneTypes = new Set(['completed', 'canceled']);
+
+  return relations.some((rel) => {
+    if (rel.type !== 'blockedBy') return false;
+    const stateType = rel.relatedIssue?.state?.type;
+    if (!stateType) return false;
+    return !doneTypes.has(stateType);
+  });
 }
 
 /** Result of checking children status for a parent issue. */
 export type ChildrenStatus = { total: number; incomplete: number };
 
 /**
- * Fetch the children status of a Linear parent issue.
+ * Fetch the children status of a Linear parent issue (dual-mode).
  *
- * Queries the parent's children and counts total vs incomplete
- * (state.type not in ["completed", "canceled"]). Used to determine
- * if all children are done.
+ * Tries the `Epic: {identifier}` text convention first (searches for issues
+ * with "Epic: {parentIdentifier}" in their description). If no results, falls
+ * back to the native `children` API for backward compatibility.
+ *
+ * @param apiKey - The Linear personal API key.
+ * @param parentId - The Linear parent issue UUID.
+ * @param parentIdentifier - The Linear parent identifier (e.g., `'ENG-42'`).
+ *   Required for Epic: text convention search. Falls back to native API only if not provided.
+ * @returns The children status, or `undefined` on failure.
+ */
+export async function fetchChildrenStatus(
+  apiKey: string,
+  parentId: string,
+  parentIdentifier?: string,
+): Promise<ChildrenStatus | undefined> {
+  try {
+    // Mode 1: Try Epic: text convention (only if identifier is available)
+    if (parentIdentifier) {
+      const epicTextResult = await fetchChildrenByDescription(
+        apiKey,
+        `Epic: ${parentIdentifier}`,
+      );
+
+      if (epicTextResult && epicTextResult.total > 0) return epicTextResult;
+    }
+
+    // Mode 2: Fall back to native children API
+    return await fetchChildrenByNativeApi(apiKey, parentId);
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Fetch children status by searching for a description substring.
+ *
+ * @param apiKey - The Linear personal API key.
+ * @param descriptionRef - The description substring to search for.
+ * @returns The children status, or `undefined` on failure.
+ */
+async function fetchChildrenByDescription(
+  apiKey: string,
+  descriptionRef: string,
+): Promise<ChildrenStatus | undefined> {
+  const query = `
+    query($filter: String!) {
+      issueSearch(query: $filter) {
+        nodes {
+          state { type }
+        }
+      }
+    }
+  `;
+
+  const raw = await linearGraphql(apiKey, query, { filter: descriptionRef });
+  const parsed = linearIssueSearchResponseSchema.safeParse(raw);
+
+  if (!parsed.success) return undefined;
+
+  const nodes = parsed.data.data?.issueSearch?.nodes ?? [];
+  const total = nodes.length;
+  const doneTypes = new Set(['completed', 'canceled']);
+  const incomplete = nodes.filter(
+    (n) => !n.state?.type || !doneTypes.has(n.state.type),
+  ).length;
+
+  return { total, incomplete };
+}
+
+/**
+ * Fetch children status using the native parent-child API.
  *
  * @param apiKey - The Linear personal API key.
  * @param parentId - The Linear parent issue UUID.
  * @returns The children status, or `undefined` on failure.
  */
-export async function fetchChildrenStatus(
+async function fetchChildrenByNativeApi(
   apiKey: string,
   parentId: string,
 ): Promise<ChildrenStatus | undefined> {

@@ -94,7 +94,7 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 - Brief stored locally in `.clancy/briefs/` + as board comment when sourced from a ticket
 - Stale brief detection — extends SessionStart hook to warn on unapproved drafts older than 7 days
 - Dependency linking on ticket creation: Jira issueLinks, Linear issueRelations, GitHub cross-references
-- New env vars: `CLANCY_BRIEF_ISSUE_TYPE`, `CLANCY_BRIEF_EPIC`
+- New env vars: `CLANCY_MODE`, `CLANCY_BRIEF_ISSUE_TYPE`, `CLANCY_BRIEF_EPIC`, `CLANCY_COMPONENT`
 
 ---
 

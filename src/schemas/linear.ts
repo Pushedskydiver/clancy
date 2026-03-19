@@ -17,6 +17,15 @@ const linearIssueNodeSchema = z.object({
       }),
     ),
   ),
+  labels: z.optional(
+    z.object({
+      nodes: z.array(
+        z.object({
+          name: z.string(),
+        }),
+      ),
+    }),
+  ),
 });
 
 /** Response from the `viewer.assignedIssues` GraphQL query. */
@@ -75,6 +84,51 @@ export const linearIssueUpdateResponseSchema = z.object({
   ),
 });
 
+/** A single relation node from the `issue.relations` query. */
+const linearRelationNodeSchema = z.object({
+  type: z.string(),
+  relatedIssue: z.optional(
+    z.object({
+      state: z.optional(z.object({ type: z.optional(z.string()) })),
+    }),
+  ),
+});
+
+/** Response from the `issue(id) { relations { ... } }` query. */
+export const linearIssueRelationsResponseSchema = z.object({
+  data: z.optional(
+    z.object({
+      issue: z.optional(
+        z.object({
+          relations: z.optional(
+            z.object({
+              nodes: z.array(linearRelationNodeSchema),
+            }),
+          ),
+        }),
+      ),
+    }),
+  ),
+});
+
+/** A single search result node with state info. */
+const linearSearchNodeSchema = z.object({
+  state: z.optional(z.object({ type: z.optional(z.string()) })),
+});
+
+/** Response from the `issueSearch` query. */
+export const linearIssueSearchResponseSchema = z.object({
+  data: z.optional(
+    z.object({
+      issueSearch: z.optional(
+        z.object({
+          nodes: z.array(linearSearchNodeSchema),
+        }),
+      ),
+    }),
+  ),
+});
+
 export type LinearIssueNode = z.infer<typeof linearIssueNodeSchema>;
 export type LinearIssuesResponse = z.infer<typeof linearIssuesResponseSchema>;
 export type LinearViewerResponse = z.infer<typeof linearViewerResponseSchema>;
@@ -83,4 +137,10 @@ export type LinearWorkflowStatesResponse = z.infer<
 >;
 export type LinearIssueUpdateResponse = z.infer<
   typeof linearIssueUpdateResponseSchema
+>;
+export type LinearIssueRelationsResponse = z.infer<
+  typeof linearIssueRelationsResponseSchema
+>;
+export type LinearIssueSearchResponse = z.infer<
+  typeof linearIssueSearchResponseSchema
 >;

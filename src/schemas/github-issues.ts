@@ -16,6 +16,13 @@ export const githubIssueSchema = z.object({
       }),
     ),
   ),
+  labels: z.optional(
+    z.array(
+      z.object({
+        name: z.optional(z.string()),
+      }),
+    ),
+  ),
 });
 
 /** Response from `GET /repos/{owner}/{repo}/issues` (array of issues). */

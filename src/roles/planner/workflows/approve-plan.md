@@ -22,7 +22,7 @@ Promote an approved Clancy plan from a ticket comment to the ticket description.
 
 ### If no argument provided:
 
-1. Scan `.clancy/progress.txt` for entries matching `| PLAN |` or `| REVISED |` that have no subsequent `| APPROVE |` for the same key.
+1. Scan `.clancy/progress.txt` for entries matching `| PLAN |` or `| REVISED |` that have no subsequent `| APPROVE_PLAN |` for the same key.
 2. Sort by timestamp ascending (oldest first).
 3. If 0 found:
    ```
@@ -456,7 +456,7 @@ Plan promoted. Moved to unstarted. Ready for /clancy:once.
 
 Append to `.clancy/progress.txt`:
 ```
-YYYY-MM-DD HH:MM | {KEY} | APPROVE | —
+YYYY-MM-DD HH:MM | {KEY} | APPROVE_PLAN | —
 ```
 
 On failure:

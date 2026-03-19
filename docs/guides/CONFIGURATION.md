@@ -45,6 +45,23 @@ Clancy moves tickets on your board when it picks up and completes implementation
 
 **GitHub:** Issues don't have status columns — they're `open` or `closed`. Clancy uses **labels as queues** (e.g. `needs-refinement` → `clancy`) and closes issues on completion. Status transition env vars are ignored for GitHub.
 
+## Strategist
+
+```
+CLANCY_MODE=interactive
+CLANCY_BRIEF_ISSUE_TYPE=Story
+CLANCY_BRIEF_EPIC=PROJ-100
+CLANCY_COMPONENT=backend
+```
+
+`CLANCY_MODE` controls how the grill phase runs: `interactive` (default) interviews the human, `afk` uses the AI-grill agent autonomously. Override per-invocation with `--afk`.
+
+`CLANCY_BRIEF_ISSUE_TYPE` sets the issue type for tickets created by `/clancy:approve-brief` (e.g. `Story`, `Task`). Defaults to the board's default issue type.
+
+`CLANCY_BRIEF_EPIC` sets the parent epic for all tickets created by `/clancy:approve-brief`. Each child ticket's description includes `Epic: {key}` for cross-platform epic completion detection.
+
+`CLANCY_COMPONENT` limits the strategist's research and ticket scope to a specific component or platform area of the codebase.
+
 ## Notifications
 
 ```
@@ -105,6 +122,9 @@ Posts to Slack or Teams when a ticket completes. The payload format (Slack vs Te
 | `CLANCY_MAX_REWORK` | All | No | `3` | Max rework cycles before human intervention |
 | `CLANCY_TDD` | All | No | — | Enable test-driven development (red-green-refactor) |
 | `CLANCY_MODE` | All | No | `interactive` | Grill mode: `interactive` (human) or `afk` (AI-grill). Override per-invocation with `--afk` |
+| `CLANCY_BRIEF_ISSUE_TYPE` | All | No | Board default | Issue type for tickets created by `/clancy:approve-brief` (e.g. `Story`, `Task`) |
+| `CLANCY_BRIEF_EPIC` | All | No | — | Parent epic key for tickets created by `/clancy:approve-brief` (e.g. `PROJ-100`, `#50`) |
+| `CLANCY_COMPONENT` | All | No | — | Component/platform filter — limits strategist research and ticket scope to a specific area |
 | `GITLAB_TOKEN` | All | No | — | GitLab personal access token (for PR creation) |
 | `BITBUCKET_USER` | All | No | — | Bitbucket username (for PR creation) |
 | `BITBUCKET_TOKEN` | All | No | — | Bitbucket app password (for PR creation) |

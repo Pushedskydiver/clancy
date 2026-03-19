@@ -22,7 +22,7 @@ Setup commands configure Clancy and keep it healthy.
 1. **Choose board** — Jira, GitHub Issues, or Linear
 2. **Enter credentials** — API keys, project keys, team IDs (stored in `.clancy/.env`)
 3. **Configure filters** — label, sprint, status transitions
-4. **Optional roles** — enable Planner or other optional roles via `CLANCY_ROLES`
+4. **Optional roles** — enable Strategist, Planner, or other optional roles via `CLANCY_ROLES`
 5. **Scaffold** — creates `.clancy/` directory, copies runtime scripts, merges CLAUDE.md
 
 ## Settings
@@ -31,7 +31,8 @@ Setup commands configure Clancy and keep it healthy.
 
 - Board filters (label, sprint, status)
 - Status transitions (in-progress, done)
-- Optional roles (enable/disable)
+- Optional roles (enable/disable Strategist, Planner)
+- Grill mode (`CLANCY_MODE` — interactive or afk)
 - Figma integration
 - Playwright visual checks
 - Save as defaults for future projects

@@ -108,9 +108,16 @@ function printSuccess(enabledRoles: Set<string> | null): void {
   console.log('');
   console.log('  Commands available:');
 
-  const OPTIONAL_GROUPS = new Set(['planner']);
+  const OPTIONAL_GROUPS = new Set(['planner', 'strategist']);
 
   const groups: [string, [string, string][]][] = [
+    [
+      'Strategist',
+      [
+        ['/clancy:brief', 'Generate a strategic brief for a feature'],
+        ['/clancy:approve-brief', 'Convert brief into board tickets'],
+      ],
+    ],
     [
       'Planner',
       [

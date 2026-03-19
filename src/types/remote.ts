@@ -70,6 +70,8 @@ export type ProgressStatus =
   | 'PUSH_FAILED'
   | 'LOCAL'
   | 'PLAN'
-  | 'APPROVE'
+  | 'APPROVE_PLAN'
   | 'REWORK'
-  | 'EPIC_PR_CREATED';
+  | 'EPIC_PR_CREATED'
+  | 'BRIEF'
+  | 'APPROVE_BRIEF';

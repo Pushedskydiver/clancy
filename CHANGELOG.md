@@ -7,6 +7,35 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.6.0] — 2026-03-19
+
+### Added
+
+- **Strategist role** — `/clancy:brief` and `/clancy:approve-brief` commands
+- Grill phase (human grill + AI-grill with devil's advocate agent)
+- Brief template with Discovery section, vertical slices, HITL/AFK classification
+- `Epic: {key}` description convention for cross-platform epic completion
+- Blocker-aware ticket pickup — fetchTicket skips blocked candidates
+- `fetchBlockerStatus` — Jira issueLinks, GitHub body parsing, Linear relations
+- HITL/AFK queue filtering — AFK mode skips clancy:hitl tickets
+- `fetchChildrenStatus` dual-mode — Epic: text search + native API fallback
+- Stale brief detection hook (unapproved briefs > 7 days)
+- `CLANCY_MODE`, `CLANCY_BRIEF_ISSUE_TYPE`, `CLANCY_BRIEF_EPIC`, `CLANCY_COMPONENT` env vars
+- Devil's advocate agent prompt (`src/agents/devils-advocate.md`)
+
+### Changed
+
+- `fetchTicket` now fetches 5 candidates and returns first unblocked
+- `fetchChildrenStatus` uses dual-mode (text convention + native fallback)
+- Installer treats strategist as optional role (like planner)
+- Setup init/settings/scaffold include strategist configuration
+
+### Tests
+
+- 507 → 579 (72 new tests)
+
+---
+
 ## [0.5.13] — 2026-03-18
 
 ### Added

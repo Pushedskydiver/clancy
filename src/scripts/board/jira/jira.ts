@@ -8,6 +8,7 @@
  * was removed by Atlassian in August 2025).
  */
 import {
+  jiraIssueLinksResponseSchema,
   jiraSearchResponseSchema,
   jiraTransitionsResponseSchema,
 } from '~/schemas/jira.js';
@@ -84,11 +85,13 @@ export function buildJql(
   status: string,
   sprint?: string,
   label?: string,
+  excludeHitl?: boolean,
 ): string {
   const parts = [`project="${projectKey}"`];
 
   if (sprint) parts.push('sprint in openSprints()');
   if (label) parts.push(`labels = "${label}"`);
+  if (excludeHitl) parts.push('labels != "clancy:hitl"');
 
   parts.push(`assignee=currentUser()`);
   parts.push(`status="${status}"`);
@@ -157,7 +160,49 @@ export async function fetchTicket(
     })
   | undefined
 > {
-  const jql = buildJql(projectKey, status, sprint, label);
+  const results = await fetchTickets(
+    baseUrl,
+    auth,
+    projectKey,
+    status,
+    sprint,
+    label,
+    false,
+    1,
+  );
+  return results[0];
+}
+
+/** Jira ticket with epic and blocker info. */
+export type JiraTicket = Ticket & {
+  epicKey?: string;
+  blockers: string[];
+};
+
+/**
+ * Fetch multiple candidate tickets from Jira.
+ *
+ * @param baseUrl - The Jira Cloud base URL.
+ * @param auth - The Base64-encoded Basic auth string.
+ * @param projectKey - The Jira project key.
+ * @param status - The JQL status to filter by.
+ * @param sprint - Optional sprint filter.
+ * @param label - Optional label filter.
+ * @param excludeHitl - If `true`, excludes tickets with the `clancy:hitl` label.
+ * @param limit - Maximum number of results to return (default: 5).
+ * @returns Array of fetched tickets (may be empty).
+ */
+export async function fetchTickets(
+  baseUrl: string,
+  auth: string,
+  projectKey: string,
+  status: string,
+  sprint?: string,
+  label?: string,
+  excludeHitl?: boolean,
+  limit = 5,
+): Promise<JiraTicket[]> {
+  const jql = buildJql(projectKey, status, sprint, label, excludeHitl);
 
   let response: Response;
 
@@ -170,7 +215,7 @@ export async function fetchTicket(
       },
       body: JSON.stringify({
         jql,
-        maxResults: 1,
+        maxResults: limit,
         fields: [
           'summary',
           'description',
@@ -184,12 +229,12 @@ export async function fetchTicket(
     console.warn(
       `⚠ Jira API request failed: ${err instanceof Error ? err.message : String(err)}`,
     );
-    return undefined;
+    return [];
   }
 
   if (!response.ok) {
     console.warn(`⚠ Jira API returned HTTP ${response.status}`);
-    return undefined;
+    return [];
   }
 
   let json: unknown;
@@ -198,48 +243,98 @@ export async function fetchTicket(
     json = await response.json();
   } catch {
     console.warn('⚠ Jira API returned invalid JSON');
-    return undefined;
+    return [];
   }
 
   const parsed = jiraSearchResponseSchema.safeParse(json);
 
   if (!parsed.success) {
     console.warn(`⚠ Unexpected Jira response shape: ${parsed.error.message}`);
-    return undefined;
+    return [];
   }
 
-  if (!parsed.data.issues.length) return undefined;
+  return parsed.data.issues.map((issue) => {
+    const fields = issue.fields;
 
-  const issue = parsed.data.issues[0];
-  const fields = issue.fields;
+    // Extract blockers
+    const blockers = (fields.issuelinks ?? [])
+      .filter((link) => link.type?.name === 'Blocks' && link.inwardIssue?.key)
+      .map((link) => link.inwardIssue?.key)
+      .filter((key): key is string => Boolean(key));
 
-  // Extract blockers
-  const blockers = (fields.issuelinks ?? [])
-    .filter((link) => link.type?.name === 'Blocks' && link.inwardIssue?.key)
-    .map((link) => link.inwardIssue?.key)
-    .filter((key): key is string => Boolean(key));
+    // Extract epic (next-gen parent OR classic customfield)
+    const epicKey = fields.parent?.key ?? fields.customfield_10014 ?? undefined;
 
-  // Extract epic (next-gen parent OR classic customfield)
-  const epicKey = fields.parent?.key ?? fields.customfield_10014 ?? undefined;
+    return {
+      key: issue.key,
+      title: fields.summary,
+      description: extractAdfText(fields.description),
+      provider: 'jira' as const,
+      epicKey,
+      blockers,
+    };
+  });
+}
 
-  return {
-    key: issue.key,
-    title: fields.summary,
-    description: extractAdfText(fields.description),
-    provider: 'jira',
-    epicKey,
-    blockers,
-  };
+/**
+ * Check whether a Jira issue is blocked by unresolved blockers.
+ *
+ * Fetches the issue's links and checks for inward "Blocks" relationships
+ * where the blocking issue's statusCategory is not "done".
+ *
+ * @param baseUrl - The Jira Cloud base URL.
+ * @param auth - The Base64-encoded Basic auth string.
+ * @param key - The Jira issue key (e.g., `'PROJ-123'`).
+ * @returns `true` if any blocker is unresolved, `false` otherwise.
+ */
+export async function fetchBlockerStatus(
+  baseUrl: string,
+  auth: string,
+  key: string,
+): Promise<boolean> {
+  if (!ISSUE_KEY_PATTERN.test(key)) return false;
+
+  try {
+    const response = await fetch(
+      `${baseUrl}/rest/api/3/issue/${key}?fields=issuelinks`,
+      { headers: jiraHeaders(auth) },
+    );
+
+    if (!response.ok) return false;
+
+    const json: unknown = await response.json();
+    const parsed = jiraIssueLinksResponseSchema.safeParse(json);
+
+    if (!parsed.success) return false;
+
+    const links = parsed.data.fields?.issuelinks ?? [];
+
+    // Check for inward "Blocks" links with unresolved status
+    return links.some((link) => {
+      if (link.type?.name !== 'Blocks') return false;
+      if (!link.inwardIssue?.key) return false;
+
+      const categoryKey = link.inwardIssue.fields?.status?.statusCategory?.key;
+
+      // If status info is missing, assume not blocked
+      if (!categoryKey) return false;
+
+      return categoryKey !== 'done';
+    });
+  } catch {
+    return false;
+  }
 }
 
 /** Result of checking children status for an epic. */
 export type ChildrenStatus = { total: number; incomplete: number };
 
 /**
- * Fetch the children status of a Jira epic.
+ * Fetch the children status of a Jira epic (dual-mode).
  *
- * Returns the total number of children and how many are incomplete
- * (statusCategory != 'done'). Used to determine if an epic is complete.
+ * Tries the `Epic: {key}` text convention first (children with "Epic: PROJ-100"
+ * in their description). If no results, falls back to the native `parent = {key}`
+ * JQL query for backward compatibility with pre-v0.6.0 children.
  *
  * @param baseUrl - The Jira Cloud base URL.
  * @param auth - The Base64-encoded Basic auth string.
@@ -254,50 +349,74 @@ export async function fetchChildrenStatus(
   if (!ISSUE_KEY_PATTERN.test(parentKey)) return undefined;
 
   try {
-    // Fetch all children
-    const totalResponse = await fetch(`${baseUrl}/rest/api/3/search/jql`, {
-      method: 'POST',
-      headers: {
-        ...jiraHeaders(auth),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        jql: `parent = ${parentKey}`,
-        maxResults: 0,
-      }),
-    });
+    // Mode 1: Try Epic: text convention (scoped to project to avoid cross-project matches)
+    const projectPrefix = parentKey.split('-')[0];
+    const epicTextResult = await fetchChildrenByJql(
+      baseUrl,
+      auth,
+      `project = "${projectPrefix}" AND description ~ "Epic: ${parentKey}"`,
+    );
 
-    if (!totalResponse.ok) return undefined;
+    if (epicTextResult && epicTextResult.total > 0) return epicTextResult;
 
-    const totalJson = (await totalResponse.json()) as { total?: number };
-    const total = totalJson.total ?? 0;
-
-    if (total === 0) return { total: 0, incomplete: 0 };
-
-    // Fetch incomplete children
-    const incompleteResponse = await fetch(`${baseUrl}/rest/api/3/search/jql`, {
-      method: 'POST',
-      headers: {
-        ...jiraHeaders(auth),
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        jql: `parent = ${parentKey} AND statusCategory != "done"`,
-        maxResults: 0,
-      }),
-    });
-
-    if (!incompleteResponse.ok) return undefined;
-
-    const incompleteJson = (await incompleteResponse.json()) as {
-      total?: number;
-    };
-    const incomplete = incompleteJson.total ?? 0;
-
-    return { total, incomplete };
+    // Mode 2: Fall back to native parent API
+    return await fetchChildrenByJql(baseUrl, auth, `parent = ${parentKey}`);
   } catch {
     return undefined;
   }
+}
+
+/**
+ * Fetch children status using a JQL query (total and incomplete counts).
+ *
+ * @param baseUrl - The Jira Cloud base URL.
+ * @param auth - The Base64-encoded Basic auth string.
+ * @param jql - The JQL query to find children.
+ * @returns The children status, or `undefined` on failure.
+ */
+async function fetchChildrenByJql(
+  baseUrl: string,
+  auth: string,
+  jql: string,
+): Promise<ChildrenStatus | undefined> {
+  // Fetch total count
+  const totalResponse = await fetch(`${baseUrl}/rest/api/3/search/jql`, {
+    method: 'POST',
+    headers: {
+      ...jiraHeaders(auth),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ jql, maxResults: 0 }),
+  });
+
+  if (!totalResponse.ok) return undefined;
+
+  const totalJson = (await totalResponse.json()) as { total?: number };
+  const total = totalJson.total ?? 0;
+
+  if (total === 0) return { total: 0, incomplete: 0 };
+
+  // Fetch incomplete count
+  const incompleteResponse = await fetch(`${baseUrl}/rest/api/3/search/jql`, {
+    method: 'POST',
+    headers: {
+      ...jiraHeaders(auth),
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      jql: `${jql} AND statusCategory != "done"`,
+      maxResults: 0,
+    }),
+  });
+
+  if (!incompleteResponse.ok) return undefined;
+
+  const incompleteJson = (await incompleteResponse.json()) as {
+    total?: number;
+  };
+  const incomplete = incompleteJson.total ?? 0;
+
+  return { total, incomplete };
 }
 
 /**

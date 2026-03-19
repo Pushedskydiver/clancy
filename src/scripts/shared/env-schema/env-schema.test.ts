@@ -296,5 +296,73 @@ describe('detectBoard', () => {
 
       expect(result.env.CLANCY_MAX_REWORK).toBeUndefined();
     });
+
+    it('passes through CLANCY_MODE for Jira', () => {
+      const result = detectBoard(
+        jiraEnv({
+          CLANCY_MODE: 'afk',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_MODE).toBe('afk');
+    });
+
+    it('passes through CLANCY_MODE for GitHub', () => {
+      const result = detectBoard(
+        githubEnv({
+          CLANCY_MODE: 'afk',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_MODE).toBe('afk');
+    });
+
+    it('passes through CLANCY_MODE for Linear', () => {
+      const result = detectBoard(
+        linearEnv({
+          CLANCY_MODE: 'afk',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_MODE).toBe('afk');
+    });
+
+    it('passes through strategist env vars', () => {
+      const result = detectBoard(
+        jiraEnv({
+          CLANCY_BRIEF_ISSUE_TYPE: 'Story',
+          CLANCY_BRIEF_EPIC: 'PROJ-50',
+          CLANCY_COMPONENT: 'backend',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_BRIEF_ISSUE_TYPE).toBe('Story');
+      expect(result.env.CLANCY_BRIEF_EPIC).toBe('PROJ-50');
+      expect(result.env.CLANCY_COMPONENT).toBe('backend');
+    });
+
+    it('strategist vars are optional — config parses without them', () => {
+      const result = detectBoard(githubEnv());
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_MODE).toBeUndefined();
+      expect(result.env.CLANCY_BRIEF_ISSUE_TYPE).toBeUndefined();
+      expect(result.env.CLANCY_BRIEF_EPIC).toBeUndefined();
+      expect(result.env.CLANCY_COMPONENT).toBeUndefined();
+    });
   });
 });
