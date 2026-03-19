@@ -241,4 +241,68 @@ describe('buildEpicPrBody', () => {
     expect(body).toContain('PROJ-101 — Setup');
     expect(body).not.toContain('(#');
   });
+
+  it('includes Closes keywords for GitHub provider', () => {
+    const body = buildEpicPrBody(
+      '#42',
+      'Add customer portal',
+      [
+        {
+          timestamp: '2024-01-15 14:30',
+          key: '#43',
+          summary: 'Portal route setup',
+          status: 'PR_CREATED',
+          prNumber: 50,
+          parent: '#42',
+        },
+        {
+          timestamp: '2024-01-15 15:00',
+          key: '#44',
+          summary: 'SSO integration',
+          status: 'PR_CREATED',
+          prNumber: 51,
+          parent: '#42',
+        },
+      ],
+      'github',
+    );
+
+    expect(body).toContain('### Closes');
+    expect(body).toContain('Closes #42');
+    expect(body).toContain('Closes #43');
+    expect(body).toContain('Closes #44');
+  });
+
+  it('does not include Closes keywords for Jira provider', () => {
+    const body = buildEpicPrBody(
+      'PROJ-100',
+      'Add customer portal',
+      [
+        {
+          timestamp: '2024-01-15 14:30',
+          key: 'PROJ-101',
+          summary: 'Portal route setup',
+          status: 'PR_CREATED',
+          prNumber: 42,
+          parent: 'PROJ-100',
+        },
+      ],
+      'jira',
+    );
+
+    expect(body).not.toContain('Closes');
+  });
+
+  it('does not include Closes keywords when provider is not specified', () => {
+    const body = buildEpicPrBody('PROJ-100', 'Portal', [
+      {
+        timestamp: '2024-01-15 14:30',
+        key: 'PROJ-101',
+        summary: 'Setup',
+        status: 'DONE',
+      },
+    ]);
+
+    expect(body).not.toContain('Closes');
+  });
 });

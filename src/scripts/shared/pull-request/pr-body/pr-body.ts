@@ -103,16 +103,20 @@ export function buildPrBody(
  * Build the PR body for the final epic PR (epic branch → base branch).
  *
  * Lists all child tickets with their PR numbers for traceability.
+ * For GitHub, includes `Closes` keywords to auto-close child issues
+ * and the parent epic when the PR is merged to the default branch.
  *
- * @param epicKey - The epic ticket key (e.g., `'PROJ-100'`).
+ * @param epicKey - The epic ticket key (e.g., `'PROJ-100'` or `'#42'`).
  * @param epicTitle - The epic ticket title.
  * @param childEntries - Progress entries for child tickets (with `prNumber`).
+ * @param provider - The board provider (`'github'`, `'jira'`, `'linear'`).
  * @returns The epic PR body as a markdown string.
  */
 export function buildEpicPrBody(
   epicKey: string,
   epicTitle: string,
   childEntries: ProgressEntry[],
+  provider?: string,
 ): string {
   const lines: string[] = [];
 
@@ -124,6 +128,20 @@ export function buildEpicPrBody(
   for (const entry of childEntries) {
     const prRef = entry.prNumber ? ` (#${entry.prNumber})` : '';
     lines.push(`- ${entry.key} — ${entry.summary}${prRef}`);
+  }
+
+  // GitHub: add Closes keywords to auto-close issues when epic PR merges to default branch
+  if (provider === 'github') {
+    lines.push('');
+    lines.push('### Closes');
+    lines.push('');
+    const issueKeys = childEntries
+      .map((e) => e.key)
+      .filter((k) => k.startsWith('#'));
+    if (epicKey.startsWith('#')) issueKeys.unshift(epicKey);
+    if (issueKeys.length > 0) {
+      lines.push(issueKeys.map((k) => `Closes ${k}`).join(', '));
+    }
   }
 
   lines.push('');

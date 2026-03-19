@@ -7,6 +7,14 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.7.3] — 2026-03-19
+
+### Fixed
+
+- **Epic PR auto-closes GitHub issues** — epic PR body now includes `Closes #N` keywords for the parent and all child issues, so merging the epic PR to the default branch automatically closes them
+
+---
+
 ## [0.7.2] — 2026-03-19
 
 ### Added

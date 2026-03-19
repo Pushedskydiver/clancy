@@ -350,7 +350,12 @@ export async function deliverEpicToBase(
   const platformOverride = sharedEnv(config).CLANCY_GIT_PLATFORM;
   const remote = detectRemote(platformOverride);
   const prTitle = `feat(${epicKey}): ${epicTitle}`;
-  const prBody = buildEpicPrBody(epicKey, epicTitle, childEntries);
+  const prBody = buildEpicPrBody(
+    epicKey,
+    epicTitle,
+    childEntries,
+    config.provider,
+  );
 
   if (
     remote.host === 'none' ||
