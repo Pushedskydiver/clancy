@@ -33,7 +33,7 @@ The complete journey of a feature from idea to merged code. Human steps are mark
 👤 Run /clancy:approve-brief PROJ-200
    │
    ├─ Clancy shows ticket list + deps + HITL/AFK breakdown
-   ├─ 👤 Confirm [Y/n]
+   ├─ 👤 Confirm [Y/n] (skipped with --afk)
    ├─ Creates child tickets on board (with Epic: convention)
    ├─ Links dependencies (blocking relationships)
    └─ Posts summary on parent ticket
@@ -63,6 +63,9 @@ Skip if tickets are clear enough from the brief.
    └─ Start over? → 👤 /clancy:plan --fresh
 
    Repeat for each ticket that needs a plan.
+
+   AFK mode: /clancy:plan --afk and /clancy:approve-plan --afk
+   skip all confirmations for fully autonomous planning.
 ```
 
 ---

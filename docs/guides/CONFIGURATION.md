@@ -54,7 +54,7 @@ CLANCY_BRIEF_EPIC=PROJ-100
 CLANCY_COMPONENT=backend
 ```
 
-`CLANCY_MODE` controls how the grill phase runs: `interactive` (default) interviews the human, `afk` uses the AI-grill agent autonomously. Override per-invocation with `--afk`.
+`CLANCY_MODE` controls how the grill phase runs and whether confirmations are skipped: `interactive` (default) interviews the human and prompts for confirmation, `afk` uses the AI-grill agent and auto-confirms all prompts. Override per-invocation with `--afk`. The `--afk` flag is supported on `/clancy:brief`, `/clancy:approve-brief`, `/clancy:plan`, and `/clancy:approve-plan`.
 
 `CLANCY_BRIEF_ISSUE_TYPE` sets the issue type for tickets created by `/clancy:approve-brief` (e.g. `Story`, `Task`). Defaults to the board's default issue type.
 
