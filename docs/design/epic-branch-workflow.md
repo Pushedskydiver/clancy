@@ -35,3 +35,5 @@ child ticket → PR targeting epic/{key}
 5. **Migration guard.** `deliver.ts` detects pre-v0.5.12 squash-merged work on the epic branch and warns rather than silently pushing on top of it.
 
 6. **Single-child skip.** If an epic has exactly 1 child, skip the epic branch entirely — deliver directly to base branch via PR. No point in an intermediate branch for one ticket.
+
+7. **GitHub auto-close.** The epic PR body includes `Closes #N` keywords for the parent and all child issues. Merging the epic PR to the default branch auto-closes everything. Jira/Linear use API transitions instead.

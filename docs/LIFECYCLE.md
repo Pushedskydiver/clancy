@@ -144,10 +144,12 @@ After all child PRs are merged into the epic branch:
 Next /clancy:once or /clancy:run iteration:
    ├─ Epic completion phase detects all children complete
    ├─ Auto-creates PR from epic/{key} → base branch
+   ├─ GitHub: PR includes Closes keywords for parent + all children
+   │    (merging auto-closes all issues)
    └─ Logs EPIC_PR_CREATED
 
 👤 Review the epic PR (full feature landing on base branch)
-👤 Merge the epic PR
+👤 Merge the epic PR → all issues auto-closed (GitHub)
 ```
 
 ---
