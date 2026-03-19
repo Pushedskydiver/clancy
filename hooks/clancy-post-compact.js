@@ -27,13 +27,16 @@ process.stdin.on('end', () => {
 
     const lock = JSON.parse(fs.readFileSync(lockPath, 'utf8'));
 
+    // Validate minimum required fields — skip if lock is malformed
+    if (!lock.ticketKey || !lock.ticketBranch) process.exit(0);
+
     // Truncate description to 2000 chars to avoid consuming too much fresh context
     const desc = (lock.description || '').slice(0, 2000);
 
     const context = [
-      `CONTEXT RESTORED: You are implementing ticket [${lock.ticketKey}] ${lock.ticketTitle}.`,
-      `Branch: ${lock.ticketBranch} targeting ${lock.targetBranch}.`,
-      lock.parentKey !== 'none' ? `Parent: ${lock.parentKey}.` : '',
+      `CONTEXT RESTORED: You are implementing ticket [${lock.ticketKey}] ${lock.ticketTitle || 'Unknown'}.`,
+      `Branch: ${lock.ticketBranch} targeting ${lock.targetBranch || 'main'}.`,
+      lock.parentKey && lock.parentKey !== 'none' ? `Parent: ${lock.parentKey}.` : '',
       desc ? `Requirements: ${desc}` : '',
       'Continue your implementation. Do not start over.',
     ].filter(Boolean).join('\n');
