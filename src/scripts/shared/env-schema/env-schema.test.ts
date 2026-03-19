@@ -300,40 +300,40 @@ describe('detectBoard', () => {
     it('passes through CLANCY_MODE for Jira', () => {
       const result = detectBoard(
         jiraEnv({
-          CLANCY_MODE: 'strategist',
+          CLANCY_MODE: 'afk',
         }),
       );
 
       expect(typeof result).not.toBe('string');
       if (typeof result === 'string') return;
 
-      expect(result.env.CLANCY_MODE).toBe('strategist');
+      expect(result.env.CLANCY_MODE).toBe('afk');
     });
 
     it('passes through CLANCY_MODE for GitHub', () => {
       const result = detectBoard(
         githubEnv({
-          CLANCY_MODE: 'strategist',
+          CLANCY_MODE: 'afk',
         }),
       );
 
       expect(typeof result).not.toBe('string');
       if (typeof result === 'string') return;
 
-      expect(result.env.CLANCY_MODE).toBe('strategist');
+      expect(result.env.CLANCY_MODE).toBe('afk');
     });
 
     it('passes through CLANCY_MODE for Linear', () => {
       const result = detectBoard(
         linearEnv({
-          CLANCY_MODE: 'strategist',
+          CLANCY_MODE: 'afk',
         }),
       );
 
       expect(typeof result).not.toBe('string');
       if (typeof result === 'string') return;
 
-      expect(result.env.CLANCY_MODE).toBe('strategist');
+      expect(result.env.CLANCY_MODE).toBe('afk');
     });
 
     it('passes through strategist env vars', () => {

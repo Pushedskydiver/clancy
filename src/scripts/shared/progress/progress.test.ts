@@ -516,4 +516,70 @@ describe('slug-based BRIEF/APPROVE_BRIEF entries', () => {
     expect(approveResult).toHaveLength(1);
     expect(approveResult[0]!.key).toBe('add-customer-portal');
   });
+
+  it('round-trips BRIEF entries through appendProgress', () => {
+    const root = makeTempRoot();
+    appendProgress(root, 'add-dark-mode', '4 proposed tickets', 'BRIEF');
+
+    const entry = findLastEntry(root, 'add-dark-mode');
+    expect(entry).toBeDefined();
+    expect(entry!.status).toBe('BRIEF');
+    expect(entry!.key).toBe('add-dark-mode');
+    expect(entry!.summary).toBe('4 proposed tickets');
+  });
+
+  it('round-trips APPROVE_BRIEF entries through appendProgress', () => {
+    const root = makeTempRoot();
+    appendProgress(root, 'add-dark-mode', '4 tickets created', 'APPROVE_BRIEF');
+
+    const entry = findLastEntry(root, 'add-dark-mode');
+    expect(entry).toBeDefined();
+    expect(entry!.status).toBe('APPROVE_BRIEF');
+    expect(entry!.key).toBe('add-dark-mode');
+    expect(entry!.summary).toBe('4 tickets created');
+  });
+
+  it('parses a SKIPPED BRIEF entry', () => {
+    const root = makeTempRoot();
+    writeProgress(
+      root,
+      '2024-01-15 14:30 | BRIEF | add-dark-mode | SKIPPED - not relevant (iOS idea, React codebase)\n',
+    );
+
+    const entry = findLastEntry(root, 'add-dark-mode');
+    expect(entry).toBeDefined();
+    expect(entry!.status).toBe('BRIEF');
+    expect(entry!.summary).toBe(
+      'SKIPPED - not relevant (iOS idea, React codebase)',
+    );
+  });
+
+  it('parses a PARTIAL approve-brief entry', () => {
+    const root = makeTempRoot();
+    writeProgress(
+      root,
+      '2024-01-15 14:30 | APPROVE_BRIEF | add-dark-mode | PARTIAL - 3 of 6 created\n',
+    );
+
+    const entry = findLastEntry(root, 'add-dark-mode');
+    expect(entry).toBeDefined();
+    expect(entry!.status).toBe('APPROVE_BRIEF');
+    expect(entry!.summary).toBe('PARTIAL - 3 of 6 created');
+  });
+
+  it('handles empty progress file gracefully', () => {
+    const root = makeTempRoot();
+    writeProgress(root, '');
+
+    const entry = findLastEntry(root, 'anything');
+    expect(entry).toBeUndefined();
+  });
+
+  it('handles whitespace-only progress file gracefully', () => {
+    const root = makeTempRoot();
+    writeProgress(root, '  \n\n  \n');
+
+    const entry = findLastEntry(root, 'anything');
+    expect(entry).toBeUndefined();
+  });
 });

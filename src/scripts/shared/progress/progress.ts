@@ -67,6 +67,15 @@ export function appendProgress(
   mkdirSync(dirname(filePath), { recursive: true });
 
   const timestamp = formatTimestamp(new Date());
+
+  // BRIEF/APPROVE_BRIEF use slug-based format: timestamp | STATUS | slug | detail
+  if (status === 'BRIEF' || status === 'APPROVE_BRIEF') {
+    const line = `${timestamp} | ${status} | ${key} | ${summary}\n`;
+    appendFileSync(filePath, line, 'utf8');
+    return;
+  }
+
+  // Standard format: timestamp | key | summary | STATUS [| pr:N] [| parent:KEY]
   const prSuffix = prNumber != null ? ` | pr:${prNumber}` : '';
   const parentSuffix = parent ? ` | parent:${parent}` : '';
   const line = `${timestamp} | ${key} | ${summary} | ${status}${prSuffix}${parentSuffix}\n`;

@@ -16,7 +16,13 @@ Approve a reviewed strategic brief by creating child tickets on the board, linki
 
 2. Source `.clancy/.env` and check board credentials are present.
 
-3. Branch freshness check:
+3. Check `CLANCY_ROLES` includes `strategist` (or env var is unset, which indicates a global install where all roles are available). If `CLANCY_ROLES` is set but does not include `strategist`:
+   ```
+   The Strategist role is not enabled. Add "strategist" to CLANCY_ROLES in .clancy/.env or run /clancy:settings.
+   ```
+   Stop.
+
+4. Branch freshness check:
    ```bash
    git fetch origin
    ```
