@@ -136,7 +136,7 @@ export async function fetchIssue(
   label?: string,
   username?: string,
 ): Promise<(Ticket & { milestone?: string }) | undefined> {
-  const results = await fetchIssues(token, repo, label, username);
+  const results = await fetchIssues(token, repo, label, username, false, 1);
   return results[0];
 }
 
