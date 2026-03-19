@@ -30,6 +30,16 @@ Agents 2 and 3 are the critical path — they need the full design docs.
 
 **Note on Agent 2 complexity:** The brief workflow handles 4 input modes × 3 boards × dual grill mode. Consider splitting into two sub-agents if context window is a concern: one for the grill phase + brief generation, one for board-specific API calls (comment posting, feedback detection, re-brief flow).
 
+### Wave 1 Review — Devil's Advocate
+
+Spin up a review agent after Wave 1 completes. Scope:
+
+- Do the new types compile? Run `npm run typecheck`.
+- Do the Zod schema additions (`CLANCY_MODE`, `CLANCY_BRIEF_ISSUE_TYPE`, `CLANCY_BRIEF_EPIC`, `CLANCY_COMPONENT`) match the design docs' env var tables?
+- Does the progress parser handle all entry formats described in the visual flows doc (BRIEF slug-based, APPROVE_BRIEF slug-based, REVISED entries)?
+- Are `BRIEF` and `APPROVE_BRIEF` added to the `ProgressStatus` type union?
+- Do existing tests still pass? Run `npm test`.
+
 ### Wave 2 — Integration (4 parallel agents)
 
 | Agent | Chunks | Files | Tests |
@@ -103,6 +113,19 @@ This ensures existing users with children created before v0.6.0 (no `Epic:` in d
 - `github-issues.ts`: children search response schema
 - `linear.ts`: relations response schema, children search response schema
 
+### Wave 2 Review — Devil's Advocate
+
+Spin up a review agent after Wave 2 completes. This is the most critical review — Wave 2 has the riskiest changes. Scope:
+
+- **Blocker check:** Does `fetchTicket` handle all-blocked gracefully (return undefined, not infinite loop)? Does it log skipped tickets? Does `fetchBlockerStatus` handle tickets with no blockers (return empty = unblocked)?
+- **fetchChildrenStatus dual-mode:** Test mentally: (a) children with `Epic:` in description → found via text search, (b) children without `Epic:` (pre-v0.6.0) → found via native API fallback, (c) mixed → text search finds some, but what about the rest? Should it merge results?
+- **HITL/AFK filtering:** In AFK mode, does the label filter work for all 3 boards? In interactive mode, is the filter correctly absent?
+- **Workflows:** Do the brief.md and approve-brief.md prompts match the visual flows doc step-by-step? Are all flags (--afk, --research, --fresh, --from, --epic, --dry-run, --list) handled?
+- **Stale brief hook:** Is it CommonJS? Does it handle missing `.clancy/briefs/` directory gracefully? Does it avoid blocking SessionStart?
+- **Command files:** Do they reference the correct workflow files?
+- **Init/settings:** Are all new env vars prompted with correct descriptions and defaults?
+- Run `npm test && npm run typecheck && npm run lint`.
+
 ### Wave 3 — Documentation (2 parallel agents)
 
 | Agent | Chunks | Files |
@@ -110,9 +133,29 @@ This ensures existing users with children created before v0.6.0 (no `Epic:` in d
 | **8** | Role doc + cross-cutting docs | `docs/roles/STRATEGIST.md` (NEW), `docs/ARCHITECTURE.md`, `docs/VISUAL-ARCHITECTURE.md`, `docs/roles/SETUP.md`, `docs/guides/CONFIGURATION.md`, `docs/GLOSSARY.md` |
 | **9** | README + project + release | `README.md`, `CLAUDE.md`, `CHANGELOG.md`, `package.json`, `package-lock.json` |
 
+### Wave 3 Review — Devil's Advocate
+
+Spin up a review agent after Wave 3 completes. Scope:
+
+- **Cross-doc consistency:** Do the docs (STRATEGIST.md, ARCHITECTURE.md, CONFIGURATION.md, GLOSSARY.md) match what was actually built in Waves 1-2? Any stale refs?
+- **Test count:** Has the README badge been updated with the new test count?
+- **CHANGELOG:** Does it cover all new features, not just the strategist? (blocker check, HITL/AFK, fetchChildrenStatus rewrite)
+- **CLAUDE.md:** Key paths table updated? Commands list updated? Technical decisions updated?
+- **Visual architecture diagrams:** Do they reflect the new strategist role interactions?
+
 ### Wave 4 — Verification
 
 Run `npm test && npm run typecheck && npm run lint`. Fix any issues.
+
+### Wave 4 Review — Final Devil's Advocate
+
+Final review before PR creation. Scope:
+
+- **Full codebase grep:** Any `TODO`, `FIXME`, `HACK` left from implementation?
+- **Stale references:** Any remaining mentions of old patterns (squash-merge for delivery, `github.ts` instead of `github-issues.ts`, etc.)?
+- **Test coverage:** Are all new functions tested? Are edge cases covered (all-blocked, circular deps, partial failure)?
+- **Package lock:** Is `package-lock.json` synced with `package.json` version?
+- **Memory:** Does MEMORY.md need updating with the v0.6.0 state?
 
 ---
 
