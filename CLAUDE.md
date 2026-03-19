@@ -37,6 +37,7 @@ Autonomous, board-driven development for Claude Code. npm package: `chief-clancy
 | [docs/GLOSSARY.md](docs/GLOSSARY.md) | Ubiquitous language — term definitions for roles, delivery, orchestrator, strategist |
 | [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | System architecture, module map, function inventory |
 | [docs/VISUAL-ARCHITECTURE.md](docs/VISUAL-ARCHITECTURE.md) | Mermaid diagrams — role interactions, ticket lifecycle, delivery paths |
+| [docs/LIFECYCLE.md](docs/LIFECYCLE.md) | End-to-end ticket flow — strategy → planning → implementation → epic completion, with human touchpoints |
 | [docs/CONVENTIONS.md](docs/CONVENTIONS.md) | Code conventions, naming patterns, TypeScript/hook rules |
 | [docs/TESTING.md](docs/TESTING.md) | Testing strategy, co-location rules, coverage thresholds |
 | [docs/GIT.md](docs/GIT.md) | Branch strategy, merge conventions |
