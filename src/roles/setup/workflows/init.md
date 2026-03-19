@@ -513,13 +513,24 @@ If no: skip the commit silently. The user can commit manually later.
 Clancy includes the Implementer, Reviewer, and Setup roles by default. Optional roles add extra capabilities.
 
 ```
-Clancy includes the Implementer, Reviewer, and Setup roles by default.
-You can enable additional roles:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Optional Roles
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-  [1] Planner     — Refine vague tickets into structured implementation plans
-  [2] Strategist  — Generate strategic briefs and create tickets on the board
+Core roles (always installed): Implementer, Reviewer, Setup
 
-Enter roles to enable (e.g. 1, 2, "all") or press Enter to skip:
+Additional roles extend what Clancy can do:
+
+  [1] Planner
+      Refine vague tickets into structured implementation plans.
+      Commands: /clancy:plan, /clancy:approve-plan
+
+  [2] Strategist
+      Generate strategic briefs — research the codebase, grill
+      requirements, decompose into tickets with dependencies.
+      Commands: /clancy:brief, /clancy:approve-brief
+
+Enable: 1, 2, all, or Enter to skip
 ```
 
 Accept numbers, role names (e.g. "planner", "strategist"), "all", or Enter to skip.
