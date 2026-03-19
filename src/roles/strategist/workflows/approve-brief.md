@@ -130,7 +130,9 @@ AFK-ready: {X} | Needs human: {Y}
 Create {N} tickets? [Y/n]
 ```
 
-If user declines: `Cancelled. No changes made.` Stop.
+**AFK mode:** If running in AFK mode (`--afk` flag OR `CLANCY_MODE=afk`), skip the confirmation prompt and auto-confirm. Display the ticket list for logging purposes but proceed without waiting for input.
+
+If user declines (interactive only): `Cancelled. No changes made.` Stop.
 
 ---
 
