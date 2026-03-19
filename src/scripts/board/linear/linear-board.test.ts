@@ -220,11 +220,12 @@ describe('linear-board', () => {
       expect(result).toEqual({ total: 4, incomplete: 2 });
     });
 
-    it('returns undefined when no parentId provided', async () => {
+    it('falls back to identifier when no parentId provided', async () => {
       const board = createLinearBoard(baseEnv);
       const result = await board.fetchChildrenStatus('ENG-10');
 
-      expect(result).toBeUndefined();
+      // Without parentId, uses identifier as fallback — text search still works
+      expect(result).toEqual({ total: 4, incomplete: 2 });
     });
   });
 
