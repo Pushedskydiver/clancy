@@ -24,7 +24,7 @@ Ubiquitous language for the Clancy project. Use these terms consistently in code
 | **Base branch** | The branch configured as `CLANCY_BASE_BRANCH` (default: `main`). The target for standalone ticket PRs and epic PRs. |
 | **Feature branch** | A short-lived branch (e.g. `feature/proj-101`) created for implementing a single ticket. PRs target either the epic branch or base branch. |
 | **Single-child skip** | Optimisation: if an epic has only one child ticket, skip the epic branch overhead — deliver the child PR directly to the base branch. |
-| **Epic completion** | When all children of an epic are done (PRs merged), Clancy auto-creates a PR from the epic branch to the base branch. |
+| **Epic completion** | When all children of an epic are done (PRs merged), Clancy auto-creates a PR from the epic branch to the base branch. For GitHub, the PR includes `Closes` keywords for the parent and all children — merging auto-closes all issues. |
 | **Migration guard** | Safety check: if an epic branch exists locally but not on the remote (from the old squash-merge flow), block and show instructions to push manually. |
 
 ## Once Orchestrator
