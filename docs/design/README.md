@@ -20,13 +20,14 @@ Design docs for Clancy features — the "why" behind non-obvious decisions, edge
 | Document | Feature | Version |
 |---|---|---|
 | `epic-branch-workflow.md` | PR-based delivery, epic branches, epic completion detection | v0.5.12 |
+| `strategist-visual-flows.md` | Complete flow diagrams for `/clancy:brief` and `/clancy:approve-brief` across all platforms | v0.6.0 |
+| `strategist-jira-flow.md` | Jira-specific scenarios, API calls, ADF format, edge cases | v0.6.0 |
+| `strategist-linear-flow.md` | Linear-specific scenarios, GraphQL operations, edge cases | v0.6.0 |
+| `strategist-github-flow.md` | GitHub Issues-specific scenarios, edge cases | v0.6.0 |
+| `strategist-execution-plan.md` | Build plan — **can be deleted** (v0.6.0 shipped) | v0.6.0 |
 
-### In progress (v0.6.0 — Strategist role)
+### In progress (v0.7.0 — Reliable autonomous mode)
 
 | Document | Purpose |
 |---|---|
-| `strategist-visual-flows.md` | Complete flow diagrams for `/clancy:brief` and `/clancy:approve-brief` across all platforms |
-| `strategist-jira-flow.md` | Jira-specific scenarios, API calls, ADF format, edge cases |
-| `strategist-linear-flow.md` | Linear-specific scenarios, GraphQL operations, edge cases |
-| `strategist-github-flow.md` | GitHub Issues-specific scenarios, edge cases |
-| `strategist-execution-plan.md` | Build plan — **delete after v0.6.0 ships** |
+| `reliable-autonomous-mode.md` | Verification gates, safety hooks, crash recovery — full design + execution plan |
