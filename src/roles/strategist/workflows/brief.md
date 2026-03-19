@@ -247,23 +247,25 @@ Interview the user RELENTLESSLY about every aspect of the idea until you reach a
 
 1. Be RELENTLESS. Do not accept vague answers. If the user says "it should be fast", ask "what's the latency budget? 100ms? 500ms? Per-request or p99?" If they say "just pick something", explain the trade-offs and make them choose.
 
-2. Walk each branch of the design tree to its CONCLUSION before moving to the next. Don't jump between topics — follow each thread until it's fully resolved.
+2. For each question, **provide your recommended answer** based on codebase context, board context, or best practices. The user can agree, disagree, or ask for more detail. This speeds up the grill — the user confirms or overrides rather than researching from scratch.
 
-3. Explore the codebase instead of asking when the answer is in the code. Don't ask "do you have an auth module?" — check. Then ask informed follow-ups: "I see `src/auth/sso-provider.ts` uses SAML. Should the new feature use the same provider?"
+3. Walk each branch of the design tree to its CONCLUSION before moving to the next. Don't jump between topics — follow each thread until it's fully resolved.
 
-4. This is a TWO-WAY conversation. The user can ask questions back at any time:
+4. Explore the codebase instead of asking when the answer is in the code. Don't ask "do you have an auth module?" — check. Then ask informed follow-ups: "I see `src/auth/sso-provider.ts` uses SAML. Should the new feature use the same provider?"
+
+5. This is a TWO-WAY conversation. The user can ask questions back at any time:
    - "What does the codebase currently use?" → explore and answer
    - "What do other projects typically do?" → web research
    - "Are there related tickets?" → board query
    - "What would you recommend?" → give an informed opinion with trade-offs, then let the user decide
 
-5. Answers spawn follow-up questions (multi-round): "We want SSO" → "SAML or OIDC?" → "OIDC" → "Which provider? No OIDC client in codebase yet."
+6. Answers spawn follow-up questions (multi-round): "We want SSO" → "SAML or OIDC?" → "OIDC" → "Which provider? No OIDC client in codebase yet."
 
-6. Do NOT generate the brief until the grill is complete. The goal is ZERO AMBIGUITY before a single ticket is written. Push back if the user tries to rush: "We still have open questions about X and Y. Let's resolve those first."
+7. Do NOT generate the brief until the grill is complete. The goal is ZERO AMBIGUITY before a single ticket is written. Push back if the user tries to rush: "We still have open questions about X and Y. Let's resolve those first."
 
-7. Stop when you reach a SHARED UNDERSTANDING — both sides agree they understand the full scope, constraints, and decisions. Not just "no more questions" but genuine mutual comprehension.
+8. Stop when you reach a SHARED UNDERSTANDING — both sides agree they understand the full scope, constraints, and decisions. Not just "no more questions" but genuine mutual comprehension.
 
-8. The resolved answers feed into the `## Discovery` section of the brief.
+9. The resolved answers feed into the `## Discovery` section of the brief.
 
 **Question categories:**
 - **Scope:** What's in and what's out?
