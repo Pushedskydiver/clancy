@@ -335,25 +335,25 @@ async function fetchChildrenByBodyRef(
   repo: string,
   bodyRef: string,
 ): Promise<ChildrenStatus | undefined> {
-  const allParams = new URLSearchParams({
-    state: 'all',
+  // Use GitHub Search API — scales to repos with thousands of issues.
+  // The Issues list endpoint is limited to 100 per page with no body search.
+  const query = `"${bodyRef}" repo:${repo} is:issue`;
+  const searchParams = new URLSearchParams({
+    q: query,
     per_page: '100',
   });
-  const allResponse = await fetch(
-    `${GITHUB_API}/repos/${repo}/issues?${allParams}`,
+  const searchResponse = await fetch(
+    `${GITHUB_API}/search/issues?${searchParams}`,
     { headers: githubHeaders(token) },
   );
-  if (!allResponse.ok) return undefined;
+  if (!searchResponse.ok) return undefined;
 
-  const allIssues = (await allResponse.json()) as Array<{
-    body?: string | null;
-    pull_request?: unknown;
-    state?: string;
-  }>;
+  const searchResult = (await searchResponse.json()) as {
+    items?: Array<{ state?: string; pull_request?: unknown }>;
+  };
 
-  const children = allIssues.filter(
-    (issue) =>
-      !issue.pull_request && issue.body && issue.body.includes(bodyRef),
+  const children = (searchResult.items ?? []).filter(
+    (item) => !item.pull_request,
   );
 
   const total = children.length;

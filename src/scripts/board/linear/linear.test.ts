@@ -432,13 +432,13 @@ describe('linear', () => {
                   relations: {
                     nodes: [
                       {
-                        type: 'blocks',
+                        type: 'blockedBy',
                         relatedIssue: {
                           state: { type: 'completed' },
                         },
                       },
                       {
-                        type: 'blocks',
+                        type: 'blockedBy',
                         relatedIssue: {
                           state: { type: 'canceled' },
                         },
@@ -468,7 +468,7 @@ describe('linear', () => {
                   relations: {
                     nodes: [
                       {
-                        type: 'blocks',
+                        type: 'blockedBy',
                         relatedIssue: {
                           state: { type: 'started' },
                         },
@@ -498,13 +498,13 @@ describe('linear', () => {
                   relations: {
                     nodes: [
                       {
-                        type: 'blocks',
+                        type: 'blockedBy',
                         relatedIssue: {
                           state: { type: 'completed' },
                         },
                       },
                       {
-                        type: 'blocks',
+                        type: 'blockedBy',
                         relatedIssue: {
                           state: { type: 'unstarted' },
                         },
@@ -544,7 +544,7 @@ describe('linear', () => {
       expect(result).toBe(false);
     });
 
-    it('ignores non-blocks relation types', async () => {
+    it('ignores non-blockedBy relation types', async () => {
       vi.stubGlobal(
         'fetch',
         vi.fn().mockResolvedValue({

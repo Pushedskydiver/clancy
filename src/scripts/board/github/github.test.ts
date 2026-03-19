@@ -114,13 +114,13 @@ describe('github', () => {
           Promise.resolve({
             ok: true,
             json: () =>
-              Promise.resolve([
-                { body: 'Parent: #50', state: 'open' },
-                { body: 'Parent: #50', state: 'closed' },
-                { body: 'Parent: #50', state: 'open' },
-                { body: 'Unrelated issue', state: 'open' },
-                { body: 'Parent: #50', pull_request: {}, state: 'open' },
-              ]),
+              Promise.resolve({
+                items: [
+                  { body: 'Parent: #50', state: 'open' },
+                  { body: 'Parent: #50', state: 'closed' },
+                  { body: 'Parent: #50', state: 'open' },
+                ],
+              }),
           }),
         ),
       );
@@ -136,7 +136,7 @@ describe('github', () => {
         vi.fn(() =>
           Promise.resolve({
             ok: true,
-            json: () => Promise.resolve([]),
+            json: () => Promise.resolve({ items: [] }),
           }),
         ),
       );
@@ -170,44 +170,42 @@ describe('github', () => {
           Promise.resolve({
             ok: true,
             json: () =>
-              Promise.resolve([
-                { body: 'Epic: #50\nSome description', state: 'open' },
-                {
-                  body: 'Epic: #50\nAnother child',
-                  state: 'closed',
-                },
-                { body: 'Unrelated issue', state: 'open' },
-                {
-                  body: 'Epic: #50',
-                  pull_request: {},
-                  state: 'open',
-                },
-              ]),
+              Promise.resolve({
+                items: [
+                  { body: 'Epic: #50\nSome description', state: 'open' },
+                  { body: 'Epic: #50\nAnother child', state: 'closed' },
+                ],
+              }),
           }),
         ),
       );
 
       const result = await fetchChildrenStatus('ghp_test', 'owner/repo', 50);
 
-      // 2 real issues with Epic: #50 (excludes PR and unrelated)
       expect(result).toBeDefined();
-      expect(result!.total).toBeGreaterThanOrEqual(2);
+      expect(result!.total).toBe(2);
+      expect(result!.incomplete).toBe(1);
     });
 
     it('falls back to Parent: search when Epic: returns no results', async () => {
-      vi.stubGlobal(
-        'fetch',
-        vi.fn(() =>
+      const mockFetch = vi.fn();
+      // First call (Epic: search) returns no results
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ items: [] }),
+      });
+      // Second call (Parent: search fallback) returns results
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () =>
           Promise.resolve({
-            ok: true,
-            json: () =>
-              Promise.resolve([
-                { body: 'Parent: #50', state: 'open' },
-                { body: 'Parent: #50', state: 'closed' },
-              ]),
+            items: [
+              { body: 'Parent: #50', state: 'open' },
+              { body: 'Parent: #50', state: 'closed' },
+            ],
           }),
-        ),
-      );
+      });
+      vi.stubGlobal('fetch', mockFetch);
 
       const result = await fetchChildrenStatus('ghp_test', 'owner/repo', 50);
 
@@ -220,7 +218,7 @@ describe('github', () => {
         vi.fn(() =>
           Promise.resolve({
             ok: true,
-            json: () => Promise.resolve([]),
+            json: () => Promise.resolve({ items: [] }),
           }),
         ),
       );

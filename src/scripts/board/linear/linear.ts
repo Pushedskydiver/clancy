@@ -305,7 +305,7 @@ export async function fetchBlockerStatus(
   const doneTypes = new Set(['completed', 'canceled']);
 
   return relations.some((rel) => {
-    if (rel.type !== 'blocks') return false;
+    if (rel.type !== 'blockedBy') return false;
     const stateType = rel.relatedIssue?.state?.type;
     if (!stateType) return false;
     return !doneTypes.has(stateType);
