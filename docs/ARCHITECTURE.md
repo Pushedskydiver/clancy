@@ -18,6 +18,9 @@ clancy/
 │   │   ├── manifest/           — SHA-256 manifests for patch preservation
 │   │   └── prompts/            — interactive install prompts
 │   ├── roles/                  — commands and workflows organised by role
+│   │   ├── strategist/         — idea decomposition (brief, approve-brief)
+│   │   │   ├── commands/
+│   │   │   └── workflows/
 │   │   ├── planner/            — backlog refinement (plan, approve)
 │   │   │   ├── commands/
 │   │   │   └── workflows/
@@ -33,8 +36,8 @@ clancy/
 │   ├── scripts/
 │   │   ├── once/               — once orchestrator (8 modules)
 │   │   │   ├── types.ts        — FetchedTicket type
-│   │   │   ├── board-ops.ts    — sharedEnv, pingBoard, validateInputs, transitionToStatus, fetchEpicChildrenStatus
-│   │   │   ├── fetch-ticket.ts — board-specific ticket fetch dispatch
+│   │   │   ├── board-ops.ts    — sharedEnv, pingBoard, validateInputs, transitionToStatus, fetchEpicChildrenStatus (dual-mode)
+│   │   │   ├── fetch-ticket.ts — board-specific ticket fetch dispatch (with HITL/AFK filtering + blocker checks)
 │   │   │   ├── git-token.ts    — resolveGitToken
 │   │   │   ├── pr-creation.ts  — attemptPrCreation, buildManualPrUrl
 │   │   │   ├── deliver.ts      — deliverViaPullRequest, ensureEpicBranch, deliverEpicToBase
@@ -52,12 +55,13 @@ clancy/
 │   │   ├── CLAUDE.md           — template injected into user's CLAUDE.md
 │   │   └── .env.example.*      — env templates per board
 │   ├── utils/                  — shared utilities (ansi, parse-json)
-│   └── agents/                 — 5 specialist agent prompts
+│   └── agents/                 — 6 specialist agent prompts
 │       ├── tech-agent.md       — writes STACK.md + INTEGRATIONS.md
 │       ├── arch-agent.md       — writes ARCHITECTURE.md
 │       ├── quality-agent.md    — writes CONVENTIONS.md + TESTING.md + GIT.md + DEFINITION-OF-DONE.md
 │       ├── design-agent.md     — writes DESIGN-SYSTEM.md + ACCESSIBILITY.md
-│       └── concerns-agent.md   — writes CONCERNS.md
+│       ├── concerns-agent.md   — writes CONCERNS.md
+│       └── devils-advocate.md  — AI-grill agent for /clancy:brief (interrogates codebase, board, web)
 ├── hooks/                      — Node.js hooks installed alongside commands (pre-built CommonJS)
 │   ├── clancy-credential-guard.js  — PreToolUse: blocks credential writes
 │   ├── clancy-context-monitor.js   — PostToolUse: warns on low context
@@ -75,7 +79,7 @@ clancy/
 1. Prompts for global (`~/.claude`) or local (`./.claude`) install
 2. Walks `src/roles/*/commands/` and copies command files flat → `{dest}/commands/clancy/`
    - Core roles (implementer, reviewer, setup) are always installed
-   - Optional roles (planner, etc.) are only installed if listed in `CLANCY_ROLES` env var in `.clancy/.env`, or if no `.clancy/.env` exists yet (first install = install all)
+   - Optional roles (planner, strategist, etc.) are only installed if listed in `CLANCY_ROLES` env var in `.clancy/.env`, or if no `.clancy/.env` exists yet (first install = install all)
 3. Walks `src/roles/*/workflows/` and copies workflow files flat → `{dest}/clancy/workflows/` (same filtering)
 4. Copies `hooks/*.js` → `{dest}/hooks/` (pre-built CommonJS, not compiled from TS)
 5. Copies bundled runtime scripts (`dist/bundle/clancy-once.js`, `clancy-afk.js`) → `.clancy/`
@@ -116,6 +120,37 @@ Human reviews plan on the board
 
 The planner and implementer work on **separate queues** (e.g. Jira: `Backlog` vs `To Do`, GitHub: `needs-refinement` vs `clancy` label, Linear: `backlog` vs `unstarted` state type). They never compete for the same tickets.
 
+## Strategist Lifecycle
+
+The Strategist role (`/clancy:brief` and `/clancy:approve-brief`) operates as a pure workflow — no runtime script, no git operations:
+
+```
+Vague idea (ticket / text / file)
+  │
+  ▼
+/clancy:brief ──── parse input → grill phase → research → generate brief → save to .clancy/briefs/
+  │
+  ▼
+Human reviews brief (on board or in briefs/)
+  │
+  ├─ Approves → /clancy:approve-brief → topo-sort → create tickets on board → link dependencies → ready for /clancy:plan or /clancy:once
+  │
+  └─ Leaves feedback → /clancy:brief → auto-detects feedback, revises brief
+```
+
+The grill phase has two modes:
+- **Human grill** (default / `CLANCY_MODE=interactive`) — multi-round interactive Q&A
+- **AI-grill** (`--afk` or `CLANCY_MODE=afk`) — devil's advocate agent (`src/agents/devils-advocate.md`) interrogates codebase, board, and web autonomously
+
+### Key functions (strategist pipeline)
+
+| Function | Module | Purpose |
+|---|---|---|
+| `fetchBlockerStatus` | `src/scripts/board/{jira,github,linear}/` | Per-board blocker check — returns whether a ticket's blocking dependencies are resolved |
+| `fetchTickets` / `fetchIssues` | `src/scripts/board/{jira,github,linear}/` | Plural variants — fetch multiple candidate tickets (used by batch mode and queue filtering) |
+| `fetchChildrenStatus` | `src/scripts/once/board-ops/` | Dual-mode: returns children statuses for epic completion detection (used by both implementer and strategist) |
+| `fetchCandidates` | `src/scripts/once/fetch-ticket/` | Dispatches to per-board fetch, applies HITL/AFK filtering based on `isAfk` option |
+
 ## Hook Architecture
 
 Four hooks run at different points in the Claude Code lifecycle:
@@ -149,6 +184,8 @@ clancy-afk.js (loop runner — bundled, self-contained)
               4a. Epic completion scan — check if any epics have all children done → create epic PR
               5.  Check rework (scan PRs for review feedback) OR fetch fresh ticket
               5a. Max rework guard (default: 3 cycles)
+              5b. Blocker check — skip tickets with unresolved blocking dependencies
+              5c. HITL/AFK filtering — in AFK mode, exclude clancy:hitl tickets
               6.  Compute branches (ticket branch, target branch — epic or base)
               7.  [dry-run gate — exit here if --dry-run]
               8.  Feasibility check — can this be implemented as code? (skipped for rework)

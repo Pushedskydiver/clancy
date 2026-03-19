@@ -1324,7 +1324,7 @@ Body:                       Body:                           $input) }
                                 "components": [           "priority": 0
                                   { "name": "api" }     }
 Parent linking:                 ],
-  "Parent: #50" in body         "priority":
+  "Epic: #50" in body           "priority":
   (cross-reference)               { "name": "Medium" }
                               }
 Dependency linking:         }
@@ -2078,7 +2078,7 @@ Native parent/child     NO                        YES (next-gen: parent       YE
                                                     field; classic:
                                                     customfield_10014)
 
-How Clancy links        "Parent: #N" in           Try parent field first.     parentId: UUID in
+How Clancy links        "Epic: #N" in             Try parent field first.     parentId: UUID in
 parent to child         child issue body.          If 400 -> fallback to       issueCreate input
                         Cross-reference created     customfield_10014.
                         automatically by GitHub.   Cache field per project.

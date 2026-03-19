@@ -34,11 +34,14 @@ Ubiquitous language for the Clancy project. Use these terms consistently in code
 | **Once** | A single ticket execution cycle: preflight → fetch ticket → implement → deliver → log. Entry point: `/clancy:once`. |
 | **Run** | AFK loop that calls once repeatedly until the queue is empty or `MAX_ITERATIONS` (default 5) is reached. Stops early on preflight failure, skipped tickets, or other stop conditions. Entry point: `/clancy:run`. |
 | **Preflight** | Startup checks: `.clancy/.env` exists, credentials valid, board reachable. Runs before every ticket. |
-| **Blocker check** | Before implementing a ticket, the implementer checks its blocking dependencies on the board. If any blocker is incomplete, the ticket is skipped and the next one is picked up. Per-board: Jira checks issueLinks, GitHub parses "Blocked by #N" from body, Linear checks relations API. (v0.6.0) |
+| **Blocker check** | Before implementing a ticket, the implementer checks its blocking dependencies on the board. If any blocker is incomplete, the ticket is skipped and the next one is picked up. Uses `fetchBlockerStatus` per-board: Jira checks issueLinks, GitHub parses "Blocked by #N" from body, Linear checks relations API. |
+| **fetchBlockerStatus** | Per-board function (`src/scripts/board/{jira,github,linear}/`) that returns whether a ticket's blocking dependencies are resolved. Called during ticket fetch to skip blocked tickets. |
+| **HITL/AFK queue filtering** | In AFK mode (`CLANCY_AFK_MODE=1`), the ticket fetch step excludes tickets labelled `clancy:hitl` so only autonomous-safe tickets are picked up. Interactive mode processes all tickets. |
+| **Dual-mode fetchChildrenStatus** | `fetchEpicChildrenStatus` in `board-ops` dispatches to per-board `fetchChildrenStatus` functions. Returns child ticket statuses for epic completion detection — used by both the implementer (epic PR creation) and strategist (brief context). |
 | **Feasibility check** | After fetching a ticket, Clancy assesses whether the work is achievable in the current codebase context. Skippable with `--skip-feasibility`. |
 | **Rework** | Automatic re-implementation triggered by PR review comments. Inline code comments always trigger; conversation comments need `Rework:` prefix. |
 | **Max rework guard** | Safety limit: `CLANCY_MAX_REWORK` (default 3) caps the number of rework cycles per ticket to prevent infinite loops. |
-| **Progress entry** | A line in `.clancy/progress.txt` recording a completed action. Statuses: `DONE`, `SKIPPED`, `PR_CREATED`, `PUSHED`, `PUSH_FAILED`, `LOCAL`, `PLAN`, `APPROVE`, `REWORK`, `EPIC_PR_CREATED`. |
+| **Progress entry** | A line in `.clancy/progress.txt` recording a completed action. Statuses: `DONE`, `SKIPPED`, `PR_CREATED`, `PUSHED`, `PUSH_FAILED`, `LOCAL`, `PLAN`, `APPROVE`, `REWORK`, `EPIC_PR_CREATED`, `BRIEF`, `APPROVE_BRIEF`. |
 | **TDD mode** | Test-driven development mode enabled by `CLANCY_TDD=true`. The implementer writes tests first (red), implements (green), then refactors. |
 
 ## Strategist (v0.6.0)

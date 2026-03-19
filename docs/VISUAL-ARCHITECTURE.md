@@ -4,7 +4,7 @@ Interactive diagrams showing how roles, commands, and flows connect. Rendered na
 
 ## Table of Contents
 
-1. [Role & Command Map](#1-role--command-map) — all 5 roles and their 15 commands
+1. [Role & Command Map](#1-role--command-map) — all 5 roles and their 17 commands
 2. [Ticket Lifecycle](#2-ticket-lifecycle--end-to-end) — state machine from idea to merged code
 3. [Once Orchestrator](#3-the-once-orchestrator--implementation-flow) — what happens inside `/clancy:once`
 4. [Strategist Flow](#4-strategist-flow--brief-to-tickets-v060) — `/clancy:brief` and `/clancy:approve-brief`

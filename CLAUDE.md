@@ -8,7 +8,8 @@ Autonomous, board-driven development for Claude Code. npm package: `chief-clancy
 |---|---|
 | `src/installer/install.ts` | Entry point — compiled to `dist/installer/install.js`, run via `npx chief-clancy` |
 | `src/installer/` | Installer modules (file-ops, hook-installer, manifest, prompts) |
-| `src/roles/` | Slash commands and workflows organised by role (planner, implementer, reviewer, setup) |
+| `src/roles/` | Slash commands and workflows organised by role (planner, implementer, reviewer, setup, strategist) |
+| `src/roles/strategist/` | Strategist role — `/clancy:brief` and `/clancy:approve-brief` commands |
 | `src/scripts/once/` | Once orchestrator — 8 modules: types, board-ops, fetch-ticket, git-token, pr-creation, deliver, rework, once (runner) |
 | `src/scripts/afk/afk.ts` | AFK loop runner |
 | `src/scripts/shared/` | Shared utilities (env-schema, branch, prompt, progress, etc.) |
@@ -19,7 +20,8 @@ Autonomous, board-driven development for Claude Code. npm package: `chief-clancy
 | `src/schemas/` | Zod schemas for API responses and env validation |
 | `src/types/` | Shared TypeScript types (board, remote, index) |
 | `src/templates/CLAUDE.md` | CLAUDE.md template injected into user projects |
-| `src/agents/` | 5 specialist agent prompts for `/clancy:map-codebase` |
+| `src/agents/` | 6 agent prompts — 5 specialists for `/clancy:map-codebase` + devil's advocate for `/clancy:brief` |
+| `src/agents/devils-advocate.md` | Devil's advocate agent prompt for AI-grill mode in `/clancy:brief` |
 | `hooks/` | 4 Node.js hooks (credential guard, context monitor, statusline, update check) |
 | `registry/boards.json` | Board registry for community board integrations |
 
@@ -34,7 +36,7 @@ Autonomous, board-driven development for Claude Code. npm package: `chief-clancy
 | [docs/TESTING.md](docs/TESTING.md) | Testing strategy, co-location rules, coverage thresholds |
 | [docs/GIT.md](docs/GIT.md) | Branch strategy, merge conventions |
 | [docs/design/](docs/design/) | Design docs — strategist flows, epic branch workflow |
-| [docs/roles/](docs/roles/) | Role descriptions (implementer, reviewer, setup, planner) |
+| [docs/roles/](docs/roles/) | Role descriptions (implementer, reviewer, setup, planner, strategist) |
 | [docs/guides/](docs/guides/) | Configuration, security, troubleshooting guides |
 
 ## Running tests
@@ -103,3 +105,9 @@ Always via branch + PR: TypeScript (`src/`, `hooks/`), tests, executable markdow
 - `CLANCY_GIT_PLATFORM` and `CLANCY_GIT_API_URL` override auto-detection for custom domains
 - `CLANCY_STATUS_REVIEW` is used when creating a PR (falls back to `CLANCY_STATUS_DONE`)
 - GitHub Issues reuse `GITHUB_TOKEN` for PR creation; Jira/Linear users configure a separate git host token
+- `fetchChildrenStatus` uses dual-mode: `Epic: {key}` text convention in ticket descriptions + native API fallback (Jira JQL, GitHub body search, Linear relations)
+- `fetchBlockerStatus` checks blockers before ticket pickup — Jira issueLinks, GitHub body parsing (`Blocked by #N`), Linear relations
+- HITL/AFK queue filtering: tickets labelled `clancy:hitl` are skipped in AFK mode, ensuring human-in-the-loop tickets only run interactively
+- `CLANCY_MODE` env var (`interactive` | `afk`) controls grill mode detection — human grill in interactive, AI-grill (devil's advocate agent) in AFK
+- `Epic: {key}` description convention: child tickets include this text for cross-platform epic completion detection
+- `CLANCY_BRIEF_ISSUE_TYPE`, `CLANCY_BRIEF_EPIC`, `CLANCY_COMPONENT` env vars configure strategist ticket creation
