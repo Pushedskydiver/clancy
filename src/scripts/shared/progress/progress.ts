@@ -41,8 +41,8 @@ export function formatTimestamp(date: Date): string {
  * Creates the file and parent directories if they don't exist.
  *
  * @param projectRoot - The root directory of the project.
- * @param key - The ticket key (e.g., `'PROJ-123'`, `'#42'`).
- * @param summary - The ticket summary/title.
+ * @param key - The ticket key (e.g., `'PROJ-123'`, `'#42'`) or brief slug (e.g., `'add-dark-mode'`) for BRIEF/APPROVE_BRIEF statuses.
+ * @param summary - The ticket summary/title, or detail text for brief entries (e.g., `'4 proposed tickets'`).
  * @param status - The completion status.
  *
  * @example
@@ -52,6 +52,9 @@ export function formatTimestamp(date: Date): string {
  *
  * appendProgress('/path/to/project', 'PROJ-101', 'Add login', 'PR_CREATED', 42, 'PROJ-100');
  * // Appends: "2024-01-15 14:30 | PROJ-101 | Add login | PR_CREATED | pr:42 | parent:PROJ-100"
+ *
+ * appendProgress('/path/to/project', 'add-dark-mode', '4 proposed tickets', 'BRIEF');
+ * // Appends: "2024-01-15 14:30 | BRIEF | add-dark-mode | 4 proposed tickets"
  * ```
  */
 export function appendProgress(
@@ -164,7 +167,7 @@ function parseProgressFile(projectRoot: string): ProgressEntry[] {
     if (!status) continue;
 
     // Backward compat: old progress.txt entries may use 'APPROVE' (renamed to APPROVE_PLAN in v0.6.0)
-    if (status === ('APPROVE' as ProgressStatus)) {
+    if ((status as string) === 'APPROVE') {
       status = 'APPROVE_PLAN';
     }
 
