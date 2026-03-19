@@ -646,7 +646,7 @@ Epic branch: epic/{parent-key-lowercase}
 
 Next: run /clancy:plan to generate implementation plans.
 
-"Book 'em, Lou."
+"We've got ourselves a case."
 ```
 
 If no parent:
@@ -655,7 +655,7 @@ If no parent:
   ...
 Next: run /clancy:plan to generate implementation plans.
 
-"Book 'em, Lou."
+"We've got ourselves a case."
 ```
 
 ---

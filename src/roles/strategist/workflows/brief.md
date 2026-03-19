@@ -646,7 +646,11 @@ Stop.
 
 ## Step 12 — Display
 
-Print the full brief to stdout.
+Print the full brief to stdout, followed by the sign-off:
+
+```
+"I'm going to need to ask you some questions, and I want them answered immediately."
+```
 
 ### Next steps (board-sourced)
 

@@ -189,7 +189,7 @@ Next steps:
   To approve: /clancy:approve-brief ENG-42
   To start over: /clancy:brief --fresh ENG-42
 
-"Let me dust this for prints..."
+"I'm going to need to ask you some questions, and I want them answered immediately."
 ```
 
 ---
@@ -244,7 +244,7 @@ Next steps:
   To attach to a parent: /clancy:approve-brief add-real-time-notifications --epic ENG-XX
   To start over: /clancy:brief --fresh "Add real-time notifications"
 
-"Let me dust this for prints..."
+"I'm going to need to ask you some questions, and I want them answered immediately."
 ```
 
 ---
@@ -454,7 +454,7 @@ Create 4 tickets under ENG-42? [Y/n] Y
 4 tickets created under ENG-42.
 Run /clancy:plan to generate implementation plans.
 
-"Book 'em, Lou."
+"We've got ourselves a case."
 ```
 
 ---
