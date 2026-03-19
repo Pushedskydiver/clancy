@@ -98,9 +98,11 @@ Clancy follows a deliberate, minimal-by-default release philosophy. Features are
 
 ---
 
-## v0.7.0 — Reliable autonomous mode (next)
+## v0.7.0 — Reliable autonomous mode ✅
 
 Make AFK mode production-grade. Every feature in this version makes autonomous operation safer and higher quality. Inspired by GSD 1/2 verification gates, Claude Code's new hook types, and Devin's self-healing.
+
+**v0.7.1** — Codebase refactor: phase pipeline (once.ts 650→110 lines, 13 phases), Board type abstraction + factory, board-ops.ts deleted, npm package trimmed. Prepares architecture for v0.8.0 board ecosystem expansion.
 
 ### Verification gates
 - **Agent-based Stop hook** — runs lint/test/typecheck after implementation, before delivery. Uses Claude Code's `type: "agent"` hook on `Stop` event. Auto-detects commands from `package.json` scripts
@@ -119,7 +121,7 @@ Make AFK mode production-grade. Every feature in this version makes autonomous o
 
 ---
 
-## v0.8.0 — Team readiness
+## v0.8.0 — Team readiness (next)
 
 Make Clancy work for teams, not just solo developers.
 
