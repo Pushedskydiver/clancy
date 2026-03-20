@@ -24,6 +24,17 @@ export async function deliver(ctx: RunContext): Promise<boolean> {
 
   const parentKey =
     hasParent && !skipEpicBranch ? ticket.parentInfo : undefined;
+  // When single-child skip is active, pass the parent key separately
+  // so the PR body can include Closes for the parent issue too.
+  // For GitHub: only use if parentInfo is a valid issue ref (#N).
+  // Milestone titles would produce invalid "Closes Sprint 3" lines.
+  const rawParent = hasParent && skipEpicBranch ? ticket.parentInfo : undefined;
+  // GitHub: validate parentInfo is a valid issue ref (#N, digits only)
+  const isValidGitHubRef = rawParent && /^#\d+$/.test(rawParent);
+  const singleChildParent =
+    rawParent && config.provider === 'github' && !isValidGitHubRef
+      ? undefined
+      : rawParent;
 
   if (isRework) {
     // PR-flow rework: push to existing branch, PR updates automatically
@@ -83,6 +94,7 @@ export async function deliver(ctx: RunContext): Promise<boolean> {
       false,
       parentKey,
       ctx.board,
+      singleChildParent,
     );
     if (!delivered) return false;
 

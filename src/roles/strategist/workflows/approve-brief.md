@@ -27,6 +27,10 @@ Approve a reviewed strategic brief by creating child tickets on the board, linki
    git fetch origin
    ```
    Compare HEAD with `origin/$CLANCY_BASE_BRANCH`. If behind:
+
+   **AFK mode** (`--afk` flag or `CLANCY_MODE=afk`): auto-pull without prompting.
+
+   **Interactive mode:**
    ```
    Behind by N commits. [1] Pull latest  [2] Continue  [3] Abort
    ```

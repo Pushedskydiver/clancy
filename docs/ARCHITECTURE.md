@@ -217,9 +217,9 @@ clancy-afk.js (loop runner — bundled, self-contained)
        └─ Generate session report (.clancy/session-report.md)
 ```
 
-## Phase Pipeline (v0.7.1)
+## Phase Pipeline
 
-The once orchestrator (`src/scripts/once/once.ts`, 110 lines) is a thin pipeline runner. Business logic lives in 13 composable phase functions under `src/scripts/once/phases/`:
+The once orchestrator (`src/scripts/once/once.ts`, ~115 lines) is a thin pipeline runner. Business logic lives in 14 composable phase functions under `src/scripts/once/phases/`:
 
 ```
 RunContext (mutable shared state)
@@ -227,6 +227,7 @@ RunContext (mutable shared state)
   ├── Phase 0:  lock-check      — startup lock, stale detection, AFK resume
   ├── Phase 1:  preflight       — env, board detection, validation, ping, banner
   ├── Phase 2:  epic-completion  — scan for completed epics → auto-create epic PR
+  ├── Phase 2a: pr-retry         — retry PR creation for PUSHED tickets (network recovery)
   ├── Phase 3:  rework-detection — PR review feedback → rework ticket
   ├── Phase 4:  ticket-fetch     — fetch unblocked ticket, compute branches, print info
   ├── Phase 5:  dry-run          — print preview and exit if --dry-run

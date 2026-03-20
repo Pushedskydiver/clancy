@@ -128,6 +128,7 @@ export async function deliverViaPullRequest(
   skipLog = false,
   parent?: string,
   board?: Board, // Required in practice — all phase callers pass ctx.board
+  singleChildParent?: string, // Parent key when single-child skip is active
 ): Promise<boolean> {
   const pushed = pushBranch(ticketBranch);
 
@@ -186,6 +187,7 @@ export async function deliverViaPullRequest(
     },
     targetBranch,
     verificationWarning,
+    singleChildParent,
   );
 
   if (

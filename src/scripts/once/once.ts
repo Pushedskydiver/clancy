@@ -27,6 +27,7 @@ import { epicCompletion } from './phases/epic-completion.js';
 import { feasibility } from './phases/feasibility.js';
 import { invoke } from './phases/invoke.js';
 import { lockCheck } from './phases/lock-check.js';
+import { prRetry } from './phases/pr-retry.js';
 import { preflight } from './phases/preflight.js';
 import { reworkDetection } from './phases/rework-detection.js';
 import { ticketFetch } from './phases/ticket-fetch.js';
@@ -55,6 +56,8 @@ export async function run(argv: string[]): Promise<void> {
     if (!(await preflight(ctx))) return;
     // Phase 2: Epic completion check
     if (!(await epicCompletion(ctx))) return;
+    // Phase 2a: PR retry (for tickets pushed but PR creation failed)
+    if (!(await prRetry(ctx))) return;
     // Phase 3: Rework detection
     if (!(await reworkDetection(ctx))) return;
     // Phase 4: Ticket fetch + branch computation + ticket info

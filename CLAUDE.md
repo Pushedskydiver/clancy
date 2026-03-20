@@ -118,7 +118,7 @@ Spin up a review agent at every necessary phase — not just after code. Review 
 - `fetchChildrenStatus` uses dual-mode: `Epic: {key}` text convention in ticket descriptions + native API fallback (Jira JQL, GitHub body search, Linear relations)
 - `fetchBlockerStatus` checks blockers before ticket pickup — Jira issueLinks, GitHub body parsing (`Blocked by #N`), Linear relations
 - HITL/AFK queue filtering: tickets labelled `clancy:hitl` are skipped in AFK mode, ensuring human-in-the-loop tickets only run interactively
-- `CLANCY_MODE` env var (`interactive` | `afk`) controls grill mode and confirmation prompts — human grill + prompts in interactive, AI-grill + auto-confirm in AFK. Per-invocation override: `--afk` flag (supported on `/clancy:brief`, `/clancy:approve-brief`, `/clancy:plan`, `/clancy:approve-plan`)
+- `CLANCY_MODE` env var (`interactive` | `afk`) controls grill mode and confirmation prompts — human grill + prompts in interactive, AI-grill + auto-confirm in AFK. Per-invocation override: `--afk` flag (supported on `/clancy:brief`, `/clancy:approve-brief`, `/clancy:plan`, `/clancy:approve-plan`, `/clancy:update`)
 - `Epic: {key}` description convention: child tickets include this text for cross-platform epic completion detection
 - `CLANCY_BRIEF_ISSUE_TYPE`, `CLANCY_BRIEF_EPIC`, `CLANCY_COMPONENT` env vars configure strategist ticket creation
 - Verification gates: agent-based Stop hook runs lint/test/typecheck before delivery, self-healing retry up to `CLANCY_FIX_RETRIES` (default 2)
@@ -136,3 +136,6 @@ Spin up a review agent at every necessary phase — not just after code. Review 
 - Drift detector: PostToolUse hook compares `.clancy/version.json` against installed package VERSION file. Warns once per session when versions differ
 - Version tracking: installer writes `.clancy/version.json` on install/update containing `{ version, installedAt }`
 - Setup workflows support 6 boards: Jira, GitHub Issues, Linear, Shortcut, Notion, Azure DevOps
+- PR retry phase (2a): retries PR creation for tickets that were pushed but failed to create a PR (network recovery). Scans progress.txt for PUSHED entries without PR_CREATED
+- Single-child parent auto-close: when single-child skip is active, the child PR body includes `Closes #{parent}` (GitHub only, valid issue refs only) so the parent auto-closes on merge
+- AFK auto-pull: all workflows with branch freshness checks auto-pull in AFK mode instead of prompting

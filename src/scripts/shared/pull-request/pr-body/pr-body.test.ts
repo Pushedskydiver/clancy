@@ -179,6 +179,52 @@ describe('buildPrBody', () => {
   });
 });
 
+describe('singleChildParent', () => {
+  it('includes Closes for parent when single-child skip is active (GitHub)', () => {
+    const config: BoardConfig = {
+      provider: 'github',
+      env: { GITHUB_TOKEN: 'ghp_test', GITHUB_REPO: 'owner/repo' },
+    } as BoardConfig;
+    const ticket: Ticket = {
+      ...baseTicket,
+      key: '#13',
+      provider: 'github',
+    };
+    const body = buildPrBody(config, ticket, 'main', undefined, '#7');
+    expect(body).toContain('Closes #13');
+    expect(body).toContain('Closes #7');
+  });
+
+  it('does not include parent Closes when targeting epic branch', () => {
+    const config: BoardConfig = {
+      provider: 'github',
+      env: { GITHUB_TOKEN: 'ghp_test', GITHUB_REPO: 'owner/repo' },
+    } as BoardConfig;
+    const ticket: Ticket = {
+      ...baseTicket,
+      key: '#13',
+      provider: 'github',
+    };
+    const body = buildPrBody(config, ticket, 'epic/7', undefined, '#7');
+    expect(body).toContain('Part of #13');
+    expect(body).not.toContain('Closes #7');
+  });
+
+  it('does not include parent Closes for non-GitHub boards', () => {
+    const config: BoardConfig = {
+      provider: 'jira',
+      env: {
+        JIRA_BASE_URL: 'https://example.atlassian.net',
+        JIRA_USER: 'user',
+        JIRA_API_TOKEN: 'token',
+        JIRA_PROJECT_KEY: 'PROJ',
+      },
+    } as BoardConfig;
+    const body = buildPrBody(config, baseTicket, 'main', undefined, 'PROJ-100');
+    expect(body).not.toContain('Closes PROJ-100');
+  });
+});
+
 describe('isEpicBranch', () => {
   it('returns true for epic/ branches', () => {
     expect(isEpicBranch('epic/proj-100')).toBe(true);

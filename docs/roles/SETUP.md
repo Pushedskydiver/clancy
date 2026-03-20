@@ -11,7 +11,7 @@ Setup commands configure Clancy and keep it healthy.
 | `/clancy:doctor` | Diagnose issues — checks credentials, board connectivity, file integrity |
 | `/clancy:map-codebase` | Generate structured docs in `.clancy/docs/` using 5 parallel specialist agents |
 | `/clancy:update-docs` | Refresh codebase docs after significant changes |
-| `/clancy:update` | Update Clancy to the latest version |
+| `/clancy:update` | Update Clancy to the latest version (`--afk` skips confirmation) |
 | `/clancy:uninstall` | Remove Clancy from the project |
 | `/clancy:help` | Show all available commands |
 

@@ -30,6 +30,7 @@ export function isEpicBranch(targetBranch: string): boolean {
  * @param ticket - The ticket being implemented.
  * @param targetBranch - The branch the PR targets (used to determine `Closes` vs `Part of`).
  * @param verificationWarning - Optional warning text when verification checks failed after max retries. Included as a `## Verification Warning` section before the footer.
+ * @param singleChildParent - Optional parent issue key (e.g. `#7`) when single-child skip is active. GitHub-only: adds `Closes {parent}` to the PR body so the parent issue auto-closes on merge. Ignored for non-GitHub boards and when targeting an epic branch.
  * @returns The PR body as a markdown string.
  */
 export function buildPrBody(
@@ -37,6 +38,7 @@ export function buildPrBody(
   ticket: Ticket,
   targetBranch?: string,
   verificationWarning?: string,
+  singleChildParent?: string,
 ): string {
   const lines: string[] = [];
   const isEpic = targetBranch ? isEpicBranch(targetBranch) : false;
@@ -44,6 +46,10 @@ export function buildPrBody(
   switch (config.provider) {
     case 'github':
       lines.push(isEpic ? `Part of ${ticket.key}` : `Closes ${ticket.key}`);
+      // Single-child skip: also close the parent issue since no epic PR will be created
+      if (singleChildParent && !isEpic) {
+        lines.push(`Closes ${singleChildParent}`);
+      }
       break;
     case 'jira':
       lines.push(
