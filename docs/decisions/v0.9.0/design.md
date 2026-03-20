@@ -1,5 +1,10 @@
 # Design-Aware Implementation (v0.9.0) — Design Document
 
+**Status:** DA reviewed — awaiting user approval
+**Date:** 2026-03-20
+
+---
+
 ## Problem
 
 Clancy implements tickets with no awareness of UI design. When a ticket involves building a component, page, or form, Clancy produces code that is functionally correct but has no design intent: no accessibility attributes, no keyboard navigation, no content specifications for error states or empty states, and no spatial layout guidance. The reviewer catches these gaps manually, triggering rework cycles that could have been avoided if design context existed before implementation began.
