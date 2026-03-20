@@ -38,12 +38,43 @@ export async function prRetry(ctx: RunContext): Promise<boolean> {
 
     if (!needsRetry.length) return true;
 
+    // Compute remote once (avoids redundant git calls per entry)
+    const platformOverride = sharedEnv(config).CLANCY_GIT_PLATFORM;
+    const remote = detectRemote(platformOverride);
+
+    if (
+      remote.host === 'none' ||
+      remote.host === 'unknown' ||
+      remote.host === 'azure'
+    ) {
+      // Unsupported remote — mark all as handled so they don't retry forever
+      for (const entry of needsRetry) {
+        console.log(
+          dim(
+            `  Skipping PR retry for ${entry.key} — remote host "${remote.host}" does not support PR creation`,
+          ),
+        );
+        const parent =
+          entry.parent && entry.parent !== 'none' ? entry.parent : undefined;
+        appendProgress(
+          ctx.cwd,
+          entry.key,
+          entry.summary,
+          'PUSHED',
+          undefined,
+          parent,
+        );
+      }
+      return true;
+    }
+
+    const baseBranch = config.env.CLANCY_BASE_BRANCH ?? 'main';
+
     for (const entry of needsRetry) {
       console.log(
         yellow(`  ↻ Retrying PR creation for ${entry.key} (previously pushed)`),
       );
 
-      const baseBranch = config.env.CLANCY_BASE_BRANCH ?? 'main';
       const parent =
         entry.parent && entry.parent !== 'none' ? entry.parent : undefined;
       const ticketBranch = computeTicketBranch(config.provider, entry.key);
@@ -52,17 +83,6 @@ export async function prRetry(ctx: RunContext): Promise<boolean> {
         baseBranch,
         parent,
       );
-
-      const platformOverride = sharedEnv(config).CLANCY_GIT_PLATFORM;
-      const remote = detectRemote(platformOverride);
-
-      if (
-        remote.host === 'none' ||
-        remote.host === 'unknown' ||
-        remote.host === 'azure'
-      ) {
-        continue;
-      }
 
       const prTitle = `feat(${entry.key}): ${entry.summary}`;
       const prBody = buildPrBody(
@@ -97,7 +117,6 @@ export async function prRetry(ctx: RunContext): Promise<boolean> {
         );
       } else if (pr && !pr.ok && pr.alreadyExists) {
         console.log(dim(`  PR already exists for ${entry.key}`));
-        // Mark as handled so we don't retry on every subsequent run
         appendProgress(
           ctx.cwd,
           entry.key,
@@ -108,7 +127,9 @@ export async function prRetry(ctx: RunContext): Promise<boolean> {
         );
       } else {
         console.log(
-          yellow(`  ⚠ PR retry failed for ${entry.key} — create manually`),
+          yellow(
+            `  ⚠ PR retry failed for ${entry.key}${pr && !pr.ok ? `: ${pr.error}` : ''} — create manually`,
+          ),
         );
       }
     }

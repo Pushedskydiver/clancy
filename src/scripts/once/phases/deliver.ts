@@ -29,8 +29,10 @@ export async function deliver(ctx: RunContext): Promise<boolean> {
   // For GitHub: only use if parentInfo is a valid issue ref (#N).
   // Milestone titles would produce invalid "Closes Sprint 3" lines.
   const rawParent = hasParent && skipEpicBranch ? ticket.parentInfo : undefined;
+  // GitHub: validate parentInfo is a valid issue ref (#N, digits only)
+  const isValidGitHubRef = rawParent && /^#\d+$/.test(rawParent);
   const singleChildParent =
-    rawParent && config.provider === 'github' && !rawParent.startsWith('#')
+    rawParent && config.provider === 'github' && !isValidGitHubRef
       ? undefined
       : rawParent;
 
