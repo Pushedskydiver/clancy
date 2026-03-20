@@ -218,10 +218,11 @@ Platform-specific pre-creation lookups.
 
 ### GitHub
 
-**Pipeline label for children:** Determine the pipeline label based on planner role and flags:
-- `--skip-plan` flag → `CLANCY_LABEL_BUILD` (default: `clancy:build`)
-- Planner role enabled (`CLANCY_ROLES` includes `planner`) → `CLANCY_LABEL_PLAN` (default: `clancy:plan`)
-- Planner role NOT enabled → `CLANCY_LABEL_BUILD` (default: `clancy:build`)
+**Pipeline label for children — this is mandatory, always apply a pipeline label to every child ticket.** Determine which label to use:
+- `--skip-plan` flag → use `CLANCY_LABEL_BUILD` from `.clancy/.env` if set, otherwise `clancy:build`
+- Planner role enabled (`CLANCY_ROLES` includes `planner`) → use `CLANCY_LABEL_PLAN` from `.clancy/.env` if set, otherwise `clancy:plan`
+- Planner role NOT enabled → use `CLANCY_LABEL_BUILD` from `.clancy/.env` if set, otherwise `clancy:build`
+Ensure the label exists on the board (create it if missing), then add it to each child ticket.
 
 **Labels to apply per ticket:**
 - The pipeline label determined above (`CLANCY_LABEL_PLAN` or `CLANCY_LABEL_BUILD`) — replaces `CLANCY_LABEL` on children
@@ -272,9 +273,9 @@ Set CLANCY_BRIEF_ISSUE_TYPE in .clancy/.env.
 ```
 Stop.
 
-**Pipeline label for children:** Same logic as GitHub — determine the pipeline label from `--skip-plan` flag and planner role.
+**Pipeline label for children — mandatory, same logic as GitHub.** Use `CLANCY_LABEL_PLAN` or `CLANCY_LABEL_BUILD` from `.clancy/.env` (defaults: `clancy:plan` / `clancy:build`). Always apply to every child ticket.
 
-**Labels:** Jira auto-creates labels — no pre-creation needed. Apply: the pipeline label (`CLANCY_LABEL_PLAN` or `CLANCY_LABEL_BUILD`), `clancy:afk` or `clancy:hitl`. `CLANCY_LABEL` is NOT applied to children when pipeline labels are active.
+**Labels:** Jira auto-creates labels — no pre-creation needed. Apply: the pipeline label determined above, `clancy:afk` or `clancy:hitl`. `CLANCY_LABEL` is NOT applied to children when pipeline labels are active.
 
 **Components:** If `CLANCY_COMPONENT` is set, it maps to the Jira `components` field.
 
@@ -305,7 +306,7 @@ query {
 }
 ```
 
-**Pipeline label for children:** Same logic as GitHub/Jira — determine the pipeline label from `--skip-plan` flag and planner role.
+**Pipeline label for children — mandatory, same logic as GitHub/Jira.** Use `CLANCY_LABEL_PLAN` or `CLANCY_LABEL_BUILD` from `.clancy/.env` (defaults: `clancy:plan` / `clancy:build`). Always apply to every child ticket.
 
 For each required label (the pipeline label, `component:{CLANCY_COMPONENT}`, `clancy:afk`, `clancy:hitl`): search by exact name. `CLANCY_LABEL` is NOT applied to children when pipeline labels are active. If not found in team labels, check workspace labels:
 
@@ -643,9 +644,9 @@ Created by Clancy on {YYYY-MM-DD}.
 
 ## Step 11a — Remove brief label from parent
 
-Only if a parent ticket exists AND all tickets were created successfully. Remove `CLANCY_LABEL_BRIEF` from the parent ticket. Best-effort — warn on failure, never stop.
+Only if a parent ticket exists AND all tickets were created successfully. Remove the brief label from the parent ticket. Best-effort — warn on failure, never stop.
 
-Read `CLANCY_LABEL_BRIEF` from `.clancy/.env`. Default: `clancy:brief`.
+Use `CLANCY_LABEL_BRIEF` from `.clancy/.env` if set, otherwise `clancy:brief`.
 
 ### GitHub
 
