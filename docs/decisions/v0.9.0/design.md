@@ -15,7 +15,18 @@ Three specific failure modes:
 2. **No visual verification.** After implementation, nobody checks whether the rendered output matches the intent. Screenshots are not taken, accessibility is not scanned, performance is not measured. The PR is a diff — the reviewer must run the app locally to evaluate the UI.
 3. **No design feedback loop.** Teams using design tools (Figma, Stitch) have no way to connect design previews to the Clancy workflow. Design feedback arrives on the board as comments, but Clancy does not distinguish design feedback from technical feedback when revising a plan.
 
-v0.9.0 addresses all three: extend the planner with conditional design specifications, integrate Google Stitch for optional design previews with a feedback loop, and add visual/accessibility/performance verification before delivery.
+v0.9.0 addresses the first: extend the planner with conditional design specifications. v0.9.1 follows with Stitch integration and visual verification.
+
+---
+
+## Release Strategy
+
+**Ship in two increments:**
+
+- **v0.9.0** — Wave 1 only (design sub-phase in planner). Zero external dependencies, immediate value, zero risk to existing flows.
+- **v0.9.1** — Waves 2-3 (Stitch integration + visual verification). External tool dependencies (Stitch MCP, Playwright, axe-core, Lighthouse) isolated from the core feature.
+
+This avoids Stitch/Playwright issues blocking the highest-value feature (design specs in plans).
 
 ---
 
@@ -88,11 +99,11 @@ stateDiagram-v2
 | LoginForm | `/login` | `http://localhost:3000/login` |
 | LoginForm (Storybook) | — | `http://localhost:6006/?path=/story/loginform` |
 
-If the project uses Storybook, prefer story URLs. If dev server only, use route URLs. This section bridges design specs and Playwright verification (Wave 3) — without it, the verification agent cannot know which pages to screenshot.
+If the project uses Storybook, prefer story URLs. If dev server only, use route URLs. This section is **optional** in design specs — the planner includes it when route info is available, omits it otherwise. For visual verification (Wave 3), URL resolution uses a 3-tier fallback: (1) `CLANCY_DEV_URLS` env var (explicit, highest priority), (2) `### Pages` from design specs, (3) Storybook auto-detection. If all three yield no URLs, visual verification is skipped with a PR comment: "Visual verification skipped — no page URLs available."
 
-### Why These Five Sections
+### Why These Six Sections
 
-Accessibility specifications are the highest-value design artifact — they directly become ARIA attributes and keyboard handlers in the implementation. Content specifications eliminate placeholder text. Component specifications give the implementer a type contract before writing code. User flow diagrams catch missing states (what happens on error? on timeout? on back-navigation?). Layout descriptions provide spatial intent without attempting ASCII wireframes.
+Accessibility specifications are the highest-value design artifact — they directly become ARIA attributes and keyboard handlers in the implementation. Content specifications eliminate placeholder text. Component specifications give the implementer a type contract before writing code. User flow diagrams catch missing states (what happens on error? on timeout? on back-navigation?). Layout descriptions provide spatial intent without attempting ASCII wireframes. Pages maps components to URLs for visual verification — optional in the spec but critical for Playwright/axe-core/Lighthouse to know which pages to check.
 
 No wireframes or visual mockups in text form — text cannot reliably convey pixel-level layout, and the attempt produces artifacts that are neither useful to humans nor parseable by code. Text layout descriptions communicate spatial relationships ("stacked vertically", "centered", "full width") that map to CSS patterns.
 
@@ -353,7 +364,7 @@ After UI ticket implementation, in the verification gate:
 1. **Run axe-core.** Use `npx axe` against affected pages (same dev server as Playwright).
 2. **Check against specs.** Compare axe-core results against the accessibility specifications from the design sub-phase. Flag violations that contradict specified ARIA roles/attributes.
 3. **Report in PR body.** Include WCAG violations in a `## Accessibility Verification` section.
-4. **Flag critical violations.** A-level WCAG violations (Level A — minimum conformance) are flagged as "needs attention" in the PR body. If the violation is auto-fixable (e.g. missing `aria-label`), a follow-up commit is pushed to the PR branch. AA/AAA violations are reported as warnings only. Note: visual checks are post-delivery (non-blocking) — they do NOT block PR creation like the Stop hook does for lint/test/typecheck.
+4. **Flag critical violations.** A-level WCAG violations (Level A — minimum conformance) are flagged as "needs attention" in the PR body. If the violation is auto-fixable (e.g. missing `aria-label`), a follow-up commit is pushed to the PR branch as a **separate commit** (not amend) using format `fix(a11y): <description>`. This triggers CI (expected, validates the fix). Rework detection does NOT pick it up — rework requires `changesRequested` review state from a human reviewer. The verification gate (Stop hook) does NOT re-fire — it only runs during the Claude Code session, which has ended by phase 10a. AA/AAA violations are reported as warnings only. Note: visual checks are post-delivery (non-blocking) — they do NOT block PR creation like the Stop hook does for lint/test/typecheck.
 
 ### Lighthouse CI
 
@@ -361,7 +372,7 @@ After UI ticket implementation:
 
 1. **Run Lighthouse.** Use `npx lighthouse` on affected pages.
 2. **Report scores in PR body.** Performance, accessibility, SEO, best practices scores in a `## Lighthouse Scores` section.
-3. **Configurable threshold.** `CLANCY_LIGHTHOUSE_THRESHOLD` sets the minimum score (default: warn below 90, do not block). Scores below the threshold produce a warning in the PR body.
+3. **Configurable threshold.** `CLANCY_LIGHTHOUSE_THRESHOLD` sets the minimum score (default: 0 = disabled). When set above 0, scores below the threshold produce a warning in the PR body.
 
 ### Verification Gate Integration
 
@@ -380,7 +391,11 @@ Stop event fires → lint, test, typecheck
 ```
 PR created → is this a UI ticket?
   No → skip
-  Yes → launch dev server → run Playwright + axe-core + Lighthouse
+  Yes → check elapsed time against CLANCY_TIME_LIMIT:
+    >= 100% → skip entirely ("Visual verification skipped — time limit exceeded")
+    >= 80%  → run checks but skip auto-fix commits (report only)
+    < 80%   → run everything including auto-fixes
+  → launch dev server → run Playwright + axe-core + Lighthouse
     → Post results as PR comment (## Visual Verification section)
     → A-level WCAG violations flagged as "needs attention" in PR body
     → Lighthouse below threshold flagged as warning
@@ -402,7 +417,7 @@ This separation means:
 |---|---|---|
 | `CLANCY_STITCH` | `false` | Enable Google Stitch design preview generation. Requires `STITCH_API_KEY`. |
 | `STITCH_API_KEY` | — | Google Stitch API key. Required when `CLANCY_STITCH=true`. |
-| `CLANCY_LIGHTHOUSE_THRESHOLD` | `90` | Minimum Lighthouse score before warning. Range: 0–100. `0` disables. |
+| `CLANCY_LIGHTHOUSE_THRESHOLD` | `0` | Minimum Lighthouse score before warning. Range: 0–100. `0` = disabled (default). |
 | `CLANCY_DEV_URLS` | — | Manual URL mapping for visual verification. Format: `LoginForm=http://localhost:3000/login,Dashboard=http://localhost:3000/`. Falls back to `### Pages` in design specs or Storybook auto-detection. |
 
 All env vars are defined in `.clancy/.env` and validated by the Zod schema in `src/schemas/env.ts`.
@@ -431,9 +446,9 @@ All env vars are defined in `.clancy/.env` and validated by the Zod schema in `s
 
 ## Execution Plan
 
-Three waves with devil's advocate review gates. Each wave is a branch + PR.
+Three waves with devil's advocate review gates. Each wave is a branch + PR. Shipped in two releases: **v0.9.0** (Wave 1) and **v0.9.1** (Waves 2-3).
 
-### Wave 1 — Design Sub-Phase
+### Wave 1 — Design Sub-Phase (v0.9.0)
 
 **Scope:** Extend planner workflow with design instructions. Add conditional `## Design Specifications` template. Implement UI ticket detection. Add smart feedback classification for post-design comments.
 
@@ -443,7 +458,7 @@ Three waves with devil's advocate review gates. Each wave is a branch + PR.
 
 **Review gate:** Does the design section activate correctly for UI tickets? Does it stay silent for non-UI tickets? Does smart feedback classification handle ambiguous comments via the "general" fallback? Is the accessibility specification format directly translatable to ARIA attributes?
 
-### Wave 2 — Stitch Integration
+### Wave 2 — Stitch Integration (v0.9.1)
 
 **Scope:** SDK setup, Stitch generation from design specs, board comment posting (screenshot + link), feedback loop integration, init wizard update, usage tracking.
 
@@ -458,7 +473,7 @@ Three waves with devil's advocate review gates. Each wave is a branch + PR.
 
 **Review gate:** Does the SDK wrapper handle auth failures and rate limits gracefully? Does the board comment use the `## Clancy Design Preview` marker consistently? Does the feedback loop correctly detect post-preview comments? Does AFK mode skip the feedback loop? Does the usage tracker reset monthly?
 
-### Wave 3 — Verification Extensions
+### Wave 3 — Verification Extensions (v0.9.1)
 
 **Scope:** Playwright CLI (dev server detection, screenshot, visual diff), axe-core CLI (WCAG check against specs), Lighthouse CI (score reporting). Verification gate agent prompt update. PR body format updates.
 
@@ -473,15 +488,15 @@ Three waves with devil's advocate review gates. Each wave is a branch + PR.
 
 **New env vars:** `CLANCY_LIGHTHOUSE_THRESHOLD`
 
-**Review gate:** Does dev server detection handle missing scripts gracefully (skip, not crash)? Does structural comparison avoid false positives from font/rendering differences? Does axe-core correctly block on A-level violations and warn on AA/AAA? Does Lighthouse threshold defaulting to 90 produce warnings (not blocks)? Do all three tools fail gracefully when their CLI is not installed?
+**Review gate:** Does dev server detection handle missing scripts gracefully (skip, not crash)? Does structural comparison avoid false positives from font/rendering differences? Does axe-core correctly block on A-level violations and warn on AA/AAA? Does Lighthouse threshold defaulting to 0 (disabled) skip warnings unless explicitly configured? Do all three tools fail gracefully when their CLI is not installed?
 
-### Post-Wave 3 — Documentation Updates
+### Documentation Updates
 
-After all waves ship, update the following docs (same pattern as previous releases):
+Each release includes its own documentation pass. Wave 1 (v0.9.0) ships with docs for the design sub-phase and feedback classification. Waves 2-3 (v0.9.1) ship with docs for Stitch and verification. Full list across both releases:
 
 - **`docs/GLOSSARY.md`** — add terms: design sub-phase, design specifications, Stitch preview, smart feedback classification, two-phase verification, visual verification, accessibility verification
 - **`docs/LIFECYCLE.md`** — add design preview step in planning phase, add visual/a11y verification in implementation phase
-- **`docs/ARCHITECTURE.md`** — add Stitch MCP integration, verify modules (`src/scripts/shared/verify/`, `src/scripts/shared/stitch/`), two-phase verification in once orchestrator
+- **`docs/ARCHITECTURE.md`** — add Stitch MCP integration, verify modules (`src/scripts/shared/verify/`), two-phase verification in once orchestrator
 - **`docs/VISUAL-ARCHITECTURE.md`** — update planner flow with design specs + Stitch, update delivery flow with post-PR visual checks
 - **`docs/roles/PLANNER.md`** — add design sub-phase section, smart feedback classification
 - **`docs/guides/CONFIGURATION.md`** — add new env vars, design tool configuration
@@ -503,7 +518,7 @@ After all waves ship, update the following docs (same pattern as previous releas
 
 4. **Stitch rate limits (350/month) could be exhausted.** Heavy autonomous use with frequent plan revisions could burn through the monthly allocation. Mitigation: track generation count in `.clancy/stitch-usage.json`, warn at 50% (175), skip generation at 100% with a note in the plan comment. Users can configure `CLANCY_STITCH=false` to pause generation.
 
-5. **Design specs add token cost to every UI ticket's plan.** The five specification sections add ~500-1000 tokens to the plan. Mitigation: conditional activation — non-UI tickets skip the design section entirely. The cost is justified: design specs reduce rework cycles, which cost more tokens than the specs themselves.
+5. **Design specs add token cost to every UI ticket's plan.** The six specification sections add ~500-1000 tokens to the plan. Mitigation: conditional activation — non-UI tickets skip the design section entirely. The cost is justified: design specs reduce rework cycles, which cost more tokens than the specs themselves.
 
 6. **Visual diff between Stitch and Playwright screenshots is fuzzy.** Pixel comparison produces false positives from font rendering, anti-aliasing, and viewport differences. Mitigation: use structural comparison (element counts, layout flow, text content presence) not pixel comparison. Report structural discrepancies as informational, not blocking.
 
