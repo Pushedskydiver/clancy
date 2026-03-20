@@ -27,7 +27,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Tests
 
-- 896 → 1185 (289 new tests across all waves — board modules, hooks, quiet hours, pipeline labels)
+- 896 → 1206 (310 new tests across all waves — board modules, hooks, quiet hours, pipeline labels, installer modules)
 
 ---
 
