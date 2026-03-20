@@ -18,6 +18,8 @@ vi.mock('./shortcut.js', () => ({
   resolveWorkflowStateIdsByType: vi.fn(() => Promise.resolve([100, 101])),
   fetchLabels: vi.fn(() => Promise.resolve([])),
   createLabel: vi.fn(() => Promise.resolve(42)),
+  getStoryLabelIds: vi.fn(() => Promise.resolve([1, 2])),
+  updateStoryLabelIds: vi.fn(() => Promise.resolve(true)),
   fetchWorkflows: vi.fn(() => Promise.resolve([])),
   resetWorkflowCache: vi.fn(),
   resetLabelCache: vi.fn(),
@@ -326,56 +328,40 @@ describe('shortcut-board', () => {
 
   describe('addLabel', () => {
     it('fetches story, appends label_id, and updates', async () => {
-      const { fetchLabels, createLabel } = await import('./shortcut.js');
+      const { fetchLabels, getStoryLabelIds, updateStoryLabelIds } =
+        await import('./shortcut.js');
       vi.mocked(fetchLabels)
         // ensureLabel call
         .mockResolvedValueOnce([{ id: 42, name: 'clancy:build' }])
         // addLabel's fetchLabels call
         .mockResolvedValueOnce([{ id: 42, name: 'clancy:build' }]);
-      vi.mocked(createLabel).mockResolvedValueOnce(undefined);
-
-      const mockFetch = vi
-        .fn()
-        // GET story
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ label_ids: [1, 2] }),
-        })
-        // PUT story
-        .mockResolvedValueOnce({ ok: true });
-
-      vi.stubGlobal('fetch', mockFetch);
+      vi.mocked(getStoryLabelIds).mockResolvedValueOnce([1, 2]);
+      vi.mocked(updateStoryLabelIds).mockResolvedValueOnce(true);
 
       const board = createShortcutBoard(baseEnv);
       await board.addLabel('sc-42', 'clancy:build');
 
-      // Verify PUT was called with correct label_ids
-      expect(mockFetch).toHaveBeenCalledTimes(2);
-      const putCall = mockFetch.mock.calls[1];
-      expect(putCall[1].method).toBe('PUT');
-      expect(JSON.parse(putCall[1].body as string)).toEqual({
-        label_ids: [1, 2, 42],
-      });
+      expect(getStoryLabelIds).toHaveBeenCalledWith('sc_test_token', 42);
+      expect(updateStoryLabelIds).toHaveBeenCalledWith(
+        'sc_test_token',
+        42,
+        [1, 2, 42],
+      );
     });
 
     it('skips update when label already on story', async () => {
-      const { fetchLabels } = await import('./shortcut.js');
+      const { fetchLabels, getStoryLabelIds, updateStoryLabelIds } =
+        await import('./shortcut.js');
       vi.mocked(fetchLabels)
         .mockResolvedValueOnce([{ id: 42, name: 'clancy:build' }])
         .mockResolvedValueOnce([{ id: 42, name: 'clancy:build' }]);
-
-      const mockFetch = vi.fn().mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ label_ids: [42] }),
-      });
-
-      vi.stubGlobal('fetch', mockFetch);
+      vi.mocked(getStoryLabelIds).mockResolvedValueOnce([42]);
 
       const board = createShortcutBoard(baseEnv);
       await board.addLabel('sc-42', 'clancy:build');
 
-      // Should only have GET, no PUT
-      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(getStoryLabelIds).toHaveBeenCalledWith('sc_test_token', 42);
+      expect(updateStoryLabelIds).not.toHaveBeenCalled();
     });
 
     it('does not throw on API failure', async () => {
@@ -391,50 +377,38 @@ describe('shortcut-board', () => {
 
   describe('removeLabel', () => {
     it('fetches story and updates with label removed', async () => {
-      const { fetchLabels } = await import('./shortcut.js');
+      const { fetchLabels, getStoryLabelIds, updateStoryLabelIds } =
+        await import('./shortcut.js');
       vi.mocked(fetchLabels).mockResolvedValueOnce([
         { id: 42, name: 'clancy:build' },
       ]);
-
-      const mockFetch = vi
-        .fn()
-        // GET story
-        .mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ label_ids: [42, 99] }),
-        })
-        // PUT story
-        .mockResolvedValueOnce({ ok: true });
-
-      vi.stubGlobal('fetch', mockFetch);
+      vi.mocked(getStoryLabelIds).mockResolvedValueOnce([42, 99]);
+      vi.mocked(updateStoryLabelIds).mockResolvedValueOnce(true);
 
       const board = createShortcutBoard(baseEnv);
       await board.removeLabel('sc-42', 'clancy:build');
 
-      const putCall = mockFetch.mock.calls[1];
-      expect(putCall[1].method).toBe('PUT');
-      expect(JSON.parse(putCall[1].body as string)).toEqual({
-        label_ids: [99],
-      });
+      expect(getStoryLabelIds).toHaveBeenCalledWith('sc_test_token', 42);
+      expect(updateStoryLabelIds).toHaveBeenCalledWith(
+        'sc_test_token',
+        42,
+        [99],
+      );
     });
 
     it('skips update when label not on story', async () => {
-      const { fetchLabels } = await import('./shortcut.js');
+      const { fetchLabels, getStoryLabelIds, updateStoryLabelIds } =
+        await import('./shortcut.js');
       vi.mocked(fetchLabels).mockResolvedValueOnce([
         { id: 42, name: 'clancy:build' },
       ]);
-
-      const mockFetch = vi.fn().mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({ label_ids: [99] }),
-      });
-
-      vi.stubGlobal('fetch', mockFetch);
+      vi.mocked(getStoryLabelIds).mockResolvedValueOnce([99]);
 
       const board = createShortcutBoard(baseEnv);
       await board.removeLabel('sc-42', 'clancy:build');
 
-      expect(mockFetch).toHaveBeenCalledTimes(1);
+      expect(getStoryLabelIds).toHaveBeenCalledWith('sc_test_token', 42);
+      expect(updateStoryLabelIds).not.toHaveBeenCalled();
     });
 
     it('does not throw on API failure', async () => {

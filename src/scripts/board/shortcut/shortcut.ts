@@ -225,9 +225,12 @@ export async function fetchStories(
 
   let response: Response;
 
-  const body: Record<string, unknown> = {
-    workflow_state_types: ['unstarted'],
-  };
+  const body: Record<string, unknown> = {};
+
+  // Use workflow state IDs for server-side filtering
+  if (workflowStateIds.length) {
+    body.workflow_state_ids = workflowStateIds;
+  }
 
   if (ownerUuid) body.owner_ids = [ownerUuid];
   if (labelName) body.label_name = labelName;
@@ -268,12 +271,7 @@ export async function fetchStories(
     return [];
   }
 
-  // Filter to requested workflow state IDs
-  const stateIdSet = new Set(workflowStateIds);
-  let stories = parsed.data.filter(
-    (s) =>
-      s.workflow_state_id !== undefined && stateIdSet.has(s.workflow_state_id),
-  );
+  let stories = parsed.data.data;
 
   // HITL/AFK filtering: exclude stories with clancy:hitl label
   if (excludeHitl) {
@@ -384,7 +382,8 @@ export async function fetchBlockerStatus(
     }
 
     for (const link of blockerLinks) {
-      const blockerId = link.subject_id;
+      // object_id is the blocking story (the one that blocks this story)
+      const blockerId = link.object_id;
       const blockerResponse = await fetch(
         `${SHORTCUT_API}/stories/${blockerId}`,
         { headers: shortcutHeaders(token) },
@@ -474,7 +473,7 @@ async function fetchChildrenByDescription(
 
     if (!parsed.success) return undefined;
 
-    const stories = parsed.data;
+    const stories = parsed.data.data;
     const total = stories.length;
 
     if (total === 0) return { total: 0, incomplete: 0 };
@@ -524,6 +523,7 @@ async function fetchChildrenByEpicApi(
 
     if (!parsed.success) return undefined;
 
+    // Epic stories endpoint returns a bare array (not paginated like search)
     const stories = parsed.data;
     const total = stories.length;
 
@@ -655,5 +655,69 @@ export async function createLabel(
       `⚠ Shortcut label create failed: ${err instanceof Error ? err.message : String(err)}`,
     );
     return undefined;
+  }
+}
+
+/**
+ * Fetch current label IDs for a story.
+ *
+ * @param token - The Shortcut API token.
+ * @param storyId - The story numeric ID.
+ * @returns The label IDs array, or `undefined` on failure.
+ */
+export async function getStoryLabelIds(
+  token: string,
+  storyId: number,
+): Promise<number[] | undefined> {
+  try {
+    const response = await fetch(`${SHORTCUT_API}/stories/${storyId}`, {
+      headers: shortcutHeaders(token),
+    });
+
+    if (!response.ok) return undefined;
+
+    const json: unknown = await response.json();
+    const parsed = shortcutStoryDetailResponseSchema.safeParse(json);
+
+    if (!parsed.success) return undefined;
+
+    return parsed.data.label_ids ?? [];
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Update a story's label IDs.
+ *
+ * @param token - The Shortcut API token.
+ * @param storyId - The story numeric ID.
+ * @param labelIds - The new label IDs array.
+ * @returns `true` if the update succeeded.
+ */
+export async function updateStoryLabelIds(
+  token: string,
+  storyId: number,
+  labelIds: number[],
+): Promise<boolean> {
+  try {
+    const response = await fetch(`${SHORTCUT_API}/stories/${storyId}`, {
+      method: 'PUT',
+      headers: shortcutHeaders(token),
+      body: JSON.stringify({ label_ids: labelIds }),
+    });
+
+    if (!response.ok) {
+      console.warn(
+        `⚠ Shortcut story label update returned HTTP ${response.status}`,
+      );
+    }
+
+    return response.ok;
+  } catch (err) {
+    console.warn(
+      `⚠ Shortcut story label update failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return false;
   }
 }

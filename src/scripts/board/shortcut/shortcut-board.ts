@@ -14,10 +14,12 @@ import {
   fetchBlockerStatus as fetchShortcutBlockerStatus,
   fetchChildrenStatus as fetchShortcutChildrenStatus,
   fetchStories as fetchShortcutStories,
+  getStoryLabelIds,
   pingShortcut,
   resolveWorkflowStateId,
   resolveWorkflowStateIdsByType,
   transitionStory,
+  updateStoryLabelIds,
 } from './shortcut.js';
 
 /**
@@ -136,43 +138,21 @@ export function createShortcutBoard(env: ShortcutEnv): Board {
         const storyId = parseStoryId(issueKey);
         if (storyId === undefined) return;
 
-        // Find the label ID
         const labels = await fetchLabels(env.SHORTCUT_API_TOKEN);
         const target = labels.find((l) => l.name === label);
         if (!target) return;
 
-        // Fetch current story to get existing label_ids
-        const response = await fetch(
-          `https://api.app.shortcut.com/api/v3/stories/${storyId}`,
-          { headers: { 'Shortcut-Token': env.SHORTCUT_API_TOKEN } },
+        const currentIds = await getStoryLabelIds(
+          env.SHORTCUT_API_TOKEN,
+          storyId,
         );
-
-        if (!response.ok) return;
-
-        const story = (await response.json()) as {
-          label_ids?: number[];
-        };
-
-        const currentIds = story.label_ids ?? [];
+        if (!currentIds) return;
         if (currentIds.includes(target.id)) return;
 
-        const updateResponse = await fetch(
-          `https://api.app.shortcut.com/api/v3/stories/${storyId}`,
-          {
-            method: 'PUT',
-            headers: {
-              'Shortcut-Token': env.SHORTCUT_API_TOKEN,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              label_ids: [...currentIds, target.id],
-            }),
-          },
-        );
-
-        if (!updateResponse.ok) {
-          console.warn(`⚠ addLabel returned HTTP ${updateResponse.status}`);
-        }
+        await updateStoryLabelIds(env.SHORTCUT_API_TOKEN, storyId, [
+          ...currentIds,
+          target.id,
+        ]);
       } catch (err) {
         console.warn(
           `⚠ addLabel failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -185,44 +165,22 @@ export function createShortcutBoard(env: ShortcutEnv): Board {
         const storyId = parseStoryId(issueKey);
         if (storyId === undefined) return;
 
-        // Find the label ID
         const labels = await fetchLabels(env.SHORTCUT_API_TOKEN);
         const target = labels.find((l) => l.name === label);
         if (!target) return;
 
-        // Fetch current story to get existing label_ids
-        const response = await fetch(
-          `https://api.app.shortcut.com/api/v3/stories/${storyId}`,
-          { headers: { 'Shortcut-Token': env.SHORTCUT_API_TOKEN } },
+        const currentIds = await getStoryLabelIds(
+          env.SHORTCUT_API_TOKEN,
+          storyId,
         );
-
-        if (!response.ok) return;
-
-        const story = (await response.json()) as {
-          label_ids?: number[];
-        };
-
-        const currentIds = story.label_ids ?? [];
+        if (!currentIds) return;
         if (!currentIds.includes(target.id)) return;
 
-        const updatedIds = currentIds.filter((id) => id !== target.id);
-
-        const updateResponse = await fetch(
-          `https://api.app.shortcut.com/api/v3/stories/${storyId}`,
-          {
-            method: 'PUT',
-            headers: {
-              'Shortcut-Token': env.SHORTCUT_API_TOKEN,
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ label_ids: updatedIds }),
-          },
+        await updateStoryLabelIds(
+          env.SHORTCUT_API_TOKEN,
+          storyId,
+          currentIds.filter((id) => id !== target.id),
         );
-
-        // Ignore 404 — label may not be on the story
-        if (!updateResponse.ok && updateResponse.status !== 404) {
-          console.warn(`⚠ removeLabel returned HTTP ${updateResponse.status}`);
-        }
       } catch (err) {
         console.warn(
           `⚠ removeLabel failed: ${err instanceof Error ? err.message : String(err)}`,

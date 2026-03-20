@@ -293,16 +293,18 @@ describe('shortcut', () => {
         vi.fn().mockResolvedValue({
           ok: true,
           json: () =>
-            Promise.resolve([
-              {
-                id: 42,
-                name: 'Fix the bug',
-                description: 'It is broken',
-                workflow_state_id: 100,
-                labels: [{ id: 1, name: 'backend' }],
-                epic_id: 5,
-              },
-            ]),
+            Promise.resolve({
+              data: [
+                {
+                  id: 42,
+                  name: 'Fix the bug',
+                  description: 'It is broken',
+                  workflow_state_id: 100,
+                  labels: [{ id: 1, name: 'backend' }],
+                  epic_id: 5,
+                },
+              ],
+            }),
         }),
       );
 
@@ -331,10 +333,11 @@ describe('shortcut', () => {
         vi.fn().mockResolvedValue({
           ok: true,
           json: () =>
-            Promise.resolve([
-              { id: 1, name: 'A', description: '', workflow_state_id: 100 },
-              { id: 2, name: 'B', description: '', workflow_state_id: 200 },
-            ]),
+            Promise.resolve({
+              data: [
+                { id: 1, name: 'A', description: '', workflow_state_id: 100 },
+              ],
+            }),
         }),
       );
 
@@ -349,22 +352,24 @@ describe('shortcut', () => {
         vi.fn().mockResolvedValue({
           ok: true,
           json: () =>
-            Promise.resolve([
-              {
-                id: 1,
-                name: 'Normal',
-                description: '',
-                workflow_state_id: 100,
-                labels: [],
-              },
-              {
-                id: 2,
-                name: 'HITL',
-                description: '',
-                workflow_state_id: 100,
-                labels: [{ id: 99, name: 'clancy:hitl' }],
-              },
-            ]),
+            Promise.resolve({
+              data: [
+                {
+                  id: 1,
+                  name: 'Normal',
+                  description: '',
+                  workflow_state_id: 100,
+                  labels: [],
+                },
+                {
+                  id: 2,
+                  name: 'HITL',
+                  description: '',
+                  workflow_state_id: 100,
+                  labels: [{ id: 99, name: 'clancy:hitl' }],
+                },
+              ],
+            }),
         }),
       );
 
@@ -514,7 +519,7 @@ describe('shortcut', () => {
               name: 'Story',
               blocked: true,
               story_links: [
-                { verb: 'is blocked by', subject_id: 10, object_id: 42 },
+                { verb: 'is blocked by', subject_id: 42, object_id: 10 },
               ],
             }),
         })
@@ -561,7 +566,7 @@ describe('shortcut', () => {
               name: 'Story',
               blocked: true,
               story_links: [
-                { verb: 'is blocked by', subject_id: 10, object_id: 42 },
+                { verb: 'is blocked by', subject_id: 42, object_id: 10 },
               ],
             }),
         })
@@ -656,10 +661,12 @@ describe('shortcut', () => {
         .mockResolvedValueOnce({
           ok: true,
           json: () =>
-            Promise.resolve([
-              { id: 1, name: 'A', workflow_state_id: 100 },
-              { id: 2, name: 'B', workflow_state_id: 102 },
-            ]),
+            Promise.resolve({
+              data: [
+                { id: 1, name: 'A', workflow_state_id: 100 },
+                { id: 2, name: 'B', workflow_state_id: 102 },
+              ],
+            }),
         })
         // Workflows for text search result
         .mockResolvedValueOnce({
@@ -689,7 +696,7 @@ describe('shortcut', () => {
         // Text search returns empty
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve([]),
+          json: () => Promise.resolve({ data: [] }),
         })
         // Epic stories fallback
         .mockResolvedValueOnce({

@@ -32,10 +32,12 @@ const shortcutStoryNodeSchema = z.object({
   owner_ids: z.optional(z.array(z.string())),
 });
 
-/** Response from POST /stories/search — array of stories. */
-export const shortcutStorySearchResponseSchema = z.array(
-  shortcutStoryNodeSchema,
-);
+/** Response from POST /stories/search — paginated object with data array. */
+export const shortcutStorySearchResponseSchema = z.object({
+  data: z.array(shortcutStoryNodeSchema),
+  next: z.optional(z.nullable(z.string())),
+  total: z.optional(z.number()),
+});
 
 /** Response from GET /stories/{id} — single story detail. */
 export const shortcutStoryDetailResponseSchema = shortcutStoryNodeSchema;
