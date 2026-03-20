@@ -1,0 +1,410 @@
+# Design-Aware Implementation (v0.9.0) — Design Document
+
+## Problem
+
+Clancy implements tickets with no awareness of UI design. When a ticket involves building a component, page, or form, Clancy produces code that is functionally correct but has no design intent: no accessibility attributes, no keyboard navigation, no content specifications for error states or empty states, and no spatial layout guidance. The reviewer catches these gaps manually, triggering rework cycles that could have been avoided if design context existed before implementation began.
+
+Three specific failure modes:
+
+1. **No design specifications.** The planner produces technical approach and file lists, but nothing about component props, ARIA roles, keyboard maps, or content strings. Clancy implements a form with placeholder text like "Enter value" instead of the actual copy.
+2. **No visual verification.** After implementation, nobody checks whether the rendered output matches the intent. Screenshots are not taken, accessibility is not scanned, performance is not measured. The PR is a diff — the reviewer must run the app locally to evaluate the UI.
+3. **No design feedback loop.** Teams using design tools (Figma, Stitch) have no way to connect design previews to the Clancy workflow. Design feedback arrives on the board as comments, but Clancy does not distinguish design feedback from technical feedback when revising a plan.
+
+v0.9.0 addresses all three: extend the planner with conditional design specifications, integrate Google Stitch for optional design previews with a feedback loop, and add visual/accessibility/performance verification before delivery.
+
+---
+
+## Design Sub-Phase in Planner
+
+### UI Ticket Detection
+
+The planner activates design instructions conditionally. When the ticket title or description contains UI-related terms, the planner produces a `## Design Specifications` section in the plan.
+
+**Detection heuristic:** ticket mentions UI, component, page, form, modal, dialog, sidebar, dashboard, navigation, button, input, table, or similar keywords in title or description. This is a natural language check (Claude reads the ticket and decides), not rigid keyword matching — the terms listed are examples of the signal, not an exhaustive list.
+
+**Non-UI tickets:** skip the design section entirely. A ticket like "Migrate database schema" or "Add rate limiting to API" gets a standard plan with no design specs. This avoids adding token cost to tickets that do not benefit from design context.
+
+### Design Specification Sections
+
+When activated, the planner produces these sections inside `## Design Specifications`:
+
+**Component Specifications** — props, variants, states as TypeScript-like interface sketches. Example:
+
+```typescript
+interface LoginFormProps {
+  onSubmit: (credentials: { email: string; password: string }) => void;
+  isLoading: boolean;
+  error?: string;
+  providers?: ('google' | 'github')[];
+}
+
+// States: idle, submitting, error, success
+// Variants: default (email/password), social (with OAuth buttons)
+```
+
+**Accessibility Specifications** — ARIA roles/attributes, keyboard navigation maps, focus management rules, screen reader announcements. Example:
+
+| Element | Role | ARIA | Keyboard | Announcement |
+|---|---|---|---|---|
+| Login form | `form` | `aria-label="Sign in"` | — | — |
+| Email input | `textbox` | `aria-required="true"`, `aria-invalid` on error | Tab to focus | "Email address, required" |
+| Submit button | `button` | `aria-busy` when loading | Enter to submit, Tab to reach | "Sign in" / "Signing in..." |
+| Error alert | `alert` | `aria-live="assertive"` | — | Announces error text on appear |
+
+**Content Specifications** — error messages, empty states, loading states, form labels, help text, toast messages. Example:
+
+| Context | Content |
+|---|---|
+| Email empty | "Email address is required" |
+| Email invalid | "Enter a valid email address" |
+| Password too short | "Password must be at least 8 characters" |
+| Auth failed | "Invalid email or password. Please try again." |
+| Loading state | "Signing in..." |
+| Success toast | "Welcome back, {name}" |
+
+**User Flow Diagrams** — Mermaid state diagrams for multi-step interactions:
+
+```mermaid
+stateDiagram-v2
+    [*] --> Idle
+    Idle --> Submitting: Click "Sign in"
+    Submitting --> Error: Auth failed
+    Submitting --> Success: Auth succeeded
+    Error --> Submitting: Retry
+    Success --> [*]: Redirect to dashboard
+```
+
+**Layout Descriptions** — text descriptions of spatial arrangement (not wireframes). Example: "The login form is centered vertically and horizontally. Email and password inputs are stacked vertically with 16px gap. The submit button spans the full width below the inputs. OAuth buttons appear below a 'or continue with' divider. Error messages appear above the form as an alert banner."
+
+### Why These Five Sections
+
+Accessibility specifications are the highest-value design artifact — they directly become ARIA attributes and keyboard handlers in the implementation. Content specifications eliminate placeholder text. Component specifications give the implementer a type contract before writing code. User flow diagrams catch missing states (what happens on error? on timeout? on back-navigation?). Layout descriptions provide spatial intent without attempting ASCII wireframes.
+
+No wireframes or visual mockups in text form — text cannot reliably convey pixel-level layout, and the attempt produces artifacts that are neither useful to humans nor parseable by code. Text layout descriptions communicate spatial relationships ("stacked vertically", "centered", "full width") that map to CSS patterns.
+
+---
+
+## Google Stitch Integration
+
+### Overview
+
+After plan approval, if `CLANCY_STITCH=true`, Clancy generates a visual design preview from the design specifications using Google Stitch. The preview is posted as a board comment with an embedded screenshot and a link to the interactive prototype.
+
+Stitch is optional. Teams without Stitch continue as before — the design specifications in the plan are the design artifact, and implementation proceeds from those specs alone.
+
+### Stitch Context — Codebase-Aware Prompting
+
+The Stitch prompt is not a bare description. The planner has already explored the codebase, read `.clancy/docs/`, and produced design specifications. Stitch receives the full context:
+- **Existing design system** — component library, design tokens, CSS framework (from codebase exploration)
+- **Component specifications** — props, variants, states (from design specs)
+- **Content specifications** — actual copy, error messages, labels (from design specs)
+- **Accessibility requirements** — ARIA patterns, keyboard navigation (from design specs)
+- **Layout descriptions** — spatial arrangement (from design specs)
+
+This produces high-fidelity Stitch output that matches the project's visual language and component patterns, not generic designs.
+
+### Generation Flow
+
+```
+/clancy:plan generates plan with ## Design Specifications
+       |
+       v
+  CLANCY_STITCH=true AND plan has design specs?
+       |
+  +----+----+
+  No        Yes
+  |         |
+  v         v
+Done      Generate Stitch screens via MCP tool call:
+(plan       - Component specs → screen layout
+posted      - Content specs → actual text
+only)       - A11y specs → ARIA annotations
+            - Layout descriptions → spatial arrangement
+            - Codebase context → design system, tokens, patterns
+              |
+              v
+          Post board comment (after plan comment):
+            ## Clancy Design Preview
+            [Screenshot inline or link]
+            [Link to interactive Stitch prototype]
+            "Review this design and leave feedback
+             on this ticket. Run /clancy:plan to
+             revise based on your feedback."
+              |
+              v
+          Wait for /clancy:plan (human triggers re-plan + re-generate)
+          or proceed to /clancy:approve-plan (human approves both)
+          or auto-approve (AFK mode — no feedback loop)
+```
+
+**Trigger point:** Stitch generation happens inside the `/clancy:plan` workflow, after the plan is generated and posted. NOT during `/clancy:approve-plan` — the preview should exist before the human approves the plan, so they can review plan + design together.
+
+### Board Comment Format
+
+The design preview is posted as a ticket comment with the marker heading `## Clancy Design Preview`. This marker is used to detect existing design previews and replace them on revision (same pattern as the existing `## Clancy Plan` and `## Clancy Brief` comments).
+
+**Screenshot persistence:** Stitch returns download URLs that may be temporary. To ensure screenshots remain visible in board comments:
+- **GitHub:** Upload the screenshot via the repo's content API or use the Stitch project URL (persistent) as a link with the screenshot as a fallback description
+- **Jira:** Upload as an attachment via `POST /rest/api/3/issue/{key}/attachments`, then reference in the ADF comment
+- **Linear:** Linear supports markdown image URLs — use the Stitch project screenshot URL directly (persistent within the Stitch project lifetime)
+- **Fallback:** If upload fails, post the Stitch project link without an inline screenshot. The reviewer can click through to see the design.
+
+### Feedback Loop
+
+When `/clancy:plan` is run after a design preview has been posted:
+
+1. Clancy detects post-design-preview comments on the ticket (comments with timestamps after the most recent `## Clancy Design Preview` comment)
+2. Each comment is classified as design feedback, technical feedback, or general
+3. Design feedback revises `## Design Specifications` in the plan
+4. Technical feedback revises `## Technical Approach` in the plan
+5. General feedback revises both sections
+6. If design specs changed and `CLANCY_STITCH=true`, a new Stitch preview is generated and posted
+
+### Smart Feedback Classification
+
+Classification uses natural language understanding — Claude reads the comment and decides which category it belongs to. Not keyword matching.
+
+**Guidance signals (not rigid rules):**
+- **Design feedback** — mentions visual, layout, colour, spacing, font, icon, alignment, responsive, mobile, accessibility, screen reader, keyboard, contrast, copy, text, wording, label, error message, empty state
+- **Technical feedback** — mentions code, implementation, architecture, API, database, performance, testing, refactoring
+- **General/both** — does not clearly fit one category, or spans both (e.g., "The form should use a different layout AND call the new auth API")
+
+The "general" fallback ensures no feedback is lost. If classification is uncertain, both sections are revised.
+
+### AFK Mode Behaviour
+
+In AFK mode (`CLANCY_MODE=afk`), Stitch generates once and is auto-approved. No feedback loop — implementation proceeds immediately with the design specs and Stitch reference. This avoids blocking autonomous runs on human design review.
+
+### Relationship to Figma MCP
+
+Stitch is additive, not a replacement. Teams with existing Figma workflows keep Figma MCP. Both are optional, neither is required.
+
+The init wizard (`/clancy:init`) asks: "Design tool: [1] None [2] Figma MCP [3] Google Stitch [4] Both"
+
+**When both are configured:** Figma is the source of truth for existing designs. Stitch generates previews for new work. The implementer references both — Figma for brand consistency, Stitch for the specific ticket's design.
+
+### Stitch Integration Approach — MCP, Not SDK
+
+**The Stitch SDK (`@google/stitch-sdk`) is an MCP client internally.** It depends on `@modelcontextprotocol/sdk` and `zod@4`, which conflicts with Clancy's `zod/mini` and breaks esbuild bundling (MCP transport uses dynamic imports). The SDK cannot be used as a simple npm dependency.
+
+**Instead, use Stitch via Claude Code's native MCP support.** Configure the Stitch MCP server in Claude Code's settings. When the planner needs to generate a design preview, it invokes Stitch tools through the MCP protocol — Claude Code handles the connection lifecycle. This means:
+- No npm dependency on `@google/stitch-sdk`
+- No zod version conflict
+- No esbuild bundling issues
+- Claude Code's full conversation context (codebase knowledge, design specs) is available to the Stitch tool call
+- The community MCP proxy (`@_davideast/stitch-mcp`) provides Claude Code configuration out of the box
+
+**MCP configuration (added by `/clancy:init`):**
+```json
+{
+  "mcpServers": {
+    "stitch": {
+      "command": "npx",
+      "args": ["@_davideast/stitch-mcp", "proxy"],
+      "env": { "STITCH_API_KEY": "{from .clancy/.env}" }
+    }
+  }
+}
+```
+
+**Rate limits:** Stitch allows 350 generations per month (~11/day). Heavy autonomous use could exhaust this quickly — a single AFK night with 20 UI tickets could use 20+ generations. Mitigation:
+- Track generation count in `.clancy/stitch-usage.json` (updated by the plan workflow after each generation)
+- Warn at 50% (175 generations) — earlier than the original 80% threshold
+- Skip generation at 100% with a note in the plan comment
+- Optional `CLANCY_STITCH_DAILY_LIMIT` for teams that want per-day caps (default: unlimited)
+
+**Stitch unavailability:** If Stitch API is down, rate limited, or Google discontinues it, the workflow degrades gracefully — design specs remain in the plan, no preview is generated, a warning is posted. The design sub-phase (Wave 1) works entirely without Stitch.
+
+---
+
+## Verification Extensions
+
+### Playwright CLI Visual Verification
+
+After UI ticket implementation, before PR creation (in the verification gate phase):
+
+1. **Dev server detection.** Read `package.json` scripts for common dev server commands (`dev`, `start`, `serve`, `storybook`). If found, launch the server and wait for it to be ready (poll the port).
+2. **Screenshot capture.** Use Playwright CLI (`npx playwright screenshot`) to capture affected pages. Page URLs are inferred from the ticket's design specs (component names map to routes/stories).
+3. **Visual comparison:**
+   - **If Stitch design exists:** Compare Playwright screenshots against Stitch output. Use structural comparison (element counts, layout flow, text content) not pixel-level diffing. Pixel comparison is fragile — different fonts, rendering engines, and viewport sizes produce false positives.
+   - **If no Stitch design:** Compare against design spec descriptions. Check that specified components exist, content matches content specs, and ARIA attributes are present in the rendered HTML.
+4. **Report results in PR body.** Include screenshots and any discrepancies in a `## Visual Verification` section.
+
+**Skip conditions:** If no dev server script is found, skip visual verification. Warn in the PR body: "Visual verification skipped — no dev server detected."
+
+### axe-core CLI Accessibility Verification
+
+After UI ticket implementation, in the verification gate:
+
+1. **Run axe-core.** Use `npx axe` against affected pages (same dev server as Playwright).
+2. **Check against specs.** Compare axe-core results against the accessibility specifications from the design sub-phase. Flag violations that contradict specified ARIA roles/attributes.
+3. **Report in PR body.** Include WCAG violations in a `## Accessibility Verification` section.
+4. **Block delivery on critical violations.** A-level WCAG violations (Level A — minimum conformance) block delivery, same as lint/test failures in the existing verification gate. AA/AAA violations are reported as warnings but do not block.
+
+### Lighthouse CI
+
+After UI ticket implementation:
+
+1. **Run Lighthouse.** Use `npx lighthouse` on affected pages.
+2. **Report scores in PR body.** Performance, accessibility, SEO, best practices scores in a `## Lighthouse Scores` section.
+3. **Configurable threshold.** `CLANCY_LIGHTHOUSE_THRESHOLD` sets the minimum score (default: warn below 90, do not block). Scores below the threshold produce a warning in the PR body.
+
+### Verification Gate Integration
+
+### Two-Phase Verification
+
+Visual checks are fundamentally different from code checks (lint/test/typecheck): they're slow (10-30s each), non-deterministic (rendering varies), and most findings aren't auto-fixable (Lighthouse scores, visual regressions). They run as a **separate post-delivery phase**, not in the Stop hook.
+
+**Phase 1: Stop hook (existing, fast, blocking)**
+```
+Stop event fires → lint, test, typecheck
+  Pass → allow delivery (create PR)
+  Fail → self-healing retry → re-check
+```
+
+**Phase 2: Post-delivery visual checks (new, slow, non-blocking)**
+```
+PR created → is this a UI ticket?
+  No → skip
+  Yes → launch dev server → run Playwright + axe-core + Lighthouse
+    → Post results as PR comment (## Visual Verification section)
+    → A-level WCAG violations flagged as "needs attention" in PR body
+    → Lighthouse below threshold flagged as warning
+    → Screenshots attached to PR
+```
+
+This separation means:
+- Code checks remain fast and blocking (same as v0.7.0)
+- Visual checks run after the PR exists, don't block delivery, don't hit the time guard
+- The reviewer sees visual results alongside the code diff
+- Self-healing retry applies to code checks (fixable) but NOT visual checks (most aren't auto-fixable — Lighthouse scores, layout regressions)
+- axe-core A-level violations (e.g. missing `aria-label`) CAN trigger a follow-up commit to the PR branch if auto-fixable
+
+---
+
+## Env Vars
+
+| Variable | Default | Description |
+|---|---|---|
+| `CLANCY_STITCH` | `false` | Enable Google Stitch design preview generation. Requires `STITCH_API_KEY`. |
+| `STITCH_API_KEY` | — | Google Stitch API key. Required when `CLANCY_STITCH=true`. |
+| `CLANCY_LIGHTHOUSE_THRESHOLD` | `90` | Minimum Lighthouse score before warning. Range: 0–100. `0` disables. |
+
+All env vars are defined in `.clancy/.env` and validated by the Zod schema in `src/schemas/env.ts`.
+
+---
+
+## File System Artifacts
+
+### New Files
+
+| Path | Purpose | Format | Created by | Lifetime |
+|---|---|---|---|---|
+| `.clancy/stitch-usage.json` | Stitch generation count tracking | JSON: `{ "month": "2026-03", "count": 42 }` | Stitch integration in plan workflow | Reset monthly |
+
+### Modified Files
+
+| Path | Change |
+|---|---|
+| `src/roles/planner/workflows/plan.md` | Add conditional design instructions, `## Design Specifications` template, UI ticket detection, smart feedback classification |
+| `src/roles/setup/workflows/init.md` | Add design tool prompt (None / Figma MCP / Google Stitch / Both) |
+| `src/schemas/env.ts` | Add `CLANCY_STITCH`, `STITCH_API_KEY`, `CLANCY_LIGHTHOUSE_THRESHOLD` |
+| `src/agents/verification-gate.md` | Extend with Playwright, axe-core, Lighthouse check instructions for UI tickets |
+| `src/scripts/shared/pull-request/pr-body/pr-body.ts` | Add `## Visual Verification`, `## Accessibility Verification`, `## Lighthouse Scores` sections |
+
+---
+
+## Execution Plan
+
+Three waves with devil's advocate review gates. Each wave is a branch + PR.
+
+### Wave 1 — Design Sub-Phase
+
+**Scope:** Extend planner workflow with design instructions. Add conditional `## Design Specifications` template. Implement UI ticket detection. Add smart feedback classification for post-design comments.
+
+**Files:**
+- `src/roles/planner/workflows/plan.md` — conditional design instructions, specification template, feedback classification guidance
+- `src/roles/planner/workflows/plan.md` test scenarios — verify design specs appear for UI tickets, verify skipped for non-UI tickets, verify feedback classification
+
+**Review gate:** Does the design section activate correctly for UI tickets? Does it stay silent for non-UI tickets? Does smart feedback classification handle ambiguous comments via the "general" fallback? Is the accessibility specification format directly translatable to ARIA attributes?
+
+### Wave 2 — Stitch Integration
+
+**Scope:** SDK setup, Stitch generation from design specs, board comment posting (screenshot + link), feedback loop integration, init wizard update, usage tracking.
+
+**Files:**
+- `src/roles/planner/workflows/plan.md` — add Stitch MCP tool invocation after plan generation (conditional on `CLANCY_STITCH=true`)
+- `src/scripts/shared/stitch/stitch-usage.ts` — NEW: track monthly generation count, warn at 50%/100%
+- `src/scripts/shared/stitch/stitch-comment.ts` — NEW: format and post design preview comment (screenshot + link)
+- `src/roles/setup/workflows/init.md` — design tool prompt + MCP server configuration
+- `src/schemas/env.ts` — `CLANCY_STITCH`, `STITCH_API_KEY`, `CLANCY_STITCH_DAILY_LIMIT`
+- Co-located tests for usage tracking and comment formatting
+
+**New env vars:** `CLANCY_STITCH`, `STITCH_API_KEY`, `CLANCY_STITCH_DAILY_LIMIT`
+
+**MCP config:** `/clancy:init` adds Stitch MCP server to Claude Code's settings when `CLANCY_STITCH=true`
+
+**Review gate:** Does the SDK wrapper handle auth failures and rate limits gracefully? Does the board comment use the `## Clancy Design Preview` marker consistently? Does the feedback loop correctly detect post-preview comments? Does AFK mode skip the feedback loop? Does the usage tracker reset monthly?
+
+### Wave 3 — Verification Extensions
+
+**Scope:** Playwright CLI (dev server detection, screenshot, visual diff), axe-core CLI (WCAG check against specs), Lighthouse CI (score reporting). Verification gate agent prompt update. PR body format updates.
+
+**Files:**
+- `src/scripts/shared/verify/playwright.ts` — NEW: dev server detection, launch, screenshot, structural comparison
+- `src/scripts/shared/verify/axe.ts` — NEW: run axe-core, check against specs, classify violations by WCAG level
+- `src/scripts/shared/verify/lighthouse.ts` — NEW: run Lighthouse, parse scores, format report
+- `src/agents/verification-gate.md` — extend with UI verification instructions
+- `src/scripts/shared/pull-request/pr-body/pr-body.ts` — add visual/a11y/lighthouse sections
+- `src/schemas/env.ts` — `CLANCY_LIGHTHOUSE_THRESHOLD`
+- Co-located tests for all new modules (mock CLI output)
+
+**New env vars:** `CLANCY_LIGHTHOUSE_THRESHOLD`
+
+**Review gate:** Does dev server detection handle missing scripts gracefully (skip, not crash)? Does structural comparison avoid false positives from font/rendering differences? Does axe-core correctly block on A-level violations and warn on AA/AAA? Does Lighthouse threshold defaulting to 90 produce warnings (not blocks)? Do all three tools fail gracefully when their CLI is not installed?
+
+---
+
+## Risks
+
+1. **Stitch is Google Labs — could change or disappear.** The SDK is experimental and may have breaking changes or be discontinued. Mitigation: design specs are the primary artifact. Stitch is optional visual validation that enhances the workflow but is not required. If Stitch disappears, remove the integration; the design sub-phase and verification extensions remain fully functional.
+
+2. **Smart feedback classification could misclassify.** A comment like "make the button bigger and use the new API" spans both categories. Mitigation: the "general" fallback revises both sections. Misclassification to one category means the other section misses the feedback — the reviewer catches this in the next review cycle, same as today.
+
+3. **Playwright/axe-core require a running dev server.** Not all projects have a dev server script. Some require environment setup (database, env vars) before the server starts. Mitigation: detect server script from `package.json`, skip if not found, warn in PR body. Do not attempt to configure the environment — that is the user's responsibility.
+
+4. **Stitch rate limits (350/month) could be exhausted.** Heavy autonomous use with frequent plan revisions could burn through the monthly allocation. Mitigation: track generation count in `.clancy/stitch-usage.json`, warn at 80% (280), skip generation at 100% with a note in the plan comment. Users can configure `CLANCY_STITCH=false` to pause generation.
+
+5. **Design specs add token cost to every UI ticket's plan.** The five specification sections add ~500-1000 tokens to the plan. Mitigation: conditional activation — non-UI tickets skip the design section entirely. The cost is justified: design specs reduce rework cycles, which cost more tokens than the specs themselves.
+
+6. **Visual diff between Stitch and Playwright screenshots is fuzzy.** Pixel comparison produces false positives from font rendering, anti-aliasing, and viewport differences. Mitigation: use structural comparison (element counts, layout flow, text content presence) not pixel comparison. Report structural discrepancies as informational, not blocking.
+
+7. **Dev server lifecycle in post-delivery checks.** Playwright/axe-core/Lighthouse need a running dev server. The post-delivery phase must start the server, run checks, and kill the server — all within a single phase. Mitigation: use `child_process.spawn` with cleanup in a `finally` block. If the server fails to start (missing dependencies, port conflict), skip visual checks with a warning in the PR comment.
+
+8. **URL inference from design specs to pages.** Mapping "LoginForm" to `http://localhost:3000/login` is ambiguous. Mitigation: the design specifications include an explicit `### Pages` sub-section listing routes and their URLs. If Storybook is detected, use Storybook story URLs instead (`http://localhost:6006/?path=/story/loginform`). Fallback: `CLANCY_DEV_URLS` env var for manual URL mapping.
+
+9. **Stitch API unavailability.** Google Labs experiment — could be down, rate limited, or discontinued. Mitigation: Stitch generation is wrapped in try/catch. On failure, post a warning comment ("Design preview unavailable — proceed with text specifications only"). The design sub-phase (Wave 1) works entirely without Stitch.
+
+---
+
+## Key Decisions
+
+1. **Design as planner sub-phase, not a full role.** The design specifications are ~200-400 lines of prompt additions to the existing planner workflow. This does not warrant a new role with its own commands — it is a conditional extension of planning. The planner already understands the ticket; adding design awareness is a natural expansion of its scope.
+
+2. **Stitch is optional (`CLANCY_STITCH=true`), Figma MCP preserved.** Both are complementary tools. Figma provides brand-level design systems. Stitch generates ticket-specific previews from specifications. Neither requires the other. Teams can use none, one, or both.
+
+3. **Design preview posted as board comment.** Same feedback pattern as brief and plan comments — screenshot + link, posted to the ticket, humans review and leave feedback on the ticket. No new communication channels or tools required.
+
+4. **Smart feedback classification via natural language, not keyword matching.** Keyword matching is brittle — "the font size should match the design system" mentions "font" (design) and "system" (could be technical). Claude reads the comment in context and classifies it. The "general" fallback ensures nothing is lost.
+
+5. **Two-phase verification: Stop hook (fast, blocking) + post-delivery visual checks (slow, non-blocking).** Lint/test/typecheck remain in the Stop hook. Playwright/axe-core/Lighthouse run after PR creation as a separate phase — results posted as a PR comment. Self-healing retry only applies to code checks (fixable). Visual findings are reported as warnings, not blockers (except A-level WCAG violations which can trigger auto-fix commits).
+
+6. **AFK mode auto-approves Stitch designs.** Autonomous runs should not block on human design review. The design specs provide implementation guidance; the Stitch preview is informational. The human reviews the PR output, not the design preview.
+
+7. **Stitch via MCP, not npm SDK.** The Stitch SDK (`@google/stitch-sdk`) is an MCP client internally — depends on `@modelcontextprotocol/sdk` + `zod@4`, which conflicts with Clancy's `zod/mini` and breaks esbuild bundling. Instead, configure Stitch as a Claude Code MCP server. Claude invokes Stitch tools naturally during the plan workflow with full codebase context. Zero npm dependencies, zero bundling issues.
+
+8. **Design specs conditional on UI ticket detection.** Non-UI tickets skip the design section entirely. This avoids token cost and noise for tickets that do not benefit from design context. The detection is generous (natural language, not keyword matching) to avoid false negatives on borderline tickets.
+
+9. **Accessibility specs are the highest-value design artifact.** They directly become ARIA attributes and keyboard handlers in the implementation. Unlike layout descriptions (which are guidance), accessibility specs are prescriptive — the implementation must include exactly these roles, attributes, and keyboard maps. This makes them the most mechanically useful section of the design specifications.
+
+10. **No wireframes or visual mockups in text form.** Text layout descriptions instead. Text cannot reliably convey pixel-level layout. The attempt produces ASCII art that is neither useful to humans nor parseable by code. Text descriptions ("centered vertically", "stacked with 16px gap", "full width below") map directly to CSS patterns.
