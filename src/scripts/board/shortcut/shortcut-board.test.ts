@@ -220,9 +220,9 @@ describe('shortcut-board', () => {
       expect(result).toEqual({ total: 4, incomplete: 2 });
     });
 
-    it('returns undefined when no parentId provided', async () => {
+    it('returns undefined when parentKey has no numeric ID', async () => {
       const board = createShortcutBoard(baseEnv);
-      const result = await board.fetchChildrenStatus('sc-99');
+      const result = await board.fetchChildrenStatus('sc-invalid');
 
       expect(result).toBeUndefined();
     });

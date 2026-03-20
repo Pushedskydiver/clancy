@@ -344,9 +344,9 @@ describe('azdo-board', () => {
       expect(result).toBeUndefined();
     });
 
-    it('returns undefined when no parentId provided', async () => {
+    it('returns undefined when parentKey has no numeric ID', async () => {
       const board = createAzdoBoard(baseEnv);
-      const result = await board.fetchChildrenStatus('azdo-50');
+      const result = await board.fetchChildrenStatus('azdo-invalid');
 
       expect(result).toBeUndefined();
     });
