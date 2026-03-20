@@ -179,9 +179,78 @@ In AFK mode (`CLANCY_MODE=afk`), Stitch generates once and is auto-approved. No 
 
 Stitch is additive, not a replacement. Teams with existing Figma workflows keep Figma MCP. Both are optional, neither is required.
 
-The init wizard (`/clancy:init`) asks: "Design tool: [1] None [2] Figma MCP [3] Google Stitch [4] Both"
-
 **When both are configured:** Figma is the source of truth for existing designs. Stitch generates previews for new work. The implementer references both — Figma for brand consistency, Stitch for the specific ticket's design.
+
+### Init Workflow — Design Tools
+
+The design tool question appears during `/clancy:init` **only when Planner or Strategist is enabled** (no optional roles = no design tool question). The design sub-phase in the planner produces text specs regardless of the tool choice — the tool selection only controls whether visual previews are generated.
+
+```
+Step 4g: Design Tools (gated on Planner OR Strategist enabled)
+
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  Design Tools
+  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+  When planning UI tickets, Clancy generates design specifications
+  (component specs, accessibility, content) in the implementation plan.
+
+  Optionally connect a design tool for visual previews:
+
+    [1] None — text specs only (recommended to start)
+    [2] Figma MCP — read existing designs from Figma
+    [3] Google Stitch — generate design previews from specs
+    [4] Both — Figma for existing designs, Stitch for new work
+
+  Select [1-4]: _
+```
+
+**If [2] Figma MCP selected:**
+```
+  Figma MCP is configured through Claude Code's MCP settings.
+  See: https://docs.figma.com/mcp
+
+  No Clancy env vars needed — Figma MCP is managed by Claude Code.
+```
+
+**If [3] or [4] Google Stitch selected:**
+```
+  Stitch API key (from stitch.withgoogle.com/settings): ___
+  Daily generation limit (0 = unlimited) [0]: ___
+```
+
+Writes to `.clancy/.env`:
+```
+CLANCY_STITCH=true
+STITCH_API_KEY=xxx
+CLANCY_STITCH_DAILY_LIMIT=0
+```
+
+Configures Claude Code MCP server (writes to `.claude/settings.json`):
+```json
+{
+  "mcpServers": {
+    "stitch": {
+      "command": "npx",
+      "args": ["@_davideast/stitch-mcp", "proxy"],
+      "env": { "STITCH_API_KEY": "xxx" }
+    }
+  }
+}
+```
+
+**If [1] None selected:** No env vars, no MCP config. The planner still produces design specs in text — they just don't get a visual preview.
+
+### Settings Workflow
+
+`/clancy:settings` gains a Design Tools section:
+```
+  [D1] Design tool    (None / Figma / Stitch / Both)
+  [D2] Stitch API key
+  [D3] Stitch daily limit
+```
+
+`[D1]` toggles `CLANCY_STITCH` and manages the MCP server config. `[D2]` and `[D3]` only appear when Stitch is enabled.
 
 ### Stitch Integration Approach — MCP, Not SDK
 
