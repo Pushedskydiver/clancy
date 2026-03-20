@@ -65,6 +65,7 @@ describe('deliver', () => {
       false,
       undefined,
       undefined,
+      undefined, // singleChildParent
     );
   });
 
@@ -141,6 +142,7 @@ describe('deliver', () => {
       false,
       'EPIC-10',
       undefined,
+      undefined, // singleChildParent (not active when epic branch is used)
     );
   });
 

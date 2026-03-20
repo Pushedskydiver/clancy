@@ -37,6 +37,7 @@ export function buildPrBody(
   ticket: Ticket,
   targetBranch?: string,
   verificationWarning?: string,
+  singleChildParent?: string,
 ): string {
   const lines: string[] = [];
   const isEpic = targetBranch ? isEpicBranch(targetBranch) : false;
@@ -44,6 +45,10 @@ export function buildPrBody(
   switch (config.provider) {
     case 'github':
       lines.push(isEpic ? `Part of ${ticket.key}` : `Closes ${ticket.key}`);
+      // Single-child skip: also close the parent issue since no epic PR will be created
+      if (singleChildParent && !isEpic) {
+        lines.push(`Closes ${singleChildParent}`);
+      }
       break;
     case 'jira':
       lines.push(

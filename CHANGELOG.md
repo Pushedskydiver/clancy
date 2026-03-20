@@ -12,10 +12,11 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 ### Added
 
 - **PR retry phase** — new phase 2a in the orchestrator retries PR creation for tickets that were pushed but failed to create a PR (network hiccup recovery). Scans progress.txt for `PUSHED` entries without a corresponding `PR_CREATED` and retries the API call.
+- **Single-child parent auto-close** — when a single child ticket's PR targets `main` directly (single-child skip), the PR body now includes `Closes #{parent}` so the parent issue is also auto-closed on merge.
 
 ### Tests
 
-- 1206 → 1212 (6 new tests for PR retry phase)
+- 1206 → 1215 (9 new tests — PR retry phase + single-child parent close)
 
 ---
 

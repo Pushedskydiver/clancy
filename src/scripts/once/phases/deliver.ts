@@ -24,6 +24,10 @@ export async function deliver(ctx: RunContext): Promise<boolean> {
 
   const parentKey =
     hasParent && !skipEpicBranch ? ticket.parentInfo : undefined;
+  // When single-child skip is active, pass the parent key separately
+  // so the PR body can include Closes for the parent issue too
+  const singleChildParent =
+    hasParent && skipEpicBranch ? ticket.parentInfo : undefined;
 
   if (isRework) {
     // PR-flow rework: push to existing branch, PR updates automatically
@@ -83,6 +87,7 @@ export async function deliver(ctx: RunContext): Promise<boolean> {
       false,
       parentKey,
       ctx.board,
+      singleChildParent,
     );
     if (!delivered) return false;
 
