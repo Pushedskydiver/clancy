@@ -173,10 +173,11 @@ export async function fetchTicket(
   return results[0];
 }
 
-/** Jira ticket with epic and blocker info. */
+/** Jira ticket with epic, blocker, and label info. */
 export type JiraTicket = Ticket & {
   epicKey?: string;
   blockers: string[];
+  labels?: string[];
 };
 
 /**
@@ -222,6 +223,7 @@ export async function fetchTickets(
           'issuelinks',
           'parent',
           'customfield_10014',
+          'labels',
         ],
       }),
     });
@@ -272,6 +274,7 @@ export async function fetchTickets(
       provider: 'jira' as const,
       epicKey,
       blockers,
+      labels: fields.labels,
     };
   });
 }

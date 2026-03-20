@@ -218,12 +218,18 @@ Platform-specific pre-creation lookups.
 
 ### GitHub
 
+**Pipeline label for children:** Determine the pipeline label based on planner role and flags:
+- `--skip-plan` flag → `CLANCY_LABEL_BUILD` (default: `clancy:build`)
+- Planner role enabled (`CLANCY_ROLES` includes `planner`) → `CLANCY_LABEL_PLAN` (default: `clancy:plan`)
+- Planner role NOT enabled → `CLANCY_LABEL_BUILD` (default: `clancy:build`)
+
 **Labels to apply per ticket:**
-- `CLANCY_PLAN_LABEL` (default: `needs-refinement`) — planning queue
-- `CLANCY_LABEL` (if set) — Clancy identifier
+- The pipeline label determined above (`CLANCY_LABEL_PLAN` or `CLANCY_LABEL_BUILD`) — replaces `CLANCY_LABEL` on children
 - `component:{CLANCY_COMPONENT}` (if `CLANCY_COMPONENT` set)
 - `size:{S|M|L}` — from decomposition table
 - `clancy:afk` or `clancy:hitl` — from Mode column
+
+Note: `CLANCY_LABEL` is NOT applied to child tickets when pipeline labels are active. The pipeline label (`clancy:plan` or `clancy:build`) serves as the queue identifier.
 
 **Label pre-creation:** For each unique label, attempt to create it on the repo. If it already exists, GitHub returns 422 — ignore that error. If 403 (no admin access), note the label as unavailable.
 
@@ -266,7 +272,9 @@ Set CLANCY_BRIEF_ISSUE_TYPE in .clancy/.env.
 ```
 Stop.
 
-**Labels:** Jira auto-creates labels — no pre-creation needed. Apply: `CLANCY_LABEL` (if set), `clancy:afk` or `clancy:hitl`.
+**Pipeline label for children:** Same logic as GitHub — determine the pipeline label from `--skip-plan` flag and planner role.
+
+**Labels:** Jira auto-creates labels — no pre-creation needed. Apply: the pipeline label (`CLANCY_LABEL_PLAN` or `CLANCY_LABEL_BUILD`), `clancy:afk` or `clancy:hitl`. `CLANCY_LABEL` is NOT applied to children when pipeline labels are active.
 
 **Components:** If `CLANCY_COMPONENT` is set, it maps to the Jira `components` field.
 
@@ -297,7 +305,9 @@ query {
 }
 ```
 
-For each required label (`CLANCY_LABEL`, `component:{CLANCY_COMPONENT}`, `clancy:afk`, `clancy:hitl`): search by exact name. If not found in team labels, check workspace labels:
+**Pipeline label for children:** Same logic as GitHub/Jira — determine the pipeline label from `--skip-plan` flag and planner role.
+
+For each required label (the pipeline label, `component:{CLANCY_COMPONENT}`, `clancy:afk`, `clancy:hitl`): search by exact name. `CLANCY_LABEL` is NOT applied to children when pipeline labels are active. If not found in team labels, check workspace labels:
 
 ```graphql
 query {
@@ -370,7 +380,7 @@ curl -s \
   -d '{
     "title": "{ticket title}",
     "body": "Epic: #{parent_number}\n\n## {Title}\n\n{Description}\n\n---\n\n**Parent:** #{parent_number}\n**Brief:** {slug}\n**Size:** {S|M|L}\n\n### Dependencies\n\n{Depends on #NN lines or None}\n\n---\n\n*Created by Clancy from strategic brief.*",
-    "labels": ["{CLANCY_PLAN_LABEL}", "size:{size}", "clancy:{mode}", ...],
+    "labels": ["{PIPELINE_LABEL}", "size:{size}", "clancy:{mode}", ...],
     "assignees": ["{resolved_username}"]
   }'
 ```
@@ -412,7 +422,7 @@ curl -s \
       },
       "issuetype": { "name": "{CLANCY_BRIEF_ISSUE_TYPE or Task}" },
       "parent": { "key": "{PARENT_KEY}" },
-      "labels": ["{CLANCY_LABEL}", "clancy:{mode}"]
+      "labels": ["{PIPELINE_LABEL}", "clancy:{mode}"]
     }
   }'
 ```
@@ -628,6 +638,60 @@ Created by Clancy on {YYYY-MM-DD}.
 ```
 
 **On failure:** Warn: `Could not post tracking summary on {PARENT}. Tickets are created regardless.` Continue — best-effort.
+
+---
+
+## Step 11a — Remove brief label from parent
+
+Only if a parent ticket exists AND all tickets were created successfully. Remove `CLANCY_LABEL_BRIEF` from the parent ticket. Best-effort — warn on failure, never stop.
+
+Read `CLANCY_LABEL_BRIEF` from `.clancy/.env`. Default: `clancy:brief`.
+
+### GitHub
+
+```bash
+curl -s \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  -X DELETE \
+  "https://api.github.com/repos/$GITHUB_REPO/issues/$PARENT_NUMBER/labels/$(echo $CLANCY_LABEL_BRIEF | jq -Rr @uri)"
+```
+
+Ignore 404 (label may not be present on the parent).
+
+### Jira
+
+```bash
+CURRENT_LABELS=$(curl -s \
+  -u "$JIRA_USER:$JIRA_API_TOKEN" \
+  -H "Accept: application/json" \
+  "$JIRA_BASE_URL/rest/api/3/issue/$PARENT_KEY?fields=labels" | jq -r '.fields.labels')
+
+UPDATED_LABELS=$(echo "$CURRENT_LABELS" | jq --arg brief "$CLANCY_LABEL_BRIEF" '[.[] | select(. != $brief)]')
+
+curl -s \
+  -u "$JIRA_USER:$JIRA_API_TOKEN" \
+  -X PUT \
+  -H "Content-Type: application/json" \
+  "$JIRA_BASE_URL/rest/api/3/issue/$PARENT_KEY" \
+  -d "{\"fields\": {\"labels\": $UPDATED_LABELS}}"
+```
+
+### Linear
+
+```bash
+# Fetch current label IDs on the parent, remove the brief label ID, issueUpdate
+# Use the same pattern as brief.md Step 10a — query labels, filter, update
+```
+
+### On failure
+
+```
+⚠️  Could not remove brief label from {PARENT_KEY}. Remove it manually if needed.
+```
+
+Continue — do not stop.
 
 ---
 

@@ -16,6 +16,7 @@ const jiraIssueFieldsSchema = z.object({
   issuelinks: z.optional(z.array(jiraIssueLinkSchema)),
   parent: z.optional(z.object({ key: z.optional(z.string()) })),
   customfield_10014: z.optional(z.nullable(z.string())),
+  labels: z.optional(z.array(z.string())),
 });
 
 /** A single Jira issue from the search response. */

@@ -617,6 +617,142 @@ Continue — do not stop. The local file is the source of truth.
 
 ---
 
+## Step 10a — Apply pipeline label (board-sourced only)
+
+Only for board-sourced briefs (ticket key was provided). Inline text and file briefs skip this step.
+
+Read `CLANCY_LABEL_BRIEF` from `.clancy/.env`. Default: `clancy:brief`. Read `CLANCY_LABEL_PLAN` and `CLANCY_LABEL_BUILD` for cleanup during re-briefs.
+
+### Re-brief cleanup (`--fresh` flag)
+
+If this is a re-brief (`--fresh`), the ticket may already have `clancy:plan` or `clancy:build` from a prior approval. Remove them first (best-effort — ignore failures):
+
+#### GitHub
+
+```bash
+# Remove plan label (ignore 404)
+curl -s \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  -X DELETE \
+  "https://api.github.com/repos/$GITHUB_REPO/issues/$ISSUE_NUMBER/labels/$(echo $CLANCY_LABEL_PLAN | jq -Rr @uri)"
+
+# Remove build label (ignore 404)
+curl -s \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  -X DELETE \
+  "https://api.github.com/repos/$GITHUB_REPO/issues/$ISSUE_NUMBER/labels/$(echo $CLANCY_LABEL_BUILD | jq -Rr @uri)"
+```
+
+#### Jira
+
+```bash
+# Fetch current labels, remove plan + build labels, PUT updated list
+CURRENT_LABELS=$(curl -s \
+  -u "$JIRA_USER:$JIRA_API_TOKEN" \
+  -H "Accept: application/json" \
+  "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY?fields=labels" | jq -r '.fields.labels')
+
+UPDATED_LABELS=$(echo "$CURRENT_LABELS" | jq --arg plan "$CLANCY_LABEL_PLAN" --arg build "$CLANCY_LABEL_BUILD" '[.[] | select(. != $plan and . != $build)]')
+
+curl -s \
+  -u "$JIRA_USER:$JIRA_API_TOKEN" \
+  -X PUT \
+  -H "Content-Type: application/json" \
+  "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY" \
+  -d "{\"fields\": {\"labels\": $UPDATED_LABELS}}"
+```
+
+#### Linear
+
+```bash
+# Fetch current label IDs, remove plan + build label IDs, update issue
+# Query current labels on the issue
+ISSUE_DATA=$(curl -s \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: $LINEAR_API_KEY" \
+  "https://api.linear.app/graphql" \
+  -d '{"query": "query { issues(filter: { identifier: { eq: \"$IDENTIFIER\" } }) { nodes { id labels { nodes { id name } } } } }"}')
+
+# Filter out plan + build label IDs, then issueUpdate with remaining labelIds
+```
+
+### Add brief label
+
+Ensure the label exists and add it to the ticket. Best-effort — warn on failure, never stop.
+
+#### GitHub
+
+```bash
+# Ensure label exists (ignore 422 = already exists)
+curl -s \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  "https://api.github.com/repos/$GITHUB_REPO/labels" \
+  -d '{"name": "$CLANCY_LABEL_BRIEF", "color": "0075ca"}'
+
+# Add label to issue
+curl -s \
+  -H "Authorization: Bearer $GITHUB_TOKEN" \
+  -H "Accept: application/vnd.github+json" \
+  -H "X-GitHub-Api-Version: 2022-11-28" \
+  -H "Content-Type: application/json" \
+  -X POST \
+  "https://api.github.com/repos/$GITHUB_REPO/issues/$ISSUE_NUMBER/labels" \
+  -d '{"labels": ["$CLANCY_LABEL_BRIEF"]}'
+```
+
+#### Jira
+
+```bash
+# Jira auto-creates labels — just add to the issue's label array
+CURRENT_LABELS=$(curl -s \
+  -u "$JIRA_USER:$JIRA_API_TOKEN" \
+  -H "Accept: application/json" \
+  "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY?fields=labels" | jq -r '.fields.labels')
+
+UPDATED_LABELS=$(echo "$CURRENT_LABELS" | jq --arg brief "$CLANCY_LABEL_BRIEF" '. + [$brief] | unique')
+
+curl -s \
+  -u "$JIRA_USER:$JIRA_API_TOKEN" \
+  -X PUT \
+  -H "Content-Type: application/json" \
+  "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY" \
+  -d "{\"fields\": {\"labels\": $UPDATED_LABELS}}"
+```
+
+#### Linear
+
+```bash
+# Ensure label exists (check team labels, workspace labels, create if missing)
+# Then add to issue via issueUpdate with updated labelIds array
+curl -s \
+  -X POST \
+  -H "Content-Type: application/json" \
+  -H "Authorization: $LINEAR_API_KEY" \
+  "https://api.linear.app/graphql" \
+  -d '{"query": "mutation { issueLabelCreate(input: { teamId: \"$LINEAR_TEAM_ID\", name: \"$CLANCY_LABEL_BRIEF\", color: \"#0075ca\" }) { success issueLabel { id } } }"}'
+
+# Add label to issue (fetch current labelIds, append new, issueUpdate)
+```
+
+#### On failure (any platform)
+
+```
+⚠️  Could not add pipeline label to {KEY}. The brief was saved and posted successfully — label it manually if needed.
+```
+
+Continue — do not stop.
+
+---
+
 ## Step 11 — Brief inventory (`--list`)
 
 If `--list` flag is present, display an inventory of all briefs and stop.

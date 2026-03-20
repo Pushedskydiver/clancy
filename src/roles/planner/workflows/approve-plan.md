@@ -314,25 +314,29 @@ Could not update plan comment. The plan is still promoted to the description.
 
 ---
 
-## Step 6 — Post-approval transition
+## Step 6 — Post-approval label transition
 
-Transition the ticket from the planning queue to the implementation queue. This is **best-effort** — warn on failure, continue.
+Transition the ticket from the planning queue to the implementation queue via pipeline labels. This is **best-effort** — warn on failure, continue.
 
-### GitHub (always, not configurable)
+**Crash safety:** Add the new label BEFORE removing the old one. A ticket briefly has two labels (harmless) rather than zero labels (ticket lost).
 
-1. **Remove planning label:**
+Read `CLANCY_LABEL_BUILD` from `.clancy/.env` (default: `clancy:build`). Read `CLANCY_LABEL_PLAN` from `.clancy/.env` (default: `clancy:plan`, falls back to `CLANCY_PLAN_LABEL`).
+
+### GitHub
+
+1. **Add build label** (ensure it exists first):
    ```bash
+   # Ensure label exists (ignore 422 = already exists)
    curl -s \
      -H "Authorization: Bearer $GITHUB_TOKEN" \
      -H "Accept: application/vnd.github+json" \
      -H "X-GitHub-Api-Version: 2022-11-28" \
-     -X DELETE \
-     "https://api.github.com/repos/$GITHUB_REPO/issues/$ISSUE_NUMBER/labels/$CLANCY_PLAN_LABEL"
-   ```
-   `CLANCY_PLAN_LABEL` defaults to `needs-refinement`. URL-encode the label name. Ignore 404 (label not on issue). If `CLANCY_PLAN_LABEL` is not set, use the default `needs-refinement`.
+     -H "Content-Type: application/json" \
+     -X POST \
+     "https://api.github.com/repos/$GITHUB_REPO/labels" \
+     -d '{"name": "$CLANCY_LABEL_BUILD", "color": "0075ca"}'
 
-2. **Add implementation label** (only if `CLANCY_LABEL` is set — skip if unset):
-   ```bash
+   # Add to issue
    curl -s \
      -H "Authorization: Bearer $GITHUB_TOKEN" \
      -H "Accept: application/vnd.github+json" \
@@ -340,38 +344,68 @@ Transition the ticket from the planning queue to the implementation queue. This 
      -H "Content-Type: application/json" \
      -X POST \
      "https://api.github.com/repos/$GITHUB_REPO/issues/$ISSUE_NUMBER/labels" \
-     -d '{"labels": ["$CLANCY_LABEL"]}'
+     -d '{"labels": ["$CLANCY_LABEL_BUILD"]}'
    ```
-   If `CLANCY_LABEL` is not set, skip this step entirely (only the plan label removal is done). `CLANCY_LABEL` has no default — it is fully optional. When set (e.g. `clancy`), use its value. If the label does not exist on the repo, attempt to create it:
+
+2. **Remove plan label:**
    ```bash
    curl -s \
      -H "Authorization: Bearer $GITHUB_TOKEN" \
      -H "Accept: application/vnd.github+json" \
-     -H "Content-Type: application/json" \
-     -X POST \
-     "https://api.github.com/repos/$GITHUB_REPO/labels" \
-     -d '{"name": "$CLANCY_LABEL", "color": "0075ca"}'
+     -H "X-GitHub-Api-Version: 2022-11-28" \
+     -X DELETE \
+     "https://api.github.com/repos/$GITHUB_REPO/issues/$ISSUE_NUMBER/labels/$(echo $CLANCY_LABEL_PLAN | jq -Rr @uri)"
    ```
-   If 403 (no admin access) or 422 (invalid name): warn, continue without label.
+   Ignore 404 (label not on issue).
 
-### Jira (only if `CLANCY_STATUS_PLANNED` is set)
+### Jira
 
-If `CLANCY_STATUS_PLANNED` is not set: skip transition, no warning needed.
-
-If `CLANCY_STATUS_PLANNED` is set:
-
-1. **Fetch transitions:**
+1. **Add build label** (Jira auto-creates labels):
    ```bash
+   # Fetch current labels
+   CURRENT_LABELS=$(curl -s \
+     -u "$JIRA_USER:$JIRA_API_TOKEN" \
+     -H "Accept: application/json" \
+     "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY?fields=labels" | jq -r '.fields.labels')
+
+   # Add build label
+   UPDATED_LABELS=$(echo "$CURRENT_LABELS" | jq --arg build "$CLANCY_LABEL_BUILD" '. + [$build] | unique')
+
+   curl -s \
+     -u "$JIRA_USER:$JIRA_API_TOKEN" \
+     -X PUT \
+     -H "Content-Type: application/json" \
+     "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY" \
+     -d "{\"fields\": {\"labels\": $UPDATED_LABELS}}"
+   ```
+
+2. **Remove plan label:**
+   ```bash
+   # Re-fetch labels (may have changed), remove plan label
+   CURRENT_LABELS=$(curl -s \
+     -u "$JIRA_USER:$JIRA_API_TOKEN" \
+     -H "Accept: application/json" \
+     "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY?fields=labels" | jq -r '.fields.labels')
+
+   UPDATED_LABELS=$(echo "$CURRENT_LABELS" | jq --arg plan "$CLANCY_LABEL_PLAN" '[.[] | select(. != $plan)]')
+
+   curl -s \
+     -u "$JIRA_USER:$JIRA_API_TOKEN" \
+     -X PUT \
+     -H "Content-Type: application/json" \
+     "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY" \
+     -d "{\"fields\": {\"labels\": $UPDATED_LABELS}}"
+   ```
+
+3. **Status transition** (only if `CLANCY_STATUS_PLANNED` is set — skip if unset):
+   ```bash
+   # Fetch transitions
    curl -s \
      -u "$JIRA_USER:$JIRA_API_TOKEN" \
      -H "Accept: application/json" \
      "$JIRA_BASE_URL/rest/api/3/issue/$TICKET_KEY/transitions"
-   ```
 
-2. **Find matching transition:** Look for a transition where `.name` matches `CLANCY_STATUS_PLANNED` (case-insensitive). This matches the pattern used in the runtime Jira module.
-
-3. **Execute transition:**
-   ```bash
+   # Find matching transition and execute
    curl -s \
      -u "$JIRA_USER:$JIRA_API_TOKEN" \
      -X POST \
@@ -385,23 +419,50 @@ On failure:
 Could not transition ticket. Move it manually to your implementation queue.
 ```
 
-### Linear (always)
+### Linear
 
-1. **Resolve "unstarted" state:**
+1. **Add build label** (ensure it exists, then add):
    ```graphql
+   # Ensure label exists — check team labels, workspace labels, create if missing
+   mutation {
+     issueLabelCreate(input: {
+       teamId: "$LINEAR_TEAM_ID"
+       name: "$CLANCY_LABEL_BUILD"
+       color: "#0075ca"
+     }) { success issueLabel { id } }
+   }
+
+   # Fetch current label IDs on the issue, add build label ID
+   mutation {
+     issueUpdate(
+       id: "$ISSUE_UUID"
+       input: { labelIds: [...currentLabelIds, buildLabelId] }
+     ) { success }
+   }
+   ```
+
+2. **Remove plan label:**
+   ```graphql
+   # Fetch current label IDs, filter out plan label ID
+   mutation {
+     issueUpdate(
+       id: "$ISSUE_UUID"
+       input: { labelIds: [currentLabelIds without planLabelId] }
+     ) { success }
+   }
+   ```
+
+3. **State transition** (always):
+   ```graphql
+   # Resolve "unstarted" state
    query {
      workflowStates(filter: {
        team: { id: { eq: "$LINEAR_TEAM_ID" } }
        type: { eq: "unstarted" }
-     }) {
-       nodes { id name }
-     }
+     }) { nodes { id name } }
    }
-   ```
-   Use `nodes[0].id` as the target state. If nodes is empty: warn `No 'unstarted' state found for team.` Skip transition.
 
-2. **Transition:**
-   ```graphql
+   # Transition
    mutation {
      issueUpdate(
        id: "$ISSUE_UUID"
@@ -409,6 +470,7 @@ Could not transition ticket. Move it manually to your implementation queue.
      ) { success }
    }
    ```
+   If no `unstarted` state found: warn, skip transition.
 
 On failure:
 ```
@@ -421,18 +483,11 @@ Could not transition ticket. Move it manually to your implementation queue.
 
 On success, display a board-specific message:
 
-**GitHub (with CLANCY_LABEL set):**
+**GitHub:**
 ```
-Plan promoted. Label swapped: {plan_label} → {impl_label}. Ready for /clancy:once.
+Plan promoted. Label swapped: {CLANCY_LABEL_PLAN} → {CLANCY_LABEL_BUILD}. Ready for /clancy:once.
 
 "Book 'em, Lou." — The ticket is ready for /clancy:once.
-```
-
-**GitHub (without CLANCY_LABEL):**
-```
-Plan promoted. Label removed: {plan_label}. Add your implementation label manually, or run /clancy:once.
-
-"Book 'em, Lou."
 ```
 
 **Jira (with transition):**

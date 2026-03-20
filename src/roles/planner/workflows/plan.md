@@ -136,9 +136,9 @@ Then skip to Step 3b with this single ticket.
 Build the JQL using planning-specific env vars:
 - `CLANCY_PLAN_STATUS` defaults to `Backlog` if not set
 - Sprint clause: include `AND sprint in openSprints()` if `CLANCY_JQL_SPRINT` is set
-- Label clause: include `AND labels = "$CLANCY_LABEL"` if `CLANCY_LABEL` is set
+- Label clause: include `AND labels = "$CLANCY_LABEL_PLAN"` if `CLANCY_LABEL_PLAN` is set (falls back to `CLANCY_PLAN_LABEL` if `CLANCY_LABEL_PLAN` is not set). If neither is set, include `AND labels = "$CLANCY_LABEL"` if `CLANCY_LABEL` is set.
 
-Full JQL: `project=$JIRA_PROJECT_KEY [AND sprint in openSprints()] [AND labels = "$CLANCY_LABEL"] AND assignee=currentUser() AND status="$CLANCY_PLAN_STATUS" ORDER BY priority ASC`
+Full JQL: `project=$JIRA_PROJECT_KEY [AND sprint in openSprints()] [AND labels = "$CLANCY_LABEL_PLAN"] AND assignee=currentUser() AND status="$CLANCY_PLAN_STATUS" ORDER BY priority ASC`
 
 ```bash
 RESPONSE=$(curl -s \
@@ -164,16 +164,16 @@ Then fetch issues:
 RESPONSE=$(curl -s \
   -H "Authorization: Bearer $GITHUB_TOKEN" \
   -H "X-GitHub-Api-Version: 2022-11-28" \
-  "https://api.github.com/repos/$GITHUB_REPO/issues?state=open&assignee=$GITHUB_USERNAME&labels=$CLANCY_PLAN_LABEL&per_page=<N>")
+  "https://api.github.com/repos/$GITHUB_REPO/issues?state=open&assignee=$GITHUB_USERNAME&labels=$CLANCY_LABEL_PLAN&per_page=<N>")
 ```
 
-- `CLANCY_PLAN_LABEL` defaults to `needs-refinement` if not set
+- `CLANCY_LABEL_PLAN` is the pipeline label for the planning queue (default: `clancy:plan`). Falls back to `CLANCY_PLAN_LABEL` if `CLANCY_LABEL_PLAN` is not set. If neither is set, defaults to `needs-refinement`.
 - Filter out PRs (entries with `pull_request` key)
 - For each issue, fetch comments: `GET /repos/$GITHUB_REPO/issues/{number}/comments`
 
 #### Linear
 
-Build the filter using `CLANCY_PLAN_STATE_TYPE` (defaults to `backlog` if not set):
+Build the filter using `CLANCY_PLAN_STATE_TYPE` (defaults to `backlog` if not set). If `CLANCY_LABEL_PLAN` is set (falls back to `CLANCY_PLAN_LABEL`), add a label filter to the query:
 
 ```graphql
 query {
@@ -182,6 +182,7 @@ query {
       filter: {
         state: { type: { eq: "$CLANCY_PLAN_STATE_TYPE" } }
         team: { id: { eq: "$LINEAR_TEAM_ID" } }
+        labels: { name: { eq: "$CLANCY_LABEL_PLAN" } }  # Only if CLANCY_LABEL_PLAN is set
       }
       first: $N
       orderBy: priority
@@ -214,7 +215,7 @@ If no tickets found:
 
 Then display board-specific guidance:
 
-- **GitHub:** `For GitHub: planning uses the "$CLANCY_PLAN_LABEL" label (default: needs-refinement), not "clancy". Apply that label to issues you want planned.`
+- **GitHub:** `For GitHub: planning uses the "$CLANCY_LABEL_PLAN" label (default: clancy:plan, fallback: $CLANCY_PLAN_LABEL or needs-refinement). Apply that label to issues you want planned.`
 - **Jira:** `Check that CLANCY_PLAN_STATUS (currently: "$CLANCY_PLAN_STATUS") matches a status in your Jira project, and that tickets in that status are assigned to you.`
 - **Linear:** `Check that CLANCY_PLAN_STATE_TYPE (currently: "$CLANCY_PLAN_STATE_TYPE") is a valid Linear state type (backlog, unstarted, started, completed, canceled, triage), and that tickets in that state are assigned to you in team $LINEAR_TEAM_ID.`
 

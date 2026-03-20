@@ -9,4 +9,6 @@ export type FetchedTicket = {
   linearIssueId?: string;
   /** Board-specific issue ID — needed for feedback fetching (e.g., Linear UUID). */
   issueId?: string;
+  /** Label names present on the ticket — used for pipeline label guard. */
+  labels?: string[];
 };
