@@ -5,23 +5,29 @@ Three Claude Code workflow tools — different philosophies, different sweet spo
 | | [Clancy](https://github.com/Pushedskydiver/clancy) | [GSD](https://github.com/gsd-build/get-shit-done) | [PAUL](https://github.com/ChristopherKahler/paul) |
 |---|---|---|---|
 | **Purpose** | Autonomous ticket implementation | Structured project phases | In-session efficiency |
-| **Board integration** | Jira, GitHub Issues, Linear | None | None |
+| **Board integration** | Jira, GitHub Issues, Linear, Shortcut, Notion, Azure DevOps | None | None |
+| **Roles** | Strategist, Planner, Implementer, Reviewer, Setup | Single workflow (discuss → plan → build → verify) | Plan-Apply-Unify loop |
 | **Runtime support** | Claude Code | Claude Code, OpenCode, Gemini CLI, Codex | Claude Code |
-| **Automation level** | Fully autonomous (AFK loop) | Semi-autonomous (approve roadmap, then walk away) | Human-driven |
-| **Context loading** | All docs on every ticket | Fresh subagent per phase, main session stays lean | In-session by default, subagents for bounded research only |
+| **Automation level** | Fully autonomous (AFK loop with verification gates) | Semi-autonomous (approve roadmap, then walk away) | Human-driven |
+| **Quality gates** | Verification gate (lint/test/typecheck), self-healing retry, branch guard | Verification after each phase | BDD acceptance criteria |
+| **Context loading** | All docs on every ticket, PostCompact re-injection | Fresh subagent per phase, main session stays lean | In-session by default, subagents for bounded research only |
 | **Token usage** | Heavy (fresh session per ticket) | Moderate (subagents per phase, main session ~30-40%) | Lean (avoids subagent cold-starts) |
+| **Crash recovery** | Lock file + resume detection + PR retry | None built-in | State files for session resumption |
+| **Pipeline labels** | 3-stage lifecycle (brief → plan → build) | None | None |
 | **Setup** | `npx chief-clancy` | `npx get-shit-done-cc@latest` | `npx paul-framework` |
 
 ---
 
 ## When to use Clancy
 
-You have a ticket board (Jira, GitHub Issues, or Linear) with well-scoped, assigned tickets and you want Claude to work through them autonomously while you do other things.
+You have a ticket board (Jira, GitHub Issues, Linear, Shortcut, Notion, or Azure DevOps) with well-scoped, assigned tickets and you want Claude to work through them autonomously while you do other things.
 
 Clancy is the right tool if:
 - Your team already works from a backlog
 - You want minimal human involvement per ticket
-- You're comfortable with autonomous git operations (branch, merge, commit)
+- You want the full pipeline: strategy briefs → planning → implementation → review
+- You're comfortable with autonomous git operations (branch, PR, epic completion)
+- You need crash recovery and verification gates for reliable AFK mode
 
 Clancy is the wrong tool if:
 - You don't use a ticket board
