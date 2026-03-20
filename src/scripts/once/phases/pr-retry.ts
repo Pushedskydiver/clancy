@@ -93,7 +93,7 @@ export async function prRetry(ctx: RunContext): Promise<boolean> {
           entry.summary,
           'PR_CREATED',
           pr.number,
-          entry.parent,
+          parent,
         );
       } else if (pr && !pr.ok && pr.alreadyExists) {
         console.log(dim(`  PR already exists for ${entry.key}`));
@@ -104,7 +104,7 @@ export async function prRetry(ctx: RunContext): Promise<boolean> {
           entry.summary,
           'PR_CREATED',
           undefined,
-          entry.parent,
+          parent,
         );
       } else {
         console.log(
