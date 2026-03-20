@@ -23,6 +23,10 @@ Research an idea, interrogate it thoroughly, and generate a structured strategic
    Stop.
 
 4. Branch freshness check — run `git fetch origin` and compare the current HEAD with `origin/$CLANCY_BASE_BRANCH` (defaults to `main`). If the local branch is behind:
+
+   **AFK mode** (`--afk` flag or `CLANCY_MODE=afk`): auto-pull without prompting. Run `git pull origin $CLANCY_BASE_BRANCH` and continue.
+
+   **Interactive mode:**
    ```
    ⚠️  Your local branch is behind origin/{CLANCY_BASE_BRANCH} by {N} commit(s).
 

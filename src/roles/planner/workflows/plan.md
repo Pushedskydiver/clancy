@@ -23,6 +23,10 @@ Fetch backlog tickets from the board, explore the codebase, and generate structu
    Stop.
 
 4. Check `.clancy/docs/` — if the directory is empty or missing:
+
+   **AFK mode** (`--afk` flag or `CLANCY_MODE=afk`): continue without prompting (log a warning).
+
+   **Interactive mode:**
    ```
    ⚠️  No codebase documentation found in .clancy/docs/
    Plans will be less accurate without codebase context.
@@ -33,6 +37,10 @@ Fetch backlog tickets from the board, explore the codebase, and generate structu
    If the user declines, stop. If they confirm, continue without docs context.
 
 5. Branch freshness check — run `git fetch origin` and compare the current HEAD with `origin/$CLANCY_BASE_BRANCH` (defaults to `main`). If the local branch is behind:
+
+   **AFK mode** (`--afk` flag or `CLANCY_MODE=afk`): auto-pull without prompting. Run `git pull origin $CLANCY_BASE_BRANCH` and continue.
+
+   **Interactive mode:**
    ```
    ⚠️  Your local branch is behind origin/{CLANCY_BASE_BRANCH} by {N} commit(s).
 
