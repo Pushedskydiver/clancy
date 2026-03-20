@@ -13,17 +13,24 @@
 ## Checklist
 
 - [ ] Unit tests added or updated (co-located `<name>.test.ts`)
-- [ ] `boards.json` updated if adding a board (with `author` and `url` — required)
+- [ ] All tests pass (`npm test && npm run typecheck && npm run lint`)
 - [ ] CHANGELOG.md updated
-- [ ] README.md updated if commands or workflow changed
+- [ ] README.md test badge updated (if test count changed)
+- [ ] Version bump in package.json + package-lock.json synced
+- [ ] CLAUDE.md updated (if key paths, technical details, or commands changed)
+- [ ] Glossary updated (if new terms introduced)
+- [ ] Architecture doc updated (if new modules/phases added)
 
 ## New board checklist (if applicable)
 
-- [ ] TypeScript module created in `src/scripts/board/{board}/`
-- [ ] Env schema added to `src/schemas/`
-- [ ] `registry/boards.json` entry added (with `author` and `url`)
-- [ ] `.env.example` content added to `src/roles/setup/workflows/scaffold.md`
-- [ ] Co-located unit tests (`{board}.test.ts`)
+- [ ] Board module created in `src/scripts/board/{board}/` with `{board}.ts` + `{board}-board.ts`
+- [ ] Implements all 11 Board type methods
+- [ ] Zod schema added to `src/schemas/{board}.ts`
+- [ ] Env schema in `src/schemas/env.ts` with detection signal
+- [ ] Factory case in `src/scripts/board/factory/factory.ts`
+- [ ] `.env.example` content in `src/roles/setup/workflows/scaffold.md`
+- [ ] Init/settings workflows updated for new board
+- [ ] Co-located tests for both raw API and Board wrapper
 
 ## Testing
 
