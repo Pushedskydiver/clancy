@@ -58,12 +58,25 @@ interface LoginFormProps {
 // Variants: default (email/password), social (with OAuth buttons)
 ```
 
-**Accessibility Specifications** — ARIA roles/attributes, keyboard navigation maps, focus management rules, screen reader announcements. Example:
+**Accessibility Specifications** — targeting **WCAG 2.2 AA** conformance. ARIA roles/attributes, keyboard navigation maps, focus management rules, screen reader announcements. References the [ARIA Authoring Practices Guide (APG)](https://www.w3.org/WAI/ARIA/apg/) for canonical widget patterns.
+
+The planner must address these for every UI component:
+
+1. **Name, Role, Value (4.1.2)** — every interactive element has an accessible name and correct role. Prefer native HTML (`<button>`, `<nav>`, `<dialog>`) over ARIA where possible (first rule of ARIA).
+2. **Keyboard (2.1.1)** — all functionality keyboard-operable. Custom elements need `tabindex`, `onKeyDown` for Enter/Space. No keyboard traps (2.1.2).
+3. **Focus Order (2.4.3)** — DOM order matches visual order. Focus returned to trigger element after modal/dialog close.
+4. **Focus Visible (2.4.7)** + **Focus Not Obscured (2.4.11, new in 2.2)** — visible focus indicator, not hidden by sticky headers or overlays.
+5. **Target Size (2.5.8, new in 2.2)** — interactive targets at least 24x24 CSS pixels.
+6. **Status Messages (4.1.3)** — live regions for toasts, validation summaries, loading states.
+7. **Error Association** — form errors linked via `aria-describedby`, not just visual proximity.
+8. **Reduced Motion** — `prefers-reduced-motion` media query for animations/transitions.
+
+Example specification table:
 
 | Element | Role | ARIA | Keyboard | Announcement |
 |---|---|---|---|---|
 | Login form | `form` | `aria-label="Sign in"` | — | — |
-| Email input | `textbox` | `aria-required="true"`, `aria-invalid` on error | Tab to focus | "Email address, required" |
+| Email input | `textbox` | `aria-required="true"`, `aria-invalid` on error, `aria-describedby` for error | Tab to focus | "Email address, required" |
 | Submit button | `button` | `aria-busy` when loading | Enter to submit, Tab to reach | "Sign in" / "Signing in..." |
 | Error alert | `alert` | `aria-live="assertive"` | — | Announces error text on appear |
 
@@ -548,6 +561,6 @@ Each release includes its own documentation pass. Wave 1 (v0.9.0) ships with doc
 
 8. **Design specs conditional on UI ticket detection.** Non-UI tickets skip the design section entirely. This avoids token cost and noise for tickets that do not benefit from design context. The detection is generous (natural language, not keyword matching) to avoid false negatives on borderline tickets.
 
-9. **Accessibility specs are the highest-value design artifact.** They directly become ARIA attributes and keyboard handlers in the implementation. Unlike layout descriptions (which are guidance), accessibility specs are prescriptive — the implementation must include exactly these roles, attributes, and keyboard maps. This makes them the most mechanically useful section of the design specifications.
+9. **Accessibility specs target WCAG 2.2 AA and reference APG patterns.** They directly become ARIA attributes and keyboard handlers in the implementation. Unlike layout descriptions (which are guidance), accessibility specs are prescriptive — the implementation must include exactly these roles, attributes, and keyboard maps. The planner references the [ARIA Authoring Practices Guide](https://www.w3.org/WAI/ARIA/apg/) for canonical widget patterns and addresses WCAG 2.2-specific criteria (Focus Not Obscured 2.4.11, Target Size 2.5.8). This makes them the most mechanically useful section of the design specifications.
 
 10. **No wireframes or visual mockups in text form.** Text layout descriptions instead. Text cannot reliably convey pixel-level layout. The attempt produces ASCII art that is neither useful to humans nor parseable by code. Text descriptions ("centered vertically", "stacked with 16px gap", "full width below") map directly to CSS patterns.
