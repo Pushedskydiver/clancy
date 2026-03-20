@@ -108,6 +108,7 @@ export function createNotionBoard(env: NotionEnv): Board {
         env.NOTION_TOKEN,
         env.NOTION_DATABASE_ID,
         pageId,
+        statusProp,
       );
     },
 
@@ -117,6 +118,7 @@ export function createNotionBoard(env: NotionEnv): Board {
         env.NOTION_DATABASE_ID,
         parentKey,
         parentProp,
+        statusProp,
       );
     },
 

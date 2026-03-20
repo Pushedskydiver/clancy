@@ -252,6 +252,7 @@ export async function fetchBlockerStatus(
   token: string,
   databaseId: string,
   pageId: string,
+  statusProp = 'Status',
 ): Promise<boolean> {
   try {
     const page = await fetchPage(token, pageId);
@@ -271,7 +272,7 @@ export async function fetchBlockerStatus(
           const blockerPage = await fetchPage(token, rel.id);
           if (!blockerPage) continue;
 
-          const status = getPropertyValue(blockerPage, 'Status', 'status');
+          const status = getPropertyValue(blockerPage, statusProp, 'status');
           // If the blocker doesn't have a done-like status, it's still blocking
           if (status && !isCompleteStatus(status)) {
             return true;
@@ -305,7 +306,7 @@ export async function fetchBlockerStatus(
           for (const candidate of allPages) {
             const candidateShortId = candidate.id.replace(/-/g, '').slice(0, 8);
             if (candidateShortId === blockerShortId) {
-              const status = getPropertyValue(candidate, 'Status', 'status');
+              const status = getPropertyValue(candidate, statusProp, 'status');
               if (status && !isCompleteStatus(status)) return true;
             }
           }
@@ -322,8 +323,8 @@ export async function fetchBlockerStatus(
 /**
  * Fetch the children status of a parent page in a Notion database (dual-mode).
  *
- * Mode 1: Query by parent relation property (e.g., "Epic" relation).
- * Mode 2: Search page descriptions for `Epic: notion-{shortId}` text convention.
+ * Mode 1: Search page descriptions for `Epic: notion-{shortId}` text convention.
+ * Mode 2: Query by parent relation property (e.g., "Epic" relation) as fallback.
  *
  * @param token - The Notion integration token.
  * @param databaseId - The database UUID.
@@ -336,15 +337,15 @@ export async function fetchChildrenStatus(
   databaseId: string,
   parentKey: string,
   parentProp = 'Epic',
+  statusProp = 'Status',
 ): Promise<{ total: number; incomplete: number } | undefined> {
   try {
-    // Extract the full UUID from the parentKey — we need the parentId for relation queries
-    // parentKey is "notion-{first8}" but we need the full page ID
-    // Try Mode 1 first: query by description text convention
+    // Mode 1: query by description text convention ("Epic: notion-{id}")
     const epicTextResult = await fetchChildrenByDescription(
       token,
       databaseId,
       `Epic: ${parentKey}`,
+      statusProp,
     );
 
     if (epicTextResult && epicTextResult.total > 0) return epicTextResult;
@@ -358,6 +359,7 @@ export async function fetchChildrenStatus(
       databaseId,
       parentResult.id,
       parentProp,
+      statusProp,
     );
   } catch {
     return undefined;
@@ -496,6 +498,7 @@ async function fetchChildrenByDescription(
   token: string,
   databaseId: string,
   descriptionRef: string,
+  statusProp = 'Status',
 ): Promise<{ total: number; incomplete: number } | undefined> {
   // Notion doesn't have a text search filter on rich_text properties directly,
   // so we query all pages and filter client-side for the "Epic: " convention
@@ -512,8 +515,8 @@ async function fetchChildrenByDescription(
 
   const incomplete = matching.filter((page) => {
     const status =
-      getPropertyValue(page, 'Status', 'status') ??
-      getPropertyValue(page, 'Status', 'select');
+      getPropertyValue(page, statusProp, 'status') ??
+      getPropertyValue(page, statusProp, 'select');
     return !status || !isCompleteStatus(status);
   }).length;
 
@@ -526,6 +529,7 @@ async function fetchChildrenByRelation(
   databaseId: string,
   parentPageId: string,
   parentProp: string,
+  statusProp = 'Status',
 ): Promise<{ total: number; incomplete: number } | undefined> {
   const result = await queryDatabase(token, databaseId, {
     property: parentProp,
@@ -539,8 +543,8 @@ async function fetchChildrenByRelation(
 
   const incomplete = result.results.filter((page) => {
     const status =
-      getPropertyValue(page, 'Status', 'status') ??
-      getPropertyValue(page, 'Status', 'select');
+      getPropertyValue(page, statusProp, 'status') ??
+      getPropertyValue(page, statusProp, 'select');
     return !status || !isCompleteStatus(status);
   }).length;
 
