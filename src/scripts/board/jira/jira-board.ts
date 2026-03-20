@@ -104,8 +104,10 @@ export function createJiraBoard(env: JiraEnv): Board {
 
     async addLabel(issueKey: string, label: string) {
       try {
+        if (!/^[A-Z][A-Z0-9]+-\d+$/.test(issueKey)) return;
+
         const res = await fetch(
-          `${env.JIRA_BASE_URL}/rest/api/3/issue/${issueKey}?fields=labels`,
+          `${env.JIRA_BASE_URL}/rest/api/3/issue/${encodeURIComponent(issueKey)}?fields=labels`,
           { headers: { Authorization: auth, Accept: 'application/json' } },
         );
 
@@ -122,7 +124,7 @@ export function createJiraBoard(env: JiraEnv): Board {
         if (current.includes(label)) return;
 
         const putRes = await fetch(
-          `${env.JIRA_BASE_URL}/rest/api/3/issue/${issueKey}`,
+          `${env.JIRA_BASE_URL}/rest/api/3/issue/${encodeURIComponent(issueKey)}`,
           {
             method: 'PUT',
             headers: {
@@ -146,8 +148,10 @@ export function createJiraBoard(env: JiraEnv): Board {
 
     async removeLabel(issueKey: string, label: string) {
       try {
+        if (!/^[A-Z][A-Z0-9]+-\d+$/.test(issueKey)) return;
+
         const res = await fetch(
-          `${env.JIRA_BASE_URL}/rest/api/3/issue/${issueKey}?fields=labels`,
+          `${env.JIRA_BASE_URL}/rest/api/3/issue/${encodeURIComponent(issueKey)}?fields=labels`,
           { headers: { Authorization: auth, Accept: 'application/json' } },
         );
 
@@ -164,7 +168,7 @@ export function createJiraBoard(env: JiraEnv): Board {
         if (!current.includes(label)) return;
 
         const putRes = await fetch(
-          `${env.JIRA_BASE_URL}/rest/api/3/issue/${issueKey}`,
+          `${env.JIRA_BASE_URL}/rest/api/3/issue/${encodeURIComponent(issueKey)}`,
           {
             method: 'PUT',
             headers: {

@@ -31,7 +31,7 @@ export type FetchTicketOptions = {
 function resolveBuildLabel(
   env: Record<string, string | undefined>,
 ): string | undefined {
-  return env.CLANCY_LABEL_BUILD ?? env.CLANCY_LABEL;
+  return env.CLANCY_LABEL_BUILD || env.CLANCY_LABEL || undefined;
 }
 
 /**
@@ -43,7 +43,7 @@ function resolveBuildLabel(
 function resolvePlanLabel(
   env: Record<string, string | undefined>,
 ): string | undefined {
-  return env.CLANCY_LABEL_PLAN ?? env.CLANCY_PLAN_LABEL;
+  return env.CLANCY_LABEL_PLAN || env.CLANCY_PLAN_LABEL || undefined;
 }
 
 /** Whether the current run is in AFK mode (set by the AFK runner). */
