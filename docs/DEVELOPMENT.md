@@ -34,6 +34,7 @@ Each version follows a formal lifecycle with approval gates and devil's advocate
 
 - Create branch (`feature/v{X}` or `feature/{feature-name}`)
 - Per-wave implementation with parallel agents
+- **All tests must pass after every wave** — run `npm test && npm run typecheck && npm run lint` and verify 0 failures before committing. Never push code with failing tests.
 - Per-wave DA review between each wave (catches foundation issues before later waves build on them)
 - Fix DA findings before proceeding to next wave
 
