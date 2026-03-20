@@ -118,16 +118,22 @@ export function createJiraBoard(env: JiraEnv): Board {
 
         if (current.includes(label)) return;
 
-        await fetch(`${env.JIRA_BASE_URL}/rest/api/3/issue/${issueKey}`, {
-          method: 'PUT',
-          headers: {
-            Authorization: auth,
-            'Content-Type': 'application/json',
+        const putRes = await fetch(
+          `${env.JIRA_BASE_URL}/rest/api/3/issue/${issueKey}`,
+          {
+            method: 'PUT',
+            headers: {
+              Authorization: auth,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              fields: { labels: [...current, label] },
+            }),
           },
-          body: JSON.stringify({
-            fields: { labels: [...current, label] },
-          }),
-        });
+        );
+        if (!putRes.ok) {
+          console.warn(`⚠ addLabel PUT returned HTTP ${putRes.status}`);
+        }
       } catch (err) {
         console.warn(
           `⚠ addLabel failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -154,16 +160,22 @@ export function createJiraBoard(env: JiraEnv): Board {
 
         if (!current.includes(label)) return;
 
-        await fetch(`${env.JIRA_BASE_URL}/rest/api/3/issue/${issueKey}`, {
-          method: 'PUT',
-          headers: {
-            Authorization: auth,
-            'Content-Type': 'application/json',
+        const putRes = await fetch(
+          `${env.JIRA_BASE_URL}/rest/api/3/issue/${issueKey}`,
+          {
+            method: 'PUT',
+            headers: {
+              Authorization: auth,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              fields: { labels: current.filter((l) => l !== label) },
+            }),
           },
-          body: JSON.stringify({
-            fields: { labels: current.filter((l) => l !== label) },
-          }),
-        });
+        );
+        if (!putRes.ok) {
+          console.warn(`⚠ removeLabel PUT returned HTTP ${putRes.status}`);
+        }
       } catch (err) {
         console.warn(
           `⚠ removeLabel failed: ${err instanceof Error ? err.message : String(err)}`,

@@ -15,7 +15,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - **Board label methods** — `ensureLabel` (create-if-missing), `addLabel` (add to issue), `removeLabel` (best-effort removal) on the `Board` type. GitHub: REST API, Jira: labels array, Linear: GraphQL mutations.
 - **`--skip-plan` flag** — `/clancy:approve-brief --skip-plan` applies `CLANCY_LABEL_BUILD` directly instead of `CLANCY_LABEL_PLAN`, skipping the planning queue for clear tickets.
 - **Label crash safety** — transitions use add-before-remove ordering so a ticket is never invisible to all queues.
-- **Env schema fallback resolution** — `CLANCY_LABEL_BUILD` falls back to `CLANCY_LABEL`, `CLANCY_LABEL_PLAN` falls back to `CLANCY_PLAN_LABEL`. Existing users see no change.
+- **Fallback resolution** — `CLANCY_LABEL_BUILD` falls back to `CLANCY_LABEL`, `CLANCY_LABEL_PLAN` falls back to `CLANCY_PLAN_LABEL`. Resolved in `fetch-ticket.ts` at queue pickup time. Existing users see no change.
 - **Pipeline label prompts in init** — conditional on enabled roles (Strategist: all 3 labels, Planner only: plan + build, neither: skip).
 - **Pipeline label settings** — `[L1]`, `[L2]`, `[L3]` settings for brief, plan, and build labels with deprecation notices for old vars.
 - `CLANCY_LABEL_BRIEF`, `CLANCY_LABEL_PLAN`, `CLANCY_LABEL_BUILD` env vars added to all `.env.example` templates.

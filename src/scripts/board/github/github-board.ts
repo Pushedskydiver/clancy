@@ -99,11 +99,19 @@ export function createGitHubBoard(env: GitHubEnv): Board {
         );
 
         if (res.status === 404) {
-          await fetch(`${GITHUB_API}/repos/${env.GITHUB_REPO}/labels`, {
-            method: 'POST',
-            headers: { ...headers, 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: label, color: '0075ca' }),
-          });
+          const createRes = await fetch(
+            `${GITHUB_API}/repos/${env.GITHUB_REPO}/labels`,
+            {
+              method: 'POST',
+              headers: { ...headers, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name: label, color: '0075ca' }),
+            },
+          );
+          if (!createRes.ok && createRes.status !== 422) {
+            console.warn(
+              `⚠ ensureLabel create returned HTTP ${createRes.status}`,
+            );
+          }
         }
       } catch (err) {
         console.warn(
@@ -120,7 +128,7 @@ export function createGitHubBoard(env: GitHubEnv): Board {
         if (Number.isNaN(issueNumber)) return;
 
         const headers = githubHeaders(env.GITHUB_TOKEN);
-        await fetch(
+        const addRes = await fetch(
           `${GITHUB_API}/repos/${env.GITHUB_REPO}/issues/${issueNumber}/labels`,
           {
             method: 'POST',
@@ -128,6 +136,9 @@ export function createGitHubBoard(env: GitHubEnv): Board {
             body: JSON.stringify({ labels: [label] }),
           },
         );
+        if (!addRes.ok) {
+          console.warn(`⚠ addLabel returned HTTP ${addRes.status}`);
+        }
       } catch (err) {
         console.warn(
           `⚠ addLabel failed: ${err instanceof Error ? err.message : String(err)}`,

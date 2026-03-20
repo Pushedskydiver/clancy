@@ -10,7 +10,7 @@ Three pipeline stage labels control ticket flow: `clancy:brief` → `clancy:plan
 
 ## Key Decisions
 
-1. **Backward compatibility via fallback.** `CLANCY_LABEL_BUILD` falls back to `CLANCY_LABEL`. `CLANCY_LABEL_PLAN` falls back to `CLANCY_PLAN_LABEL`. Fallback resolution happens in the env schema, not in individual consumers.
+1. **Backward compatibility via fallback.** `CLANCY_LABEL_BUILD` falls back to `CLANCY_LABEL`. `CLANCY_LABEL_PLAN` falls back to `CLANCY_PLAN_LABEL`. Fallback resolution happens in `fetch-ticket.ts` at queue pickup time via `resolveBuildLabel()` / `resolvePlanLabel()` helpers.
 
 2. **Create-if-missing label management.** Labels are created on the board automatically when first needed via `ensureLabel`. GitHub: REST API create. Jira: auto-creates on use (no-op). Linear: GraphQL team label query + create mutation.
 
