@@ -125,19 +125,23 @@ Make AFK mode production-grade. Every feature in this version makes autonomous o
 
 Make Clancy work for teams, not just solo developers.
 
+### Pre-requisite (Wave 0)
+- **Migrate `fetch-ticket.ts` to Board type** — eliminate the dual-switch pattern (`fetch-ticket.ts` has its own board dispatch parallel to the Board wrappers). Required before adding 3 new boards to avoid maintaining 6 switch cases in two places
+- **`retryFetch()` utility** — shared HTTP wrapper with exponential backoff and `Retry-After` header support in `src/scripts/shared/http/`. Required by Notion's 3 req/s rate limit, available to all boards
+
 ### Board ecosystem
-- Shortcut (formerly Clubhouse) support
-- Notion database support
-- Azure DevOps support
-- Board auto-detection: Clancy detects which board is configured without asking
+- Shortcut (formerly Clubhouse) support — REST API v3, workflow state caching, `blocked` flag + story_links for blockers
+- Notion database support — REST API with retry-with-backoff for 3 req/s rate limit, configurable property names (`CLANCY_NOTION_STATUS`, `CLANCY_NOTION_ASSIGNEE`, etc.)
+- Azure DevOps support — WIQL queries, JSON Patch updates, two-step fetch, WIQL-specific injection validator
+- Board auto-detection: extend existing `detectBoard()` with new board signals, priority ordering with prompt fallback on conflict
 - `/clancy:reapply-patches` — guided restore of user-modified files backed up during updates
 
 ### Team features
-- **Ticket claim check** — before picking a ticket, verify it is not already "In Progress" (claimed by another instance or human). Skip if claimed
-- **Quality feedback tracking** — record review cycles, CI pass rate, and rework count per ticket. Surface in `/clancy:logs` as quality trends. Identify problematic ticket types
-- **Desktop notification hook** — `Notification` event hook when Claude needs input. Essential for HITL workflows
-- **Quiet hours hook** — block AFK runs outside configured hours (`CLANCY_QUIET_HOURS=22:00-07:00`)
-- **Drift detector hook** — compare local `.clancy/` config against installed version. Warn if hooks or scripts are stale
+- **Ticket claim check** — re-fetch guard before pickup to verify ticket is not already "In Progress" (claimed by another instance or human). Skip if claimed. Narrows race window to milliseconds
+- **Quality feedback tracking** — record review cycles, CI pass rate, and rework count per ticket in `.clancy/quality.json`. Surface in `/clancy:logs` as quality trends
+- **Desktop notifications** — orchestrator-level calls (`osascript`/`notify-send`/PowerShell) on ticket completion/failure/session end. Supplementary `Notification` event hook. Controlled by `CLANCY_DESKTOP_NOTIFY`
+- **Quiet hours** — AFK runner check (primary) prevents new iterations during configured hours (`CLANCY_QUIET_START`/`CLANCY_QUIET_END`). PreToolUse hook (fail-safe) blocks tool execution during quiet hours — causes session to wind down, not sleep
+- **Drift detector hook** — compare `.clancy/version.json` against installed npm package version. Warn if hooks or scripts are stale. Suppressed via `CLANCY_SKIP_DRIFT_CHECK`
 
 ---
 
