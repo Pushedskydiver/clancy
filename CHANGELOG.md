@@ -29,6 +29,19 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 - 853 → 896 (43 new tests for board label methods and env schema fallback)
 
+### Migration from v0.7.2+
+
+Pipeline labels are opt-in. Existing `CLANCY_LABEL` and `CLANCY_PLAN_LABEL` continue to work as fallbacks — no breaking changes. To enable the full pipeline:
+
+1. Run `/clancy:update` to pull the latest files
+2. Run `/clancy:settings` → configure `[L1]` Brief label, `[L2]` Plan label, `[L3]` Build label
+3. Or add manually to `.clancy/.env`:
+   ```
+   CLANCY_LABEL_BRIEF=clancy:brief
+   CLANCY_LABEL_PLAN=clancy:plan
+   CLANCY_LABEL_BUILD=clancy:build
+   ```
+
 ---
 
 ## [0.7.3] — 2026-03-19
