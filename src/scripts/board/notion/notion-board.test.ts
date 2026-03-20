@@ -22,7 +22,7 @@ vi.mock('./notion.js', () => ({
 
 const baseEnv: NotionEnv = {
   NOTION_TOKEN: 'ntn_test_token',
-  NOTION_DATABASE_ID: 'db-uuid-1234',
+  NOTION_DATABASE_ID: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
 };
 
 describe('notion-board', () => {
@@ -258,7 +258,7 @@ describe('notion-board', () => {
 
       expect(fetchBlockerStatus).toHaveBeenCalledWith(
         'ntn_test_token',
-        'db-uuid-1234',
+        'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
         'ab12cd34-5678-9abc-def0-123456789abc',
       );
     });
@@ -288,7 +288,7 @@ describe('notion-board', () => {
 
       expect(fetchChildrenStatus).toHaveBeenCalledWith(
         'ntn_test_token',
-        'db-uuid-1234',
+        'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
         'notion-ab12cd34',
         'Epic', // default parent prop
       );
@@ -306,7 +306,7 @@ describe('notion-board', () => {
 
       expect(fetchChildrenStatus).toHaveBeenCalledWith(
         'ntn_test_token',
-        'db-uuid-1234',
+        'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
         'notion-ab12cd34',
         'Parent Task',
       );

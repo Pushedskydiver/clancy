@@ -47,7 +47,12 @@ export function createNotionBoard(env: NotionEnv): Board {
     },
 
     validateInputs() {
-      // Notion tokens are opaque strings — no structural validation needed
+      // Validate database ID looks like a UUID (with or without hyphens)
+      const uuidPattern =
+        /^[0-9a-f]{8}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{4}-?[0-9a-f]{12}$/i;
+      if (!uuidPattern.test(env.NOTION_DATABASE_ID)) {
+        return '✗ NOTION_DATABASE_ID does not look like a valid UUID. Use the database ID from the Notion URL, not the full URL.';
+      }
       return undefined;
     },
 
@@ -57,11 +62,8 @@ export function createNotionBoard(env: NotionEnv): Board {
     },
 
     async fetchTickets(opts: FetchTicketOpts) {
-      // Build filter: status = "To-do" (or configured status)
-      const statusFilter = buildStatusFilter(
-        statusProp,
-        env.CLANCY_STATUS_IN_PROGRESS,
-      );
+      // Build filter: status = backlog/to-do (not in-progress)
+      const statusFilter = buildStatusFilter(statusProp, 'To-do');
 
       const result = await queryDatabase(
         env.NOTION_TOKEN,
@@ -215,9 +217,14 @@ function buildStatusFilter(
 ): Record<string, unknown> {
   const statusName = customStatus ?? 'To-do';
 
+  // Try both Status and Select property types — Notion returns empty
+  // results (not errors) when the filter type doesn't match the property.
+  // Using `or` ensures we find pages regardless of which type is used.
   return {
-    property: statusProp,
-    status: { equals: statusName },
+    or: [
+      { property: statusProp, status: { equals: statusName } },
+      { property: statusProp, select: { equals: statusName } },
+    ],
   };
 }
 
