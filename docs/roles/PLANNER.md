@@ -59,7 +59,7 @@ The planner fetches from a **separate queue** to the implementer, targeting earl
 `CLANCY_PLAN_STATE_TYPE` accepts one of: `backlog`, `unstarted`, `started`, `completed`, `canceled`, `triage`.
 
 Additional filters vary by board:
-- **Jira:** `CLANCY_LABEL_BUILD` (falls back to `CLANCY_LABEL`) and `CLANCY_JQL_SPRINT` apply on top of the planning queue filter
+- **Jira:** `CLANCY_LABEL_PLAN` and `CLANCY_JQL_SPRINT` apply on top of the planning queue filter (status-based filtering is primary; label is supplementary when set)
 - **GitHub:** Uses `CLANCY_LABEL_PLAN` (falls back to `CLANCY_PLAN_LABEL`) only
 - **Linear:** No additional label filter
 - **All boards:** `assignee = currentUser()` always applies

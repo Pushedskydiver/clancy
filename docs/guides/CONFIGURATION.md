@@ -152,8 +152,8 @@ Posts to Slack or Teams when a ticket completes. The payload format (Slack vs Te
 | Filter | Env var | Applies to | Notes |
 | --- | --- | --- | --- |
 | Sprint filter | `CLANCY_JQL_SPRINT` | Jira (both queues) | Adds `AND sprint in openSprints()` |
-| Build label filter | `CLANCY_LABEL_BUILD` (falls back to `CLANCY_LABEL`) | Jira (both queues), GitHub (implementation only) | Excludes tickets with `CLANCY_LABEL_PLAN` (dual-label guard) |
-| Plan label filter | `CLANCY_LABEL_PLAN` (falls back to `CLANCY_PLAN_LABEL`) | GitHub (planning only) | Jira/Linear use status-based filtering for planning queue |
+| Build label filter | `CLANCY_LABEL_BUILD` (falls back to `CLANCY_LABEL`) | Jira (implementation only), GitHub (implementation only) | Excludes tickets with `CLANCY_LABEL_PLAN` (dual-label guard) |
+| Plan label filter | `CLANCY_LABEL_PLAN` (falls back to `CLANCY_PLAN_LABEL`) | GitHub (planning only), Jira (supplementary when set) | Jira/Linear primarily use status-based filtering for planning queue |
 | Assignment | — | All boards (both queues) | Always `assignee = currentUser()` |
 
 ## All environment variables
