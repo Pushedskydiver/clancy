@@ -98,7 +98,7 @@ export function createJiraBoard(env: JiraEnv): Board {
       return ok;
     },
 
-    async ensureLabel() {
+    async ensureLabel(_label: string) {
       // No-op — Jira auto-creates labels on use.
     },
 

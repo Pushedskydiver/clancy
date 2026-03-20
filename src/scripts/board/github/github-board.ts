@@ -98,6 +98,8 @@ export function createGitHubBoard(env: GitHubEnv): Board {
           { headers },
         );
 
+        if (res.ok) return; // Label already exists
+
         if (res.status === 404) {
           const createRes = await fetch(
             `${GITHUB_API}/repos/${env.GITHUB_REPO}/labels`,
@@ -112,6 +114,8 @@ export function createGitHubBoard(env: GitHubEnv): Board {
               `⚠ ensureLabel create returned HTTP ${createRes.status}`,
             );
           }
+        } else {
+          console.warn(`⚠ ensureLabel GET returned HTTP ${res.status}`);
         }
       } catch (err) {
         console.warn(

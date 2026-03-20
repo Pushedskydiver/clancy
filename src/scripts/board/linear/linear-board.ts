@@ -253,16 +253,7 @@ export function createLinearBoard(env: LinearEnv): Board {
           identifier: issueKey,
         });
 
-        const issueData = issueRaw as {
-          data?: {
-            issueSearch?: {
-              nodes?: Array<{
-                id: string;
-                labels?: { nodes?: Array<{ id: string; name: string }> };
-              }>;
-            };
-          };
-        };
+        const issueData = linearIssueLabelSearchResponseSchema.parse(issueRaw);
 
         const issue = issueData?.data?.issueSearch?.nodes?.[0];
         if (!issue) return;

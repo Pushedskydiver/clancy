@@ -92,7 +92,7 @@ async function fetchCandidates(
           description: ticket.description,
           parentInfo: ticket.epicKey ?? 'none',
           blockers: blockerStr,
-          labels: ticket.labels,
+          labels: ticket.labels ?? [],
         };
       });
     }
@@ -115,7 +115,7 @@ async function fetchCandidates(
         description: ticket.description,
         parentInfo: ticket.milestone ?? 'none',
         blockers: 'None',
-        labels: ticket.labels,
+        labels: ticket.labels ?? [],
       }));
     }
 
@@ -139,7 +139,7 @@ async function fetchCandidates(
         blockers: 'None',
         linearIssueId: ticket.issueId,
         issueId: ticket.issueId,
-        labels: ticket.labels,
+        labels: ticket.labels ?? [],
       }));
     }
   }

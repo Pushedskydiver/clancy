@@ -90,6 +90,7 @@ describe('fetchTicket', () => {
       description: 'Create login page.',
       parentInfo: 'PROJ-1',
       blockers: 'Blocked by: PROJ-5',
+      labels: [],
     });
   });
 
@@ -150,6 +151,7 @@ describe('fetchTicket', () => {
       description: 'Bug description.',
       parentInfo: 'Sprint 3',
       blockers: 'None',
+      labels: [],
     });
   });
 
@@ -195,6 +197,7 @@ describe('fetchTicket', () => {
       blockers: 'None',
       linearIssueId: 'uuid-abc',
       issueId: 'uuid-abc',
+      labels: [],
     });
   });
 
