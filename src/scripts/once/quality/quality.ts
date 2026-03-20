@@ -43,7 +43,13 @@ export function readQualityData(projectRoot: string): QualityData {
     const parsed = JSON.parse(raw) as QualityData;
 
     // Validate basic structure
-    if (parsed && typeof parsed.tickets === 'object' && parsed.summary) {
+    if (
+      parsed &&
+      typeof parsed.tickets === 'object' &&
+      parsed.tickets !== null &&
+      !Array.isArray(parsed.tickets) &&
+      parsed.summary
+    ) {
       return parsed;
     }
   } catch {

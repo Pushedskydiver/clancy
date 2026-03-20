@@ -81,8 +81,8 @@ export function createShortcutBoard(env: ShortcutEnv): Board {
     },
 
     async fetchChildrenStatus(parentKey: string, parentId?: string) {
-      // Extract numeric epic ID from parentKey (format: sc-{id}) or parentId
-      const raw = parentId ?? parentKey.replace(/^sc-/, '');
+      // Extract numeric epic ID from parentId, parentKey (sc-{id}), or epic-{id}
+      const raw = parentId ?? parentKey.replace(/^(sc-|epic-)/, '');
       const epicId = parseInt(raw, 10);
       if (Number.isNaN(epicId)) return undefined;
       return fetchShortcutChildrenStatus(

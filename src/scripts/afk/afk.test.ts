@@ -76,37 +76,37 @@ describe('afk', () => {
     });
 
     it('returns sleep ms when inside same-day quiet window', () => {
-      // Quiet: 09:00-17:00, now: 12:00
-      const now = new Date('2026-03-20T12:00:00Z');
+      // Quiet: 09:00-17:00, now: 12:00 (local time)
+      const now = new Date(2026, 2, 20, 12, 0, 0);
       const ms = getQuietSleepMs('09:00', '17:00', now);
       // Should sleep ~5 hours (300 minutes)
       expect(ms).toBe(300 * 60000);
     });
 
     it('handles overnight window — current time after start', () => {
-      // Quiet: 22:00-06:00, now: 23:00
-      const now = new Date('2026-03-20T23:00:00Z');
+      // Quiet: 22:00-06:00, now: 23:00 (local time)
+      const now = new Date(2026, 2, 20, 23, 0, 0);
       const ms = getQuietSleepMs('22:00', '06:00', now);
       // Should sleep ~7 hours (420 minutes)
       expect(ms).toBe(420 * 60000);
     });
 
     it('handles overnight window — current time before end', () => {
-      // Quiet: 22:00-06:00, now: 03:00
-      const now = new Date('2026-03-20T03:00:00Z');
+      // Quiet: 22:00-06:00, now: 03:00 (local time)
+      const now = new Date(2026, 2, 20, 3, 0, 0);
       const ms = getQuietSleepMs('22:00', '06:00', now);
       // Should sleep ~3 hours (180 minutes)
       expect(ms).toBe(180 * 60000);
     });
 
     it('returns 0 when outside overnight window', () => {
-      // Quiet: 22:00-06:00, now: 12:00
-      const now = new Date('2026-03-20T12:00:00Z');
+      // Quiet: 22:00-06:00, now: 12:00 (local time)
+      const now = new Date(2026, 2, 20, 12, 0, 0);
       expect(getQuietSleepMs('22:00', '06:00', now)).toBe(0);
     });
 
     it('returns 0 for invalid time strings', () => {
-      const now = new Date('2026-03-20T12:00:00Z');
+      const now = new Date(2026, 2, 20, 12, 0, 0);
       expect(getQuietSleepMs('invalid', '06:00', now)).toBe(0);
       expect(getQuietSleepMs('22:00', 'invalid', now)).toBe(0);
     });
