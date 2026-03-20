@@ -78,9 +78,9 @@ export function getQuietSleepMs(
   let minutesUntilEnd = endMin - nowMin;
   if (minutesUntilEnd <= 0) minutesUntilEnd += 24 * 60;
 
-  // Subtract seconds already past the current minute
-  const secondsIntoMinute = now.getSeconds();
-  return Math.max(0, minutesUntilEnd * 60000 - secondsIntoMinute * 1000);
+  // Subtract seconds and milliseconds already past the current minute
+  const msIntoMinute = now.getSeconds() * 1000 + now.getMilliseconds();
+  return Math.max(0, minutesUntilEnd * 60000 - msIntoMinute);
 }
 
 /** Stop condition patterns matched against script output. */

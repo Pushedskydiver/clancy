@@ -147,7 +147,7 @@ export function recordRework(projectRoot: string, ticketKey: string): void {
 /**
  * Record a verification retry for a ticket.
  *
- * Increments the verification retry counter. Called after the verification
+ * Sets the verification retry count. Called after the verification
  * gate completes (successful or not).
  *
  * @param projectRoot - The project root directory.

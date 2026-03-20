@@ -8,7 +8,7 @@
 
 /** Options for retry behaviour. */
 export type RetryOptions = {
-  /** Maximum number of retry attempts. Default: 3. */
+  /** Maximum number of retry attempts (excludes the initial attempt). Default: 3. */
   maxRetries?: number;
   /** Base delay in milliseconds for exponential backoff. Default: 1000. */
   baseDelayMs?: number;

@@ -80,6 +80,11 @@ export async function pingNotion(
 /**
  * Query a Notion database with optional filters and pagination.
  *
+ * Note: Returns a single page of results (Notion default: 100 items).
+ * Callers needing all results should loop using `has_more` / `next_cursor`.
+ * For ticket fetching this is sufficient (we only need ~5 candidates),
+ * but children/blocker lookups may miss items in large databases.
+ *
  * @param token - The Notion integration token.
  * @param databaseId - The database UUID.
  * @param filter - Optional Notion filter object.
