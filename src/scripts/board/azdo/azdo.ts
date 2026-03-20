@@ -46,6 +46,7 @@ export function buildAzdoAuth(pat: string): string {
  */
 export function isSafeWiqlValue(value: string): boolean {
   if (value.includes("'")) return false;
+  if (value.includes('\\')) return false;
   if (value.includes('--')) return false;
   if (value.includes(';')) return false;
   if (value.includes('/*')) return false;
@@ -54,11 +55,22 @@ export function isSafeWiqlValue(value: string): boolean {
   return true;
 }
 
+/**
+ * Assert a value is safe for WIQL interpolation.
+ * Returns the value if safe, throws if not. Defence-in-depth at interpolation site.
+ */
+function safeWiql(value: string): string {
+  if (!isSafeWiqlValue(value)) {
+    throw new Error(`Unsafe WIQL value: ${value.slice(0, 50)}`);
+  }
+  return value;
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 /** Build the Azure DevOps API base URL for a given org and project. */
 function apiBase(org: string, project: string): string {
-  return `https://dev.azure.com/${org}/${project}/_apis`;
+  return `https://dev.azure.com/${encodeURIComponent(org)}/${encodeURIComponent(project)}/_apis`;
 }
 
 /** Build standard headers for Azure DevOps requests. */
@@ -96,7 +108,7 @@ export async function pingAzdo(
 
   try {
     response = await fetch(
-      `https://dev.azure.com/${org}/_apis/projects/${encodeURIComponent(project)}?api-version=${API_VERSION}`,
+      `https://dev.azure.com/${encodeURIComponent(org)}/_apis/projects/${encodeURIComponent(project)}?api-version=${API_VERSION}`,
       { headers: azdoHeaders(pat) },
     );
   } catch {
@@ -389,10 +401,10 @@ export async function fetchTickets(
   excludeHitl?: boolean,
   limit = 5,
 ): Promise<AzdoTicket[]> {
-  let wiql = `SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = '${project}' AND [System.State] = '${status}' AND [System.AssignedTo] = @Me`;
+  let wiql = `SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = '${safeWiql(project)}' AND [System.State] = '${safeWiql(status)}' AND [System.AssignedTo] = @Me`;
 
   if (wit) {
-    wiql += ` AND [System.WorkItemType] = '${wit}'`;
+    wiql += ` AND [System.WorkItemType] = '${safeWiql(wit)}'`;
   }
 
   wiql += ' ORDER BY [System.CreatedDate] ASC';
@@ -562,7 +574,7 @@ async function fetchChildrenByDescription(
   descriptionRef: string,
 ): Promise<ChildrenStatus | undefined> {
   try {
-    const wiql = `SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = '${project}' AND [System.Description] CONTAINS '${descriptionRef}'`;
+    const wiql = `SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = '${safeWiql(project)}' AND [System.Description] CONTAINS '${safeWiql(descriptionRef)}'`;
 
     const ids = await runWiql(org, project, pat, wiql);
     if (!ids.length) return { total: 0, incomplete: 0 };
@@ -597,6 +609,7 @@ async function fetchChildrenByLinks(
   parentId: number,
 ): Promise<ChildrenStatus | undefined> {
   try {
+    if (Number.isNaN(parentId)) return undefined;
     const wiql = `SELECT [System.Id] FROM WorkItemLinks WHERE [Source].[System.Id] = ${parentId} AND [System.Links.LinkType] = 'System.LinkTypes.Hierarchy-Forward' MODE (MustContain)`;
 
     const response = await fetch(
