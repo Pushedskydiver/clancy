@@ -37,6 +37,15 @@ You can also toggle it via `/clancy:settings`.
 
 Arguments can appear in any order (e.g. `/clancy:plan 3 --fresh` or `/clancy:plan --fresh PROJ-123`).
 
+## Pipeline labels
+
+The planner works with two pipeline labels:
+
+- **`clancy:plan`** (`CLANCY_LABEL_PLAN`) — `/clancy:plan` filters by this label to find tickets needing planning
+- **`clancy:build`** (`CLANCY_LABEL_BUILD`) — `/clancy:approve-plan` adds this label (then removes `clancy:plan`) to mark tickets ready for implementation
+
+The new label is always added before the old one is removed (crash safety). Falls back to `CLANCY_PLAN_LABEL` if `CLANCY_LABEL_PLAN` is not set.
+
 ## Planning queue filters
 
 The planner fetches from a **separate queue** to the implementer, targeting earlier-stage tickets:

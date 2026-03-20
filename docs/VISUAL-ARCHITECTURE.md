@@ -85,23 +85,23 @@ stateDiagram-v2
     [*] --> Idea: Vague idea on board\nor inline text
 
     state "Strategist (optional)" as strat {
-        Idea --> Grill: /clancy:brief
+        Idea --> Grill: /clancy:brief\n+ clancy:brief label
         Grill --> Brief: Generate brief
         Brief --> ReviewBrief: PO reviews
         ReviewBrief --> Brief: Feedback → revise
-        ReviewBrief --> Tickets: /clancy:approve-brief
+        ReviewBrief --> Tickets: /clancy:approve-brief\n− clancy:brief + clancy:plan
     }
 
     state "Planner (optional)" as plnr {
-        Tickets --> Backlog: Tickets in backlog
+        Tickets --> Backlog: Tickets with\nclancy:plan label
         Backlog --> Planning: /clancy:plan
         Planning --> ReviewPlan: PO reviews plan
         ReviewPlan --> Planning: Feedback → revise
-        ReviewPlan --> Ready: /clancy:approve-plan
+        ReviewPlan --> Ready: /clancy:approve-plan\n− clancy:plan + clancy:build
     }
 
     state "Implementer" as impl {
-        Ready --> InProgress: /clancy:once or /clancy:run
+        Ready --> InProgress: /clancy:once or /clancy:run\nfilters by clancy:build
         InProgress --> Claude: Invoke Claude session
         Claude --> Deliver: Code committed
     }
@@ -291,6 +291,7 @@ graph LR
         comment["Post comment"]
         link["Link dependencies"]
         close["Close / Done"]
+        labelop["Label management\n(ensure/add/remove)"]
     end
 
     subgraph Boards
@@ -301,13 +302,16 @@ graph LR
 
     brief --> fetch
     brief --> comment
+    brief --> labelop
     approvebrief --> create
     approvebrief --> link
     approvebrief --> comment
+    approvebrief --> labelop
     plan --> fetch
     plan --> comment
     approveplan --> fetch
     approveplan --> transition
+    approveplan --> labelop
     once --> fetch
     once --> transition
     once --> close
@@ -329,6 +333,9 @@ graph LR
     close --> jira
     close --> github
     close --> linear
+    labelop --> jira
+    labelop --> github
+    labelop --> linear
 
     style jira fill:#0052CC,color:#fff
     style github fill:#24292e,color:#fff

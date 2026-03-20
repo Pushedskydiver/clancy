@@ -86,6 +86,14 @@ Strategist
   [T2] Issue type        {CLANCY_BRIEF_ISSUE_TYPE:-Task}
   [T3] Component         {CLANCY_COMPONENT if set, else "off"}
 
+{If Planner or Strategist enabled:}
+Pipeline Labels
+  [L1] Brief label         {CLANCY_LABEL_BRIEF if set, else "clancy:brief"}    (Strategist only)
+  [L2] Plan label          {CLANCY_LABEL_PLAN if set, else "clancy:plan"}
+  [L3] Build label         {CLANCY_LABEL_BUILD if set, else "clancy:build"}
+  {If CLANCY_LABEL or CLANCY_PLAN_LABEL set:}
+  ⚠ CLANCY_LABEL and CLANCY_PLAN_LABEL are deprecated. Use CLANCY_LABEL_BUILD and CLANCY_LABEL_PLAN.
+
 {If Planner enabled:}
 Planner
 {If Jira:}
@@ -536,6 +544,60 @@ Only affects ticket creation — does not filter the implementation queue.
 
 If [1]: prompt `What component should /clancy:brief set on created tickets?` then write `CLANCY_COMPONENT=<value>` to `.clancy/.env`. Wrap in double quotes.
 If [2]: remove `CLANCY_COMPONENT` from `.clancy/.env`.
+
+---
+
+### [L1] Brief label
+
+Only shown when Strategist is enabled.
+
+```
+Brief label — current: {value or "clancy:brief"}
+Label applied to tickets after /clancy:brief. Removed when the brief is approved.
+
+[1] clancy:brief (default)
+[2] Enter a different value
+[3] Cancel
+```
+
+If [1]: remove `CLANCY_LABEL_BRIEF` from `.clancy/.env` (uses default).
+If [2]: prompt `What label should /clancy:brief apply?` then write `CLANCY_LABEL_BRIEF=<value>` to `.clancy/.env`. Wrap in double quotes.
+
+---
+
+### [L2] Plan label
+
+Only shown when Planner or Strategist is enabled.
+
+```
+Plan label — current: {value or "clancy:plan"}
+Label applied to tickets that need planning. Removed when the plan is approved.
+
+[1] clancy:plan (default)
+[2] Enter a different value
+[3] Cancel
+```
+
+If [1]: remove `CLANCY_LABEL_PLAN` from `.clancy/.env` (uses default).
+If [2]: prompt `What label should mark tickets needing planning?` then write `CLANCY_LABEL_PLAN=<value>` to `.clancy/.env`. Wrap in double quotes.
+
+---
+
+### [L3] Build label
+
+Only shown when Planner or Strategist is enabled.
+
+```
+Build label — current: {value or "clancy:build"}
+Label applied to tickets ready for implementation. Used by /clancy:once and /clancy:run to filter the queue.
+
+[1] clancy:build (default)
+[2] Enter a different value
+[3] Cancel
+```
+
+If [1]: remove `CLANCY_LABEL_BUILD` from `.clancy/.env` (uses default).
+If [2]: prompt `What label should mark tickets ready to build?` then write `CLANCY_LABEL_BUILD=<value>` to `.clancy/.env`. Wrap in double quotes.
 
 ---
 

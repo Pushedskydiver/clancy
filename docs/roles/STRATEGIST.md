@@ -67,6 +67,15 @@ The generated brief includes (in this order):
 - **Success Criteria** — measurable outcomes
 - **Risks** — potential issues, technical debt, or unknowns
 
+## Pipeline labels
+
+`/clancy:brief` applies the brief label (`CLANCY_LABEL_BRIEF`, default `clancy:brief`) to the source ticket after posting the brief. When re-briefing with `--fresh`, any existing pipeline labels (`clancy:plan`, `clancy:build`) are removed first.
+
+`/clancy:approve-brief` removes the brief label from the parent ticket and applies pipeline labels to each created child:
+- **Planner enabled:** children get the plan label (`CLANCY_LABEL_PLAN`, default `clancy:plan`)
+- **`--skip-plan` flag:** children get the build label (`CLANCY_LABEL_BUILD`, default `clancy:build`)
+- **No planner:** children get the build label directly
+
 ## Approve flow
 
 When `/clancy:approve-brief` runs, it:
@@ -78,11 +87,13 @@ When `/clancy:approve-brief` runs, it:
 5. **Creates tickets** on the board sequentially (500ms delay between creates):
    - Each ticket description includes `Epic: {key}` for cross-platform epic completion detection
    - Labels: `clancy:afk` for autonomous tickets, `clancy:hitl` for human-in-the-loop tickets
+   - Pipeline label: `clancy:plan` (or `clancy:build` with `--skip-plan` or no planner)
    - Issue type configurable via `CLANCY_BRIEF_ISSUE_TYPE`
    - Parent epic configurable via `CLANCY_BRIEF_EPIC`
-6. **Links dependencies** — creates blocking relationships between tickets on the board
-7. **Marks brief as approved** — writes `.approved` marker file
-8. Displays a summary with next steps
+6. **Removes brief label** from the parent ticket
+7. **Links dependencies** — creates blocking relationships between tickets on the board
+8. **Marks brief as approved** — writes `.approved` marker file
+9. Displays a summary with next steps
 
 ## Configuration
 

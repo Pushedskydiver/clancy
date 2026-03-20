@@ -19,6 +19,7 @@ The complete journey of a feature from idea to merged code. Human steps are mark
    ├─ Generates brief with:
    │    Discovery, User Stories, Vertical Slices,
    │    Ticket Decomposition, HITL/AFK tags
+   ├─ Adds clancy:brief label to ticket
    └─ Saves to .clancy/briefs/ + posts on board
 
 👤 Review the brief
@@ -34,12 +35,15 @@ The complete journey of a feature from idea to merged code. Human steps are mark
    │
    ├─ Clancy shows ticket list + deps + HITL/AFK breakdown
    ├─ 👤 Confirm [Y/n] (skipped with --afk)
+   ├─ Removes clancy:brief from parent ticket
    ├─ Creates child tickets on board (with Epic: convention)
+   │    Each child gets clancy:plan label (or clancy:build with --skip-plan)
    ├─ Links dependencies (blocking relationships)
    └─ Posts summary on parent ticket
 
    Board now has: PROJ-201, PROJ-202, PROJ-203, etc.
    Each tagged AFK or HITL, with dependencies linked.
+   Each labelled clancy:plan (ready for /clancy:plan).
 ```
 
 ---
@@ -49,7 +53,7 @@ The complete journey of a feature from idea to merged code. Human steps are mark
 Skip if tickets are clear enough from the brief.
 
 ```
-👤 Run /clancy:plan (picks next unplanned ticket)
+👤 Run /clancy:plan (picks next ticket with clancy:plan label)
    │
    ├─ Clancy reads the ticket + codebase
    ├─ Generates implementation plan
@@ -58,6 +62,7 @@ Skip if tickets are clear enough from the brief.
 👤 Review the plan
    │
    ├─ Happy? → 👤 /clancy:approve-plan
+   │    (removes clancy:plan, adds clancy:build)
    ├─ Want changes? → 👤 Comment on ticket, then
    │    👤 /clancy:plan (auto-revises)
    └─ Start over? → 👤 /clancy:plan --fresh
