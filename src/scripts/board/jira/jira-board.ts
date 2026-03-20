@@ -6,7 +6,7 @@
  */
 import type { JiraEnv } from '~/schemas/env.js';
 import { jiraIssueLabelsResponseSchema } from '~/schemas/jira.js';
-import type { FetchedTicket } from '~/scripts/once/types/types.js';
+import type { FetchedTicket } from '~/types/board.js';
 
 import type { Board, FetchTicketOpts } from '../board.js';
 import {
@@ -61,9 +61,11 @@ export function createJiraBoard(env: JiraEnv): Board {
         env.JIRA_PROJECT_KEY,
         env.CLANCY_JQL_STATUS ?? 'To Do',
         env.CLANCY_JQL_SPRINT,
-        env.CLANCY_LABEL,
+        opts.buildLabel ?? env.CLANCY_LABEL,
         opts.excludeHitl,
       );
+
+      const statusName = env.CLANCY_JQL_STATUS ?? 'To Do';
 
       return tickets.map((ticket): FetchedTicket => {
         const blockerStr = ticket.blockers.length
@@ -76,6 +78,8 @@ export function createJiraBoard(env: JiraEnv): Board {
           description: ticket.description,
           parentInfo: ticket.epicKey ?? 'none',
           blockers: blockerStr,
+          labels: ticket.labels ?? [],
+          status: statusName,
         };
       });
     },

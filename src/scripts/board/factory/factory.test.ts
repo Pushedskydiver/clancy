@@ -17,6 +17,18 @@ vi.mock('../linear/linear-board.js', () => ({
   createLinearBoard: vi.fn(() => ({ _type: 'linear' })),
 }));
 
+vi.mock('../shortcut/shortcut-board.js', () => ({
+  createShortcutBoard: vi.fn(() => ({ _type: 'shortcut' })),
+}));
+
+vi.mock('../notion/notion-board.js', () => ({
+  createNotionBoard: vi.fn(() => ({ _type: 'notion' })),
+}));
+
+vi.mock('../azdo/azdo-board.js', () => ({
+  createAzdoBoard: vi.fn(() => ({ _type: 'azdo' })),
+}));
+
 describe('factory', () => {
   describe('createBoard', () => {
     it('creates a Jira board for jira provider', () => {
@@ -96,6 +108,82 @@ describe('factory', () => {
 
       createBoard({ provider: 'linear', env });
       expect(createLinearBoard).toHaveBeenCalledWith(env);
+    });
+
+    it('creates a Shortcut board for shortcut provider', () => {
+      const config: BoardConfig = {
+        provider: 'shortcut',
+        env: {
+          SHORTCUT_API_TOKEN: 'sc_test',
+        },
+      };
+
+      const board = createBoard(config) as unknown as { _type: string };
+      expect(board._type).toBe('shortcut');
+    });
+
+    it('passes shortcut env to createShortcutBoard', async () => {
+      const { createShortcutBoard } =
+        await import('../shortcut/shortcut-board.js');
+
+      const env = {
+        SHORTCUT_API_TOKEN: 'sc_test',
+      };
+
+      createBoard({ provider: 'shortcut', env });
+      expect(createShortcutBoard).toHaveBeenCalledWith(env);
+    });
+
+    it('creates a Notion board for notion provider', () => {
+      const config: BoardConfig = {
+        provider: 'notion',
+        env: {
+          NOTION_TOKEN: 'ntn_test',
+          NOTION_DATABASE_ID: 'db-uuid-1234',
+        },
+      };
+
+      const board = createBoard(config) as unknown as { _type: string };
+      expect(board._type).toBe('notion');
+    });
+
+    it('passes notion env to createNotionBoard', async () => {
+      const { createNotionBoard } = await import('../notion/notion-board.js');
+
+      const env = {
+        NOTION_TOKEN: 'ntn_test',
+        NOTION_DATABASE_ID: 'db-uuid-1234',
+      };
+
+      createBoard({ provider: 'notion', env });
+      expect(createNotionBoard).toHaveBeenCalledWith(env);
+    });
+
+    it('creates an Azure DevOps board for azdo provider', () => {
+      const config: BoardConfig = {
+        provider: 'azdo',
+        env: {
+          AZDO_ORG: 'myorg',
+          AZDO_PROJECT: 'MyProject',
+          AZDO_PAT: 'test-pat',
+        },
+      };
+
+      const board = createBoard(config) as unknown as { _type: string };
+      expect(board._type).toBe('azdo');
+    });
+
+    it('passes azdo env to createAzdoBoard', async () => {
+      const { createAzdoBoard } = await import('../azdo/azdo-board.js');
+
+      const env = {
+        AZDO_ORG: 'myorg',
+        AZDO_PROJECT: 'MyProject',
+        AZDO_PAT: 'test-pat',
+      };
+
+      createBoard({ provider: 'azdo', env });
+      expect(createAzdoBoard).toHaveBeenCalledWith(env);
     });
   });
 });

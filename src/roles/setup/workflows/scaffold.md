@@ -456,6 +456,15 @@ MAX_ITERATIONS=5
 # Prevent accidental commits to the base branch (default: true)
 # CLANCY_BRANCH_GUARD=true
 
+# ─── Optional: Quiet hours ───────────────────────────────────────────────────
+# Pause AFK runs during these hours (24h format). Handles overnight windows.
+# CLANCY_QUIET_START=22:00
+# CLANCY_QUIET_END=06:00
+
+# ─── Optional: Desktop notifications ─────────────────────────────────────────
+# Native OS notifications on ticket completion or error (default: true)
+# CLANCY_DESKTOP_NOTIFY=true
+
 # ─── Optional: Notifications ──────────────────────────────────────────────────
 # Webhook URL for Slack or Teams notifications on ticket completion
 # CLANCY_NOTIFY_WEBHOOK=https://hooks.slack.com/services/your/webhook/url
@@ -563,6 +572,148 @@ MAX_ITERATIONS=20
 
 # ─── Optional: Notifications ──────────────────────────────────────────────────
 # Webhook URL for Slack or Teams notifications on ticket completion
+# ─── Optional: Quiet hours ───────────────────────────────────────────────────
+# CLANCY_QUIET_START=22:00
+# CLANCY_QUIET_END=06:00
+
+# ─── Optional: Desktop notifications ─────────────────────────────────────────
+# CLANCY_DESKTOP_NOTIFY=true
+
+# ─── Optional: Notifications ──────────────────────────────────────────────────
+# CLANCY_NOTIFY_WEBHOOK=https://hooks.slack.com/services/your/webhook/url
+```
+
+### Shortcut
+
+```
+# Clancy — Shortcut configuration
+# Copy this file to .env and fill in your values.
+# Never commit .env to version control.
+
+# ─── Shortcut ────────────────────────────────────────────────────────────────
+SHORTCUT_API_TOKEN=your-api-token
+
+# Optional: workflow name (default: auto-detect first workflow)
+# SHORTCUT_WORKFLOW=Engineering
+
+# ─── Git ──────────────────────────────────────────────────────────────────────
+CLANCY_BASE_BRANCH=main
+
+# ─── Loop ─────────────────────────────────────────────────────────────────────
+MAX_ITERATIONS=5
+
+# ─── Optional: Git host (PR creation) ───────────────────────────────────────
+# GITHUB_TOKEN=ghp_your-token
+# GITLAB_TOKEN=glpat-your-token
+# BITBUCKET_USER=your-username
+# BITBUCKET_TOKEN=your-app-password
+
+# ─── Optional: Pipeline labels ────────────────────────────────────────────────
+# CLANCY_LABEL_BRIEF="clancy:brief"
+# CLANCY_LABEL_PLAN="clancy:plan"
+# CLANCY_LABEL_BUILD="clancy:build"
+
+# ─── Optional: Status transitions ────────────────────────────────────────────
+# CLANCY_STATUS_IN_PROGRESS="In Progress"
+# CLANCY_STATUS_DONE="Done"
+# CLANCY_STATUS_REVIEW="In Review"
+
+# ─── Optional: Quiet hours ───────────────────────────────────────────────────
+# CLANCY_QUIET_START=22:00
+# CLANCY_QUIET_END=06:00
+
+# ─── Optional: Desktop notifications ─────────────────────────────────────────
+# CLANCY_DESKTOP_NOTIFY=true
+
+# ─── Optional: Notifications ──────────────────────────────────────────────────
+# CLANCY_NOTIFY_WEBHOOK=https://hooks.slack.com/services/your/webhook/url
+```
+
+### Notion
+
+```
+# Clancy — Notion configuration
+# Copy this file to .env and fill in your values.
+# Never commit .env to version control.
+
+# ─── Notion ──────────────────────────────────────────────────────────────────
+NOTION_TOKEN=your-integration-token
+NOTION_DATABASE_ID=your-database-id-32-char-hex
+
+# Optional: property name overrides (defaults shown)
+# CLANCY_NOTION_STATUS=Status
+# CLANCY_NOTION_ASSIGNEE=Assignee
+
+# ─── Git ──────────────────────────────────────────────────────────────────────
+CLANCY_BASE_BRANCH=main
+
+# ─── Loop ─────────────────────────────────────────────────────────────────────
+MAX_ITERATIONS=5
+
+# ─── Optional: Git host (PR creation) ───────────────────────────────────────
+# GITHUB_TOKEN=ghp_your-token
+# GITLAB_TOKEN=glpat-your-token
+# BITBUCKET_USER=your-username
+# BITBUCKET_TOKEN=your-app-password
+
+# ─── Optional: Pipeline labels ────────────────────────────────────────────────
+# CLANCY_LABEL_BRIEF="clancy:brief"
+# CLANCY_LABEL_PLAN="clancy:plan"
+# CLANCY_LABEL_BUILD="clancy:build"
+
+# ─── Optional: Quiet hours ───────────────────────────────────────────────────
+# CLANCY_QUIET_START=22:00
+# CLANCY_QUIET_END=06:00
+
+# ─── Optional: Desktop notifications ─────────────────────────────────────────
+# CLANCY_DESKTOP_NOTIFY=true
+
+# ─── Optional: Notifications ──────────────────────────────────────────────────
+# CLANCY_NOTIFY_WEBHOOK=https://hooks.slack.com/services/your/webhook/url
+```
+
+### Azure DevOps
+
+```
+# Clancy — Azure DevOps configuration
+# Copy this file to .env and fill in your values.
+# Never commit .env to version control.
+
+# ─── Azure DevOps ────────────────────────────────────────────────────────────
+AZDO_ORG=your-organisation
+AZDO_PROJECT=your-project
+AZDO_PAT=your-personal-access-token
+
+# ─── Git ──────────────────────────────────────────────────────────────────────
+CLANCY_BASE_BRANCH=main
+
+# ─── Loop ─────────────────────────────────────────────────────────────────────
+MAX_ITERATIONS=5
+
+# ─── Optional: Git host (PR creation) ───────────────────────────────────────
+# GITHUB_TOKEN=ghp_your-token
+# GITLAB_TOKEN=glpat-your-token
+# BITBUCKET_USER=your-username
+# BITBUCKET_TOKEN=your-app-password
+
+# ─── Optional: Pipeline labels ────────────────────────────────────────────────
+# CLANCY_LABEL_BRIEF="clancy:brief"
+# CLANCY_LABEL_PLAN="clancy:plan"
+# CLANCY_LABEL_BUILD="clancy:build"
+
+# ─── Optional: Status transitions ────────────────────────────────────────────
+# CLANCY_STATUS_IN_PROGRESS="Active"
+# CLANCY_STATUS_DONE="Closed"
+# CLANCY_STATUS_REVIEW="Resolved"
+
+# ─── Optional: Quiet hours ───────────────────────────────────────────────────
+# CLANCY_QUIET_START=22:00
+# CLANCY_QUIET_END=06:00
+
+# ─── Optional: Desktop notifications ─────────────────────────────────────────
+# CLANCY_DESKTOP_NOTIFY=true
+
+# ─── Optional: Notifications ──────────────────────────────────────────────────
 # CLANCY_NOTIFY_WEBHOOK=https://hooks.slack.com/services/your/webhook/url
 ```
 
@@ -680,6 +831,13 @@ MAX_ITERATIONS=20
 # When Clancy skips a ticket (irrelevant/infeasible), post a comment explaining why
 # Set to "false" to disable skip comments
 # CLANCY_SKIP_COMMENTS=true
+
+# ─── Optional: Quiet hours ───────────────────────────────────────────────────
+# CLANCY_QUIET_START=22:00
+# CLANCY_QUIET_END=06:00
+
+# ─── Optional: Desktop notifications ─────────────────────────────────────────
+# CLANCY_DESKTOP_NOTIFY=true
 
 # ─── Optional: Notifications ──────────────────────────────────────────────────
 # Webhook URL for Slack or Teams notifications on ticket completion

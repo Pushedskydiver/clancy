@@ -127,6 +127,8 @@ export function installHooks(options: HookInstallerOptions): boolean {
     'clancy-credential-guard.js',
     'clancy-branch-guard.js',
     'clancy-post-compact.js',
+    'clancy-notification.js',
+    'clancy-drift-detector.js',
   ];
 
   try {
@@ -179,6 +181,23 @@ export function installHooks(options: HookInstallerOptions): boolean {
       hooks,
       'PostCompact',
       `node ${JSON.stringify(postCompactScript)}`,
+    );
+
+    const notificationScript = join(hooksInstallDir, 'clancy-notification.js');
+    const driftDetectorScript = join(
+      hooksInstallDir,
+      'clancy-drift-detector.js',
+    );
+
+    registerHook(
+      hooks,
+      'Notification',
+      `node ${JSON.stringify(notificationScript)}`,
+    );
+    registerHook(
+      hooks,
+      'PostToolUse',
+      `node ${JSON.stringify(driftDetectorScript)}`,
     );
 
     // Verification gate: registered as a Stop agent hook with the prompt inline.

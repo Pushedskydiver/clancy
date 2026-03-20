@@ -5,8 +5,8 @@
  * existing GitHub board functions.
  */
 import type { GitHubEnv } from '~/schemas/env.js';
-import type { FetchedTicket } from '~/scripts/once/types/types.js';
 import { GITHUB_API, githubHeaders } from '~/scripts/shared/http/http.js';
+import type { FetchedTicket } from '~/types/board.js';
 
 import type { Board, FetchTicketOpts } from '../board.js';
 import {
@@ -47,7 +47,7 @@ export function createGitHubBoard(env: GitHubEnv): Board {
       const tickets = await fetchGitHubIssues(
         env.GITHUB_TOKEN,
         env.GITHUB_REPO,
-        env.CLANCY_LABEL,
+        opts.buildLabel ?? env.CLANCY_LABEL,
         username,
         opts.excludeHitl,
       );
@@ -59,6 +59,8 @@ export function createGitHubBoard(env: GitHubEnv): Board {
           description: ticket.description,
           parentInfo: ticket.milestone ?? 'none',
           blockers: 'None',
+          labels: ticket.labels ?? [],
+          status: 'open',
         }),
       );
     },

@@ -11,7 +11,7 @@ import {
   linearTeamLabelsResponseSchema,
   linearWorkspaceLabelsResponseSchema,
 } from '~/schemas/linear.js';
-import type { FetchedTicket } from '~/scripts/once/types/types.js';
+import type { FetchedTicket } from '~/types/board.js';
 
 import type { Board, FetchTicketOpts } from '../board.js';
 import {
@@ -56,7 +56,7 @@ export function createLinearBoard(env: LinearEnv): Board {
         {
           LINEAR_API_KEY: env.LINEAR_API_KEY,
           LINEAR_TEAM_ID: env.LINEAR_TEAM_ID,
-          CLANCY_LABEL: env.CLANCY_LABEL,
+          CLANCY_LABEL: opts.buildLabel ?? env.CLANCY_LABEL,
         },
         opts.excludeHitl,
       );
@@ -70,6 +70,8 @@ export function createLinearBoard(env: LinearEnv): Board {
           blockers: 'None',
           linearIssueId: ticket.issueId,
           issueId: ticket.issueId,
+          labels: ticket.labels ?? [],
+          status: 'unstarted',
         }),
       );
     },

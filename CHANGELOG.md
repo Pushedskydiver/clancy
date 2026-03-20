@@ -7,6 +7,45 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.8.0] — 2026-03-20
+
+### Added
+
+- **Desktop notification hook** (`clancy-notification.js`) — native OS desktop notifications on Notification events. Supports macOS (osascript), Linux (notify-send), Windows (PowerShell). Falls back to console.log on unsupported platforms. Controllable via `CLANCY_DESKTOP_NOTIFY=false`.
+- **Drift detector hook** (`clancy-drift-detector.js`) — PostToolUse hook (debounced, once per session) that compares `.clancy/version.json` against the installed package version. Warns when Clancy runtime files are outdated.
+- **Quiet hours** — AFK runner pauses during `CLANCY_QUIET_START`–`CLANCY_QUIET_END` (24h format). Handles overnight windows (e.g. 22:00–06:00). Sleeps until the end of the quiet window, then resumes.
+- **Version tracking** — installer writes `.clancy/version.json` on install/update for drift detection.
+- **Board ecosystem** — setup workflows now support 6 boards: Jira, GitHub Issues, Linear, Shortcut, Notion, Azure DevOps. Init wizard includes auto-detection, credential collection, and `.env.example` templates for all new boards.
+- **New env vars:** `CLANCY_QUIET_START`, `CLANCY_QUIET_END`, `CLANCY_DESKTOP_NOTIFY`, `SHORTCUT_API_TOKEN`, `SHORTCUT_WORKFLOW`, `NOTION_TOKEN`, `NOTION_DATABASE_ID`, `CLANCY_NOTION_STATUS`, `CLANCY_NOTION_ASSIGNEE`, `CLANCY_NOTION_LABELS`, `CLANCY_NOTION_PARENT`, `AZDO_ORG`, `AZDO_PROJECT`, `AZDO_PAT`.
+- **Settings menu** — `[G10]` Quiet hours, `[G11]` Desktop notifications, board switch support for Shortcut/Notion/Azure DevOps.
+
+### Changed
+
+- **Hook count** — 6 → 8 hooks (+ notification, drift detector).
+- **Board count** — 3 → 6 boards supported in setup workflows.
+- **Init wizard** — board selection expanded to 7 options (6 boards + "not listed"), auto-detection hint for existing env vars.
+
+### Migration from v0.7.x
+
+Pipeline labels (`CLANCY_LABEL_BRIEF`, `CLANCY_LABEL_PLAN`, `CLANCY_LABEL_BUILD`) are new in v0.7.4 but your `.clancy/.env` won't have them after upgrading — `/clancy:update` copies new workflow files but does not modify your existing `.env`. Without these variables, the workflows use defaults (`clancy:brief`, `clancy:plan`, `clancy:build`), but Claude may skip the label step if it doesn't find the variable in the file.
+
+**After upgrading, do one of:**
+1. Run `/clancy:settings` → configure L1/L2/L3 pipeline labels
+2. Or add manually to `.clancy/.env`:
+   ```
+   CLANCY_LABEL_BRIEF=clancy:brief
+   CLANCY_LABEL_PLAN=clancy:plan
+   CLANCY_LABEL_BUILD=clancy:build
+   ```
+
+Existing `CLANCY_LABEL` and `CLANCY_PLAN_LABEL` continue to work as fallbacks for the build and plan labels. There is no fallback for the brief label — it must be configured or the default is used.
+
+### Tests
+
+- 896 → 1206 (310 new tests across all waves — board modules, hooks, quiet hours, pipeline labels, installer modules)
+
+---
+
 ## [0.7.4] — 2026-03-20
 
 ### Added

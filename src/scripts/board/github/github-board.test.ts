@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { GitHubEnv } from '~/schemas/env.js';
-import type { FetchedTicket } from '~/scripts/once/types/types.js';
+import type { FetchedTicket } from '~/types/board.js';
 
 import { createGitHubBoard } from './github-board.js';
 
@@ -98,6 +98,8 @@ describe('github-board', () => {
           description: 'A test issue',
           parentInfo: 'v1.0',
           blockers: 'None',
+          labels: [],
+          status: 'open',
         },
       ]);
     });

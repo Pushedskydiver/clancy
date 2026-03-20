@@ -49,6 +49,12 @@ function ticketLabel(provider: BoardProvider): string {
       return 'GitHub Issue';
     case 'linear':
       return 'Linear issue';
+    case 'shortcut':
+      return 'Shortcut story';
+    case 'notion':
+      return 'Notion page';
+    case 'azdo':
+      return 'Azure DevOps work item';
   }
 }
 
@@ -59,7 +65,9 @@ function ticketLabel(provider: BoardProvider): string {
  * @returns The label (e.g., `'Epic'`, `'Milestone'`).
  */
 function parentLabel(provider: BoardProvider): string {
-  return provider === 'github' ? 'Milestone' : 'Epic';
+  if (provider === 'github') return 'Milestone';
+  if (provider === 'notion') return 'Parent page';
+  return 'Epic';
 }
 
 /** Input for building a rework prompt from reviewer feedback. */

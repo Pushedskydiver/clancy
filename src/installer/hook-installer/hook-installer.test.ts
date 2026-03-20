@@ -31,6 +31,8 @@ describe('installHooks', () => {
       'clancy-credential-guard.js',
       'clancy-branch-guard.js',
       'clancy-post-compact.js',
+      'clancy-notification.js',
+      'clancy-drift-detector.js',
     ]) {
       writeFileSync(join(hooksSource, f), `// ${f}`);
     }
@@ -65,9 +67,10 @@ describe('installHooks', () => {
     );
 
     expect(settings.hooks.SessionStart).toHaveLength(1);
-    expect(settings.hooks.PostToolUse).toHaveLength(1);
+    expect(settings.hooks.PostToolUse).toHaveLength(2);
     expect(settings.hooks.PreToolUse).toHaveLength(2);
     expect(settings.hooks.PostCompact).toHaveLength(1);
+    expect(settings.hooks.Notification).toHaveLength(1);
     expect(settings.statusLine).toBeDefined();
     expect(settings.statusLine.type).toBe('command');
   });
@@ -81,7 +84,7 @@ describe('installHooks', () => {
     );
 
     expect(settings.hooks.SessionStart).toHaveLength(1);
-    expect(settings.hooks.PostToolUse).toHaveLength(1);
+    expect(settings.hooks.PostToolUse).toHaveLength(2);
     expect(settings.hooks.PreToolUse).toHaveLength(2);
     expect(settings.hooks.PostCompact).toHaveLength(1);
   });

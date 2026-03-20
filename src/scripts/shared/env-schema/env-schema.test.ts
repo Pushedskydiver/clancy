@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import type { GitHubEnv, JiraEnv, LinearEnv } from './env-schema.js';
+import type {
+  AzdoEnv,
+  GitHubEnv,
+  JiraEnv,
+  LinearEnv,
+  NotionEnv,
+  ShortcutEnv,
+} from './env-schema.js';
 import { detectBoard } from './env-schema.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -33,6 +40,36 @@ function linearEnv(
   return {
     LINEAR_API_KEY: 'lin_api_abc123',
     LINEAR_TEAM_ID: 'team-uuid-123',
+    ...overrides,
+  };
+}
+
+function shortcutEnv(
+  overrides: Record<string, string> = {},
+): Record<string, string> {
+  return {
+    SHORTCUT_API_TOKEN: 'sc_abc123',
+    ...overrides,
+  };
+}
+
+function notionEnv(
+  overrides: Record<string, string> = {},
+): Record<string, string> {
+  return {
+    NOTION_TOKEN: 'ntn_abc123',
+    NOTION_DATABASE_ID: 'db-uuid-1234',
+    ...overrides,
+  };
+}
+
+function azdoEnv(
+  overrides: Record<string, string> = {},
+): Record<string, string> {
+  return {
+    AZDO_ORG: 'myorg',
+    AZDO_PROJECT: 'MyProject',
+    AZDO_PAT: 'test-pat-abc123',
     ...overrides,
   };
 }
@@ -135,6 +172,170 @@ describe('detectBoard', () => {
     });
   });
 
+  describe('shortcut', () => {
+    it('detects Shortcut from SHORTCUT_API_TOKEN', () => {
+      const result = detectBoard(shortcutEnv());
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.provider).toBe('shortcut');
+      expect((result.env as ShortcutEnv).SHORTCUT_API_TOKEN).toBe('sc_abc123');
+    });
+
+    it('includes optional SHORTCUT_WORKFLOW when present', () => {
+      const result = detectBoard(
+        shortcutEnv({
+          SHORTCUT_WORKFLOW: 'Engineering',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.provider).toBe('shortcut');
+      expect((result.env as ShortcutEnv).SHORTCUT_WORKFLOW).toBe('Engineering');
+    });
+
+    it('includes shared env vars', () => {
+      const result = detectBoard(
+        shortcutEnv({
+          CLANCY_LABEL: 'clancy',
+          CLANCY_MODEL: 'opus',
+          CLANCY_BASE_BRANCH: 'develop',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_LABEL).toBe('clancy');
+      expect(result.env.CLANCY_MODEL).toBe('opus');
+      expect(result.env.CLANCY_BASE_BRANCH).toBe('develop');
+    });
+
+    it('passes through CLANCY_MODE for Shortcut', () => {
+      const result = detectBoard(
+        shortcutEnv({
+          CLANCY_MODE: 'afk',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_MODE).toBe('afk');
+    });
+
+    it('passes through pipeline label vars for Shortcut', () => {
+      const result = detectBoard(
+        shortcutEnv({
+          CLANCY_LABEL_BRIEF: 'clancy:brief',
+          CLANCY_LABEL_PLAN: 'clancy:plan',
+          CLANCY_LABEL_BUILD: 'clancy:build',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_LABEL_BRIEF).toBe('clancy:brief');
+      expect(result.env.CLANCY_LABEL_PLAN).toBe('clancy:plan');
+      expect(result.env.CLANCY_LABEL_BUILD).toBe('clancy:build');
+    });
+  });
+
+  describe('notion', () => {
+    it('detects Notion from NOTION_DATABASE_ID', () => {
+      const result = detectBoard(notionEnv());
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.provider).toBe('notion');
+      expect((result.env as NotionEnv).NOTION_TOKEN).toBe('ntn_abc123');
+      expect((result.env as NotionEnv).NOTION_DATABASE_ID).toBe('db-uuid-1234');
+    });
+
+    it('returns error when NOTION_TOKEN is missing', () => {
+      const result = detectBoard({ NOTION_DATABASE_ID: 'db-uuid-1234' });
+
+      expect(typeof result).toBe('string');
+      expect(result).toContain('Notion env validation failed');
+    });
+
+    it('includes optional CLANCY_NOTION_* property overrides', () => {
+      const result = detectBoard(
+        notionEnv({
+          CLANCY_NOTION_STATUS: 'Task Status',
+          CLANCY_NOTION_ASSIGNEE: 'Owner',
+          CLANCY_NOTION_LABELS: 'Tags',
+          CLANCY_NOTION_PARENT: 'Parent Task',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.provider).toBe('notion');
+      expect((result.env as NotionEnv).CLANCY_NOTION_STATUS).toBe(
+        'Task Status',
+      );
+      expect((result.env as NotionEnv).CLANCY_NOTION_ASSIGNEE).toBe('Owner');
+      expect((result.env as NotionEnv).CLANCY_NOTION_LABELS).toBe('Tags');
+      expect((result.env as NotionEnv).CLANCY_NOTION_PARENT).toBe(
+        'Parent Task',
+      );
+    });
+
+    it('includes shared env vars', () => {
+      const result = detectBoard(
+        notionEnv({
+          CLANCY_LABEL: 'clancy',
+          CLANCY_MODEL: 'opus',
+          CLANCY_BASE_BRANCH: 'develop',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_LABEL).toBe('clancy');
+      expect(result.env.CLANCY_MODEL).toBe('opus');
+      expect(result.env.CLANCY_BASE_BRANCH).toBe('develop');
+    });
+
+    it('passes through CLANCY_MODE for Notion', () => {
+      const result = detectBoard(
+        notionEnv({
+          CLANCY_MODE: 'afk',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_MODE).toBe('afk');
+    });
+
+    it('passes through pipeline label vars for Notion', () => {
+      const result = detectBoard(
+        notionEnv({
+          CLANCY_LABEL_BRIEF: 'clancy:brief',
+          CLANCY_LABEL_PLAN: 'clancy:plan',
+          CLANCY_LABEL_BUILD: 'clancy:build',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_LABEL_BRIEF).toBe('clancy:brief');
+      expect(result.env.CLANCY_LABEL_PLAN).toBe('clancy:plan');
+      expect(result.env.CLANCY_LABEL_BUILD).toBe('clancy:build');
+    });
+  });
+
   describe('priority', () => {
     it('prefers Jira over GitHub when both present', () => {
       const result = detectBoard({ ...jiraEnv(), ...githubEnv() });
@@ -152,6 +353,139 @@ describe('detectBoard', () => {
       if (typeof result === 'string') return;
 
       expect(result.provider).toBe('github');
+    });
+
+    it('prefers Linear over Shortcut when both present', () => {
+      const result = detectBoard({ ...linearEnv(), ...shortcutEnv() });
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.provider).toBe('linear');
+    });
+
+    it('prefers Shortcut over Notion when both present', () => {
+      const result = detectBoard({ ...shortcutEnv(), ...notionEnv() });
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.provider).toBe('shortcut');
+    });
+
+    it('prefers Notion over Azure DevOps when both present', () => {
+      const result = detectBoard({ ...notionEnv(), ...azdoEnv() });
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.provider).toBe('notion');
+    });
+  });
+
+  describe('azdo', () => {
+    it('detects Azure DevOps from AZDO_ORG', () => {
+      const result = detectBoard(azdoEnv());
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.provider).toBe('azdo');
+      expect((result.env as AzdoEnv).AZDO_ORG).toBe('myorg');
+      expect((result.env as AzdoEnv).AZDO_PROJECT).toBe('MyProject');
+      expect((result.env as AzdoEnv).AZDO_PAT).toBe('test-pat-abc123');
+    });
+
+    it('returns error when AZDO_PROJECT is missing', () => {
+      const result = detectBoard({ AZDO_ORG: 'myorg', AZDO_PAT: 'pat' });
+
+      expect(typeof result).toBe('string');
+      expect(result).toContain('Azure DevOps env validation failed');
+    });
+
+    it('returns error when AZDO_PAT is missing', () => {
+      const result = detectBoard({
+        AZDO_ORG: 'myorg',
+        AZDO_PROJECT: 'MyProject',
+      });
+
+      expect(typeof result).toBe('string');
+      expect(result).toContain('Azure DevOps env validation failed');
+    });
+
+    it('includes optional CLANCY_AZDO_STATUS when present', () => {
+      const result = detectBoard(
+        azdoEnv({
+          CLANCY_AZDO_STATUS: 'Active',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.provider).toBe('azdo');
+      expect((result.env as AzdoEnv).CLANCY_AZDO_STATUS).toBe('Active');
+    });
+
+    it('includes optional CLANCY_AZDO_WIT when present', () => {
+      const result = detectBoard(
+        azdoEnv({
+          CLANCY_AZDO_WIT: 'User Story',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.provider).toBe('azdo');
+      expect((result.env as AzdoEnv).CLANCY_AZDO_WIT).toBe('User Story');
+    });
+
+    it('includes shared env vars', () => {
+      const result = detectBoard(
+        azdoEnv({
+          CLANCY_LABEL: 'clancy',
+          CLANCY_MODEL: 'opus',
+          CLANCY_BASE_BRANCH: 'develop',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_LABEL).toBe('clancy');
+      expect(result.env.CLANCY_MODEL).toBe('opus');
+      expect(result.env.CLANCY_BASE_BRANCH).toBe('develop');
+    });
+
+    it('passes through CLANCY_MODE for Azure DevOps', () => {
+      const result = detectBoard(
+        azdoEnv({
+          CLANCY_MODE: 'afk',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_MODE).toBe('afk');
+    });
+
+    it('passes through pipeline label vars for Azure DevOps', () => {
+      const result = detectBoard(
+        azdoEnv({
+          CLANCY_LABEL_BRIEF: 'clancy:brief',
+          CLANCY_LABEL_PLAN: 'clancy:plan',
+          CLANCY_LABEL_BUILD: 'clancy:build',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_LABEL_BRIEF).toBe('clancy:brief');
+      expect(result.env.CLANCY_LABEL_PLAN).toBe('clancy:plan');
+      expect(result.env.CLANCY_LABEL_BUILD).toBe('clancy:build');
     });
   });
 

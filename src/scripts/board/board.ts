@@ -5,12 +5,14 @@
  * conform to. Each board is a plain object (no classes) returned by a
  * factory function.
  */
-import type { FetchedTicket } from '~/scripts/once/types/types.js';
+import type { FetchedTicket } from '~/types/board.js';
 
 /** Options for ticket fetching behaviour. */
 export type FetchTicketOpts = {
   /** If `true`, excludes tickets with the `clancy:hitl` label. */
   excludeHitl?: boolean;
+  /** The resolved build queue label to filter by (e.g. `clancy:build`). */
+  buildLabel?: string;
 };
 
 /** Standardised board abstraction. */

@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { JiraEnv } from '~/schemas/env.js';
-import type { FetchedTicket } from '~/scripts/once/types/types.js';
+import type { FetchedTicket } from '~/types/board.js';
 
 import { createJiraBoard } from './jira-board.js';
 
@@ -131,6 +131,8 @@ describe('jira-board', () => {
           description: 'A test ticket',
           parentInfo: 'PROJ-100',
           blockers: 'Blocked by: PROJ-50',
+          labels: [],
+          status: 'To Do',
         },
       ]);
     });

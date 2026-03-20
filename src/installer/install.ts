@@ -28,8 +28,9 @@ import {
   detectModifiedFiles,
 } from '~/installer/manifest/manifest.js';
 import { ask, choose, closePrompts } from '~/installer/prompts/prompts.js';
+import { printBanner, printSuccess } from '~/installer/ui/ui.js';
 import { loadClancyEnv } from '~/scripts/shared/env-parser/env-parser.js';
-import { blue, bold, cyan, dim, green, red } from '~/utils/ansi/ansi.js';
+import { blue, dim, green, red } from '~/utils/ansi/ansi.js';
 
 // ---------------------------------------------------------------------------
 // Paths
@@ -67,114 +68,6 @@ const LOCAL_WORKFLOWS_DEST = join(
   'clancy',
   'workflows',
 );
-
-// ---------------------------------------------------------------------------
-// Banner
-// ---------------------------------------------------------------------------
-
-/**
- * Print the Clancy ASCII banner and version info.
- */
-function printBanner(): void {
-  console.log('');
-  console.log(blue('  ██████╗██╗      █████╗ ███╗   ██╗ ██████╗██╗   ██╗'));
-  console.log(blue(' ██╔════╝██║     ██╔══██╗████╗  ██║██╔════╝╚██╗ ██╔╝'));
-  console.log(blue(' ██║     ██║     ███████║██╔██╗ ██║██║      ╚████╔╝ '));
-  console.log(blue(' ██║     ██║     ██╔══██║██║╚██╗██║██║       ╚██╔╝  '));
-  console.log(blue(' ╚██████╗███████╗██║  ██║██║ ╚████║╚██████╗   ██║   '));
-  console.log(blue('  ╚═════╝╚══════╝╚═╝  ╚═╝╚═╝  ╚═══╝ ╚═════╝   ╚═╝  '));
-  console.log('');
-  console.log(
-    '  ' +
-      bold(`v${PKG.version}`) +
-      dim('  Autonomous, board-driven development for Claude Code.'),
-  );
-  console.log(
-    dim(
-      '  Named after Chief Clancy Wiggum. Built on the Ralph technique by Geoffrey Huntley.',
-    ),
-  );
-}
-
-/**
- * Print the post-install success message with available commands.
- */
-function printSuccess(enabledRoles: Set<string> | null): void {
-  console.log('');
-  console.log(green('  ✓ Clancy installed successfully.'));
-  console.log('');
-  console.log('  Next steps:');
-  console.log(dim('    1. Open a project in Claude Code'));
-  console.log(`    2. Run: ${cyan('/clancy:init')}`);
-  console.log('');
-  console.log('  Commands available:');
-
-  const OPTIONAL_GROUPS = new Set(['planner', 'strategist']);
-
-  const groups: [string, [string, string][]][] = [
-    [
-      'Strategist',
-      [
-        ['/clancy:brief', 'Generate a strategic brief for a feature'],
-        ['/clancy:approve-brief', 'Convert brief into board tickets'],
-      ],
-    ],
-    [
-      'Planner',
-      [
-        ['/clancy:plan', 'Refine backlog tickets into plans'],
-        ['/clancy:approve-plan', 'Promote plan to ticket description'],
-      ],
-    ],
-    [
-      'Implementer',
-      [
-        ['/clancy:once', 'Pick up one ticket and stop'],
-        ['/clancy:run', 'Run Clancy in loop mode'],
-        ['/clancy:dry-run', 'Preview next ticket without changes'],
-      ],
-    ],
-    [
-      'Reviewer',
-      [
-        ['/clancy:review', 'Score next ticket and get recommendations'],
-        ['/clancy:status', 'Show next tickets without running'],
-        ['/clancy:logs', 'Display progress log'],
-      ],
-    ],
-    [
-      'Setup & Maintenance',
-      [
-        ['/clancy:init', 'Set up Clancy in your project'],
-        ['/clancy:map-codebase', 'Scan codebase with 5 parallel agents'],
-        ['/clancy:settings', 'View and change configuration'],
-        ['/clancy:doctor', 'Diagnose your setup'],
-        ['/clancy:update-docs', 'Refresh codebase documentation'],
-        ['/clancy:update', 'Update Clancy to latest version'],
-        ['/clancy:uninstall', 'Remove Clancy from your project'],
-        ['/clancy:help', 'Show all commands'],
-      ],
-    ],
-  ];
-
-  for (const [group, cmds] of groups) {
-    const key = group.toLowerCase();
-    if (
-      OPTIONAL_GROUPS.has(key) &&
-      enabledRoles !== null &&
-      !enabledRoles.has(key)
-    )
-      continue;
-
-    console.log('');
-    console.log(`    ${bold(group)}`);
-    for (const [cmd, desc] of cmds) {
-      console.log(`      ${cyan(cmd.padEnd(22))}  ${dim(desc)}`);
-    }
-  }
-
-  console.log('');
-}
 
 // ---------------------------------------------------------------------------
 // Workflow inlining
@@ -315,7 +208,7 @@ async function main(): Promise<void> {
   const flag = parseInstallFlag();
   const nonInteractive = flag !== null;
 
-  printBanner();
+  printBanner(PKG.version);
 
   let dest: string;
   let workflowsDest: string;
@@ -483,6 +376,16 @@ async function main(): Promise<void> {
     writeFileSync(
       join(clancyProjectDir, 'package.json'),
       JSON.stringify({ type: 'module' }, null, 2) + '\n',
+    );
+
+    // Write version.json for drift detection
+    writeFileSync(
+      join(clancyProjectDir, 'version.json'),
+      JSON.stringify(
+        { version: PKG.version, installedAt: new Date().toISOString() },
+        null,
+        2,
+      ) + '\n',
     );
 
     // Install hooks

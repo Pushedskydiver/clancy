@@ -110,4 +110,11 @@ Ubiquitous language for the Clancy project. Use these terms consistently in code
 | **Workflow** | An implementation-detail markdown file in `src/roles/*/workflows/` referenced by commands. Not directly invocable by users. |
 | **Map codebase** | `/clancy:map-codebase` — scans the codebase with 5 parallel specialist agents (architecture, concerns, design, quality, tech) and writes documentation to `.clancy/docs/`. |
 | **Update docs** | `/clancy:update-docs` — incrementally refreshes `.clancy/docs/` based on recent changes without a full rescan. |
-| **Board registry** | `registry/boards.json` — registry for community board integrations (Shortcut, Notion, etc.). Future use. |
+| **Board registry** | `registry/boards.json` — registry for community board integrations. |
+| **Shortcut** | Board platform (v0.8.0). REST API v3. Stories, epics, workflow states. Auth via `Shortcut-Token` header. Key format: `sc-{id}`. |
+| **Notion** | Board platform (v0.8.0). REST API. Database rows as tickets. Auth via integration token. Property name overrides via `CLANCY_NOTION_STATUS` and `CLANCY_NOTION_ASSIGNEE`. |
+| **Azure DevOps** | Board platform (v0.8.0). REST API. Work items as tickets. Auth via PAT. Org + project scoping via `AZDO_ORG` and `AZDO_PROJECT`. |
+| **Quiet hours** | AFK runner pauses during `CLANCY_QUIET_START`–`CLANCY_QUIET_END` (HH:MM 24h format). Handles overnight windows. Sleeps until end of quiet window, then resumes. (v0.8.0) |
+| **Drift detector** | PostToolUse hook (`clancy-drift-detector.js`) that compares `.clancy/version.json` against the installed package VERSION file. Warns once per session when versions differ. (v0.8.0) |
+| **Desktop notification** | Notification hook (`clancy-notification.js`) that sends native OS desktop notifications. macOS: osascript, Linux: notify-send, Windows: PowerShell. Controllable via `CLANCY_DESKTOP_NOTIFY`. (v0.8.0) |
+| **Version tracking** | `.clancy/version.json` written by the installer on install/update. Contains `{ version, installedAt }`. Used by the drift detector hook. (v0.8.0) |

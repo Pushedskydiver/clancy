@@ -35,6 +35,9 @@ Source `.clancy/.env` silently. Detect which board is configured:
 - `JIRA_BASE_URL` set → Jira
 - `GITHUB_TOKEN` set → GitHub Issues
 - `LINEAR_API_KEY` set → Linear
+- `SHORTCUT_API_TOKEN` set → Shortcut
+- `NOTION_DATABASE_ID` set → Notion
+- `AZDO_ORG` set → Azure DevOps
 
 ---
 
@@ -58,6 +61,8 @@ General
   [G7] Fix retries        {CLANCY_FIX_RETRIES:-2}          self-healing attempts after verification failure
   [G8] Time limit         {CLANCY_TIME_LIMIT:-30}          per-ticket time limit in minutes (0 = disabled)
   [G9] Branch guard       {on if CLANCY_BRANCH_GUARD=true or unset, off if false}
+  [G10] Quiet hours       {CLANCY_QUIET_START–CLANCY_QUIET_END if set, else off}
+  [G11] Desktop notify    {on if CLANCY_DESKTOP_NOTIFY=true or unset, off if false}
 
 {If Jira:}
 Jira
@@ -113,7 +118,7 @@ Integrations
   [I2] Playwright        {enabled if PLAYWRIGHT_ENABLED=true, else off}
   [I3] Notifications     {configured if CLANCY_NOTIFY_WEBHOOK set, else not set}
 
-  [S]  Switch board      currently: {Jira / GitHub Issues / Linear}
+  [S]  Switch board      currently: {Jira / GitHub Issues / Linear / Shortcut / Notion / Azure DevOps}
   [D]  Save as defaults  save current settings for all future projects
   [X]  Exit
 
@@ -275,6 +280,37 @@ Prevents accidental commits to the base branch during autonomous runs.
 
 If [1]: write `CLANCY_BRANCH_GUARD=true` to `.clancy/.env`.
 If [2]: write `CLANCY_BRANCH_GUARD=false` to `.clancy/.env`.
+
+---
+
+### [G10] Quiet hours
+
+```
+Quiet hours — current: {CLANCY_QUIET_START–CLANCY_QUIET_END or "off"}
+Pause AFK runs during these hours. Clancy sleeps until the end of the quiet window.
+
+[1] Set quiet hours
+[2] Off (no quiet hours)
+[3] Cancel
+```
+
+If [1]: prompt `Quiet start time (HH:MM, 24h format):` then `Quiet end time (HH:MM, 24h format):`. Validate HH:MM format (0-23:00-59). Write `CLANCY_QUIET_START` and `CLANCY_QUIET_END` to `.clancy/.env`.
+If [2]: remove `CLANCY_QUIET_START` and `CLANCY_QUIET_END` from `.clancy/.env`.
+
+---
+
+### [G11] Desktop notifications
+
+```
+Desktop notifications — current: {on/off}
+Native OS notifications when tickets complete or errors occur.
+
+[1] Enable (default)
+[2] Disable
+```
+
+If [1]: write `CLANCY_DESKTOP_NOTIFY=true` to `.clancy/.env`.
+If [2]: write `CLANCY_DESKTOP_NOTIFY=false` to `.clancy/.env`.
 
 ---
 
@@ -739,17 +775,18 @@ If [2]: remove `CLANCY_NOTIFY_WEBHOOK` from `.clancy/.env`.
 
 ### [S] Switch board
 
-Show which board is currently active, then offer the other two:
+Show which board is currently active, then offer the others:
 
 ```
-Switch board — currently: {Jira / GitHub Issues / Linear}
+Switch board — currently: {Jira / GitHub Issues / Linear / Shortcut / Notion / Azure DevOps}
 
 [1] {board A}
 [2] {board B}
-[3] Cancel
+...
+[N] Cancel
 ```
 
-Only show the two boards that are not currently active. If the user picks Cancel, loop back to the menu without changing anything.
+Only show the boards that are not currently active. If the user picks Cancel, loop back to the menu without changing anything.
 
 **Step 1: Collect new credentials**
 
@@ -774,6 +811,21 @@ Add this label to any issue you want Clancy to work on.
 Linear — ask in this order:
 1. `Paste your Linear API key: (create one at linear.app/settings/api)`
 2. `What's your Linear team ID? (find it at linear.app/settings/teams — click your team, copy the ID from the URL)`
+
+Shortcut — ask in this order:
+1. `Paste your Shortcut API token: (create one at app.shortcut.com/settings/account/api-tokens)`
+2. `What workflow should Clancy use? (press Enter to auto-detect)`
+
+Notion — ask in this order:
+1. `Paste your Notion integration token: (create one at notion.so/my-integrations)`
+2. `What's your Notion database ID? (32-character hex string from your database URL)`
+3. `Status property name? [Status]`
+4. `Assignee property name? [Assignee]`
+
+Azure DevOps — ask in this order:
+1. `What's your Azure DevOps organisation name?`
+2. `What's your project name?`
+3. `Paste your Azure DevOps personal access token: (needs Work Items Read & Write scope)`
 
 **Step 2: Verify credentials**
 
@@ -814,6 +866,9 @@ If no: print `Cancelled. No changes made.` and loop back to the menu.
    - Jira: `JIRA_BASE_URL`, `JIRA_USER`, `JIRA_API_TOKEN`, `JIRA_PROJECT_KEY`, `CLANCY_JQL_STATUS`, `CLANCY_JQL_SPRINT`
    - GitHub: `GITHUB_TOKEN`, `GITHUB_REPO`
    - Linear: `LINEAR_API_KEY`, `LINEAR_TEAM_ID`
+   - Shortcut: `SHORTCUT_API_TOKEN`, `SHORTCUT_WORKFLOW`
+   - Notion: `NOTION_TOKEN`, `NOTION_DATABASE_ID`, `CLANCY_NOTION_STATUS`, `CLANCY_NOTION_ASSIGNEE`, `CLANCY_NOTION_LABELS`, `CLANCY_NOTION_PARENT`
+   - Azure DevOps: `AZDO_ORG`, `AZDO_PROJECT`, `AZDO_PAT`
    - Git host (all boards): `GITLAB_TOKEN`, `BITBUCKET_USER`, `BITBUCKET_TOKEN`, `CLANCY_GIT_PLATFORM`, `CLANCY_GIT_API_URL`, `CLANCY_STATUS_REVIEW`
 2. Write the new board credentials to `.clancy/.env`
 3. If switching to Jira: also ask the status filter question (same as init Q3) and write `CLANCY_JQL_STATUS` to `.clancy/.env`

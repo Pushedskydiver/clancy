@@ -19,7 +19,7 @@ Setup commands configure Clancy and keep it healthy.
 
 `/clancy:init` walks you through first-time setup:
 
-1. **Choose board** — Jira, GitHub Issues, or Linear
+1. **Choose board** — Jira, GitHub Issues, Linear, Shortcut, Notion, or Azure DevOps
 2. **Enter credentials** — API keys, project keys, team IDs (stored in `.clancy/.env`)
 3. **Configure filters** — label, sprint, status transitions
 4. **Optional roles** — enable Strategist, Planner, or other optional roles via `CLANCY_ROLES`

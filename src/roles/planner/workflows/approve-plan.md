@@ -320,7 +320,7 @@ Transition the ticket from the planning queue to the implementation queue via pi
 
 **Crash safety:** Add the new label BEFORE removing the old one. A ticket briefly has two labels (harmless) rather than zero labels (ticket lost).
 
-Read `CLANCY_LABEL_BUILD` from `.clancy/.env` (default: `clancy:build`). Read `CLANCY_LABEL_PLAN` from `.clancy/.env` (default: `clancy:plan`, falls back to `CLANCY_PLAN_LABEL`).
+**This label transition is mandatory — always apply and remove.** Use `CLANCY_LABEL_BUILD` from `.clancy/.env` if set, otherwise `clancy:build`. Use `CLANCY_LABEL_PLAN` from `.clancy/.env` if set, otherwise fall back to `CLANCY_PLAN_LABEL`, otherwise `clancy:plan`. Ensure the build label exists on the board (create if missing), add it to the ticket, then remove the plan label.
 
 ### GitHub
 

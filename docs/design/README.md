@@ -24,12 +24,13 @@ Design decisions for Clancy features — the "why" behind non-obvious choices. T
 | `reliable-autonomous-mode.md` | Verification gates, safety hooks, crash recovery, Claude Code hook API research | v0.7.0 |
 | `codebase-refactor.md` | Phase pipeline, Board type abstraction, switch elimination | v0.7.1 |
 | `pipeline-labels.md` | Pipeline stage labels (clancy:brief → clancy:plan → clancy:build), Board label methods, backward compatibility | v0.7.4 |
+| `team-readiness.md` | Board ecosystem (6 boards), quiet hours, desktop notifications, drift detector, version tracking | v0.8.0 |
 
 ### In progress
 
 | Document | Feature | Version |
 |---|---|---|
-| `team-readiness.md` | Board ecosystem (Shortcut, Notion, Azure DevOps), auto-detection, team features (claim check, quality tracking), new hooks (notification, quiet hours, drift detector) | v0.8.0 |
+| `design-aware-implementation.md` | Design sub-phase in planner (conditional UI specs), Google Stitch integration (optional design previews), Playwright/axe-core/Lighthouse verification extensions | v0.9.0 |
 
 ### Deleted after shipping
 

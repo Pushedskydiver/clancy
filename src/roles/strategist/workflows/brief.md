@@ -621,7 +621,7 @@ Continue — do not stop. The local file is the source of truth.
 
 Only for board-sourced briefs (ticket key was provided). Inline text and file briefs skip this step.
 
-Read `CLANCY_LABEL_BRIEF` from `.clancy/.env`. Default: `clancy:brief`. Read `CLANCY_LABEL_PLAN` and `CLANCY_LABEL_BUILD` for cleanup during re-briefs.
+**This step is mandatory for board-sourced briefs — always apply the label.** Use `CLANCY_LABEL_BRIEF` from `.clancy/.env` if set. If not set, use `clancy:brief` as the default. Ensure the label exists on the board (create it if missing), then add it to the ticket. Also read `CLANCY_LABEL_PLAN` (default: `clancy:plan`) and `CLANCY_LABEL_BUILD` (default: `clancy:build`) for cleanup during re-briefs.
 
 ### Re-brief cleanup (`--fresh` flag)
 

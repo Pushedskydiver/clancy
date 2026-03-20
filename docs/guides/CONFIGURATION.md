@@ -121,6 +121,23 @@ CLANCY_BRANCH_GUARD=true
 
 PreToolUse hook that blocks force push, direct push to protected branches, and destructive resets. Enabled by default. Set to `false` to disable.
 
+## Quiet hours
+
+```
+CLANCY_QUIET_START=22:00
+CLANCY_QUIET_END=06:00
+```
+
+Pauses AFK runs during the configured window. The AFK runner checks before each iteration — if the current time is within quiet hours, it sleeps until the end of the window, then resumes. Handles overnight windows (e.g. `22:00`–`06:00`). Both vars must be set; if only one is present, the check is skipped with a warning.
+
+## Desktop notifications
+
+```
+CLANCY_DESKTOP_NOTIFY=true
+```
+
+Native OS desktop notifications on Notification events. Uses platform detection: macOS (osascript), Linux (notify-send), Windows (PowerShell). Falls back to `console.log` if the OS command fails. Set to `false` to suppress.
+
 ## Notifications
 
 ```
@@ -210,6 +227,20 @@ Posts to Slack or Teams when a ticket completes. The payload format (Slack vs Te
 | `CLANCY_TOKEN_RATE` | All | No | `6600` | Estimated tokens per minute for cost logging |
 | `CLANCY_TIME_LIMIT` | All | No | `30` | Minutes per ticket before time guard warnings (0 to disable) |
 | `CLANCY_BRANCH_GUARD` | All | No | `true` | Enable branch guard hook (blocks force push, protected branches, destructive resets) |
+| `CLANCY_QUIET_START` | All | No | — | Quiet hours start time (HH:MM 24h format, e.g. `22:00`) |
+| `CLANCY_QUIET_END` | All | No | — | Quiet hours end time (HH:MM 24h format, e.g. `06:00`) |
+| `CLANCY_DESKTOP_NOTIFY` | All | No | `true` | Enable native OS desktop notifications (`false` to suppress) |
+| `SHORTCUT_API_TOKEN` | Shortcut | Yes | — | Shortcut API token |
+| `SHORTCUT_WORKFLOW` | Shortcut | No | Auto-detect | Shortcut workflow name |
+| `NOTION_TOKEN` | Notion | Yes | — | Notion integration token |
+| `NOTION_DATABASE_ID` | Notion | Yes | — | Notion database ID (32-char hex) |
+| `CLANCY_NOTION_STATUS` | Notion | No | `Status` | Status property name |
+| `CLANCY_NOTION_ASSIGNEE` | Notion | No | `Assignee` | Assignee property name |
+| `CLANCY_NOTION_LABELS` | Notion | No | — | Labels property name |
+| `CLANCY_NOTION_PARENT` | Notion | No | — | Parent relation property name |
+| `AZDO_ORG` | Azure DevOps | Yes | — | Azure DevOps organisation name |
+| `AZDO_PROJECT` | Azure DevOps | Yes | — | Azure DevOps project name |
+| `AZDO_PAT` | Azure DevOps | Yes | — | Azure DevOps personal access token |
 
 **Note on rework detection:** Rework is detected automatically from PR comments: inline code comments always trigger rework, and conversation comments trigger with a `Rework:` prefix. On GitHub, a `CHANGES_REQUESTED` review state is an additional trigger. `CLANCY_MAX_REWORK` controls the safety limit for rework cycles.
 

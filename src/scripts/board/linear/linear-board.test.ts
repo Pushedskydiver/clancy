@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { LinearEnv } from '~/schemas/env.js';
-import type { FetchedTicket } from '~/scripts/once/types/types.js';
+import type { FetchedTicket } from '~/types/board.js';
 
 import { createLinearBoard } from './linear-board.js';
 
@@ -101,6 +101,8 @@ describe('linear-board', () => {
           blockers: 'None',
           linearIssueId: 'uuid-1',
           issueId: 'uuid-1',
+          labels: [],
+          status: 'unstarted',
         },
       ]);
     });

@@ -87,11 +87,16 @@ Which Kanban board are you using?
 [1] Jira
 [2] GitHub Issues
 [3] Linear
-[4] My board isn't listed
+[4] Shortcut
+[5] Notion
+[6] Azure DevOps
+[7] My board isn't listed
 
-If the user selects [4], output the dead-end message and stop:
+Auto-detection hint: silently check `.clancy/.env` for existing board env vars (`JIRA_BASE_URL`, `GITHUB_TOKEN`, `LINEAR_API_KEY`, `SHORTCUT_API_TOKEN`, `NOTION_DATABASE_ID`, `AZDO_ORG`). If detected, show: `Detected: {board} from your env vars. Use this? [Y/n]` — if yes, skip to Q2 for that board.
 
-Clancy currently supports Jira, GitHub Issues, and Linear out of the box.
+If the user selects [7], output the dead-end message and stop:
+
+Clancy currently supports Jira, GitHub Issues, Linear, Shortcut, Notion, and Azure DevOps out of the box.
 
 Your board isn't supported yet — but you can add it:
   · Open an issue:   github.com/Pushedskydiver/clancy/issues
@@ -103,6 +108,32 @@ In the meantime, you can still use Clancy manually:
   · Store credentials in .clancy/.env
 
 Do not scaffold anything after this message. Stop completely.
+
+---
+
+**Shortcut** — ask in this order:
+
+1. `Paste your Shortcut API token: (create one at app.shortcut.com/settings/account/api-tokens)`
+2. `What workflow should Clancy use? (press Enter to auto-detect)` — if blank, auto-detect the first workflow via `GET /api/v3/workflows`
+
+Store as `SHORTCUT_API_TOKEN` and optionally `SHORTCUT_WORKFLOW` in `.clancy/.env`.
+
+**Notion** — ask in this order:
+
+1. `Paste your Notion integration token: (create one at notion.so/my-integrations)`
+2. `What's your Notion database ID? (the 32-character hex string in your database URL)`
+3. `What property name represents the ticket status? [Status]`
+4. `What property name represents the assignee? [Assignee]`
+
+Store as `NOTION_TOKEN`, `NOTION_DATABASE_ID`, and optionally `CLANCY_NOTION_STATUS` and `CLANCY_NOTION_ASSIGNEE` in `.clancy/.env`.
+
+**Azure DevOps** — ask in this order:
+
+1. `What's your Azure DevOps organisation name? (e.g. your-org)`
+2. `What's your Azure DevOps project name?`
+3. `Paste your Azure DevOps personal access token: (needs Work Items Read & Write scope)`
+
+Store as `AZDO_ORG`, `AZDO_PROJECT`, and `AZDO_PAT` in `.clancy/.env`.
 
 ---
 
@@ -494,6 +525,47 @@ Enable branch guard hook? Prevents accidental commits to the base branch. [Y/n]
 
 If `y`, `Y`, or enter: store `CLANCY_BRANCH_GUARD=true` in `.clancy/.env`.
 If `n` or `N`: store `CLANCY_BRANCH_GUARD=false` in `.clancy/.env`.
+
+---
+
+### Q3i (all boards): Quiet hours
+
+Output:
+
+```
+Pause AFK runs during specific hours? (e.g. business hours, overnight)
+
+[1] Skip — no quiet hours
+[2] Set quiet hours
+```
+
+If [1] or enter: skip — no `CLANCY_QUIET_START` or `CLANCY_QUIET_END` written.
+If [2]: ask:
+
+```
+Quiet start time (HH:MM, 24h format, e.g. 22:00):
+```
+
+Then:
+
+```
+Quiet end time (HH:MM, 24h format, e.g. 06:00):
+```
+
+Store as `CLANCY_QUIET_START` and `CLANCY_QUIET_END` in `.clancy/.env`.
+
+---
+
+### Q3j (all boards): Desktop notifications
+
+Output:
+
+```
+Send desktop notifications when tickets complete or errors occur? [Y/n]
+```
+
+If yes or enter: store `CLANCY_DESKTOP_NOTIFY=true` in `.clancy/.env`.
+If no: store `CLANCY_DESKTOP_NOTIFY=false` in `.clancy/.env`.
 
 ---
 

@@ -1,8 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { BoardConfig } from '~/scripts/shared/env-schema/env-schema.js';
+import type { FetchedTicket } from '~/types/board.js';
 
-import type { FetchedTicket } from '../types/types.js';
 import {
   deliverEpicToBase,
   deliverViaPullRequest,

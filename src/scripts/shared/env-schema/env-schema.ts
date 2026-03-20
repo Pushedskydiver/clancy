@@ -6,25 +6,31 @@
  */
 import type { BoardConfig, SharedEnv } from '~/schemas/env.js';
 import {
+  azdoEnvSchema,
   githubEnvSchema,
   jiraEnvSchema,
   linearEnvSchema,
+  notionEnvSchema,
+  shortcutEnvSchema,
 } from '~/schemas/env.js';
 
 // Re-export types for downstream consumers
 export type {
+  AzdoEnv,
   BoardConfig,
   GitHubEnv,
   JiraEnv,
   LinearEnv,
+  NotionEnv,
   SharedEnv,
+  ShortcutEnv,
 } from '~/schemas/env.js';
 
 /**
  * Detect which board is configured from raw env vars and return a typed config.
  *
- * Detection priority: Jira → GitHub → Linear (checked by presence of
- * board-specific required keys). Returns the first match.
+ * Detection priority: Jira → GitHub → Linear → Shortcut → Notion → Azure DevOps
+ * (checked by presence of board-specific required keys). Returns the first match.
  *
  * @param raw - The raw key-value record from `.clancy/.env`.
  * @returns A typed `BoardConfig` or an error string if no board is detected
@@ -72,7 +78,40 @@ export function detectBoard(raw: Record<string, string>): BoardConfig | string {
     return { provider: 'linear', env: parsed.data };
   }
 
-  return '✗ No board detected — set Jira, GitHub, or Linear credentials in .clancy/.env';
+  // Shortcut — check for SHORTCUT_API_TOKEN as the distinguishing key
+  if (raw.SHORTCUT_API_TOKEN) {
+    const parsed = shortcutEnvSchema.safeParse(raw);
+
+    if (!parsed.success) {
+      return `✗ Shortcut env validation failed: ${parsed.error.message}`;
+    }
+
+    return { provider: 'shortcut', env: parsed.data };
+  }
+
+  // Notion — check for NOTION_DATABASE_ID as the distinguishing key
+  if (raw.NOTION_DATABASE_ID) {
+    const parsed = notionEnvSchema.safeParse(raw);
+
+    if (!parsed.success) {
+      return `✗ Notion env validation failed: ${parsed.error.message}`;
+    }
+
+    return { provider: 'notion', env: parsed.data };
+  }
+
+  // Azure DevOps — check for AZDO_ORG as the distinguishing key
+  if (raw.AZDO_ORG) {
+    const parsed = azdoEnvSchema.safeParse(raw);
+
+    if (!parsed.success) {
+      return `✗ Azure DevOps env validation failed: ${parsed.error.message}`;
+    }
+
+    return { provider: 'azdo', env: parsed.data };
+  }
+
+  return '✗ No board detected — set Jira, GitHub, Linear, Shortcut, Notion, or Azure DevOps credentials in .clancy/.env';
 }
 
 /** Type-safe access to shared env vars across all board configs. */
