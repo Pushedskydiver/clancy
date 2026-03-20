@@ -9,6 +9,10 @@
  * can create the PR manually. Always returns `true` (never blocks the pipeline).
  */
 import { attemptPrCreation } from '~/scripts/once/pr-creation/pr-creation.js';
+import {
+  computeTargetBranch,
+  computeTicketBranch,
+} from '~/scripts/shared/branch/branch.js';
 import { sharedEnv } from '~/scripts/shared/env-schema/env-schema.js';
 import {
   appendProgress,
@@ -39,11 +43,15 @@ export async function prRetry(ctx: RunContext): Promise<boolean> {
         yellow(`  ↻ Retrying PR creation for ${entry.key} (previously pushed)`),
       );
 
-      const ticketBranch = `feature/${entry.key.toLowerCase()}`;
-      const targetBranch =
-        entry.parent && entry.parent !== 'none'
-          ? `epic/${entry.parent}`
-          : (config.env.CLANCY_BASE_BRANCH ?? 'main');
+      const baseBranch = config.env.CLANCY_BASE_BRANCH ?? 'main';
+      const parent =
+        entry.parent && entry.parent !== 'none' ? entry.parent : undefined;
+      const ticketBranch = computeTicketBranch(config.provider, entry.key);
+      const targetBranch = computeTargetBranch(
+        config.provider,
+        baseBranch,
+        parent,
+      );
 
       const platformOverride = sharedEnv(config).CLANCY_GIT_PLATFORM;
       const remote = detectRemote(platformOverride);
@@ -89,6 +97,15 @@ export async function prRetry(ctx: RunContext): Promise<boolean> {
         );
       } else if (pr && !pr.ok && pr.alreadyExists) {
         console.log(dim(`  PR already exists for ${entry.key}`));
+        // Mark as handled so we don't retry on every subsequent run
+        appendProgress(
+          ctx.cwd,
+          entry.key,
+          entry.summary,
+          'PR_CREATED',
+          undefined,
+          entry.parent,
+        );
       } else {
         console.log(
           yellow(`  ⚠ PR retry failed for ${entry.key} — create manually`),

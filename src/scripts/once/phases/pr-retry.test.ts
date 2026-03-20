@@ -151,7 +151,7 @@ describe('prRetry', () => {
     vi.mocked(findEntriesWithStatus).mockImplementation((_root, status) => {
       if (status === 'PUSHED')
         return [
-          { key: 'issue-10', summary: 'Child task', parent: 'issue-5' },
+          { key: '#10', summary: 'Child task', parent: 'Sprint 3' },
         ] as never;
       return [];
     });
@@ -168,9 +168,72 @@ describe('prRetry', () => {
       expect.anything(),
       expect.anything(),
       'feature/issue-10',
-      'epic/issue-5',
+      'milestone/sprint-3',
       expect.any(String),
       expect.any(String),
+    );
+  });
+
+  it('uses computeTicketBranch for GitHub-style keys (#13)', async () => {
+    const { findEntriesWithStatus } =
+      await import('~/scripts/shared/progress/progress.js');
+    const { attemptPrCreation } =
+      await import('~/scripts/once/pr-creation/pr-creation.js');
+
+    vi.mocked(findEntriesWithStatus).mockImplementation((_root, status) => {
+      if (status === 'PUSHED')
+        return [
+          { key: '#13', summary: 'Add robots.txt', parent: '#7' },
+        ] as never;
+      return [];
+    });
+
+    vi.mocked(attemptPrCreation).mockResolvedValue({
+      ok: true,
+      url: 'https://github.com/test/repo/pull/14',
+      number: 14,
+    });
+
+    await prRetry(makeCtx());
+
+    expect(attemptPrCreation).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      'feature/issue-13',
+      expect.any(String),
+      expect.any(String),
+      expect.any(String),
+    );
+  });
+
+  it('marks alreadyExists as PR_CREATED to prevent infinite retry', async () => {
+    const { findEntriesWithStatus, appendProgress } =
+      await import('~/scripts/shared/progress/progress.js');
+    const { attemptPrCreation } =
+      await import('~/scripts/once/pr-creation/pr-creation.js');
+
+    vi.mocked(findEntriesWithStatus).mockImplementation((_root, status) => {
+      if (status === 'PUSHED')
+        return [
+          { key: 'issue-5', summary: 'Fix bug', parent: undefined },
+        ] as never;
+      return [];
+    });
+
+    vi.mocked(attemptPrCreation).mockResolvedValue({
+      ok: false,
+      alreadyExists: true,
+    } as never);
+
+    await prRetry(makeCtx());
+
+    expect(appendProgress).toHaveBeenCalledWith(
+      '/test',
+      'issue-5',
+      'Fix bug',
+      'PR_CREATED',
+      undefined,
+      undefined,
     );
   });
 
