@@ -26,11 +26,11 @@ v0.8.0 addresses all three: expand the board ecosystem, add team coordination pr
 
 | Board method | Shortcut API | Notes |
 |---|---|---|
-| `ping()` | `GET /member` | Returns authenticated member; 200 = success |
+| `ping()` | `GET /api/v3/member-info` | Returns authenticated member; 200 = success |
 | `validateInputs()` | Local check | Validate `SHORTCUT_API_TOKEN` and `SHORTCUT_WORKSPACE` are non-empty |
 | `fetchTickets()` | `POST /stories/search` | Filter by `workflow_state_id`, `label_name`, `owner_ids`. Excludes PRs (Shortcut stories only). Map `story.id` to key as `sc-{id}` |
 | `fetchTicket()` | Delegates to `fetchTickets()[0]` | Same pattern as existing boards |
-| `fetchBlockerStatus()` | `GET /stories/{id}` | Check `story.blocker` boolean flag + `story_links` with `verb: "blocks"` |
+| `fetchBlockerStatus()` | `GET /stories/{id}` | Check `story.blocked` boolean flag + `story_links` with `verb: "is blocked by"` |
 | `fetchChildrenStatus()` | `GET /epics/{id}/stories` | Shortcut epics own stories directly. Count stories not in "Done" state type. Also search story descriptions for `Epic: {key}` text convention |
 | `transitionTicket()` | `PUT /stories/{id}` | Set `workflow_state_id` — resolve state name to ID via `GET /workflows` (cached per process) |
 | `ensureLabel()` | `GET /labels` + `POST /labels` | Search by name, create if missing |
@@ -43,7 +43,7 @@ v0.8.0 addresses all three: expand the board ecosystem, add team coordination pr
 - **Story IDs are numeric.** Key format: `sc-{id}` (similar to GitHub's `#{number}` pattern).
 - **Epics are first-class.** Native `GET /epics/{id}/stories` endpoint — no JQL or body-text search needed for the primary path. `Epic: {key}` text convention used as fallback for cross-platform compatibility.
 - **Labels are workspace-scoped** (not project-scoped). Single namespace, no team/workspace distinction like Linear.
-- **Blockers are a boolean flag** on the story object, plus `story_links` with verb `"blocks"` / `"is blocked by"`.
+- **Blockers use the `blocked` boolean flag** on the story object, plus `story_links` with verb `"is blocked by"` for specific blocker identification.
 
 **Pipeline labels:** Shortcut labels are plain string labels on stories. `ensureLabel` checks `GET /labels`, creates via `POST /labels` if missing. `addLabel`/`removeLabel` update the story's `label_ids` array via `PUT /stories/{id}`.
 
@@ -133,7 +133,7 @@ CLANCY_NOTION_PARENT   # Optional — parent relation property name (default: "E
 - **JSON Patch for updates.** All work item updates use RFC 6902 JSON Patch format, not JSON body.
 - **Work item types vary.** "User Story", "Task", "Bug", "Feature", "Epic" are all work item types. Fetch should filter by configurable type(s) or accept all.
 - **Hierarchy is native.** Parent/child links use `System.LinkTypes.Hierarchy-Forward` / `Hierarchy-Reverse`. Stronger than Jira's epic link but similar concept.
-- **Auth header format:** `Basic :{PAT}` (colon + PAT, base64 encoded). Empty username, PAT as password.
+- **Auth header format:** `Basic ${base64(':' + PAT)}` (empty username, colon, PAT — base64 encoded). Same pattern as Bitbucket.
 
 **Pipeline labels:** Azure DevOps tags are auto-created when applied (like Jira), so `ensureLabel` is a no-op. `addLabel`/`removeLabel` parse and rebuild the semicolon-separated `System.Tags` string via JSON Patch.
 
@@ -163,7 +163,7 @@ CLANCY_AZDO_WIT       # Optional — work item type filter (default: all types)
 | Notion | `NOTION_DATABASE_ID` present |
 | Azure DevOps | `AZDO_ORG` present |
 
-**Implementation:** Add `detectBoard()` function to `src/schemas/env.ts`. The function reads env vars and returns a `BoardConfig['provider']` value or `undefined` if ambiguous/missing. Used by:
+**Implementation:** Extend the existing `detectBoard()` function in `src/scripts/shared/env-schema/env-schema.ts` to recognise the three new boards. The current function uses priority ordering (Jira > GitHub > Linear); extend to include Shortcut, Notion, and Azure DevOps. If multiple board signals are present, fall back to the prompt (consistent with the existing priority approach — new boards are lower priority than existing ones). Used by:
 - `init.md` workflow — skip board selection prompt if detected
 - `settings.md` workflow — show detected board
 - `doctor.md` workflow — validate detected board config
@@ -171,7 +171,8 @@ CLANCY_AZDO_WIT       # Optional — work item type filter (default: all types)
 **Conflict resolution:** If multiple board signals are present, return `undefined` and fall back to the prompt. This handles misconfigured environments gracefully.
 
 **Files changed:**
-- `src/schemas/env.ts` — add `detectBoard()` function, add new board env schemas (`shortcutEnvSchema`, `notionEnvSchema`, `azdoEnvSchema`), extend `BoardConfig` union
+- `src/scripts/shared/env-schema/env-schema.ts` — extend `detectBoard()` with new board signals, add new board env schemas (`shortcutEnvSchema`, `notionEnvSchema`, `azdoEnvSchema`), extend `BoardConfig` union
+- `src/schemas/env.ts` — add new board env vars to shared schema
 - `src/roles/setup/workflows/init.md` — use `detectBoard()` before prompting
 - `src/roles/setup/workflows/settings.md` — show detected board
 
@@ -243,11 +244,17 @@ The summary is recomputed on each write. Session report (`report.ts`) reads `qua
 
 ### Desktop Notification Hook
 
-**What it does:** Send a native desktop notification when Clancy completes a ticket, encounters an error, or finishes an AFK session. Uses Claude Code's `Notification` event type.
+**What it does:** Send a native desktop notification when Clancy completes a ticket, encounters an error, or finishes an AFK session.
 
-**Implementation approach:** A new hook file `hooks/clancy-notification.js` that listens for the `Notification` event. Claude Code fires `Notification` events when the agent wants to alert the user. The hook uses `node-notifier` or the native `osascript` (macOS) / `notify-send` (Linux) / PowerShell (Windows) to display a system notification.
+**Implementation approach:** Two mechanisms:
 
-The hook is best-effort — if notification delivery fails, it logs a warning and continues. No new env vars needed; the hook is always installed but only fires when Claude Code emits a Notification event.
+1. **Orchestrator-level notifications.** Add `sendDesktopNotification(title, message)` to `src/scripts/shared/notify/notify.ts`. Called directly from the once orchestrator's deliver phase (on success/failure) and the AFK runner's session-complete path. Uses native OS commands: `osascript` (macOS), `notify-send` (Linux), PowerShell `New-BurntToastNotification` or `[System.Windows.Forms]` (Windows). Platform-detected at runtime.
+
+2. **`Notification` event hook (supplementary).** If Claude Code's `Notification` event fires (it exists but fires for specific conditions: permission prompts, idle prompts, auth events), the hook at `hooks/clancy-notification.js` forwards the notification to the desktop. This catches notifications Clancy didn't explicitly trigger.
+
+The orchestrator-level approach is the primary mechanism — it fires at known points in the lifecycle. The hook is supplementary and best-effort. No new env vars needed; notifications are always enabled. Controlled by `CLANCY_DESKTOP_NOTIFY=false` to suppress.
+
+**Design note:** This is separate from the webhook notification (`CLANCY_NOTIFY_WEBHOOK`). Webhooks go to Slack/Teams for team visibility. Desktop notifications go to the local machine.
 
 **Design note:** This is separate from the existing webhook notification (`CLANCY_NOTIFY_WEBHOOK` in `notify.ts`). Webhooks go to Slack/Teams channels for team visibility. Desktop notifications go to the local machine for the developer who started the session.
 
@@ -265,7 +272,7 @@ The hook is best-effort — if notification delivery fails, it logs a warning an
 
 1. **AFK runner check.** Before each iteration in `runAfkLoop()`, check the current time against `CLANCY_QUIET_START` and `CLANCY_QUIET_END`. If within quiet hours, sleep until the end of the quiet window, then continue.
 
-2. **PreToolUse hook (safety net).** A `hooks/clancy-quiet-hours.js` hook that fires on `PreToolUse` and blocks tool execution if within quiet hours. This catches the edge case where a long-running iteration extends into quiet hours. The hook returns `{ "decision": "block", "message": "Quiet hours active — pausing until HH:MM" }`.
+2. **PreToolUse hook (safety net).** A `hooks/clancy-quiet-hours.js` hook that fires on `PreToolUse` and blocks tool execution if within quiet hours. This catches long-running iterations that extend into quiet hours. The hook returns `{ "decision": "block", "reason": "Quiet hours active (HH:MM-HH:MM). Tool execution blocked." }`. **Limitation:** Claude Code does not "sleep" on block — it will see the block message and may stop the session or try alternative approaches. The AFK runner check (mechanism 1) is the primary enforcement; this hook is a fail-safe that causes the session to wind down rather than gracefully pause.
 
 **Env vars:**
 ```
@@ -308,7 +315,9 @@ CLANCY_QUIET_TZ     # Optional — timezone for quiet hours (default: system loc
 
 ## Execution Plan
 
-Five waves, each followed by a devil's advocate review gate. Each wave is a branch + PR.
+Six waves, each followed by a devil's advocate review gate. Each wave is a branch + PR.
+
+**Wave 0 — Pre-requisite: migrate fetch-ticket.ts to Board type.** Currently `fetch-ticket.ts` has its own `switch (config.provider)` with 3 board-specific cases for `fetchCandidates()` and `isBlocked()` — parallel to the Board wrappers. Adding 3 new boards without this migration means maintaining 6 switch cases in two places. Refactor `fetchTicket()` to accept a `Board` instance and delegate candidate fetching + blocker checking to `Board.fetchTickets()` and `Board.fetchBlockerStatus()`. This eliminates the dual-switch maintenance burden and validates the Board abstraction before adding new boards. Also add `retryFetch()` utility to `src/scripts/shared/http/http.ts` — a wrapper around `fetch` with exponential backoff, `Retry-After` header support, and configurable max retries. Required by Notion but available to all boards. DA review: ensure no behaviour change in existing boards, verify blocker check ordering.
 
 **Wave 1 — Shortcut board.** New board implementation following the established pattern: `src/scripts/board/shortcut/shortcut.ts` (raw API), `shortcut-board.ts` (Board wrapper), `src/schemas/shortcut.ts` (Zod schemas), factory extension, env schema extension. Co-located tests for all modules. DA review: API mapping correctness, edge cases in workflow state resolution.
 
@@ -328,7 +337,7 @@ Five waves, each followed by a devil's advocate review gate. Each wave is a bran
 
 2. **Notion schema variability.** Every Notion database can have different property names and types. If a user's "Status" property is called "Phase" or uses a Select instead of Status type, Clancy will fail without the override env vars. Mitigation: clear error messages during `ping()` / `validateInputs()` that name the expected property and suggest the override var.
 
-3. **Azure DevOps WIQL injection.** WIQL queries are constructed with user-provided values (project name, status filter). Malicious or special-character values could break queries. Mitigation: apply the same `isSafeValue()` validation pattern used for Jira's JQL.
+3. **Azure DevOps WIQL injection.** WIQL queries are constructed with user-provided values (project name, status filter). Malicious or special-character values could break queries. Mitigation: build a WIQL-specific `isSafeWiqlValue()` validator (WIQL uses SQL-like syntax with `'` quotes and `--` comments — different injection vectors from Jira's JQL). Validate during `validateInputs()`.
 
 4. **Ticket claim race condition.** Two Clancy instances can still race between the re-fetch check and the status transition. The window is small (milliseconds) but not zero. Mitigation: the re-fetch guard reduces the window from seconds (query lag) to milliseconds. For zero-race guarantees, boards would need atomic claim (not available on most boards). Accept the residual risk — worst case is duplicate PRs, which the reviewer catches.
 
@@ -342,13 +351,13 @@ Five waves, each followed by a devil's advocate review gate. Each wave is a bran
 
 1. **No new Board interface methods.** All three new boards can be implemented against the existing 11-method Board type. Shortcut, Notion, and Azure DevOps all have mechanisms that map to the current interface. This validates the Board abstraction designed in v0.7.1.
 
-2. **Notion needs a retry utility.** The 3 req/s rate limit is unique among supported boards. Rather than adding retry logic to every Notion API call individually, build a shared `retryFetch()` wrapper in `src/scripts/shared/http/` that respects `Retry-After` headers. Other boards can opt in later.
+2. **Notion needs a retry utility (built in Wave 0).** The 3 req/s rate limit is unique among supported boards. A shared `retryFetch()` wrapper in `src/scripts/shared/http/http.ts` provides exponential backoff with `Retry-After` header support and configurable max retries (default 3). The Notion board wrapper injects `retryFetch` as its HTTP client — every API call automatically retries on 429/5xx. Other boards can opt in later. Expected latency: 5-10 API calls per ticket × 333ms spacing = ~2-3s per ticket on Notion (acceptable).
 
 3. **Property name configuration for Notion.** Convention-based defaults (`Status`, `Assignee`, `Labels`, `Epic`) with env var overrides. This is the simplest approach that handles the majority of Notion databases without requiring schema introspection at startup.
 
 4. **Claim check is a re-fetch guard, not a lock.** Atomic distributed locking is not available on any supported board. A re-fetch of the ticket's current status immediately before pickup narrows the race window to milliseconds. This is sufficient for the typical deployment (1–3 Clancy instances).
 
-5. **Quality tracking in `.clancy/quality.json`, not the board.** Board-agnostic persistence avoids polluting tickets with Clancy-internal metadata. The file is gitignored (`.clancy/` is already in `.gitignore`). Teams that want board-level visibility can use the session report webhook.
+5. **Quality tracking in `.clancy/quality.json`, not the board.** Board-agnostic persistence avoids polluting tickets with Clancy-internal metadata. The file is gitignored (`.clancy/` is already in `.gitignore`). Teams that want board-level visibility can use the session report webhook. **Concurrency note:** multiple AFK instances on different machines can corrupt the file. Acceptable for v0.8.0 (team deployment is uncommon); atomic writes or a distributed store can be added later if needed.
 
 6. **Desktop notifications via OS commands, not npm dependencies.** Hooks are pre-built CommonJS with zero runtime dependencies. Using `osascript` / `notify-send` / PowerShell avoids adding `node-notifier` or similar packages. The hook detects the platform and falls back to console output.
 
