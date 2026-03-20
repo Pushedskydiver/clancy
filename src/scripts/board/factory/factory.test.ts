@@ -17,6 +17,10 @@ vi.mock('../linear/linear-board.js', () => ({
   createLinearBoard: vi.fn(() => ({ _type: 'linear' })),
 }));
 
+vi.mock('../shortcut/shortcut-board.js', () => ({
+  createShortcutBoard: vi.fn(() => ({ _type: 'shortcut' })),
+}));
+
 describe('factory', () => {
   describe('createBoard', () => {
     it('creates a Jira board for jira provider', () => {
@@ -96,6 +100,30 @@ describe('factory', () => {
 
       createBoard({ provider: 'linear', env });
       expect(createLinearBoard).toHaveBeenCalledWith(env);
+    });
+
+    it('creates a Shortcut board for shortcut provider', () => {
+      const config: BoardConfig = {
+        provider: 'shortcut',
+        env: {
+          SHORTCUT_API_TOKEN: 'sc_test',
+        },
+      };
+
+      const board = createBoard(config) as unknown as { _type: string };
+      expect(board._type).toBe('shortcut');
+    });
+
+    it('passes shortcut env to createShortcutBoard', async () => {
+      const { createShortcutBoard } =
+        await import('../shortcut/shortcut-board.js');
+
+      const env = {
+        SHORTCUT_API_TOKEN: 'sc_test',
+      };
+
+      createBoard({ provider: 'shortcut', env });
+      expect(createShortcutBoard).toHaveBeenCalledWith(env);
     });
   });
 });

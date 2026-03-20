@@ -9,11 +9,12 @@ import type { Board } from '../board.js';
 import { createGitHubBoard } from '../github/github-board.js';
 import { createJiraBoard } from '../jira/jira-board.js';
 import { createLinearBoard } from '../linear/linear-board.js';
+import { createShortcutBoard } from '../shortcut/shortcut-board.js';
 
 /**
  * Create a Board from a board configuration.
  *
- * @param config - The board configuration (Jira, GitHub, or Linear).
+ * @param config - The board configuration (Jira, GitHub, Linear, or Shortcut).
  * @returns A Board object for the configured provider.
  */
 export function createBoard(config: BoardConfig): Board {
@@ -24,5 +25,7 @@ export function createBoard(config: BoardConfig): Board {
       return createGitHubBoard(config.env);
     case 'linear':
       return createLinearBoard(config.env);
+    case 'shortcut':
+      return createShortcutBoard(config.env);
   }
 }

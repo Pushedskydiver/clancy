@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import type { GitHubEnv, JiraEnv, LinearEnv } from './env-schema.js';
+import type {
+  GitHubEnv,
+  JiraEnv,
+  LinearEnv,
+  ShortcutEnv,
+} from './env-schema.js';
 import { detectBoard } from './env-schema.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -33,6 +38,15 @@ function linearEnv(
   return {
     LINEAR_API_KEY: 'lin_api_abc123',
     LINEAR_TEAM_ID: 'team-uuid-123',
+    ...overrides,
+  };
+}
+
+function shortcutEnv(
+  overrides: Record<string, string> = {},
+): Record<string, string> {
+  return {
+    SHORTCUT_API_TOKEN: 'sc_abc123',
     ...overrides,
   };
 }
@@ -135,6 +149,79 @@ describe('detectBoard', () => {
     });
   });
 
+  describe('shortcut', () => {
+    it('detects Shortcut from SHORTCUT_API_TOKEN', () => {
+      const result = detectBoard(shortcutEnv());
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.provider).toBe('shortcut');
+      expect((result.env as ShortcutEnv).SHORTCUT_API_TOKEN).toBe('sc_abc123');
+    });
+
+    it('includes optional SHORTCUT_WORKFLOW when present', () => {
+      const result = detectBoard(
+        shortcutEnv({
+          SHORTCUT_WORKFLOW: 'Engineering',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.provider).toBe('shortcut');
+      expect((result.env as ShortcutEnv).SHORTCUT_WORKFLOW).toBe('Engineering');
+    });
+
+    it('includes shared env vars', () => {
+      const result = detectBoard(
+        shortcutEnv({
+          CLANCY_LABEL: 'clancy',
+          CLANCY_MODEL: 'opus',
+          CLANCY_BASE_BRANCH: 'develop',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_LABEL).toBe('clancy');
+      expect(result.env.CLANCY_MODEL).toBe('opus');
+      expect(result.env.CLANCY_BASE_BRANCH).toBe('develop');
+    });
+
+    it('passes through CLANCY_MODE for Shortcut', () => {
+      const result = detectBoard(
+        shortcutEnv({
+          CLANCY_MODE: 'afk',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_MODE).toBe('afk');
+    });
+
+    it('passes through pipeline label vars for Shortcut', () => {
+      const result = detectBoard(
+        shortcutEnv({
+          CLANCY_LABEL_BRIEF: 'clancy:brief',
+          CLANCY_LABEL_PLAN: 'clancy:plan',
+          CLANCY_LABEL_BUILD: 'clancy:build',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_LABEL_BRIEF).toBe('clancy:brief');
+      expect(result.env.CLANCY_LABEL_PLAN).toBe('clancy:plan');
+      expect(result.env.CLANCY_LABEL_BUILD).toBe('clancy:build');
+    });
+  });
+
   describe('priority', () => {
     it('prefers Jira over GitHub when both present', () => {
       const result = detectBoard({ ...jiraEnv(), ...githubEnv() });
@@ -152,6 +239,15 @@ describe('detectBoard', () => {
       if (typeof result === 'string') return;
 
       expect(result.provider).toBe('github');
+    });
+
+    it('prefers Linear over Shortcut when both present', () => {
+      const result = detectBoard({ ...linearEnv(), ...shortcutEnv() });
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.provider).toBe('linear');
     });
   });
 

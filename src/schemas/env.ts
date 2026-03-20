@@ -85,16 +85,23 @@ export const linearEnvSchema = z.extend(sharedEnvSchema, {
   LINEAR_TEAM_ID: nonEmpty,
 });
 
+export const shortcutEnvSchema = z.extend(sharedEnvSchema, {
+  SHORTCUT_API_TOKEN: nonEmpty,
+  SHORTCUT_WORKFLOW: z.optional(z.string()),
+});
+
 // ─── Inferred types ──────────────────────────────────────────────────────────
 
 export type SharedEnv = z.infer<typeof sharedEnvSchema>;
 export type JiraEnv = z.infer<typeof jiraEnvSchema>;
 export type GitHubEnv = z.infer<typeof githubEnvSchema>;
 export type LinearEnv = z.infer<typeof linearEnvSchema>;
+export type ShortcutEnv = z.infer<typeof shortcutEnvSchema>;
 
 // ─── Board config discriminated union ────────────────────────────────────────
 
 export type BoardConfig =
   | { provider: 'jira'; env: JiraEnv }
   | { provider: 'github'; env: GitHubEnv }
-  | { provider: 'linear'; env: LinearEnv };
+  | { provider: 'linear'; env: LinearEnv }
+  | { provider: 'shortcut'; env: ShortcutEnv };

@@ -9,6 +9,7 @@ import {
   githubEnvSchema,
   jiraEnvSchema,
   linearEnvSchema,
+  shortcutEnvSchema,
 } from '~/schemas/env.js';
 
 // Re-export types for downstream consumers
@@ -18,6 +19,7 @@ export type {
   JiraEnv,
   LinearEnv,
   SharedEnv,
+  ShortcutEnv,
 } from '~/schemas/env.js';
 
 /**
@@ -72,7 +74,18 @@ export function detectBoard(raw: Record<string, string>): BoardConfig | string {
     return { provider: 'linear', env: parsed.data };
   }
 
-  return '✗ No board detected — set Jira, GitHub, or Linear credentials in .clancy/.env';
+  // Shortcut — check for SHORTCUT_API_TOKEN as the distinguishing key
+  if (raw.SHORTCUT_API_TOKEN) {
+    const parsed = shortcutEnvSchema.safeParse(raw);
+
+    if (!parsed.success) {
+      return `✗ Shortcut env validation failed: ${parsed.error.message}`;
+    }
+
+    return { provider: 'shortcut', env: parsed.data };
+  }
+
+  return '✗ No board detected — set Jira, GitHub, Linear, or Shortcut credentials in .clancy/.env';
 }
 
 /** Type-safe access to shared env vars across all board configs. */

@@ -3,7 +3,7 @@
  */
 
 /** Supported board providers. */
-export type BoardProvider = 'jira' | 'github' | 'linear';
+export type BoardProvider = 'jira' | 'github' | 'linear' | 'shortcut';
 
 /** A normalised ticket from any board provider. */
 export type Ticket = {

@@ -12,4 +12,5 @@ export type {
   JiraEnv,
   LinearEnv,
   SharedEnv,
+  ShortcutEnv,
 } from '~/schemas/env.js';
