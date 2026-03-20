@@ -27,7 +27,9 @@ Design decisions for Clancy features — the "why" behind non-obvious choices. T
 
 ### In progress
 
-None currently.
+| Document | Feature | Version |
+|---|---|---|
+| `team-readiness.md` | Board ecosystem (Shortcut, Notion, Azure DevOps), auto-detection, team features (claim check, quality tracking), new hooks (notification, quiet hours, drift detector) | v0.8.0 |
 
 ### Deleted after shipping
 
