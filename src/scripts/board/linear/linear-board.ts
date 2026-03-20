@@ -5,6 +5,12 @@
  * existing Linear board functions.
  */
 import type { LinearEnv } from '~/schemas/env.js';
+import {
+  linearIssueLabelSearchResponseSchema,
+  linearLabelCreateResponseSchema,
+  linearTeamLabelsResponseSchema,
+  linearWorkspaceLabelsResponseSchema,
+} from '~/schemas/linear.js';
 import type { FetchedTicket } from '~/scripts/once/types/types.js';
 
 import type { Board, FetchTicketOpts } from '../board.js';
@@ -116,11 +122,7 @@ export function createLinearBoard(env: LinearEnv): Board {
           teamId: env.LINEAR_TEAM_ID,
         });
 
-        const teamData = teamRaw as {
-          data?: {
-            team?: { labels?: { nodes?: Array<{ id: string; name: string }> } };
-          };
-        };
+        const teamData = linearTeamLabelsResponseSchema.parse(teamRaw);
 
         const teamLabel = teamData?.data?.team?.labels?.nodes?.find(
           (l) => l.name === label,
@@ -144,11 +146,7 @@ export function createLinearBoard(env: LinearEnv): Board {
           name: label,
         });
 
-        const wsData = wsRaw as {
-          data?: {
-            issueLabels?: { nodes?: Array<{ id: string; name: string }> };
-          };
-        };
+        const wsData = linearWorkspaceLabelsResponseSchema.parse(wsRaw);
 
         const wsLabel = wsData?.data?.issueLabels?.nodes?.[0];
 
@@ -173,14 +171,7 @@ export function createLinearBoard(env: LinearEnv): Board {
           { teamId: env.LINEAR_TEAM_ID, name: label },
         );
 
-        const createData = createRaw as {
-          data?: {
-            issueLabelCreate?: {
-              issueLabel?: { id: string };
-              success?: boolean;
-            };
-          };
-        };
+        const createData = linearLabelCreateResponseSchema.parse(createRaw);
 
         const newId = createData?.data?.issueLabelCreate?.issueLabel?.id;
         if (newId) labelIdCache.set(label, newId);
@@ -214,16 +205,7 @@ export function createLinearBoard(env: LinearEnv): Board {
           identifier: issueKey,
         });
 
-        const issueData = issueRaw as {
-          data?: {
-            issueSearch?: {
-              nodes?: Array<{
-                id: string;
-                labels?: { nodes?: Array<{ id: string }> };
-              }>;
-            };
-          };
-        };
+        const issueData = linearIssueLabelSearchResponseSchema.parse(issueRaw);
 
         const issue = issueData?.data?.issueSearch?.nodes?.[0];
         if (!issue) return;

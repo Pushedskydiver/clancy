@@ -36,6 +36,9 @@ export function createJiraBoard(env: JiraEnv): Board {
       if (!isSafeJqlValue(env.JIRA_PROJECT_KEY)) {
         return '✗ JIRA_PROJECT_KEY contains invalid characters';
       }
+      if (env.CLANCY_LABEL_BUILD && !isSafeJqlValue(env.CLANCY_LABEL_BUILD)) {
+        return '✗ CLANCY_LABEL_BUILD contains invalid characters';
+      }
       if (env.CLANCY_LABEL && !isSafeJqlValue(env.CLANCY_LABEL)) {
         return '✗ CLANCY_LABEL contains invalid characters';
       }
