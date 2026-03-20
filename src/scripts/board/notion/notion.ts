@@ -80,10 +80,8 @@ export async function pingNotion(
 /**
  * Query a Notion database with optional filters and pagination.
  *
- * Note: Returns a single page of results (Notion default: 100 items).
- * Callers needing all results should loop using `has_more` / `next_cursor`.
- * For ticket fetching this is sufficient (we only need ~5 candidates),
- * but children/blocker lookups may miss items in large databases.
+ * Returns a single page of results (Notion default: 100 items).
+ * For full-database scans, use `queryAllPages` which handles pagination.
  *
  * @param token - The Notion integration token.
  * @param databaseId - The database UUID.
@@ -144,6 +142,44 @@ export async function queryDatabase(
   }
 
   return parsed.data;
+}
+
+/**
+ * Query all pages from a Notion database, handling pagination automatically.
+ *
+ * Loops through `has_more` / `next_cursor` until all results are collected.
+ * Caps at 10 pages (1000 items) to prevent runaway queries.
+ *
+ * @param token - The Notion integration token.
+ * @param databaseId - The database UUID.
+ * @param filter - Optional Notion filter object.
+ * @returns All matching pages, or an empty array on failure.
+ */
+export async function queryAllPages(
+  token: string,
+  databaseId: string,
+  filter?: Record<string, unknown>,
+): Promise<NotionPage[]> {
+  const allResults: NotionPage[] = [];
+  let cursor: string | undefined;
+  const maxPages = 10;
+
+  for (let page = 0; page < maxPages; page++) {
+    const response = await queryDatabase(
+      token,
+      databaseId,
+      filter,
+      undefined,
+      cursor,
+    );
+    if (!response) break;
+
+    allResults.push(...response.results);
+    if (!response.has_more || !response.next_cursor) break;
+    cursor = response.next_cursor;
+  }
+
+  return allResults;
 }
 
 /**
@@ -256,9 +292,9 @@ export async function fetchBlockerStatus(
       );
 
       if (blockerMatch) {
-        // Found text-based blocker references — query the database once upfront
-        const result = await queryDatabase(token, databaseId);
-        if (!result) return false;
+        // Found text-based blocker references — query all pages once upfront
+        const allPages = await queryAllPages(token, databaseId);
+        if (!allPages.length) return false;
 
         for (const match of blockerMatch) {
           const blockerShortId = match
@@ -266,7 +302,7 @@ export async function fetchBlockerStatus(
             .toLowerCase();
           if (blockerShortId === shortId) continue; // Skip self-reference
 
-          for (const candidate of result.results) {
+          for (const candidate of allPages) {
             const candidateShortId = candidate.id.replace(/-/g, '').slice(0, 8);
             if (candidateShortId === blockerShortId) {
               const status = getPropertyValue(candidate, 'Status', 'status');
@@ -463,10 +499,10 @@ async function fetchChildrenByDescription(
 ): Promise<{ total: number; incomplete: number } | undefined> {
   // Notion doesn't have a text search filter on rich_text properties directly,
   // so we query all pages and filter client-side for the "Epic: " convention
-  const result = await queryDatabase(token, databaseId);
-  if (!result) return undefined;
+  const allPages = await queryAllPages(token, databaseId);
+  if (!allPages.length) return undefined;
 
-  const matching = result.results.filter((page) => {
+  const matching = allPages.filter((page) => {
     const desc = getDescriptionText(page);
     return desc?.includes(descriptionRef);
   });
@@ -521,10 +557,9 @@ async function findPageByKey(
   const shortId = key.replace('notion-', '');
   if (!shortId) return undefined;
 
-  const result = await queryDatabase(token, databaseId);
-  if (!result) return undefined;
+  const allPages = await queryAllPages(token, databaseId);
 
-  return result.results.find(
+  return allPages.find(
     (page) => page.id.replace(/-/g, '').slice(0, 8) === shortId,
   );
 }
