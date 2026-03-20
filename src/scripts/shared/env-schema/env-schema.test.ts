@@ -4,6 +4,7 @@ import type {
   GitHubEnv,
   JiraEnv,
   LinearEnv,
+  NotionEnv,
   ShortcutEnv,
 } from './env-schema.js';
 import { detectBoard } from './env-schema.js';
@@ -47,6 +48,16 @@ function shortcutEnv(
 ): Record<string, string> {
   return {
     SHORTCUT_API_TOKEN: 'sc_abc123',
+    ...overrides,
+  };
+}
+
+function notionEnv(
+  overrides: Record<string, string> = {},
+): Record<string, string> {
+  return {
+    NOTION_TOKEN: 'ntn_abc123',
+    NOTION_DATABASE_ID: 'db-uuid-1234',
     ...overrides,
   };
 }
@@ -222,6 +233,97 @@ describe('detectBoard', () => {
     });
   });
 
+  describe('notion', () => {
+    it('detects Notion from NOTION_DATABASE_ID', () => {
+      const result = detectBoard(notionEnv());
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.provider).toBe('notion');
+      expect((result.env as NotionEnv).NOTION_TOKEN).toBe('ntn_abc123');
+      expect((result.env as NotionEnv).NOTION_DATABASE_ID).toBe('db-uuid-1234');
+    });
+
+    it('returns error when NOTION_TOKEN is missing', () => {
+      const result = detectBoard({ NOTION_DATABASE_ID: 'db-uuid-1234' });
+
+      expect(typeof result).toBe('string');
+      expect(result).toContain('Notion env validation failed');
+    });
+
+    it('includes optional CLANCY_NOTION_* property overrides', () => {
+      const result = detectBoard(
+        notionEnv({
+          CLANCY_NOTION_STATUS: 'Task Status',
+          CLANCY_NOTION_ASSIGNEE: 'Owner',
+          CLANCY_NOTION_LABELS: 'Tags',
+          CLANCY_NOTION_PARENT: 'Parent Task',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.provider).toBe('notion');
+      expect((result.env as NotionEnv).CLANCY_NOTION_STATUS).toBe(
+        'Task Status',
+      );
+      expect((result.env as NotionEnv).CLANCY_NOTION_ASSIGNEE).toBe('Owner');
+      expect((result.env as NotionEnv).CLANCY_NOTION_LABELS).toBe('Tags');
+      expect((result.env as NotionEnv).CLANCY_NOTION_PARENT).toBe(
+        'Parent Task',
+      );
+    });
+
+    it('includes shared env vars', () => {
+      const result = detectBoard(
+        notionEnv({
+          CLANCY_LABEL: 'clancy',
+          CLANCY_MODEL: 'opus',
+          CLANCY_BASE_BRANCH: 'develop',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_LABEL).toBe('clancy');
+      expect(result.env.CLANCY_MODEL).toBe('opus');
+      expect(result.env.CLANCY_BASE_BRANCH).toBe('develop');
+    });
+
+    it('passes through CLANCY_MODE for Notion', () => {
+      const result = detectBoard(
+        notionEnv({
+          CLANCY_MODE: 'afk',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_MODE).toBe('afk');
+    });
+
+    it('passes through pipeline label vars for Notion', () => {
+      const result = detectBoard(
+        notionEnv({
+          CLANCY_LABEL_BRIEF: 'clancy:brief',
+          CLANCY_LABEL_PLAN: 'clancy:plan',
+          CLANCY_LABEL_BUILD: 'clancy:build',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_LABEL_BRIEF).toBe('clancy:brief');
+      expect(result.env.CLANCY_LABEL_PLAN).toBe('clancy:plan');
+      expect(result.env.CLANCY_LABEL_BUILD).toBe('clancy:build');
+    });
+  });
+
   describe('priority', () => {
     it('prefers Jira over GitHub when both present', () => {
       const result = detectBoard({ ...jiraEnv(), ...githubEnv() });
@@ -248,6 +350,15 @@ describe('detectBoard', () => {
       if (typeof result === 'string') return;
 
       expect(result.provider).toBe('linear');
+    });
+
+    it('prefers Shortcut over Notion when both present', () => {
+      const result = detectBoard({ ...shortcutEnv(), ...notionEnv() });
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.provider).toBe('shortcut');
     });
   });
 

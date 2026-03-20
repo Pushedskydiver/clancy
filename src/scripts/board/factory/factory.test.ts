@@ -21,6 +21,10 @@ vi.mock('../shortcut/shortcut-board.js', () => ({
   createShortcutBoard: vi.fn(() => ({ _type: 'shortcut' })),
 }));
 
+vi.mock('../notion/notion-board.js', () => ({
+  createNotionBoard: vi.fn(() => ({ _type: 'notion' })),
+}));
+
 describe('factory', () => {
   describe('createBoard', () => {
     it('creates a Jira board for jira provider', () => {
@@ -124,6 +128,31 @@ describe('factory', () => {
 
       createBoard({ provider: 'shortcut', env });
       expect(createShortcutBoard).toHaveBeenCalledWith(env);
+    });
+
+    it('creates a Notion board for notion provider', () => {
+      const config: BoardConfig = {
+        provider: 'notion',
+        env: {
+          NOTION_TOKEN: 'ntn_test',
+          NOTION_DATABASE_ID: 'db-uuid-1234',
+        },
+      };
+
+      const board = createBoard(config) as unknown as { _type: string };
+      expect(board._type).toBe('notion');
+    });
+
+    it('passes notion env to createNotionBoard', async () => {
+      const { createNotionBoard } = await import('../notion/notion-board.js');
+
+      const env = {
+        NOTION_TOKEN: 'ntn_test',
+        NOTION_DATABASE_ID: 'db-uuid-1234',
+      };
+
+      createBoard({ provider: 'notion', env });
+      expect(createNotionBoard).toHaveBeenCalledWith(env);
     });
   });
 });

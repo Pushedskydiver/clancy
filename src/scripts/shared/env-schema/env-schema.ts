@@ -9,6 +9,7 @@ import {
   githubEnvSchema,
   jiraEnvSchema,
   linearEnvSchema,
+  notionEnvSchema,
   shortcutEnvSchema,
 } from '~/schemas/env.js';
 
@@ -18,6 +19,7 @@ export type {
   GitHubEnv,
   JiraEnv,
   LinearEnv,
+  NotionEnv,
   SharedEnv,
   ShortcutEnv,
 } from '~/schemas/env.js';
@@ -85,7 +87,18 @@ export function detectBoard(raw: Record<string, string>): BoardConfig | string {
     return { provider: 'shortcut', env: parsed.data };
   }
 
-  return '✗ No board detected — set Jira, GitHub, Linear, or Shortcut credentials in .clancy/.env';
+  // Notion — check for NOTION_DATABASE_ID as the distinguishing key
+  if (raw.NOTION_DATABASE_ID) {
+    const parsed = notionEnvSchema.safeParse(raw);
+
+    if (!parsed.success) {
+      return `✗ Notion env validation failed: ${parsed.error.message}`;
+    }
+
+    return { provider: 'notion', env: parsed.data };
+  }
+
+  return '✗ No board detected — set Jira, GitHub, Linear, Shortcut, or Notion credentials in .clancy/.env';
 }
 
 /** Type-safe access to shared env vars across all board configs. */

@@ -90,6 +90,15 @@ export const shortcutEnvSchema = z.extend(sharedEnvSchema, {
   SHORTCUT_WORKFLOW: z.optional(z.string()),
 });
 
+export const notionEnvSchema = z.extend(sharedEnvSchema, {
+  NOTION_TOKEN: nonEmpty,
+  NOTION_DATABASE_ID: nonEmpty,
+  CLANCY_NOTION_STATUS: z.optional(z.string()),
+  CLANCY_NOTION_ASSIGNEE: z.optional(z.string()),
+  CLANCY_NOTION_LABELS: z.optional(z.string()),
+  CLANCY_NOTION_PARENT: z.optional(z.string()),
+});
+
 // ─── Inferred types ──────────────────────────────────────────────────────────
 
 export type SharedEnv = z.infer<typeof sharedEnvSchema>;
@@ -97,6 +106,7 @@ export type JiraEnv = z.infer<typeof jiraEnvSchema>;
 export type GitHubEnv = z.infer<typeof githubEnvSchema>;
 export type LinearEnv = z.infer<typeof linearEnvSchema>;
 export type ShortcutEnv = z.infer<typeof shortcutEnvSchema>;
+export type NotionEnv = z.infer<typeof notionEnvSchema>;
 
 // ─── Board config discriminated union ────────────────────────────────────────
 
@@ -104,4 +114,5 @@ export type BoardConfig =
   | { provider: 'jira'; env: JiraEnv }
   | { provider: 'github'; env: GitHubEnv }
   | { provider: 'linear'; env: LinearEnv }
-  | { provider: 'shortcut'; env: ShortcutEnv };
+  | { provider: 'shortcut'; env: ShortcutEnv }
+  | { provider: 'notion'; env: NotionEnv };
