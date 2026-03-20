@@ -161,8 +161,44 @@ This touches:
 It never modifies:
 - `.clancy/docs/` — codebase documentation
 - `.clancy/progress.txt` — progress log
-- `.clancy/.env` — credentials
 - `CLAUDE.md`
+
+It may **append** to:
+- `.clancy/.env` — adds missing env var defaults (see Step 4a)
+
+---
+
+## Step 4a — Backfill missing env var defaults
+
+After the installer finishes, read `.clancy/.env` and check for missing pipeline label variables. These were introduced in v0.7.4 and won't exist in `.env` files from earlier installs.
+
+**Check for and append if missing:**
+
+```
+# Pipeline labels (added in v0.7.4)
+CLANCY_LABEL_BRIEF=clancy:brief
+CLANCY_LABEL_PLAN=clancy:plan
+CLANCY_LABEL_BUILD=clancy:build
+```
+
+For each variable:
+1. Read `.clancy/.env` content
+2. If the variable name does NOT appear anywhere in the file (not even commented out), append it with its default value
+3. If the variable already exists (even with a different value), leave it untouched
+
+Add a blank line and a `# Pipeline labels (added in v0.7.4)` comment header before the new variables, but only if at least one variable was added.
+
+**Display what was added (if any):**
+```
+📋 Added missing env var defaults to .clancy/.env:
+   CLANCY_LABEL_BRIEF=clancy:brief
+   CLANCY_LABEL_PLAN=clancy:plan
+   CLANCY_LABEL_BUILD=clancy:build
+
+   Customise these via /clancy:settings → L1/L2/L3
+```
+
+If nothing was added, display nothing.
 
 ---
 
