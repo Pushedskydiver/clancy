@@ -3,9 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   closeIssue,
   fetchIssues as fetchGitHubIssues,
-  resolveUsername,
 } from '~/scripts/board/github/github.js';
 import { fetchTickets as fetchJiraTickets } from '~/scripts/board/jira/jira.js';
+import type { FetchedTicket } from '~/scripts/once/types/types.js';
 import { invokeClaudeSession } from '~/scripts/shared/claude-cli/claude-cli.js';
 import { detectBoard } from '~/scripts/shared/env-schema/env-schema.js';
 import { checkFeasibility } from '~/scripts/shared/feasibility/feasibility.js';
@@ -56,19 +56,30 @@ vi.mock('~/scripts/shared/env-schema/env-schema.js', () => ({
   sharedEnv: vi.fn((config: { env: Record<string, string> }) => config.env),
 }));
 
+/** Board-level fetchTickets mock — tests override this to provide candidates. */
+const mockBoardFetchTickets = vi.fn(
+  (): Promise<FetchedTicket[]> => Promise.resolve([]),
+);
+/** Board-level fetchBlockerStatus mock. */
+const mockBoardFetchBlockerStatus = vi.fn(() => Promise.resolve(false));
+/** Board-level sharedEnv mock — tests can override for label resolution. */
+const mockBoardSharedEnv = vi.fn(
+  () => ({}) as Record<string, string | undefined>,
+);
+
 vi.mock('~/scripts/board/factory/factory.js', () => ({
   createBoard: vi.fn(() => ({
     ping: vi.fn(() => Promise.resolve({ ok: true })),
     validateInputs: vi.fn(() => undefined),
     fetchTicket: vi.fn(() => Promise.resolve(undefined)),
-    fetchTickets: vi.fn(() => Promise.resolve([])),
-    fetchBlockerStatus: vi.fn(() => Promise.resolve(false)),
+    fetchTickets: mockBoardFetchTickets,
+    fetchBlockerStatus: mockBoardFetchBlockerStatus,
     fetchChildrenStatus: vi.fn(() => Promise.resolve(undefined)),
     transitionTicket: vi.fn(() => Promise.resolve(true)),
     ensureLabel: vi.fn(() => Promise.resolve()),
     addLabel: vi.fn(() => Promise.resolve()),
     removeLabel: vi.fn(() => Promise.resolve()),
-    sharedEnv: vi.fn(() => ({})),
+    sharedEnv: mockBoardSharedEnv,
   })),
 }));
 
@@ -230,7 +241,6 @@ const mockAppendProgress = vi.mocked(appendProgress);
 const mockCountReworkCycles = vi.mocked(countReworkCycles);
 const mockSendNotification = vi.mocked(sendNotification);
 const mockCloseIssue = vi.mocked(closeIssue);
-const mockResolveUsername = vi.mocked(resolveUsername);
 const mockCheckFeasibility = vi.mocked(checkFeasibility);
 const mockPushBranch = vi.mocked(pushBranch);
 const mockDetectRemote = vi.mocked(detectRemote);
@@ -281,6 +291,18 @@ function setupJiraHappyPath() {
       blockers: [],
     },
   ]);
+
+  // Board-level: fetchTicket now delegates to board.fetchTickets()
+  mockBoardFetchTickets.mockResolvedValue([
+    {
+      key: 'PROJ-123',
+      title: 'Add login page',
+      description: 'Create a login page.',
+      parentInfo: 'PROJ-100',
+      blockers: 'None',
+      labels: [],
+    },
+  ]);
 }
 
 function setupGitHubHappyPath() {
@@ -307,6 +329,18 @@ function setupGitHubHappyPath() {
       description: 'There is a bug.',
       provider: 'github',
       milestone: 'Sprint 3',
+    },
+  ]);
+
+  // Board-level: fetchTicket now delegates to board.fetchTickets()
+  mockBoardFetchTickets.mockResolvedValue([
+    {
+      key: '#42',
+      title: 'Fix bug',
+      description: 'There is a bug.',
+      parentInfo: 'Sprint 3',
+      blockers: 'None',
+      labels: [],
     },
   ]);
 }
@@ -366,6 +400,7 @@ describe('run', () => {
   it('stops when no tickets found', async () => {
     setupJiraHappyPath();
     mockFetchJira.mockResolvedValue([]);
+    mockBoardFetchTickets.mockResolvedValue([]);
 
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     await run([]);
@@ -412,15 +447,8 @@ describe('run', () => {
     await run([]);
     log.mockRestore();
 
-    // Username resolved
-    expect(mockResolveUsername).toHaveBeenCalledWith('ghp_abc123');
-    expect(mockFetchGitHub).toHaveBeenCalledWith(
-      'ghp_abc123',
-      'acme/app',
-      undefined,
-      'testuser',
-      false, // excludeHitl
-    );
+    // Board-level fetchTickets called (delegates to board.fetchTickets)
+    expect(mockBoardFetchTickets).toHaveBeenCalledWith({ excludeHitl: false });
 
     // Feature branch created
     expect(mockCheckout).toHaveBeenCalledWith('feature/issue-42', true);
@@ -485,6 +513,16 @@ describe('run', () => {
         blockers: [],
       },
     ]);
+    mockBoardFetchTickets.mockResolvedValue([
+      {
+        key: 'PROJ-456',
+        title: 'Standalone task',
+        description: 'No epic.',
+        parentInfo: 'none',
+        blockers: 'None',
+        labels: [],
+      },
+    ]);
 
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     await run([]);
@@ -532,6 +570,16 @@ describe('run', () => {
         blockers: [],
       },
     ]);
+    mockBoardFetchTickets.mockResolvedValue([
+      {
+        key: 'PROJ-789',
+        title: 'Push fail test',
+        description: 'Test',
+        parentInfo: 'none',
+        blockers: 'None',
+        labels: [],
+      },
+    ]);
     mockPushBranch.mockReturnValue(false);
 
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -557,6 +605,16 @@ describe('run', () => {
         title: 'No milestone',
         description: 'Test',
         provider: 'github',
+      },
+    ]);
+    mockBoardFetchTickets.mockResolvedValue([
+      {
+        key: '#99',
+        title: 'No milestone',
+        description: 'Test',
+        parentInfo: 'none',
+        blockers: 'None',
+        labels: [],
       },
     ]);
 
@@ -658,6 +716,7 @@ describe('run', () => {
     });
     // No fresh tickets
     mockFetchJira.mockResolvedValue([]);
+    mockBoardFetchTickets.mockResolvedValue([]);
     // PR_CREATED entry in progress
     mockFindEntriesWithStatus.mockReturnValue([
       {
@@ -714,8 +773,8 @@ describe('run', () => {
     await run([]);
     log.mockRestore();
 
-    // Should fetch fresh ticket instead (Jira happy path has one)
-    expect(mockFetchJira).toHaveBeenCalled();
+    // Should fetch fresh ticket instead (board.fetchTickets called)
+    expect(mockBoardFetchTickets).toHaveBeenCalled();
   });
 
   it('falls through PR rework when no PR_CREATED entries', async () => {
@@ -726,8 +785,8 @@ describe('run', () => {
     await run([]);
     log.mockRestore();
 
-    // Should go straight to fresh ticket
-    expect(mockFetchJira).toHaveBeenCalled();
+    // Should go straight to fresh ticket (board.fetchTickets called)
+    expect(mockBoardFetchTickets).toHaveBeenCalled();
     expect(mockCheckGitHubPrReviewState).not.toHaveBeenCalled();
   });
 
@@ -741,8 +800,8 @@ describe('run', () => {
     await run([]);
     log.mockRestore();
 
-    // Should still fetch fresh ticket (error caught)
-    expect(mockFetchJira).toHaveBeenCalled();
+    // Should still fetch fresh ticket (board.fetchTickets called)
+    expect(mockBoardFetchTickets).toHaveBeenCalled();
   });
 
   it('max rework guard triggers SKIPPED', async () => {
@@ -758,6 +817,7 @@ describe('run', () => {
       },
     });
     mockFetchJira.mockResolvedValue([]);
+    mockBoardFetchTickets.mockResolvedValue([]);
     mockFindEntriesWithStatus.mockReturnValue([
       {
         timestamp: '2026-03-14 10:00',

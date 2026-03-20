@@ -30,6 +30,7 @@ Design decisions for Clancy features — the "why" behind non-obvious choices. T
 | Document | Feature | Version |
 |---|---|---|
 | `team-readiness.md` | Board ecosystem (Shortcut, Notion, Azure DevOps), auto-detection, team features (claim check, quality tracking), new hooks (notification, quiet hours, drift detector) | v0.8.0 |
+| `design-aware-implementation.md` | Design sub-phase in planner (conditional UI specs), Google Stitch integration (optional design previews), Playwright/axe-core/Lighthouse verification extensions | v0.9.0 |
 
 ### Deleted after shipping
 

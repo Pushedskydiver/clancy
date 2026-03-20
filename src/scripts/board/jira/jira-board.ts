@@ -76,6 +76,7 @@ export function createJiraBoard(env: JiraEnv): Board {
           description: ticket.description,
           parentInfo: ticket.epicKey ?? 'none',
           blockers: blockerStr,
+          labels: ticket.labels ?? [],
         };
       });
     },

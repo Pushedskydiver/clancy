@@ -24,7 +24,7 @@ export async function ticketFetch(ctx: RunContext): Promise<boolean> {
 
   if (!ctx.ticket) {
     // Fresh ticket
-    ctx.ticket = await fetchTicket(config);
+    ctx.ticket = await fetchTicket(ctx.board!);
   }
 
   if (!ctx.ticket) {

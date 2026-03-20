@@ -70,6 +70,7 @@ export function createLinearBoard(env: LinearEnv): Board {
           blockers: 'None',
           linearIssueId: ticket.issueId,
           issueId: ticket.issueId,
+          labels: ticket.labels ?? [],
         }),
       );
     },

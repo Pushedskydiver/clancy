@@ -131,6 +131,7 @@ describe('jira-board', () => {
           description: 'A test ticket',
           parentInfo: 'PROJ-100',
           blockers: 'Blocked by: PROJ-50',
+          labels: [],
         },
       ]);
     });

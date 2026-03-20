@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { Board } from '~/scripts/board/board.js';
 import {
   appendProgress,
   countReworkCycles,
@@ -28,6 +29,21 @@ const mockFetchTicket = vi.mocked(fetchTicket);
 const mockCountReworkCycles = vi.mocked(countReworkCycles);
 const mockAppendProgress = vi.mocked(appendProgress);
 
+/** Minimal mock Board for tests that trigger fetchTicket. */
+const mockBoard: Board = {
+  ping: vi.fn(() => Promise.resolve({ ok: true })),
+  validateInputs: vi.fn(() => undefined),
+  fetchTicket: vi.fn(() => Promise.resolve(undefined)),
+  fetchTickets: vi.fn(() => Promise.resolve([])),
+  fetchBlockerStatus: vi.fn(() => Promise.resolve(false)),
+  fetchChildrenStatus: vi.fn(() => Promise.resolve(undefined)),
+  transitionTicket: vi.fn(() => Promise.resolve(true)),
+  ensureLabel: vi.fn(() => Promise.resolve()),
+  addLabel: vi.fn(() => Promise.resolve()),
+  removeLabel: vi.fn(() => Promise.resolve()),
+  sharedEnv: vi.fn(() => ({})),
+};
+
 // ─── Tests ───────────────────────────────────────────────────────────────────
 
 describe('ticketFetch', () => {
@@ -41,6 +57,7 @@ describe('ticketFetch', () => {
 
     const ctx = createContext([]);
     ctx.config = { provider: 'jira', env: {} } as never;
+    ctx.board = mockBoard;
 
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     const result = await ticketFetch(ctx);
@@ -60,6 +77,7 @@ describe('ticketFetch', () => {
 
     const ctx = createContext([]);
     ctx.config = { provider: 'jira', env: {} } as never;
+    ctx.board = mockBoard;
 
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
     const result = await ticketFetch(ctx);

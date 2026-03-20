@@ -101,6 +101,7 @@ describe('linear-board', () => {
           blockers: 'None',
           linearIssueId: 'uuid-1',
           issueId: 'uuid-1',
+          labels: [],
         },
       ]);
     });

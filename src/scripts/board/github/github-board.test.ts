@@ -98,6 +98,7 @@ describe('github-board', () => {
           description: 'A test issue',
           parentInfo: 'v1.0',
           blockers: 'None',
+          labels: [],
         },
       ]);
     });
