@@ -145,20 +145,26 @@ Make Clancy work for teams, not just solo developers.
 
 ---
 
-## v0.9.0 — Output quality
+## v0.9.0 — Design-aware implementation
 
-Make Clancy's code output genuinely good, not just functional.
+Make Clancy produce design-quality UI code, not just functional code. Extends the planner with design specifications and adds visual/accessibility verification.
 
-### Visual verification
-- Playwright CLI integration — token-efficient alternative to Playwright MCP for visual checks. Init wizard offers CLI (recommended) or MCP mode
-- Lighthouse CI — performance, accessibility, SEO, best practices audit after UI ticket implementation
-- axe-core CLI — automated accessibility testing after UI changes
+### Design sub-phase in planner
+- **Design specifications** — planner conditionally produces `## Design Specifications` section for UI tickets: component specs (props, variants, states), accessibility specs (ARIA, keyboard, focus management), content specs (copy, errors, empty states), user flow state machines (Mermaid)
+- **Google Stitch integration** (optional, `CLANCY_STITCH=true`) — after plan approval, generate UI designs from the design specs via Stitch SDK. Post screenshot + interactive prototype link as a board comment. Feedback loop via ticket comments + `/clancy:plan` re-run
+- **Smart feedback classification** — when re-running `/clancy:plan`, detect whether comments are design feedback, technical feedback, or general — route to the appropriate section for revision
+- **Figma MCP preserved** — Stitch is additive, not a replacement. Figma MCP reads existing human-created designs. Stitch generates AI designs from specs. Both optional, neither required
 
-### Quality improvements
-- **Security scanning pre-PR gate** — run `npm audit`, secret scanning, and optionally CodeQL/Semgrep before creating a PR. Inspired by PAUL's security commands and Trail of Bits security skills
-- **Bug triage role** — new optional role inspired by Matt Pocock's `triage-issue`. Investigates a bug report, explores the codebase, creates an actionable ticket with a TDD fix plan
-- **Auto-refresh docs** — run `/clancy:update-docs` periodically or after N tickets completed. Inspired by Devin's DeepWiki
-- **Review automation** — confidence self-check before delivery. Below-threshold PRs flagged as "needs careful review"
+### Visual and accessibility verification
+- **Playwright CLI** — visual checks after UI ticket implementation. Compare rendered output against Stitch design (if available) or design spec descriptions
+- **axe-core CLI** — automated WCAG compliance testing. Validate against the accessibility specs produced by the design sub-phase
+- **Lighthouse CI** — performance, accessibility, SEO, best practices audit
+
+### v0.10.0 — Quality & triage (split from v0.9.0)
+- **Security scanning pre-PR gate** — `npm audit`, secret scanning, CodeQL/Semgrep
+- **Bug triage role** — investigates bug reports, creates actionable tickets with TDD fix plans
+- **Auto-refresh docs** — periodic `/clancy:update-docs` after N tickets
+- **Review automation** — confidence self-check before delivery
 
 ---
 
