@@ -299,7 +299,7 @@ export async function fetchBlockerStatus(
 
         for (const match of blockerMatch) {
           const blockerShortId = match
-            .replace('Blocked by notion-', '')
+            .replace(/blocked by notion-/i, '')
             .toLowerCase();
           if (blockerShortId === shortId) continue; // Skip self-reference
 

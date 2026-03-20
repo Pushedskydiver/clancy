@@ -18,6 +18,7 @@ import {
   fetchChildrenStatus as fetchNotionChildrenStatus,
   getPropertyValue,
   pingNotion,
+  queryAllPages,
   queryDatabase,
   updatePage,
 } from './notion.js';
@@ -299,10 +300,9 @@ async function resolvePageFromKey(
   const shortId = issueKey.replace('notion-', '');
   if (!shortId) return undefined;
 
-  const result = await queryDatabase(token, databaseId);
-  if (!result) return undefined;
+  const allPages = await queryAllPages(token, databaseId);
 
-  return result.results.find(
+  return allPages.find(
     (page) => page.id.replace(/-/g, '').slice(0, 8) === shortId,
   );
 }
