@@ -47,7 +47,8 @@ export async function prRetry(ctx: RunContext): Promise<boolean> {
       remote.host === 'unknown' ||
       remote.host === 'azure'
     ) {
-      // Unsupported remote — mark all as handled so they don't retry forever
+      // Unsupported remote — mark all as PR_CREATED (no PR number) to prevent
+      // infinite retry. PUSHED would be picked up again on next run.
       for (const entry of needsRetry) {
         console.log(
           dim(
@@ -60,7 +61,7 @@ export async function prRetry(ctx: RunContext): Promise<boolean> {
           ctx.cwd,
           entry.key,
           entry.summary,
-          'PUSHED',
+          'PR_CREATED',
           undefined,
           parent,
         );

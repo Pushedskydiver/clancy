@@ -217,7 +217,7 @@ clancy-afk.js (loop runner — bundled, self-contained)
        └─ Generate session report (.clancy/session-report.md)
 ```
 
-## Phase Pipeline (v0.7.1)
+## Phase Pipeline
 
 The once orchestrator (`src/scripts/once/once.ts`, ~115 lines) is a thin pipeline runner. Business logic lives in 14 composable phase functions under `src/scripts/once/phases/`:
 
