@@ -25,6 +25,21 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - **Board count** — 3 → 6 boards supported in setup workflows.
 - **Init wizard** — board selection expanded to 7 options (6 boards + "not listed"), auto-detection hint for existing env vars.
 
+### Migration from v0.7.x
+
+Pipeline labels (`CLANCY_LABEL_BRIEF`, `CLANCY_LABEL_PLAN`, `CLANCY_LABEL_BUILD`) are new in v0.7.4 but your `.clancy/.env` won't have them after upgrading — `/clancy:update` copies new workflow files but does not modify your existing `.env`. Without these variables, the workflows use defaults (`clancy:brief`, `clancy:plan`, `clancy:build`), but Claude may skip the label step if it doesn't find the variable in the file.
+
+**After upgrading, do one of:**
+1. Run `/clancy:settings` → configure L1/L2/L3 pipeline labels
+2. Or add manually to `.clancy/.env`:
+   ```
+   CLANCY_LABEL_BRIEF=clancy:brief
+   CLANCY_LABEL_PLAN=clancy:plan
+   CLANCY_LABEL_BUILD=clancy:build
+   ```
+
+Existing `CLANCY_LABEL` and `CLANCY_PLAN_LABEL` continue to work as fallbacks for the build and plan labels. There is no fallback for the brief label — it must be configured or the default is used.
+
 ### Tests
 
 - 896 → 1206 (310 new tests across all waves — board modules, hooks, quiet hours, pipeline labels, installer modules)
