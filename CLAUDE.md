@@ -91,6 +91,20 @@ Always via branch + PR: TypeScript (`src/`, `hooks/`), tests, executable markdow
 
 Spin up a review agent at every necessary phase — not just after code. Review design docs for gaps and contradictions. Review execution plans for ordering problems and missing scope. Review each implementation wave before the next builds on it. Review the final PR for cross-cutting concerns. If the work has decisions or logic that could be wrong, it gets reviewed.
 
+### Version development lifecycle
+
+Each version follows a formal lifecycle with approval gates and DA reviews:
+
+1. **Brief** — create `docs/decisions/v{X}/brief.md` (what + why + scope). DA review → user approval.
+2. **Design** — create `docs/decisions/v{X}/design.md` (how it works). DA review → user approval.
+3. **Plan** — create `docs/decisions/v{X}/execution-plan.md` (waves, agents, files). DA review → user approval.
+4. **Build** — execute the plan. Per-wave DA reviews between each wave.
+5. **Doc sweep** — before PR, spin up parallel agents to update ALL docs: CLAUDE.md, README, CHANGELOG, roles, architecture, glossary, lifecycle, visual docs, comparison, copilot instructions, PR template. Then a DA sweeps for contradictions.
+6. **Ship** — PR with Copilot review, squash merge, npm publish, memory update.
+7. **Post-ship** — trim `docs/decisions/v{X}/` (delete execution plan, trim brief + design to decisions-only). Verify badge, version, memories.
+
+Decision docs live in `docs/decisions/` organised by version. See `docs/decisions/README.md` for lifecycle details.
+
 ## Release checklist
 
 1. Include version bump (`package.json`) and `CHANGELOG.md` entry in the PR
