@@ -7,6 +7,18 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.8.1] — 2026-03-20
+
+### Added
+
+- **PR retry phase** — new phase 2a in the orchestrator retries PR creation for tickets that were pushed but failed to create a PR (network hiccup recovery). Scans progress.txt for `PUSHED` entries without a corresponding `PR_CREATED` and retries the API call.
+
+### Tests
+
+- 1206 → 1212 (6 new tests for PR retry phase)
+
+---
+
 ## [0.8.0] — 2026-03-20
 
 ### Added

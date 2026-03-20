@@ -924,8 +924,8 @@ describe('run', () => {
     await run([]);
     log.mockRestore();
 
-    // Should detect rework from PUSHED entry
-    expect(mockAppendProgress).toHaveBeenCalledTimes(1);
+    // Should detect rework from PUSHED entry (prRetry may also call appendProgress)
+    expect(mockAppendProgress).toHaveBeenCalledTimes(2);
     expect(mockAppendProgress).toHaveBeenCalledWith(
       expect.any(String),
       'PROJ-700',
@@ -954,8 +954,8 @@ describe('run', () => {
     await run([]);
     log.mockRestore();
 
-    // Epic completion check (4 calls: PR_CREATED, REWORK, PUSHED, EPIC_PR_CREATED) + rework detection (4 calls)
-    expect(mockFindEntriesWithStatus).toHaveBeenCalledTimes(8);
+    // Epic completion (4: PR_CREATED, REWORK, PUSHED, EPIC_PR_CREATED) + prRetry (2: PUSHED, PR_CREATED) + rework detection (4)
+    expect(mockFindEntriesWithStatus).toHaveBeenCalledTimes(10);
     expect(mockFindEntriesWithStatus).toHaveBeenCalledWith(
       expect.any(String),
       'PR_CREATED',
