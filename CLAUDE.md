@@ -42,6 +42,8 @@ Autonomous, board-driven development for Claude Code. npm package: `chief-clancy
 | [docs/TESTING.md](docs/TESTING.md) | Testing strategy, co-location rules, coverage thresholds |
 | [docs/GIT.md](docs/GIT.md) | Branch strategy, merge conventions |
 | [docs/decisions/](docs/decisions/) | Decision docs — design decisions organised by version |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Development process — version lifecycle, DA reviews, pre-merge sweep checklist |
+| [docs/COMPARISON.md](docs/COMPARISON.md) | Clancy vs GSD vs PAUL comparison |
 | [docs/roles/](docs/roles/) | Role descriptions (implementer, reviewer, setup, planner, strategist) |
 | [docs/guides/](docs/guides/) | Configuration, security, troubleshooting guides |
 
@@ -87,23 +89,9 @@ Direct to main (no PR): decision docs (`docs/decisions/`), glossary, architectur
 
 Always via branch + PR: TypeScript (`src/`, `hooks/`), tests, executable markdown (`src/roles/`, `src/templates/`, `src/agents/`), package.json, CHANGELOG.md, CI config (`.github/`).
 
-### Devil's advocate review
+### Development process
 
-Spin up a review agent at every necessary phase — not just after code. Review design docs for gaps and contradictions. Review execution plans for ordering problems and missing scope. Review each implementation wave before the next builds on it. Review the final PR for cross-cutting concerns. If the work has decisions or logic that could be wrong, it gets reviewed.
-
-### Version development lifecycle
-
-Each version follows a formal lifecycle with approval gates and DA reviews:
-
-1. **Brief** — create `docs/decisions/v{X}/brief.md` (what + why + scope). DA review → user approval.
-2. **Design** — create `docs/decisions/v{X}/design.md` (how it works). DA review → user approval.
-3. **Plan** — create `docs/decisions/v{X}/execution-plan.md` (waves, agents, files). DA review → user approval.
-4. **Build** — execute the plan. Per-wave DA reviews between each wave.
-5. **Doc sweep** — before PR, spin up parallel agents to update ALL docs: CLAUDE.md, README, CHANGELOG, roles, architecture, glossary, lifecycle, visual docs, comparison, copilot instructions, PR template. Then a DA sweeps for contradictions.
-6. **Ship** — PR with Copilot review, squash merge, npm publish, memory update.
-7. **Post-ship** — trim `docs/decisions/v{X}/` (delete execution plan, trim brief + design to decisions-only). Verify badge, version, memories.
-
-Decision docs live in `docs/decisions/` organised by version. See `docs/decisions/README.md` for lifecycle details.
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the full version lifecycle (brief → design → plan → build → doc sweep → ship), devil's advocate review rules, and pre-merge sweep checklist.
 
 ## Release checklist
 
