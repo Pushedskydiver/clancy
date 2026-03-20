@@ -100,8 +100,10 @@ export function createAzdoBoard(env: AzdoEnv): Board {
     },
 
     async fetchChildrenStatus(parentKey: string, parentId?: string) {
-      const id = parentId ? parseInt(parentId, 10) : undefined;
-      if (id === undefined || Number.isNaN(id)) return undefined;
+      // Extract numeric work item ID from parentId or parentKey (format: azdo-{id})
+      const raw = parentId ?? parentKey.replace('azdo-', '');
+      const id = parseInt(raw, 10);
+      if (Number.isNaN(id)) return undefined;
       return fetchAzdoChildrenStatus(org, project, pat, id, parentKey);
     },
 
