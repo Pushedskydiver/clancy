@@ -145,20 +145,26 @@ Make Clancy work for teams, not just solo developers.
 
 ---
 
-## v0.9.0 — Design-aware implementation
+## v0.9.0 — Design sub-phase in planner
 
-Make Clancy produce design-quality UI code, not just functional code. Extends the planner with design specifications and adds visual/accessibility verification.
+Make Clancy produce design-quality UI code. Extends the planner with conditional design specifications for UI tickets. Zero external dependencies.
 
-### Design sub-phase in planner
-- **Design specifications** — planner conditionally produces `## Design Specifications` section for UI tickets: component specs (props, variants, states), accessibility specs (ARIA, keyboard, focus management), content specs (copy, errors, empty states), user flow state machines (Mermaid)
-- **Google Stitch integration** (optional, `CLANCY_STITCH=true`) — after plan approval, generate UI designs from the design specs via Stitch SDK. Post screenshot + interactive prototype link as a board comment. Feedback loop via ticket comments + `/clancy:plan` re-run
-- **Smart feedback classification** — when re-running `/clancy:plan`, detect whether comments are design feedback, technical feedback, or general — route to the appropriate section for revision
-- **Figma MCP preserved** — Stitch is additive, not a replacement. Figma MCP reads existing human-created designs. Stitch generates AI designs from specs. Both optional, neither required
+- **Design specifications** — planner conditionally produces `## Design Specifications` section for UI tickets: component specs, accessibility specs, content specs, user flow state machines (Mermaid), layout descriptions, pages (URL mapping)
+- **2-path feedback classification** — when re-running `/clancy:plan`, classify comments as technical-only (revise plan) or everything else (revise specs + regenerate Stitch if enabled)
+- **Figma MCP preserved** — Stitch is additive, not a replacement. Both optional, neither required
+
+## v0.9.1 — Stitch + visual verification
+
+External tool integrations isolated from the core design sub-phase.
+
+### Google Stitch integration
+- **Optional** (`CLANCY_STITCH=true`) — inside `/clancy:plan` (before approval), generate UI designs from specs via Stitch MCP. Post screenshot + prototype link as board comment. All 6 boards supported.
+- **Usage tracking** — `.clancy/stitch-usage.json`, warn at 50%, skip at 100%
 
 ### Visual and accessibility verification
-- **Playwright CLI** — visual checks after UI ticket implementation. Compare rendered output against Stitch design (if available) or design spec descriptions
-- **axe-core CLI** — automated WCAG compliance testing. Validate against the accessibility specs produced by the design sub-phase
-- **Lighthouse CI** — performance, accessibility, SEO, best practices audit
+- **Playwright CLI** — post-delivery visual checks (phase 10a). Compare rendered output against Stitch design or spec descriptions. 3-tier URL fallback: `CLANCY_DEV_URLS` → `### Pages` → Storybook auto-detection
+- **axe-core CLI** — automated WCAG compliance. A-level violations auto-fixed via follow-up commit. Time-guard aware (skips auto-fix at >= 80% budget)
+- **Lighthouse CI** — performance/a11y/SEO scores. Configurable threshold (`CLANCY_LIGHTHOUSE_THRESHOLD`, default: 0 = disabled)
 
 ### v0.10.0 — Quality & triage (split from v0.9.0)
 - **Security scanning pre-PR gate** — `npm audit`, secret scanning, CodeQL/Semgrep

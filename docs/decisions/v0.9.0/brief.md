@@ -115,9 +115,12 @@ This avoids Stitch/Playwright issues blocking the highest-value feature (design 
 8. **Token cost of visual verification phase.** Running 3 tools, parsing output, posting PR comments adds token overhead per UI ticket in AFK mode. Mitigated by only activating for UI tickets.
 9. **MCP server cold-start latency.** `npx @_davideast/stitch-mcp proxy` downloads on first run (10-30s). Acceptable in AFK mode but noticeable interactively.
 
-## Open Questions
+## Resolved Questions
 
-1. **Time guard vs visual-verify.** The time guard fires at 80%/100% of `CLANCY_TIME_LIMIT`. Visual verification runs after delivery (post time-critical work). Should the time guard skip visual checks if already past 100%?
-2. **AFK auto-fix behaviour.** If axe-core finds auto-fixable A-level violations and pushes a follow-up commit, does this trigger CI? Does rework detection pick it up on the next run?
-3. **`### Pages` section — required or optional?** Without it, Playwright can't know which URLs to screenshot. If absent, should visual verification be skipped entirely or attempt URL inference from `CLANCY_DEV_URLS`?
-4. **Roadmap sync.** The roadmap says 3-path feedback classification and "after plan approval" for Stitch. The brief says 2-path and "before approval." Update roadmap after brief approval.
+1. **Time guard vs visual-verify.** Phase 10a checks elapsed time against `CLANCY_TIME_LIMIT`. If >= 100%, skip visual verification entirely ("Visual verification skipped — time limit exceeded"). If >= 80% but < 100%, run visual checks but skip axe-core auto-fix commits (report only). Below 80%, run everything including auto-fixes.
+
+2. **AFK auto-fix behaviour.** axe-core auto-fixes are pushed as a **separate commit** (not amend) to the PR branch using format `fix(a11y): <description>`. This triggers CI (expected, validates the fix). Rework detection does NOT pick it up — rework requires `changesRequested` review state from a human reviewer. The verification gate (Stop hook) does NOT re-fire — it only runs during the Claude Code session, which has ended by phase 10a.
+
+3. **`### Pages` section — optional in design specs, required for visual verification via 3-tier fallback.** The planner includes `### Pages` when route info is available, omits otherwise. For visual verification, URL resolution: (1) `CLANCY_DEV_URLS` env var (explicit, highest priority), (2) `### Pages` from design specs, (3) Storybook auto-detection. If all three yield no URLs, skip with PR comment: "Visual verification skipped — no page URLs available."
+
+4. **Roadmap sync.** Roadmap updated to match the brief: 2-path feedback classification and Stitch generation inside `/clancy:plan` before approval.
