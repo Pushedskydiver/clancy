@@ -25,6 +25,10 @@ vi.mock('../notion/notion-board.js', () => ({
   createNotionBoard: vi.fn(() => ({ _type: 'notion' })),
 }));
 
+vi.mock('../azdo/azdo-board.js', () => ({
+  createAzdoBoard: vi.fn(() => ({ _type: 'azdo' })),
+}));
+
 describe('factory', () => {
   describe('createBoard', () => {
     it('creates a Jira board for jira provider', () => {
@@ -153,6 +157,33 @@ describe('factory', () => {
 
       createBoard({ provider: 'notion', env });
       expect(createNotionBoard).toHaveBeenCalledWith(env);
+    });
+
+    it('creates an Azure DevOps board for azdo provider', () => {
+      const config: BoardConfig = {
+        provider: 'azdo',
+        env: {
+          AZDO_ORG: 'myorg',
+          AZDO_PROJECT: 'MyProject',
+          AZDO_PAT: 'test-pat',
+        },
+      };
+
+      const board = createBoard(config) as unknown as { _type: string };
+      expect(board._type).toBe('azdo');
+    });
+
+    it('passes azdo env to createAzdoBoard', async () => {
+      const { createAzdoBoard } = await import('../azdo/azdo-board.js');
+
+      const env = {
+        AZDO_ORG: 'myorg',
+        AZDO_PROJECT: 'MyProject',
+        AZDO_PAT: 'test-pat',
+      };
+
+      createBoard({ provider: 'azdo', env });
+      expect(createAzdoBoard).toHaveBeenCalledWith(env);
     });
   });
 });

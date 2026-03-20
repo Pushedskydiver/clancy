@@ -8,7 +8,8 @@ export type BoardProvider =
   | 'github'
   | 'linear'
   | 'shortcut'
-  | 'notion';
+  | 'notion'
+  | 'azdo';
 
 /** A normalised ticket from any board provider. */
 export type Ticket = {

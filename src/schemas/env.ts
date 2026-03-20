@@ -99,6 +99,14 @@ export const notionEnvSchema = z.extend(sharedEnvSchema, {
   CLANCY_NOTION_PARENT: z.optional(z.string()),
 });
 
+export const azdoEnvSchema = z.extend(sharedEnvSchema, {
+  AZDO_ORG: nonEmpty,
+  AZDO_PROJECT: nonEmpty,
+  AZDO_PAT: nonEmpty,
+  CLANCY_AZDO_STATUS: z.optional(z.string()),
+  CLANCY_AZDO_WIT: z.optional(z.string()),
+});
+
 // ─── Inferred types ──────────────────────────────────────────────────────────
 
 export type SharedEnv = z.infer<typeof sharedEnvSchema>;
@@ -107,6 +115,7 @@ export type GitHubEnv = z.infer<typeof githubEnvSchema>;
 export type LinearEnv = z.infer<typeof linearEnvSchema>;
 export type ShortcutEnv = z.infer<typeof shortcutEnvSchema>;
 export type NotionEnv = z.infer<typeof notionEnvSchema>;
+export type AzdoEnv = z.infer<typeof azdoEnvSchema>;
 
 // ─── Board config discriminated union ────────────────────────────────────────
 
@@ -115,4 +124,5 @@ export type BoardConfig =
   | { provider: 'github'; env: GitHubEnv }
   | { provider: 'linear'; env: LinearEnv }
   | { provider: 'shortcut'; env: ShortcutEnv }
-  | { provider: 'notion'; env: NotionEnv };
+  | { provider: 'notion'; env: NotionEnv }
+  | { provider: 'azdo'; env: AzdoEnv };

@@ -5,6 +5,7 @@
  */
 import type { BoardConfig } from '~/schemas/env.js';
 
+import { createAzdoBoard } from '../azdo/azdo-board.js';
 import type { Board } from '../board.js';
 import { createGitHubBoard } from '../github/github-board.js';
 import { createJiraBoard } from '../jira/jira-board.js';
@@ -15,7 +16,7 @@ import { createShortcutBoard } from '../shortcut/shortcut-board.js';
 /**
  * Create a Board from a board configuration.
  *
- * @param config - The board configuration (Jira, GitHub, Linear, Shortcut, or Notion).
+ * @param config - The board configuration (Jira, GitHub, Linear, Shortcut, Notion, or Azure DevOps).
  * @returns A Board object for the configured provider.
  */
 export function createBoard(config: BoardConfig): Board {
@@ -30,5 +31,7 @@ export function createBoard(config: BoardConfig): Board {
       return createShortcutBoard(config.env);
     case 'notion':
       return createNotionBoard(config.env);
+    case 'azdo':
+      return createAzdoBoard(config.env);
   }
 }

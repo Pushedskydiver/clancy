@@ -6,6 +6,7 @@
  */
 import type { BoardConfig, SharedEnv } from '~/schemas/env.js';
 import {
+  azdoEnvSchema,
   githubEnvSchema,
   jiraEnvSchema,
   linearEnvSchema,
@@ -15,6 +16,7 @@ import {
 
 // Re-export types for downstream consumers
 export type {
+  AzdoEnv,
   BoardConfig,
   GitHubEnv,
   JiraEnv,
@@ -98,7 +100,18 @@ export function detectBoard(raw: Record<string, string>): BoardConfig | string {
     return { provider: 'notion', env: parsed.data };
   }
 
-  return '✗ No board detected — set Jira, GitHub, Linear, Shortcut, or Notion credentials in .clancy/.env';
+  // Azure DevOps — check for AZDO_ORG as the distinguishing key
+  if (raw.AZDO_ORG) {
+    const parsed = azdoEnvSchema.safeParse(raw);
+
+    if (!parsed.success) {
+      return `✗ Azure DevOps env validation failed: ${parsed.error.message}`;
+    }
+
+    return { provider: 'azdo', env: parsed.data };
+  }
+
+  return '✗ No board detected — set Jira, GitHub, Linear, Shortcut, Notion, or Azure DevOps credentials in .clancy/.env';
 }
 
 /** Type-safe access to shared env vars across all board configs. */
