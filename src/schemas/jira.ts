@@ -73,7 +73,19 @@ export const jiraIssueLinksResponseSchema = z.object({
   ),
 });
 
+/** Response from `GET /rest/api/3/issue/{key}?fields=labels`. */
+export const jiraIssueLabelsResponseSchema = z.object({
+  fields: z.optional(
+    z.object({
+      labels: z.optional(z.array(z.string())),
+    }),
+  ),
+});
+
 export type JiraSearchResponse = z.infer<typeof jiraSearchResponseSchema>;
+export type JiraIssueLabelsResponse = z.infer<
+  typeof jiraIssueLabelsResponseSchema
+>;
 export type JiraTransitionsResponse = z.infer<
   typeof jiraTransitionsResponseSchema
 >;

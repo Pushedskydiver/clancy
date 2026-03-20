@@ -5,6 +5,7 @@
  * existing Jira board functions.
  */
 import type { JiraEnv } from '~/schemas/env.js';
+import { jiraIssueLabelsResponseSchema } from '~/schemas/jira.js';
 import type { FetchedTicket } from '~/scripts/once/types/types.js';
 
 import type { Board, FetchTicketOpts } from '../board.js';
@@ -116,9 +117,7 @@ export function createJiraBoard(env: JiraEnv): Board {
           return;
         }
 
-        const json = (await res.json()) as {
-          fields?: { labels?: string[] };
-        };
+        const json = jiraIssueLabelsResponseSchema.parse(await res.json());
         const current = json.fields?.labels ?? [];
 
         if (current.includes(label)) return;
@@ -160,9 +159,7 @@ export function createJiraBoard(env: JiraEnv): Board {
           return;
         }
 
-        const json = (await res.json()) as {
-          fields?: { labels?: string[] };
-        };
+        const json = jiraIssueLabelsResponseSchema.parse(await res.json());
         const current = json.fields?.labels ?? [];
 
         if (!current.includes(label)) return;

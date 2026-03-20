@@ -192,7 +192,7 @@ export function createLinearBoard(env: LinearEnv): Board {
         // Resolve issue identifier to UUID + current labels
         const issueQuery = `
           query($identifier: String!) {
-            issueSearch(query: $identifier, first: 1) {
+            issueSearch: issues(filter: { identifier: { eq: $identifier } }, first: 1) {
               nodes {
                 id
                 labels { nodes { id } }
@@ -240,7 +240,7 @@ export function createLinearBoard(env: LinearEnv): Board {
         // Resolve issue identifier to UUID + current labels
         const issueQuery = `
           query($identifier: String!) {
-            issueSearch(query: $identifier, first: 1) {
+            issueSearch: issues(filter: { identifier: { eq: $identifier } }, first: 1) {
               nodes {
                 id
                 labels { nodes { id name } }
