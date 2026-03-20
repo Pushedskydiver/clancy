@@ -19,8 +19,8 @@ All work branches from `main` and merges back to `main` via PR.
 
 ### Rules
 
-- Never commit directly to `main`
-- All work goes through a branch and a PR
+- **If it runs, it needs a PR.** TypeScript (`src/`, `hooks/`), tests, executable markdown (`src/roles/`, `src/templates/`, `src/agents/`), package.json, CHANGELOG.md, CI config (`.github/`) — always via branch + PR.
+- **If it's only read, direct to main is fine.** Decision docs (`docs/decisions/`), glossary, architecture docs (`docs/`), CLAUDE.md doc link updates, README badge/link fixes, typo corrections.
 - Delete branches after merging
 - CI must pass before merging
 

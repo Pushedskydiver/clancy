@@ -2,11 +2,29 @@
 
 How Clancy itself is developed. Covers the version lifecycle, review process, and doc maintenance.
 
+**Last reviewed:** 2026-03-20
+
+---
+
+## Quick Reference
+
+For experienced developers — one line per step:
+
+1. **Brief** — create `docs/decisions/v{X}/brief.md` → DA review → user approval
+2. **Design** — create `docs/decisions/v{X}/design.md` → DA review → user approval
+3. **Plan** — create `docs/decisions/v{X}/execution-plan.md` → DA review → user approval
+4. **Build** — branch, per-wave agents, tests after every wave, per-wave DA
+5. **Doc Sweep** — 6 parallel agents update all docs, DA verifies, re-run tests
+6. **Ship** — PR + Copilot review, squash merge, npm publish, update memory
+7. **Post-Ship** — trim decision docs, verify badge/version/memories
+
+For hotfixes and patches, see [Lightweight Paths](#lightweight-paths).
+
 ---
 
 ## Version Development Lifecycle
 
-Each version follows a formal lifecycle with approval gates and devil's advocate reviews:
+Each version follows a formal lifecycle with approval gates and devil's advocate reviews.
 
 ### Document status header
 
@@ -21,11 +39,12 @@ Update the status at each transition. This makes it clear where each doc is in t
 
 ### 1. Brief — What are we building and why?
 
-- Read the roadmap for this version
+- Read the roadmap (`ROADMAP.md` in the project root) for this version
 - Create `docs/decisions/v{X}/brief.md` (problem, goals, non-goals, scope, ticket decomposition)
+- Update `docs/decisions/README.md` Active table with the new version directory
 - Set status: `Draft`
-- Spin up a DA agent to review the brief
-- **Address all DA findings and update the brief BEFORE presenting to the user**
+- Spin up a DA agent to review the brief (use Claude Code sub-agent with a prompt asking it to check for gaps, contradictions, scope issues, ticket sizing, missing risks)
+- **Address all DA findings and update the brief BEFORE presenting to the user.** Addressing means either changing the document or adding a note explaining why a finding was intentionally not addressed.
 - Update status: `DA reviewed — awaiting user approval`
 - User reviews + leaves feedback → re-brief if needed (status stays `DA reviewed`)
 - User approves → update status: `Approved`
@@ -53,20 +72,22 @@ Update the status at each transition. This makes it clear where each doc is in t
 ### 4. Build — Execute the plan
 
 - Create branch (`feature/v{X}` or `feature/{feature-name}`)
-- Per-wave implementation with parallel agents
+- Per-wave implementation with parallel agents (wave scope defined in the execution plan)
 - **All tests must pass after every wave** — run `npm test && npm run typecheck && npm run lint` and verify 0 failures before committing. Never push code with failing tests.
 - Per-wave DA review between each wave (catches foundation issues before later waves build on them)
 - Fix DA findings before proceeding to next wave
 
 ### 5. Doc Sweep — Update every doc
 
-Before creating the PR, spin up parallel agents to update ALL documentation:
+The doc sweep is the **execution** phase — parallel agents update all documentation. The [Pre-Merge Sweep Checklist](#pre-merge-sweep-checklist) below is the **verification** — a manual check that nothing was missed.
+
+Spin up parallel agents to update ALL documentation:
 
 | Agent | Files | What it updates |
 |---|---|---|
 | 1 | CLAUDE.md, .github/copilot-instructions.md, .github/pull_request_template.md, src/templates/CLAUDE.md | Key paths, technical details, hook/board counts, architecture overview |
 | 2 | README.md, docs/COMPARISON.md | Test badge, feature list, board count, comparison table |
-| 3 | CHANGELOG.md, package.json, package-lock.json | Version bump, changelog entry, test count, lock sync |
+| 3 | CHANGELOG.md, package.json, package-lock.json (sync via `npm install --package-lock-only`) | Version bump, changelog entry, test count |
 | 4 | docs/roles/*.md, docs/guides/CONFIGURATION.md | Role docs reflect new features, new env vars documented |
 | 5 | docs/ARCHITECTURE.md, docs/VISUAL-ARCHITECTURE.md | Module map, phase list, diagrams, board nodes |
 | 6 | docs/GLOSSARY.md, docs/LIFECYCLE.md | New terms defined, lifecycle steps updated |
@@ -78,19 +99,54 @@ Then spin up a DA agent that reads ALL files touched by agents 1-6 and checks fo
 - Version consistency across package.json, CHANGELOG, CLAUDE.md
 - Missing items from the pre-merge sweep checklist
 
+**Re-verify after doc sweep:** Run `npm test && npm run typecheck && npm run lint` to ensure doc agents didn't break anything (especially package.json and lock file changes).
+
 ### 6. Ship — Merge, publish, update memory
 
 - Create PR with label + assignee
-- Copilot review rounds (fix all findings)
-- Squash merge to main
+- Copilot review rounds — GitHub Copilot automated code review. Fix all findings before merge.
+- Squash merge to main (PR title = squash commit message, must follow gitmoji + conventional commit format)
 - Publish to npm: `npm publish`
-- Update MEMORY.md (current state, shipped versions, next steps)
+- Update MEMORY.md (current state, shipped versions, next steps) — do this AFTER publish succeeds
 
 ### 7. Post-Ship — Trim and verify
 
 - Trim `docs/decisions/v{X}/` — delete execution-plan.md, trim brief + design to decisions-only (~50 lines each)
-- Update `docs/decisions/README.md` index
+- Update `docs/decisions/README.md` — move version from Active to Shipped table
+- Update decision doc statuses to `Shipped (decisions only)`
 - Verify: test badge matches, version correct, memories updated, no stale refs
+
+---
+
+## Lightweight Paths
+
+Not all changes need the full 7-step lifecycle.
+
+### Hotfixes / Patches (e.g. v0.8.1)
+
+For bug fixes and small enhancements that don't warrant a full brief/design:
+
+1. **Skip steps 1-3** (brief, design, plan) — go straight to Build
+2. Create a `fix/` or `feature/` branch
+3. Implement the fix with tests
+4. Run the pre-merge sweep checklist (abbreviated — focus on CHANGELOG, version bump, test badge)
+5. PR + Copilot review → merge → publish
+6. No decision doc directory needed (the fix is documented in the CHANGELOG)
+
+### Docs-only changes
+
+Direct to main, no PR needed. See the [direct-to-main rule](../GIT.md) in GIT.md.
+
+Examples: glossary updates, architecture doc updates, decision doc trims, README badge fixes, typo corrections, CLAUDE.md doc link updates.
+
+**Exception:** executable markdown (`src/roles/`, `src/templates/`, `src/agents/`) always needs a PR — these are code, not docs.
+
+### Abandoned versions
+
+If a version is started but abandoned:
+1. Delete the `docs/decisions/v{X}/` directory
+2. Note in `docs/decisions/README.md` under a "Deleted" section (optional)
+3. Delete any feature branch
 
 ---
 
@@ -102,6 +158,7 @@ Spin up a review agent at every necessary phase of work — not just after code.
 
 | Phase | What the DA checks |
 |---|---|
+| **Brief created** | Scope, gaps, contradictions with roadmap, ticket sizing, missing risks |
 | **Design doc created/updated** | Gaps, contradictions, feasibility, missing edge cases, consistency with existing patterns |
 | **Execution plan created** | Wave ordering, agent scope overlap, test coverage, risk completeness |
 | **Each implementation wave** | Bugs, stale references, missing tests, type safety, backward compatibility |
@@ -140,18 +197,18 @@ Trivial docs-only changes pushed directly to main (typo fixes, badge updates). T
 
 ## Pre-Merge Sweep Checklist
 
-Before creating or merging any PR with code changes, check these artifacts:
+The verification counterpart to the doc sweep (step 5). After doc agents run and before creating the PR, verify these manually:
 
 **Always check:**
 1. README.md test badge — does count match `npm test` output?
 2. CHANGELOG.md — entry present with correct version, date, and test count?
-3. package.json version bump + package-lock.json synced?
+3. package.json version bump + package-lock.json synced (`npm install --package-lock-only`)?
 4. CLAUDE.md — key paths, technical details, commands, hook count, board count?
 5. docs/ARCHITECTURE.md — new modules, phases, functions listed?
 6. docs/GLOSSARY.md — new terms/concepts defined?
 7. docs/LIFECYCLE.md — if roles, phases, or commands changed?
 8. docs/VISUAL-ARCHITECTURE.md — diagrams reflect new boards/phases/hooks?
-9. docs/decisions/README.md — decision docs moved to shipped/deleted?
+9. docs/decisions/README.md — decision docs in correct table (active/shipped)?
 10. docs/COMPARISON.md — comparison table reflects current feature set?
 11. docs/roles/*.md — role docs reflect new features?
 12. docs/guides/CONFIGURATION.md — new env vars documented?
@@ -161,3 +218,13 @@ Before creating or merging any PR with code changes, check these artifacts:
 14. .github/pull_request_template.md — checklists up to date?
 15. src/templates/CLAUDE.md — template for user projects current?
 16. Memory files (MEMORY.md) — stale descriptions, test counts, version refs?
+
+---
+
+## When to update this doc
+
+Update DEVELOPMENT.md when:
+- A new step is added to the lifecycle
+- A new doc is added to the sweep checklist
+- The DA review process changes
+- A new lightweight path is needed (e.g., security patches, dependency updates)

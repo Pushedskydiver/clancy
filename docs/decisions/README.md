@@ -12,16 +12,16 @@ Each version directory can contain up to three files following this convention:
 
 ```
 docs/decisions/v0.8.0/
-  brief.md           # optional — problem + scope
-  design.md          # required — decisions + trade-offs
-  execution-plan.md  # optional — deleted after shipping
+  brief.md           # what + why + scope (created first, trimmed after shipping)
+  design.md          # how it works — decisions + trade-offs (trimmed after shipping)
+  execution-plan.md  # how to build it — waves, agents, files (deleted after shipping)
 ```
 
 ## Lifecycle
 
 1. **Before building:** Create brief, design doc, and/or execution plan in a version directory
 2. **During building:** Reference all three
-3. **After shipping:** Delete execution plans. Trim design docs to decisions-only (problem, solution, key decisions ~40 lines). The code is the source of truth for flows and edge cases.
+3. **After shipping:** Delete execution plans. Trim brief + design docs to decisions-only (problem, solution, key decisions ~50 lines each). The code is the source of truth for flows and edge cases.
 
 ## Version directories
 
