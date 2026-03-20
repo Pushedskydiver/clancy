@@ -76,6 +76,15 @@ stateDiagram-v2
 
 **Layout Descriptions** — text descriptions of spatial arrangement (not wireframes). Example: "The login form is centered vertically and horizontally. Email and password inputs are stacked vertically with 16px gap. The submit button spans the full width below the inputs. OAuth buttons appear below a 'or continue with' divider. Error messages appear above the form as an alert banner."
 
+**Pages** — explicit route/URL mapping for visual verification. Links component names to actual pages. Example:
+
+| Component | Route | URL |
+|---|---|---|
+| LoginForm | `/login` | `http://localhost:3000/login` |
+| LoginForm (Storybook) | — | `http://localhost:6006/?path=/story/loginform` |
+
+If the project uses Storybook, prefer story URLs. If dev server only, use route URLs. This section bridges design specs and Playwright verification (Wave 3) — without it, the verification agent cannot know which pages to screenshot.
+
 ### Why These Five Sections
 
 Accessibility specifications are the highest-value design artifact — they directly become ARIA attributes and keyboard handlers in the implementation. Content specifications eliminate placeholder text. Component specifications give the implementer a type contract before writing code. User flow diagrams catch missing states (what happens on error? on timeout? on back-navigation?). Layout descriptions provide spatial intent without attempting ASCII wireframes.
@@ -88,7 +97,7 @@ No wireframes or visual mockups in text form — text cannot reliably convey pix
 
 ### Overview
 
-After plan approval, if `CLANCY_STITCH=true`, Clancy generates a visual design preview from the design specifications using Google Stitch. The preview is posted as a board comment with an embedded screenshot and a link to the interactive prototype.
+After the plan is generated (inside `/clancy:plan`, before approval), if `CLANCY_STITCH=true`, Clancy generates a visual design preview from the design specifications using Google Stitch. The preview is posted as a board comment with an embedded screenshot and a link to the interactive prototype.
 
 Stitch is optional. Teams without Stitch continue as before — the design specifications in the plan are the design artifact, and implementation proceeds from those specs alone.
 
@@ -144,10 +153,13 @@ only)       - A11y specs → ARIA annotations
 The design preview is posted as a ticket comment with the marker heading `## Clancy Design Preview`. This marker is used to detect existing design previews and replace them on revision (same pattern as the existing `## Clancy Plan` and `## Clancy Brief` comments).
 
 **Screenshot persistence:** Stitch returns download URLs that may be temporary. To ensure screenshots remain visible in board comments:
-- **GitHub:** Upload the screenshot via the repo's content API or use the Stitch project URL (persistent) as a link with the screenshot as a fallback description
+- **GitHub:** Upload the screenshot via the repo's content API or use the Stitch project URL (persistent) as a link
 - **Jira:** Upload as an attachment via `POST /rest/api/3/issue/{key}/attachments`, then reference in the ADF comment
-- **Linear:** Linear supports markdown image URLs — use the Stitch project screenshot URL directly (persistent within the Stitch project lifetime)
-- **Fallback:** If upload fails, post the Stitch project link without an inline screenshot. The reviewer can click through to see the design.
+- **Linear:** Linear supports markdown image URLs — use the Stitch project screenshot URL directly
+- **Shortcut:** Post as a markdown comment with the Stitch project URL (Shortcut supports markdown image syntax)
+- **Notion:** Post as a page comment with the screenshot URL (Notion API `POST /v1/comments`)
+- **Azure DevOps:** Post as a work item comment with the screenshot URL (Azure DevOps supports markdown in comments)
+- **Fallback (all boards):** If upload/posting fails, post the Stitch project link without an inline screenshot. The reviewer can click through to see the design.
 
 ### Feedback Loop
 
@@ -159,44 +171,41 @@ When `/clancy:plan` is run after a design preview has been posted:
 ```
 Comment classified
        |
-  +----+----+----+
-  |         |    |
-  Visual    Tech  Both
-  only      only
-  |         |    |
-  v         v    v
-Regenerate Revise  Revise specs
-Stitch     plan    + regenerate
-only       specs   Stitch
-           only
+  +----+----+
+  |         |
+  Tech      Everything
+  only      else
+  |         |
+  v         v
+Revise    Revise specs
+plan      + regenerate
+specs     Stitch (if enabled)
+only
 ```
 
-3. **Visual-only feedback** → regenerate Stitch design only. Do NOT revise `## Design Specifications`. The text specs are unchanged — only the visual output needs updating. Examples: "make the sidebar wider", "change the primary colour to blue", "use more whitespace", "the font is too small".
-4. **Technical feedback** → revise `## Technical Approach` in the plan only. Do NOT regenerate Stitch. Examples: "use server components instead", "this should be a REST endpoint not GraphQL", "add pagination".
-5. **Spec-affecting design feedback** → revise `## Design Specifications` AND regenerate Stitch. This applies when design feedback implies a functional change (new components, new props, new states). Examples: "add a close button to the modal" (new prop), "the form needs a password strength indicator" (new component), "add an error state for network failures" (new state).
-6. **General/unclear** → revise both sections and regenerate Stitch. Safety fallback — no feedback is lost.
+3. **Technical-only feedback** → revise `## Technical Approach` in the plan only. Do NOT regenerate Stitch. Examples: "use server components instead", "this should be a REST endpoint not GraphQL", "add pagination".
+4. **Design/visual/general feedback** → revise `## Design Specifications` AND regenerate Stitch (if enabled). This covers pure visual changes ("make the sidebar wider"), functional design changes ("add a close button"), and mixed/unclear feedback. Examples: "change the primary colour", "add a loading spinner", "the layout is wrong AND the API needs changing".
+
+The 2-path system is deliberately simple: technical-only feedback is the only case where Stitch regeneration is skipped. Everything else revises specs + regenerates. This avoids the complexity of distinguishing "visual only" from "spec-affecting" (a nuanced judgment that adds classification risk for marginal token savings).
 
 ### Smart Feedback Classification
 
 Classification uses natural language understanding — Claude reads the comment and decides which path it belongs to. Not keyword matching.
 
-**The key distinction: does the feedback change functionality or just appearance?**
+**The key distinction: is this ONLY about the technical approach, or does it touch design/visual/content at all?**
 
-| Feedback | Affects specs? | Regenerate Stitch? | Path |
-|---|---|---|---|
-| "Make the sidebar wider" | No | Yes | Visual only |
-| "Change the primary colour" | No | Yes | Visual only |
-| "Use more whitespace" | No | Yes | Visual only |
-| "Add a close button" | Yes (new prop) | Yes | Spec-affecting |
-| "Add a loading spinner" | Yes (new state) | Yes | Spec-affecting |
-| "The form needs validation" | Yes (new behaviour) | Yes | Spec-affecting |
-| "Use server components" | Yes | No | Technical |
-| "Add rate limiting" | Yes | No | Technical |
-| "Wrong layout AND wrong API" | Yes | Yes | Both |
+| Feedback | Path | Action |
+|---|---|---|
+| "Use server components" | Technical only | Revise plan, no Stitch |
+| "Add rate limiting" | Technical only | Revise plan, no Stitch |
+| "Make the sidebar wider" | Design | Revise specs + regenerate Stitch |
+| "Change the primary colour" | Design | Revise specs + regenerate Stitch |
+| "Add a close button" | Design | Revise specs + regenerate Stitch |
+| "The form needs validation" | Design | Revise specs + regenerate Stitch |
+| "Wrong layout AND wrong API" | Both | Revise both + regenerate Stitch |
+| Unclear / mixed | Fallback | Revise both + regenerate Stitch |
 
-The "general" fallback ensures no feedback is lost. If classification is uncertain, both sections are revised and Stitch regenerates.
-
-**Important:** When ONLY the Stitch design is regenerated (visual-only path), the brief and plan are NOT re-run. Only the Stitch MCP tool is invoked with the updated visual instructions. This avoids wasting tokens on re-planning when the specs haven't changed.
+If in doubt, treat as design feedback. The cost of an unnecessary Stitch regeneration (~1 generation out of 350/month) is lower than the cost of missing a design change.
 
 ### AFK Mode Behaviour
 
@@ -243,14 +252,12 @@ Step 4g: Design Tools (gated on Planner OR Strategist enabled)
 **If [3] or [4] Google Stitch selected:**
 ```
   Stitch API key (from stitch.withgoogle.com/settings): ___
-  Daily generation limit (0 = unlimited) [0]: ___
 ```
 
 Writes to `.clancy/.env`:
 ```
 CLANCY_STITCH=true
 STITCH_API_KEY=xxx
-CLANCY_STITCH_DAILY_LIMIT=0
 ```
 
 Configures Claude Code MCP server (writes to `.claude/settings.json`):
@@ -274,10 +281,9 @@ Configures Claude Code MCP server (writes to `.claude/settings.json`):
 ```
   [D1] Design tool    (None / Figma / Stitch / Both)
   [D2] Stitch API key
-  [D3] Stitch daily limit
 ```
 
-`[D1]` toggles `CLANCY_STITCH` and manages the MCP server config. `[D2]` and `[D3]` only appear when Stitch is enabled.
+`[D1]` toggles `CLANCY_STITCH` and manages the MCP server config. `[D2]` only appears when Stitch is enabled.
 
 ### Stitch Integration Approach — MCP, Not SDK
 
@@ -289,6 +295,13 @@ Configures Claude Code MCP server (writes to `.claude/settings.json`):
 - No esbuild bundling issues
 - Claude Code's full conversation context (codebase knowledge, design specs) is available to the Stitch tool call
 - The community MCP proxy (`@_davideast/stitch-mcp`) provides Claude Code configuration out of the box
+
+**MCP tool names (from `@_davideast/stitch-mcp`):**
+- `build_site` — generate screens from a text prompt. Returns project URL + screen URLs.
+- `get_screen_code` — get HTML/CSS code for a generated screen.
+- `get_screen_image` — get screenshot URL for a generated screen.
+
+The planner workflow instructs Claude to call `build_site` with the design specs as the prompt, then `get_screen_image` to get the screenshot URL for the board comment.
 
 **MCP configuration (added by `/clancy:init`):**
 ```json
@@ -304,10 +317,10 @@ Configures Claude Code MCP server (writes to `.claude/settings.json`):
 ```
 
 **Rate limits:** Stitch allows 350 generations per month (~11/day). Heavy autonomous use could exhaust this quickly — a single AFK night with 20 UI tickets could use 20+ generations. Mitigation:
-- Track generation count in `.clancy/stitch-usage.json` (updated by the plan workflow after each generation)
-- Warn at 50% (175 generations) — earlier than the original 80% threshold
+- Track generation count in `.clancy/stitch-usage.json` — the planner prompt instructs Claude to read this file before generating, increment the count, and write it back. Simple JSON: `{ "month": "2026-03", "count": 42 }`. No TypeScript module needed — Claude reads/writes the file directly.
+- Warn at 50% (175 generations) — display a warning in the plan output
 - Skip generation at 100% with a note in the plan comment
-- Optional `CLANCY_STITCH_DAILY_LIMIT` for teams that want per-day caps (default: unlimited)
+- Count resets when the month changes (Claude checks `month` field against current month)
 
 **Stitch unavailability:** If Stitch API is down, rate limited, or Google discontinues it, the workflow degrades gracefully — design specs remain in the plan, no preview is generated, a warning is posted. The design sub-phase (Wave 1) works entirely without Stitch.
 
@@ -335,7 +348,7 @@ After UI ticket implementation, in the verification gate:
 1. **Run axe-core.** Use `npx axe` against affected pages (same dev server as Playwright).
 2. **Check against specs.** Compare axe-core results against the accessibility specifications from the design sub-phase. Flag violations that contradict specified ARIA roles/attributes.
 3. **Report in PR body.** Include WCAG violations in a `## Accessibility Verification` section.
-4. **Block delivery on critical violations.** A-level WCAG violations (Level A — minimum conformance) block delivery, same as lint/test failures in the existing verification gate. AA/AAA violations are reported as warnings but do not block.
+4. **Flag critical violations.** A-level WCAG violations (Level A — minimum conformance) are flagged as "needs attention" in the PR body. If the violation is auto-fixable (e.g. missing `aria-label`), a follow-up commit is pushed to the PR branch. AA/AAA violations are reported as warnings only. Note: visual checks are post-delivery (non-blocking) — they do NOT block PR creation like the Stop hook does for lint/test/typecheck.
 
 ### Lighthouse CI
 
@@ -349,7 +362,7 @@ After UI ticket implementation:
 
 ### Two-Phase Verification
 
-Visual checks are fundamentally different from code checks (lint/test/typecheck): they're slow (10-30s each), non-deterministic (rendering varies), and most findings aren't auto-fixable (Lighthouse scores, visual regressions). They run as a **separate post-delivery phase**, not in the Stop hook.
+Visual checks are fundamentally different from code checks (lint/test/typecheck): they're slow (10-30s each), non-deterministic (rendering varies), and most findings aren't auto-fixable (Lighthouse scores, visual regressions). They run as a **new phase 10a (visual-verify) in the once orchestrator**, between deliver (phase 10) and cost (phase 11). This phase only activates for UI tickets (detected from the plan's `## Design Specifications` section presence). Not in the Stop hook.
 
 **Phase 1: Stop hook (existing, fast, blocking)**
 ```
@@ -385,6 +398,7 @@ This separation means:
 | `CLANCY_STITCH` | `false` | Enable Google Stitch design preview generation. Requires `STITCH_API_KEY`. |
 | `STITCH_API_KEY` | — | Google Stitch API key. Required when `CLANCY_STITCH=true`. |
 | `CLANCY_LIGHTHOUSE_THRESHOLD` | `90` | Minimum Lighthouse score before warning. Range: 0–100. `0` disables. |
+| `CLANCY_DEV_URLS` | — | Manual URL mapping for visual verification. Format: `LoginForm=http://localhost:3000/login,Dashboard=http://localhost:3000/`. Falls back to `### Pages` in design specs or Storybook auto-detection. |
 
 All env vars are defined in `.clancy/.env` and validated by the Zod schema in `src/schemas/env.ts`.
 
@@ -396,17 +410,17 @@ All env vars are defined in `.clancy/.env` and validated by the Zod schema in `s
 
 | Path | Purpose | Format | Created by | Lifetime |
 |---|---|---|---|---|
-| `.clancy/stitch-usage.json` | Stitch generation count tracking | JSON: `{ "month": "2026-03", "count": 42 }` | Stitch integration in plan workflow | Reset monthly |
+| `.clancy/stitch-usage.json` | Stitch generation count tracking | JSON: `{ "month": "2026-03", "count": 42 }` | Claude (via planner prompt instructions) | Reset when month changes |
 
 ### Modified Files
 
 | Path | Change |
 |---|---|
-| `src/roles/planner/workflows/plan.md` | Add conditional design instructions, `## Design Specifications` template, UI ticket detection, smart feedback classification |
+| `src/roles/planner/workflows/plan.md` | Add conditional design instructions, `## Design Specifications` template (6 sections incl. Pages), UI ticket detection, smart feedback classification, Stitch MCP invocation, usage tracking |
 | `src/roles/setup/workflows/init.md` | Add design tool prompt (None / Figma MCP / Google Stitch / Both) |
-| `src/schemas/env.ts` | Add `CLANCY_STITCH`, `STITCH_API_KEY`, `CLANCY_LIGHTHOUSE_THRESHOLD` |
-| `src/agents/verification-gate.md` | Extend with Playwright, axe-core, Lighthouse check instructions for UI tickets |
-| `src/scripts/shared/pull-request/pr-body/pr-body.ts` | Add `## Visual Verification`, `## Accessibility Verification`, `## Lighthouse Scores` sections |
+| `src/schemas/env.ts` | Add `CLANCY_STITCH`, `STITCH_API_KEY`, `CLANCY_LIGHTHOUSE_THRESHOLD`, `CLANCY_DEV_URLS` |
+| `src/scripts/once/phases/visual-verify.ts` | NEW: post-delivery visual verification phase (Playwright + axe-core + Lighthouse). Runs after deliver phase, before cost phase. Dev server lifecycle managed here. |
+| `src/scripts/shared/pull-request/pr-body/pr-body.ts` | Add `## Visual Verification`, `## Accessibility Verification`, `## Lighthouse Scores` sections (all 6 boards) |
 
 ---
 
@@ -429,14 +443,11 @@ Three waves with devil's advocate review gates. Each wave is a branch + PR.
 **Scope:** SDK setup, Stitch generation from design specs, board comment posting (screenshot + link), feedback loop integration, init wizard update, usage tracking.
 
 **Files:**
-- `src/roles/planner/workflows/plan.md` — add Stitch MCP tool invocation after plan generation (conditional on `CLANCY_STITCH=true`)
-- `src/scripts/shared/stitch/stitch-usage.ts` — NEW: track monthly generation count, warn at 50%/100%
-- `src/scripts/shared/stitch/stitch-comment.ts` — NEW: format and post design preview comment (screenshot + link)
+- `src/roles/planner/workflows/plan.md` — add Stitch MCP tool invocation after plan generation (conditional on `CLANCY_STITCH=true`). Includes inline instructions for: reading `.clancy/stitch-usage.json`, checking generation count, calling `build_site` + `get_screen_image` MCP tools, posting board comment with screenshot, incrementing usage count. All Stitch logic lives in the markdown prompt — no separate TypeScript modules needed (the planner is a markdown workflow, not TypeScript).
 - `src/roles/setup/workflows/init.md` — design tool prompt + MCP server configuration
-- `src/schemas/env.ts` — `CLANCY_STITCH`, `STITCH_API_KEY`, `CLANCY_STITCH_DAILY_LIMIT`
-- Co-located tests for usage tracking and comment formatting
+- `src/schemas/env.ts` — `CLANCY_STITCH`, `STITCH_API_KEY`
 
-**New env vars:** `CLANCY_STITCH`, `STITCH_API_KEY`, `CLANCY_STITCH_DAILY_LIMIT`
+**New env vars:** `CLANCY_STITCH`, `STITCH_API_KEY`
 
 **MCP config:** `/clancy:init` adds Stitch MCP server to Claude Code's settings when `CLANCY_STITCH=true`
 
@@ -485,7 +496,7 @@ After all waves ship, update the following docs (same pattern as previous releas
 
 3. **Playwright/axe-core require a running dev server.** Not all projects have a dev server script. Some require environment setup (database, env vars) before the server starts. Mitigation: detect server script from `package.json`, skip if not found, warn in PR body. Do not attempt to configure the environment — that is the user's responsibility.
 
-4. **Stitch rate limits (350/month) could be exhausted.** Heavy autonomous use with frequent plan revisions could burn through the monthly allocation. Mitigation: track generation count in `.clancy/stitch-usage.json`, warn at 80% (280), skip generation at 100% with a note in the plan comment. Users can configure `CLANCY_STITCH=false` to pause generation.
+4. **Stitch rate limits (350/month) could be exhausted.** Heavy autonomous use with frequent plan revisions could burn through the monthly allocation. Mitigation: track generation count in `.clancy/stitch-usage.json`, warn at 50% (175), skip generation at 100% with a note in the plan comment. Users can configure `CLANCY_STITCH=false` to pause generation.
 
 5. **Design specs add token cost to every UI ticket's plan.** The five specification sections add ~500-1000 tokens to the plan. Mitigation: conditional activation — non-UI tickets skip the design section entirely. The cost is justified: design specs reduce rework cycles, which cost more tokens than the specs themselves.
 
@@ -507,7 +518,7 @@ After all waves ship, update the following docs (same pattern as previous releas
 
 3. **Design preview posted as board comment.** Same feedback pattern as brief and plan comments — screenshot + link, posted to the ticket, humans review and leave feedback on the ticket. No new communication channels or tools required.
 
-4. **Smart feedback classification via natural language, not keyword matching.** Keyword matching is brittle — "the font size should match the design system" mentions "font" (design) and "system" (could be technical). Claude reads the comment in context and classifies it. The "general" fallback ensures nothing is lost.
+4. **2-path feedback classification: technical-only vs everything-else.** Simpler than a 3-path system (visual-only vs spec-affecting vs technical). The boundary between "visual only" and "spec-affecting" is genuinely ambiguous and the token savings are marginal. If in doubt, treat as design feedback and regenerate. Claude reads the comment in context and classifies it. Keyword matching is not used.
 
 5. **Two-phase verification: Stop hook (fast, blocking) + post-delivery visual checks (slow, non-blocking).** Lint/test/typecheck remain in the Stop hook. Playwright/axe-core/Lighthouse run after PR creation as a separate phase — results posted as a PR comment. Self-healing retry only applies to code checks (fixable). Visual findings are reported as warnings, not blockers (except A-level WCAG violations which can trigger auto-fix commits).
 
