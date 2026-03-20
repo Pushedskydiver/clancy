@@ -11,6 +11,7 @@ vi.mock('./notion.js', () => ({
   queryDatabase: vi.fn(() =>
     Promise.resolve({ results: [], has_more: false, next_cursor: null }),
   ),
+  queryAllPages: vi.fn(() => Promise.resolve([])),
   fetchPage: vi.fn(() => Promise.resolve(undefined)),
   updatePage: vi.fn(() => Promise.resolve(true)),
   fetchBlockerStatus: vi.fn(() => Promise.resolve(false)),
@@ -421,8 +422,7 @@ describe('notion-board', () => {
 
   describe('addLabel', () => {
     it('queries database and updates page with appended label', async () => {
-      const { queryDatabase, getPropertyValue, updatePage } =
-        await import('./notion.js');
+      const { getPropertyValue, updatePage } = await import('./notion.js');
 
       const page = {
         id: 'ab12cd34-5678-9abc-def0-123456789abc',
@@ -434,11 +434,8 @@ describe('notion-board', () => {
         },
       };
 
-      vi.mocked(queryDatabase).mockResolvedValueOnce({
-        results: [page],
-        has_more: false,
-        next_cursor: null,
-      });
+      const { queryAllPages } = await import('./notion.js');
+      vi.mocked(queryAllPages).mockResolvedValueOnce([page]);
 
       vi.mocked(getPropertyValue).mockReturnValueOnce(['existing']);
       vi.mocked(updatePage).mockResolvedValueOnce(true);
@@ -458,8 +455,7 @@ describe('notion-board', () => {
     });
 
     it('skips update when label already present', async () => {
-      const { queryDatabase, getPropertyValue, updatePage } =
-        await import('./notion.js');
+      const { getPropertyValue, updatePage } = await import('./notion.js');
 
       const page = {
         id: 'ab12cd34-5678-9abc-def0-123456789abc',
@@ -471,11 +467,8 @@ describe('notion-board', () => {
         },
       };
 
-      vi.mocked(queryDatabase).mockResolvedValueOnce({
-        results: [page],
-        has_more: false,
-        next_cursor: null,
-      });
+      const { queryAllPages } = await import('./notion.js');
+      vi.mocked(queryAllPages).mockResolvedValueOnce([page]);
 
       vi.mocked(getPropertyValue).mockReturnValueOnce(['existing']);
 
@@ -488,7 +481,7 @@ describe('notion-board', () => {
 
   describe('removeLabel', () => {
     it('queries database and updates page with label removed', async () => {
-      const { queryDatabase, getPropertyValue, updatePage } =
+      const { queryAllPages, getPropertyValue, updatePage } =
         await import('./notion.js');
 
       const page = {
@@ -501,11 +494,7 @@ describe('notion-board', () => {
         },
       };
 
-      vi.mocked(queryDatabase).mockResolvedValueOnce({
-        results: [page],
-        has_more: false,
-        next_cursor: null,
-      });
+      vi.mocked(queryAllPages).mockResolvedValueOnce([page]);
 
       vi.mocked(getPropertyValue).mockReturnValueOnce(['keep', 'remove-me']);
       vi.mocked(updatePage).mockResolvedValueOnce(true);
@@ -525,7 +514,7 @@ describe('notion-board', () => {
     });
 
     it('skips update when label not present', async () => {
-      const { queryDatabase, getPropertyValue, updatePage } =
+      const { queryAllPages, getPropertyValue, updatePage } =
         await import('./notion.js');
 
       const page = {
@@ -533,11 +522,7 @@ describe('notion-board', () => {
         properties: {},
       };
 
-      vi.mocked(queryDatabase).mockResolvedValueOnce({
-        results: [page],
-        has_more: false,
-        next_cursor: null,
-      });
+      vi.mocked(queryAllPages).mockResolvedValueOnce([page]);
 
       vi.mocked(getPropertyValue).mockReturnValueOnce(['other']);
 
