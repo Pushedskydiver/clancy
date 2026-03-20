@@ -260,6 +260,7 @@ describe('notion-board', () => {
         'ntn_test_token',
         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
         'ab12cd34-5678-9abc-def0-123456789abc',
+        'Status', // default status prop
       );
     });
 
@@ -291,6 +292,7 @@ describe('notion-board', () => {
         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
         'notion-ab12cd34',
         'Epic', // default parent prop
+        'Status', // default status prop
       );
     });
 
@@ -309,6 +311,7 @@ describe('notion-board', () => {
         'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
         'notion-ab12cd34',
         'Parent Task',
+        'Status', // default status prop
       );
     });
   });
