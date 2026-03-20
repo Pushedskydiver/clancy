@@ -13,6 +13,7 @@ function mockResponse(
     status,
     ok: status >= 200 && status < 300,
     headers: new Headers(headers),
+    arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
   } as Response;
 }
 

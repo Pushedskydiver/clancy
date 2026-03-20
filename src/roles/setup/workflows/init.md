@@ -92,7 +92,7 @@ Which Kanban board are you using?
 [6] Azure DevOps
 [7] My board isn't listed
 
-Auto-detection hint: silently check `.clancy/.env` for existing board env vars (`JIRA_BASE_URL`, `GITHUB_TOKEN`, `LINEAR_API_KEY`, `SHORTCUT_API_TOKEN`, `NOTION_TOKEN`, `AZDO_ORG`). If detected, show: `Detected: {board} from your env vars. Use this? [Y/n]` — if yes, skip to Q2 for that board.
+Auto-detection hint: silently check `.clancy/.env` for existing board env vars (`JIRA_BASE_URL`, `GITHUB_TOKEN`, `LINEAR_API_KEY`, `SHORTCUT_API_TOKEN`, `NOTION_DATABASE_ID`, `AZDO_ORG`). If detected, show: `Detected: {board} from your env vars. Use this? [Y/n]` — if yes, skip to Q2 for that board.
 
 If the user selects [7], output the dead-end message and stop:
 

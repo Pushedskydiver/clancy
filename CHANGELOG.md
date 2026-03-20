@@ -16,7 +16,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - **Quiet hours** — AFK runner pauses during `CLANCY_QUIET_START`–`CLANCY_QUIET_END` (24h format). Handles overnight windows (e.g. 22:00–06:00). Sleeps until the end of the quiet window, then resumes.
 - **Version tracking** — installer writes `.clancy/version.json` on install/update for drift detection.
 - **Board ecosystem** — setup workflows now support 6 boards: Jira, GitHub Issues, Linear, Shortcut, Notion, Azure DevOps. Init wizard includes auto-detection, credential collection, and `.env.example` templates for all new boards.
-- **New env vars:** `CLANCY_QUIET_START`, `CLANCY_QUIET_END`, `CLANCY_DESKTOP_NOTIFY`, `SHORTCUT_API_TOKEN`, `SHORTCUT_WORKFLOW`, `CLANCY_SC_STATUS`, `NOTION_TOKEN`, `NOTION_DATABASE_ID`, `NOTION_STATUS_PROP`, `NOTION_ASSIGNEE_PROP`, `AZDO_ORG`, `AZDO_PROJECT`, `AZDO_PAT`.
+- **New env vars:** `CLANCY_QUIET_START`, `CLANCY_QUIET_END`, `CLANCY_DESKTOP_NOTIFY`, `SHORTCUT_API_TOKEN`, `SHORTCUT_WORKFLOW`, `NOTION_TOKEN`, `NOTION_DATABASE_ID`, `CLANCY_NOTION_STATUS`, `CLANCY_NOTION_ASSIGNEE`, `CLANCY_NOTION_LABELS`, `CLANCY_NOTION_PARENT`, `AZDO_ORG`, `AZDO_PROJECT`, `AZDO_PAT`.
 - **Settings menu** — `[G10]` Quiet hours, `[G11]` Desktop notifications, board switch support for Shortcut/Notion/Azure DevOps.
 
 ### Changed

@@ -36,7 +36,7 @@ Source `.clancy/.env` silently. Detect which board is configured:
 - `GITHUB_TOKEN` set → GitHub Issues
 - `LINEAR_API_KEY` set → Linear
 - `SHORTCUT_API_TOKEN` set → Shortcut
-- `NOTION_TOKEN` set → Notion
+- `NOTION_DATABASE_ID` set → Notion
 - `AZDO_ORG` set → Azure DevOps
 
 ---
@@ -866,8 +866,8 @@ If no: print `Cancelled. No changes made.` and loop back to the menu.
    - Jira: `JIRA_BASE_URL`, `JIRA_USER`, `JIRA_API_TOKEN`, `JIRA_PROJECT_KEY`, `CLANCY_JQL_STATUS`, `CLANCY_JQL_SPRINT`
    - GitHub: `GITHUB_TOKEN`, `GITHUB_REPO`
    - Linear: `LINEAR_API_KEY`, `LINEAR_TEAM_ID`
-   - Shortcut: `SHORTCUT_API_TOKEN`, `SHORTCUT_WORKFLOW`, `CLANCY_SC_STATUS`
-   - Notion: `NOTION_TOKEN`, `NOTION_DATABASE_ID`, `NOTION_STATUS_PROP`, `NOTION_ASSIGNEE_PROP`
+   - Shortcut: `SHORTCUT_API_TOKEN`, `SHORTCUT_WORKFLOW`
+   - Notion: `NOTION_TOKEN`, `NOTION_DATABASE_ID`, `CLANCY_NOTION_STATUS`, `CLANCY_NOTION_ASSIGNEE`, `CLANCY_NOTION_LABELS`, `CLANCY_NOTION_PARENT`
    - Azure DevOps: `AZDO_ORG`, `AZDO_PROJECT`, `AZDO_PAT`
    - Git host (all boards): `GITLAB_TOKEN`, `BITBUCKET_USER`, `BITBUCKET_TOKEN`, `CLANCY_GIT_PLATFORM`, `CLANCY_GIT_API_URL`, `CLANCY_STATUS_REVIEW`
 2. Write the new board credentials to `.clancy/.env`

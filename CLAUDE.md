@@ -20,7 +20,7 @@ Autonomous, board-driven development for Claude Code. npm package: `chief-clancy
 | `src/scripts/shared/pull-request/` | PR creation + rework comment detection (github, gitlab, bitbucket, post-pr, pr-body, rework-comment) |
 | `src/scripts/shared/remote/` | Remote git host detection (parseRemote, detectRemote, buildApiBaseUrl) |
 | `src/scripts/shared/format/` | Shared formatters (formatDuration) |
-| `src/scripts/board/` | Board-specific modules (jira, github, linear, shortcut, notion, azure-devops) |
+| `src/scripts/board/` | Board-specific modules (jira, github, linear, shortcut, notion, azdo) |
 | `src/schemas/` | Zod schemas for API responses and env validation |
 | `src/types/` | Shared TypeScript types (board, remote, index) |
 | `src/templates/CLAUDE.md` | CLAUDE.md template injected into user projects |
