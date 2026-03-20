@@ -41,7 +41,7 @@ Autonomous, board-driven development for Claude Code. npm package: `chief-clancy
 | [docs/CONVENTIONS.md](docs/CONVENTIONS.md) | Code conventions, naming patterns, TypeScript/hook rules |
 | [docs/TESTING.md](docs/TESTING.md) | Testing strategy, co-location rules, coverage thresholds |
 | [docs/GIT.md](docs/GIT.md) | Branch strategy, merge conventions |
-| [docs/design/](docs/design/) | Design docs — strategist flows, epic branch workflow |
+| [docs/decisions/](docs/decisions/) | Decision docs — design decisions organised by version |
 | [docs/roles/](docs/roles/) | Role descriptions (implementer, reviewer, setup, planner, strategist) |
 | [docs/guides/](docs/guides/) | Configuration, security, troubleshooting guides |
 
@@ -83,7 +83,7 @@ See [docs/GIT.md](docs/GIT.md) for full details. Summary:
 
 **If it runs, it needs a PR. If it's only read, direct to main is fine.**
 
-Direct to main (no PR): design docs (`docs/design/`), glossary, architecture docs (`docs/`), CLAUDE.md doc link updates, README badge/link fixes, typo corrections.
+Direct to main (no PR): decision docs (`docs/decisions/`), glossary, architecture docs (`docs/`), CLAUDE.md doc link updates, README badge/link fixes, typo corrections.
 
 Always via branch + PR: TypeScript (`src/`, `hooks/`), tests, executable markdown (`src/roles/`, `src/templates/`, `src/agents/`), package.json, CHANGELOG.md, CI config (`.github/`).
 

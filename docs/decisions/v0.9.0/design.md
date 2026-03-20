@@ -483,7 +483,7 @@ After all waves ship, update the following docs (same pattern as previous releas
 - **`CLAUDE.md`** — add new key paths, technical details for Stitch MCP, two-phase verification
 - **`README.md`** — update "What it does", test badge
 - **`CHANGELOG.md`** — v0.9.0 entry
-- **`docs/design/README.md`** — move to "Shipped features (decisions only)", trim doc
+- **`docs/decisions/README.md`** — move to "Shipped features (decisions only)", trim doc
 - **`package.json`** / **`package-lock.json`** — version bump
 
 ---

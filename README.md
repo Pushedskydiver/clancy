@@ -13,7 +13,7 @@ npx chief-clancy
 
 Works on Mac, Linux, and Windows.
 
-[What it does](#what-it-does) · [Install](#install) · [Commands](#commands) · [Supported boards](#supported-boards) · [Comparison](./COMPARISON.md) · [Roadmap](./ROADMAP.md) · [Contributing](./CONTRIBUTING.md)
+[What it does](#what-it-does) · [Install](#install) · [Commands](#commands) · [Supported boards](#supported-boards) · [Comparison](./docs/COMPARISON.md) · [Roadmap](./ROADMAP.md) · [Contributing](./CONTRIBUTING.md)
 
 ---
 
@@ -53,7 +53,7 @@ Clancy is for developers who:
 - Your tickets are large, vague, or span multiple sessions — Clancy works best with small, well-scoped tickets
 - You don't use a Kanban board — you can still use `/clancy:map-codebase` for codebase scanning, but the run loop won't apply
 
-Evaluating other tools? See [COMPARISON.md](./COMPARISON.md) for a side-by-side with GSD and PAUL.
+Evaluating other tools? See [COMPARISON.md](./docs/COMPARISON.md) for a side-by-side with GSD and PAUL.
 
 ---
 
