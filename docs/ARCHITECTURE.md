@@ -51,7 +51,7 @@ clancy/
 │   │   ├── afk/
 │   │   │   ├── afk.ts           — AFK loop runner
 │   │   │   └── report/          — session report generator (.clancy/session-report.md)
-│   │   ├── board/              — board-specific modules (jira, github, linear)
+│   │   ├── board/              — board-specific modules (jira, github, linear, shortcut, notion, azdo)
 │   │   └── shared/             — env-schema, branch, prompt, progress, etc.
 │   │       ├── pull-request/   — PR creation (github, gitlab, bitbucket, post-pr, pr-body, rework-comment)
 │   │       ├── remote/         — git host detection (parseRemote, detectRemote)
@@ -157,9 +157,9 @@ The grill phase has two modes:
 
 | Function | Module | Purpose |
 |---|---|---|
-| `fetchBlockerStatus` | `src/scripts/board/{jira,github,linear}/` | Per-board blocker check — returns whether a ticket's blocking dependencies are resolved |
-| `fetchTickets` / `fetchIssues` | `src/scripts/board/{jira,github,linear}/` | Plural variants — fetch multiple candidate tickets (used by batch mode and queue filtering) |
-| `fetchChildrenStatus` | `src/scripts/board/{jira,github,linear}/` + Board type | Dual-mode: returns children statuses for epic completion detection. Accessed via `Board.fetchChildrenStatus()` |
+| `fetchBlockerStatus` | `src/scripts/board/{jira,github,linear,shortcut,notion,azdo}/` | Per-board blocker check — returns whether a ticket's blocking dependencies are resolved |
+| `fetchTickets` / `fetchIssues` | `src/scripts/board/{jira,github,linear,shortcut,notion,azdo}/` | Plural variants — fetch multiple candidate tickets (used by batch mode and queue filtering) |
+| `fetchChildrenStatus` | `src/scripts/board/{jira,github,linear,shortcut,notion,azdo}/` + Board type | Dual-mode: returns children statuses for epic completion detection. Accessed via `Board.fetchChildrenStatus()` |
 | `createBoard` | `src/scripts/board/factory/` | Factory — single switch on `config.provider`, returns a Board instance |
 | `fetchCandidates` | `src/scripts/once/fetch-ticket/` | Dispatches to per-board fetch, applies HITL/AFK filtering based on `isAfk` option |
 

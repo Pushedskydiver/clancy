@@ -298,6 +298,9 @@ graph LR
         jira[(Jira Cloud)]
         github[(GitHub Issues)]
         linear[(Linear)]
+        shortcut[(Shortcut)]
+        notion[(Notion)]
+        azdo[(Azure DevOps)]
     end
 
     brief --> fetch
@@ -320,11 +323,20 @@ graph LR
     fetch --> jira
     fetch --> github
     fetch --> linear
+    fetch --> shortcut
+    fetch --> notion
+    fetch --> azdo
     create --> jira
     create --> github
     create --> linear
+    create --> shortcut
+    create --> notion
+    create --> azdo
     transition --> jira
     transition --> linear
+    transition --> shortcut
+    transition --> notion
+    transition --> azdo
     comment --> jira
     comment --> github
     comment --> linear
@@ -336,6 +348,9 @@ graph LR
     labelop --> jira
     labelop --> github
     labelop --> linear
+    labelop --> shortcut
+    labelop --> notion
+    labelop --> azdo
 
     style jira fill:#0052CC,color:#fff
     style github fill:#24292e,color:#fff
