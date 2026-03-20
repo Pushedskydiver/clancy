@@ -43,7 +43,7 @@ function getNotifier() {
 
   if (platform === 'win32') {
     return function notifyWindows(message) {
-      const escaped = message.replace(/"/g, '`"');
+      const escaped = message.replace(/[`$"]/g, '`$&');
       execFileSync('powershell', [
         '-NoProfile',
         '-Command',

@@ -33,7 +33,8 @@ process.stdin.on('end', () => {
     if (!session) process.exit(0);
 
     // Debounce — only check once per session
-    const flagPath = path.join(os.tmpdir(), `clancy-drift-${session}`);
+    const safeSession = String(session).replace(/[^a-zA-Z0-9_-]/g, '');
+    const flagPath = path.join(os.tmpdir(), `clancy-drift-${safeSession}`);
     if (fs.existsSync(flagPath)) process.exit(0);
 
     // Write the flag immediately to prevent future checks this session

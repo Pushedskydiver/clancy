@@ -112,7 +112,7 @@ Ubiquitous language for the Clancy project. Use these terms consistently in code
 | **Update docs** | `/clancy:update-docs` — incrementally refreshes `.clancy/docs/` based on recent changes without a full rescan. |
 | **Board registry** | `registry/boards.json` — registry for community board integrations. |
 | **Shortcut** | Board platform (v0.8.0). REST API v3. Stories, epics, workflow states. Auth via `Shortcut-Token` header. Key format: `sc-{id}`. |
-| **Notion** | Board platform (v0.8.0). REST API. Database rows as tickets. Auth via integration token. Property name overrides via `NOTION_STATUS_PROP` and `NOTION_ASSIGNEE_PROP`. |
+| **Notion** | Board platform (v0.8.0). REST API. Database rows as tickets. Auth via integration token. Property name overrides via `CLANCY_NOTION_STATUS` and `CLANCY_NOTION_ASSIGNEE`. |
 | **Azure DevOps** | Board platform (v0.8.0). REST API. Work items as tickets. Auth via PAT. Org + project scoping via `AZDO_ORG` and `AZDO_PROJECT`. |
 | **Quiet hours** | AFK runner pauses during `CLANCY_QUIET_START`–`CLANCY_QUIET_END` (HH:MM 24h format). Handles overnight windows. Sleeps until end of quiet window, then resumes. (v0.8.0) |
 | **Drift detector** | PostToolUse hook (`clancy-drift-detector.js`) that compares `.clancy/version.json` against the installed package VERSION file. Warns once per session when versions differ. (v0.8.0) |

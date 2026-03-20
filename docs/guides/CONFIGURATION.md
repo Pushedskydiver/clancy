@@ -232,11 +232,12 @@ Posts to Slack or Teams when a ticket completes. The payload format (Slack vs Te
 | `CLANCY_DESKTOP_NOTIFY` | All | No | `true` | Enable native OS desktop notifications (`false` to suppress) |
 | `SHORTCUT_API_TOKEN` | Shortcut | Yes | — | Shortcut API token |
 | `SHORTCUT_WORKFLOW` | Shortcut | No | Auto-detect | Shortcut workflow name |
-| `CLANCY_SC_STATUS` | Shortcut | No | `Unstarted` | Status name for implementation queue |
 | `NOTION_TOKEN` | Notion | Yes | — | Notion integration token |
 | `NOTION_DATABASE_ID` | Notion | Yes | — | Notion database ID (32-char hex) |
-| `NOTION_STATUS_PROP` | Notion | No | `Status` | Status property name |
-| `NOTION_ASSIGNEE_PROP` | Notion | No | `Assignee` | Assignee property name |
+| `CLANCY_NOTION_STATUS` | Notion | No | `Status` | Status property name |
+| `CLANCY_NOTION_ASSIGNEE` | Notion | No | `Assignee` | Assignee property name |
+| `CLANCY_NOTION_LABELS` | Notion | No | — | Labels property name |
+| `CLANCY_NOTION_PARENT` | Notion | No | — | Parent relation property name |
 | `AZDO_ORG` | Azure DevOps | Yes | — | Azure DevOps organisation name |
 | `AZDO_PROJECT` | Azure DevOps | Yes | — | Azure DevOps project name |
 | `AZDO_PAT` | Azure DevOps | Yes | — | Azure DevOps personal access token |

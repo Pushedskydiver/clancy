@@ -13,4 +13,6 @@ export type {
   LinearEnv,
   SharedEnv,
   ShortcutEnv,
+  NotionEnv,
+  AzdoEnv,
 } from '~/schemas/env.js';

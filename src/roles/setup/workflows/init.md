@@ -125,7 +125,7 @@ Store as `SHORTCUT_API_TOKEN` and optionally `SHORTCUT_WORKFLOW` in `.clancy/.en
 3. `What property name represents the ticket status? [Status]`
 4. `What property name represents the assignee? [Assignee]`
 
-Store as `NOTION_TOKEN`, `NOTION_DATABASE_ID`, and optionally `NOTION_STATUS_PROP` and `NOTION_ASSIGNEE_PROP` in `.clancy/.env`.
+Store as `NOTION_TOKEN`, `NOTION_DATABASE_ID`, and optionally `CLANCY_NOTION_STATUS` and `CLANCY_NOTION_ASSIGNEE` in `.clancy/.env`.
 
 **Azure DevOps** — ask in this order:
 

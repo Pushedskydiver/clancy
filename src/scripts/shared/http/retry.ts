@@ -99,6 +99,9 @@ export async function retryFetch(
         delayMs = backoffDelay(attempt, baseDelayMs, maxDelayMs);
       }
 
+      // Drain body to release socket before retry
+      await response.arrayBuffer().catch(() => {});
+
       await new Promise((resolve) => setTimeout(resolve, delayMs));
     } catch (err) {
       lastError = err;

@@ -50,7 +50,12 @@ export function getQuietSleepMs(
   const start = parseTime(startStr);
   const end = parseTime(endStr);
 
-  if (!start || !end) return 0;
+  if (!start || !end) {
+    console.warn(
+      '⚠ Invalid quiet hours format. Expected HH:MM (24h). Quiet hours disabled.',
+    );
+    return 0;
+  }
 
   const nowMin = now.getHours() * 60 + now.getMinutes();
   const startMin = start.hours * 60 + start.minutes;

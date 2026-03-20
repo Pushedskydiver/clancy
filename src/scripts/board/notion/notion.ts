@@ -251,16 +251,15 @@ export async function fetchBlockerStatus(
       );
 
       if (blockerMatch) {
-        // Found text-based blocker references — query the database for those pages
+        // Found text-based blocker references — query the database once upfront
+        const result = await queryDatabase(token, databaseId);
+        if (!result) return false;
+
         for (const match of blockerMatch) {
           const blockerShortId = match
             .replace('Blocked by notion-', '')
             .toLowerCase();
           if (blockerShortId === shortId) continue; // Skip self-reference
-
-          // Query the database for pages matching this short ID
-          const result = await queryDatabase(token, databaseId);
-          if (!result) continue;
 
           for (const candidate of result.results) {
             const candidateShortId = candidate.id.replace(/-/g, '').slice(0, 8);

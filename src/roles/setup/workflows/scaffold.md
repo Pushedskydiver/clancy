@@ -596,10 +596,6 @@ SHORTCUT_API_TOKEN=your-api-token
 # Optional: workflow name (default: auto-detect first workflow)
 # SHORTCUT_WORKFLOW=Engineering
 
-# ─── Implementation Queue ─────────────────────────────────────────────────────
-# Status name for "ready to be picked up" (default: Unstarted)
-# CLANCY_SC_STATUS="Unstarted"
-
 # ─── Git ──────────────────────────────────────────────────────────────────────
 CLANCY_BASE_BRANCH=main
 
@@ -645,8 +641,8 @@ NOTION_TOKEN=your-integration-token
 NOTION_DATABASE_ID=your-database-id-32-char-hex
 
 # Optional: property name overrides (defaults shown)
-# NOTION_STATUS_PROP=Status
-# NOTION_ASSIGNEE_PROP=Assignee
+# CLANCY_NOTION_STATUS=Status
+# CLANCY_NOTION_ASSIGNEE=Assignee
 
 # ─── Git ──────────────────────────────────────────────────────────────────────
 CLANCY_BASE_BRANCH=main
