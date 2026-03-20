@@ -47,7 +47,7 @@ export function createGitHubBoard(env: GitHubEnv): Board {
       const tickets = await fetchGitHubIssues(
         env.GITHUB_TOKEN,
         env.GITHUB_REPO,
-        env.CLANCY_LABEL,
+        opts.buildLabel ?? env.CLANCY_LABEL,
         username,
         opts.excludeHitl,
       );

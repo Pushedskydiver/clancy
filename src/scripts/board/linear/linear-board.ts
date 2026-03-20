@@ -56,7 +56,7 @@ export function createLinearBoard(env: LinearEnv): Board {
         {
           LINEAR_API_KEY: env.LINEAR_API_KEY,
           LINEAR_TEAM_ID: env.LINEAR_TEAM_ID,
-          CLANCY_LABEL: env.CLANCY_LABEL,
+          CLANCY_LABEL: opts.buildLabel ?? env.CLANCY_LABEL,
         },
         opts.excludeHitl,
       );

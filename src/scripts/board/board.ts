@@ -11,6 +11,8 @@ import type { FetchedTicket } from '~/types/board.js';
 export type FetchTicketOpts = {
   /** If `true`, excludes tickets with the `clancy:hitl` label. */
   excludeHitl?: boolean;
+  /** The resolved build queue label to filter by (e.g. `clancy:build`). */
+  buildLabel?: string;
 };
 
 /** Standardised board abstraction. */

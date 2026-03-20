@@ -64,7 +64,7 @@ export function createAzdoBoard(env: AzdoEnv): Board {
     },
 
     async fetchTickets(opts: FetchTicketOpts) {
-      const tickets = await fetchAzdoTickets(
+      let tickets = await fetchAzdoTickets(
         org,
         project,
         pat,
@@ -72,6 +72,12 @@ export function createAzdoBoard(env: AzdoEnv): Board {
         wit,
         opts.excludeHitl,
       );
+
+      // Client-side label filtering via Azure DevOps tags
+      if (opts.buildLabel) {
+        const requiredTag = opts.buildLabel;
+        tickets = tickets.filter((t) => t.labels?.includes(requiredTag));
+      }
 
       return tickets.map(
         (ticket): FetchedTicket => ({

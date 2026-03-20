@@ -61,7 +61,7 @@ export function createJiraBoard(env: JiraEnv): Board {
         env.JIRA_PROJECT_KEY,
         env.CLANCY_JQL_STATUS ?? 'To Do',
         env.CLANCY_JQL_SPRINT,
-        env.CLANCY_LABEL,
+        opts.buildLabel ?? env.CLANCY_LABEL,
         opts.excludeHitl,
       );
 

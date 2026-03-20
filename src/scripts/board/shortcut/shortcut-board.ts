@@ -55,7 +55,7 @@ export function createShortcutBoard(env: ShortcutEnv): Board {
       const tickets = await fetchShortcutStories(
         env.SHORTCUT_API_TOKEN,
         stateIds,
-        env.CLANCY_LABEL,
+        opts.buildLabel ?? env.CLANCY_LABEL,
         undefined, // ownerUuid — Shortcut search doesn't easily filter by owner in same way
         opts.excludeHitl,
       );

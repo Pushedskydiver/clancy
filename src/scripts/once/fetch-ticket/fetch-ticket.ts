@@ -57,8 +57,9 @@ export async function fetchTicket(
 ): Promise<FetchedTicket | undefined> {
   const excludeHitl = detectAfkMode(opts);
   const env = board.sharedEnv();
+  const buildLabel = resolveBuildLabel(env);
   const planLabel = resolvePlanLabel(env);
-  const candidates = await board.fetchTickets({ excludeHitl });
+  const candidates = await board.fetchTickets({ excludeHitl, buildLabel });
   if (!candidates.length) return undefined;
 
   for (const candidate of candidates) {

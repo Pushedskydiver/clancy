@@ -83,9 +83,9 @@ export function createNotionBoard(env: NotionEnv): Board {
         });
       }
 
-      // Filter by CLANCY_LABEL if set
-      if (env.CLANCY_LABEL) {
-        const requiredLabel = env.CLANCY_LABEL;
+      // Filter by build label (resolved label takes priority over env fallback)
+      const requiredLabel = opts.buildLabel ?? env.CLANCY_LABEL;
+      if (requiredLabel) {
         pages = pages.filter((page) => {
           const labels = getPropertyValue(page, labelsProp, 'multi_select');
           return labels?.includes(requiredLabel);
