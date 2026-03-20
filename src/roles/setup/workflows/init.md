@@ -592,6 +592,74 @@ Note: as more roles are added in future versions, they appear as additional numb
 
 ---
 
+## Step 4c-2 — Pipeline labels (conditional)
+
+Only ask this if any optional role was enabled in Step 4c. If neither Planner nor Strategist was selected, skip this section entirely. If `CLANCY_LABEL` or `CLANCY_PLAN_LABEL` are already set in `.clancy/.env`, show:
+
+```
+Note: CLANCY_LABEL and CLANCY_PLAN_LABEL are deprecated.
+Use CLANCY_LABEL_BUILD and CLANCY_LABEL_PLAN instead.
+Your existing values will continue to work as fallbacks.
+```
+
+**If the user enabled Strategist (or both Strategist + Planner):**
+
+Output:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Pipeline Labels
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Clancy uses labels to move tickets through pipeline stages:
+  brief → plan → build
+
+Each label marks which queue a ticket belongs to.
+```
+
+Then ask each label in order:
+
+```
+What label marks tickets that have been briefed (awaiting approval)?
+[clancy:brief]
+```
+
+If a value is entered: store as `CLANCY_LABEL_BRIEF` in `.clancy/.env`. Wrap in double quotes.
+If enter is pressed: use default — store `CLANCY_LABEL_BRIEF="clancy:brief"` in `.clancy/.env`.
+
+```
+What label marks tickets that need planning?
+[clancy:plan]
+```
+
+If a value is entered: store as `CLANCY_LABEL_PLAN` in `.clancy/.env`. Wrap in double quotes.
+If enter is pressed: use default — store `CLANCY_LABEL_PLAN="clancy:plan"` in `.clancy/.env`.
+
+```
+What label marks tickets ready to build?
+[clancy:build]
+```
+
+If a value is entered: store as `CLANCY_LABEL_BUILD` in `.clancy/.env`. Wrap in double quotes.
+If enter is pressed: use default — store `CLANCY_LABEL_BUILD="clancy:build"` in `.clancy/.env`.
+
+**If the user enabled Planner only (no Strategist):**
+
+Skip `CLANCY_LABEL_BRIEF` (no `/clancy:brief` command). Ask only:
+
+```
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Pipeline Labels
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Clancy uses labels to move tickets through pipeline stages:
+  plan → build
+```
+
+Then ask `CLANCY_LABEL_PLAN` and `CLANCY_LABEL_BUILD` using the same prompts and defaults as above.
+
+---
+
 ## Step 4d (if Planner role selected): Planning queue config
 
 Only ask this if the user selected Planner in Step 4c above (or if re-running init and `CLANCY_ROLES` already includes `planner`).

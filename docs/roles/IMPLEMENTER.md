@@ -19,6 +19,12 @@ The implementer is Clancy's core — it picks up tickets from your board and tur
 | `/clancy:run 20` | Same, but override `MAX_ITERATIONS` to 20 for this session |
 | `/clancy:dry-run` | Simulate a run without making changes — shows what would happen |
 
+## Pipeline labels
+
+When pipeline labels are configured (via the Strategist or Planner roles), the implementer filters the queue by `CLANCY_LABEL_BUILD` (default `clancy:build`). Only tickets with this label are picked up by `/clancy:once` and `/clancy:run`. Falls back to `CLANCY_LABEL` for backward compatibility if `CLANCY_LABEL_BUILD` is not set.
+
+Tickets with `CLANCY_LABEL_PLAN` are excluded from the implementation queue even if they also have the build label (race condition guard during label transitions).
+
 ## Implementation queue filters
 
 The implementer uses the **implementation queue** — tickets that are ready to be worked on.
@@ -26,7 +32,7 @@ The implementer uses the **implementation queue** — tickets that are ready to 
 | Board | Default filter | Env var to customise |
 | --- | --- | --- |
 | Jira | `status = "To Do"` | `CLANCY_JQL_STATUS` |
-| GitHub | No label filter (all open issues assigned to you). Set `CLANCY_LABEL=clancy` for a dedicated queue | `CLANCY_LABEL` |
+| GitHub | No label filter (all open issues assigned to you). Set `CLANCY_LABEL_BUILD=clancy:build` for a dedicated queue | `CLANCY_LABEL_BUILD` (falls back to `CLANCY_LABEL`) |
 | Linear | `state.type: "unstarted"` | (hardcoded to unstarted) |
 
 Additional shared filters (apply to all boards):
@@ -34,7 +40,7 @@ Additional shared filters (apply to all boards):
 | Filter | Env var | Notes |
 | --- | --- | --- |
 | Sprint filter (Jira only) | `CLANCY_JQL_SPRINT` | When set, adds `AND sprint in openSprints()` |
-| Label filter | `CLANCY_LABEL` | Optional label to narrow the queue |
+| Build label filter | `CLANCY_LABEL_BUILD` | Pipeline label for implementation queue (falls back to `CLANCY_LABEL`) |
 | Assignment | — | Always filters to `assignee = currentUser()` |
 
 ## AFK mode

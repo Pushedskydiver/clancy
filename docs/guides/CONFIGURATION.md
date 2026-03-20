@@ -45,6 +45,32 @@ Clancy moves tickets on your board when it picks up and completes implementation
 
 **GitHub:** Issues don't have status columns — they're `open` or `closed`. Clancy uses **labels as queues** (e.g. `needs-refinement` → `clancy`) and closes issues on completion. Status transition env vars are ignored for GitHub.
 
+## Pipeline labels
+
+```
+CLANCY_LABEL_BRIEF="clancy:brief"
+CLANCY_LABEL_PLAN="clancy:plan"
+CLANCY_LABEL_BUILD="clancy:build"
+```
+
+Pipeline labels control ticket flow through Clancy's stages. Each label acts as a queue marker:
+
+1. `/clancy:brief` adds `CLANCY_LABEL_BRIEF` to the ticket
+2. `/clancy:approve-brief` removes `CLANCY_LABEL_BRIEF`, adds `CLANCY_LABEL_PLAN` to children (or `CLANCY_LABEL_BUILD` with `--skip-plan`)
+3. `/clancy:approve-plan` removes `CLANCY_LABEL_PLAN`, adds `CLANCY_LABEL_BUILD`
+4. `/clancy:once` filters the queue by `CLANCY_LABEL_BUILD`
+
+Label transitions use add-before-remove ordering for crash safety — a ticket briefly has two labels rather than zero.
+
+### Deprecated label vars
+
+`CLANCY_LABEL` and `CLANCY_PLAN_LABEL` are deprecated. They still work as fallbacks:
+
+- `CLANCY_LABEL_BUILD` falls back to `CLANCY_LABEL` if not set
+- `CLANCY_LABEL_PLAN` falls back to `CLANCY_PLAN_LABEL` if not set
+
+Existing users see no change until they explicitly set the new vars. New installs use the pipeline label defaults.
+
 ## Strategist
 
 ```
@@ -110,7 +136,7 @@ Posts to Slack or Teams when a ticket completes. The payload format (Slack vs Te
 | Board | Default filter | Env var |
 | --- | --- | --- |
 | Jira | `status = "To Do"` | `CLANCY_JQL_STATUS` |
-| GitHub | No label filter by default (all open issues assigned to you). Set `CLANCY_LABEL=clancy` for a dedicated queue | `CLANCY_LABEL` |
+| GitHub | No label filter by default. Set `CLANCY_LABEL_BUILD` (or `CLANCY_LABEL`) for a dedicated queue | `CLANCY_LABEL_BUILD` (falls back to `CLANCY_LABEL`) |
 | Linear | `state.type: "unstarted"` | (hardcoded — not customisable) |
 
 ### Planning queue
@@ -118,7 +144,7 @@ Posts to Slack or Teams when a ticket completes. The payload format (Slack vs Te
 | Board | Default filter | Env var |
 | --- | --- | --- |
 | Jira | `status = "Backlog"` | `CLANCY_PLAN_STATUS` |
-| GitHub | Label: `needs-refinement` | `CLANCY_PLAN_LABEL` |
+| GitHub | Label: `clancy:plan` (or `needs-refinement`) | `CLANCY_LABEL_PLAN` (falls back to `CLANCY_PLAN_LABEL`) |
 | Linear | `state.type: "backlog"` | `CLANCY_PLAN_STATE_TYPE` |
 
 ### Additional filters
@@ -126,7 +152,8 @@ Posts to Slack or Teams when a ticket completes. The payload format (Slack vs Te
 | Filter | Env var | Applies to | Notes |
 | --- | --- | --- | --- |
 | Sprint filter | `CLANCY_JQL_SPRINT` | Jira (both queues) | Adds `AND sprint in openSprints()` |
-| Label filter | `CLANCY_LABEL` | Jira (both queues), GitHub (implementation only) | GitHub planning uses `CLANCY_PLAN_LABEL` instead |
+| Build label filter | `CLANCY_LABEL_BUILD` (falls back to `CLANCY_LABEL`) | Jira (implementation only), GitHub (implementation only) | Excludes tickets with `CLANCY_LABEL_PLAN` (dual-label guard) |
+| Plan label filter | `CLANCY_LABEL_PLAN` (falls back to `CLANCY_PLAN_LABEL`) | GitHub (planning only), Jira (supplementary when set) | Jira/Linear primarily use status-based filtering for planning queue |
 | Assignment | — | All boards (both queues) | Always `assignee = currentUser()` |
 
 ## All environment variables
@@ -141,11 +168,14 @@ Posts to Slack or Teams when a ticket completes. The payload format (Slack vs Te
 | `GITHUB_REPO` | GitHub | Yes | — | Repo in `owner/repo` format |
 | `LINEAR_API_KEY` | Linear | Yes | — | Linear personal API key (no Bearer prefix) |
 | `LINEAR_TEAM_ID` | Linear | Yes | — | Linear team ID |
-| `CLANCY_LABEL` | All | No | — | Label filter for tickets |
+| `CLANCY_LABEL` | All | No | — | **Deprecated** — use `CLANCY_LABEL_BUILD`. Label filter for tickets |
+| `CLANCY_LABEL_BRIEF` | All | No | `clancy:brief` | Pipeline label for briefed tickets (awaiting approval) |
+| `CLANCY_LABEL_PLAN` | All | No | `clancy:plan` | Pipeline label for tickets needing planning (falls back to `CLANCY_PLAN_LABEL`) |
+| `CLANCY_LABEL_BUILD` | All | No | `clancy:build` | Pipeline label for tickets ready to build (falls back to `CLANCY_LABEL`) |
 | `CLANCY_JQL_STATUS` | Jira | No | `To Do` | Implementation queue status |
 | `CLANCY_JQL_SPRINT` | Jira | No | — | Enable sprint filtering |
 | `CLANCY_PLAN_STATUS` | Jira | No | `Backlog` | Planning queue status |
-| `CLANCY_PLAN_LABEL` | GitHub | No | `needs-refinement` | Planning queue label |
+| `CLANCY_PLAN_LABEL` | GitHub | No | `needs-refinement` | **Deprecated** — use `CLANCY_LABEL_PLAN`. Planning queue label |
 | `CLANCY_PLAN_STATE_TYPE` | Linear | No | `backlog` | Planning queue state type (enum: backlog, unstarted, started, completed, canceled, triage) |
 | `CLANCY_STATUS_PLANNED` | Jira | No | — | Transition status after plan approval |
 | `CLANCY_SKIP_COMMENTS` | All | No | `true` | Post a comment when skipping a ticket |

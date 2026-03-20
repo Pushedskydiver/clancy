@@ -5,6 +5,12 @@
  * existing Linear board functions.
  */
 import type { LinearEnv } from '~/schemas/env.js';
+import {
+  linearIssueLabelSearchResponseSchema,
+  linearLabelCreateResponseSchema,
+  linearTeamLabelsResponseSchema,
+  linearWorkspaceLabelsResponseSchema,
+} from '~/schemas/linear.js';
 import type { FetchedTicket } from '~/scripts/once/types/types.js';
 
 import type { Board, FetchTicketOpts } from '../board.js';
@@ -13,6 +19,7 @@ import {
   fetchChildrenStatus as fetchLinearChildrenStatus,
   fetchIssues as fetchLinearIssues,
   isValidTeamId,
+  linearGraphql,
   pingLinear,
   transitionIssue as transitionLinearIssue,
 } from './linear.js';
@@ -24,6 +31,9 @@ import {
  * @returns A Board object that delegates to Linear API functions.
  */
 export function createLinearBoard(env: LinearEnv): Board {
+  /** Cache: label name → Linear label UUID. */
+  const labelIdCache = new Map<string, string>();
+
   return {
     async ping() {
       return pingLinear(env.LINEAR_API_KEY);
@@ -92,6 +102,193 @@ export function createLinearBoard(env: LinearEnv): Board {
       );
       if (ok) console.log(`  → Transitioned to ${status}`);
       return ok;
+    },
+
+    async ensureLabel(label: string) {
+      try {
+        // Return early if already cached
+        if (labelIdCache.has(label)) return;
+
+        // 1. Check team labels
+        const teamQuery = `
+          query($teamId: String!) {
+            team(id: $teamId) {
+              labels { nodes { id name } }
+            }
+          }
+        `;
+
+        const teamRaw = await linearGraphql(env.LINEAR_API_KEY, teamQuery, {
+          teamId: env.LINEAR_TEAM_ID,
+        });
+
+        const teamData = linearTeamLabelsResponseSchema.parse(teamRaw);
+
+        const teamLabel = teamData?.data?.team?.labels?.nodes?.find(
+          (l) => l.name === label,
+        );
+
+        if (teamLabel) {
+          labelIdCache.set(label, teamLabel.id);
+          return;
+        }
+
+        // 2. Check workspace labels
+        const wsQuery = `
+          query($name: String!) {
+            issueLabels(filter: { name: { eq: $name } }) {
+              nodes { id name }
+            }
+          }
+        `;
+
+        const wsRaw = await linearGraphql(env.LINEAR_API_KEY, wsQuery, {
+          name: label,
+        });
+
+        const wsData = linearWorkspaceLabelsResponseSchema.parse(wsRaw);
+
+        const wsLabel = wsData?.data?.issueLabels?.nodes?.[0];
+
+        if (wsLabel) {
+          labelIdCache.set(label, wsLabel.id);
+          return;
+        }
+
+        // 3. Create team-scoped label
+        const createMutation = `
+          mutation($teamId: String!, $name: String!) {
+            issueLabelCreate(input: { teamId: $teamId, name: $name, color: "#0075ca" }) {
+              issueLabel { id }
+              success
+            }
+          }
+        `;
+
+        const createRaw = await linearGraphql(
+          env.LINEAR_API_KEY,
+          createMutation,
+          { teamId: env.LINEAR_TEAM_ID, name: label },
+        );
+
+        const createData = linearLabelCreateResponseSchema.parse(createRaw);
+
+        const newId = createData?.data?.issueLabelCreate?.issueLabel?.id;
+        if (newId) labelIdCache.set(label, newId);
+      } catch (err) {
+        console.warn(
+          `⚠ ensureLabel failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    },
+
+    async addLabel(issueKey: string, label: string) {
+      try {
+        await this.ensureLabel(label);
+
+        const labelId = labelIdCache.get(label);
+        if (!labelId) return;
+
+        // Resolve issue identifier to UUID + current labels
+        const issueQuery = `
+          query($identifier: String!) {
+            issueSearch: issues(filter: { identifier: { eq: $identifier } }, first: 1) {
+              nodes {
+                id
+                labels { nodes { id } }
+              }
+            }
+          }
+        `;
+
+        const issueRaw = await linearGraphql(env.LINEAR_API_KEY, issueQuery, {
+          identifier: issueKey,
+        });
+
+        const issueData = linearIssueLabelSearchResponseSchema.parse(issueRaw);
+
+        const issue = issueData?.data?.issueSearch?.nodes?.[0];
+        if (!issue) return;
+
+        const currentIds = issue.labels?.nodes?.map((l) => l.id) ?? [];
+
+        if (currentIds.includes(labelId)) return;
+
+        const mutation = `
+          mutation($issueId: String!, $labelIds: [String!]!) {
+            issueUpdate(id: $issueId, input: { labelIds: $labelIds }) {
+              success
+            }
+          }
+        `;
+
+        await linearGraphql(env.LINEAR_API_KEY, mutation, {
+          issueId: issue.id,
+          labelIds: [...currentIds, labelId],
+        });
+      } catch (err) {
+        console.warn(
+          `⚠ addLabel failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    },
+
+    async removeLabel(issueKey: string, label: string) {
+      try {
+        const labelId = labelIdCache.get(label);
+
+        // Resolve issue identifier to UUID + current labels
+        const issueQuery = `
+          query($identifier: String!) {
+            issueSearch: issues(filter: { identifier: { eq: $identifier } }, first: 1) {
+              nodes {
+                id
+                labels { nodes { id name } }
+              }
+            }
+          }
+        `;
+
+        const issueRaw = await linearGraphql(env.LINEAR_API_KEY, issueQuery, {
+          identifier: issueKey,
+        });
+
+        const issueData = linearIssueLabelSearchResponseSchema.parse(issueRaw);
+
+        const issue = issueData?.data?.issueSearch?.nodes?.[0];
+        if (!issue) return;
+
+        const currentLabels = issue.labels?.nodes ?? [];
+
+        // Find by ID if cached, otherwise by name
+        const targetId =
+          labelId ?? currentLabels.find((l) => l.name === label)?.id;
+        if (!targetId) return;
+
+        const updatedIds = currentLabels
+          .map((l) => l.id)
+          .filter((id) => id !== targetId);
+
+        // No change needed if label wasn't on the issue
+        if (updatedIds.length === currentLabels.length) return;
+
+        const mutation = `
+          mutation($issueId: String!, $labelIds: [String!]!) {
+            issueUpdate(id: $issueId, input: { labelIds: $labelIds }) {
+              success
+            }
+          }
+        `;
+
+        await linearGraphql(env.LINEAR_API_KEY, mutation, {
+          issueId: issue.id,
+          labelIds: updatedIds,
+        });
+      } catch (err) {
+        console.warn(
+          `⚠ removeLabel failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     },
 
     sharedEnv() {

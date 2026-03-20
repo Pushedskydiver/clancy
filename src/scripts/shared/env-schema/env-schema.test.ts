@@ -440,5 +440,67 @@ describe('detectBoard', () => {
       expect(result.env.CLANCY_TIME_LIMIT).toBeUndefined();
       expect(result.env.CLANCY_BRANCH_GUARD).toBeUndefined();
     });
+
+    it('passes through pipeline label vars for Jira', () => {
+      const result = detectBoard(
+        jiraEnv({
+          CLANCY_LABEL_BRIEF: 'clancy:brief',
+          CLANCY_LABEL_PLAN: 'clancy:plan',
+          CLANCY_LABEL_BUILD: 'clancy:build',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_LABEL_BRIEF).toBe('clancy:brief');
+      expect(result.env.CLANCY_LABEL_PLAN).toBe('clancy:plan');
+      expect(result.env.CLANCY_LABEL_BUILD).toBe('clancy:build');
+    });
+
+    it('passes through pipeline label vars for GitHub', () => {
+      const result = detectBoard(
+        githubEnv({
+          CLANCY_LABEL_BRIEF: 'clancy:brief',
+          CLANCY_LABEL_PLAN: 'clancy:plan',
+          CLANCY_LABEL_BUILD: 'clancy:build',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_LABEL_BRIEF).toBe('clancy:brief');
+      expect(result.env.CLANCY_LABEL_PLAN).toBe('clancy:plan');
+      expect(result.env.CLANCY_LABEL_BUILD).toBe('clancy:build');
+    });
+
+    it('passes through pipeline label vars for Linear', () => {
+      const result = detectBoard(
+        linearEnv({
+          CLANCY_LABEL_BRIEF: 'clancy:brief',
+          CLANCY_LABEL_PLAN: 'clancy:plan',
+          CLANCY_LABEL_BUILD: 'clancy:build',
+        }),
+      );
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_LABEL_BRIEF).toBe('clancy:brief');
+      expect(result.env.CLANCY_LABEL_PLAN).toBe('clancy:plan');
+      expect(result.env.CLANCY_LABEL_BUILD).toBe('clancy:build');
+    });
+
+    it('pipeline label vars are optional — config parses without them', () => {
+      const result = detectBoard(githubEnv());
+
+      expect(typeof result).not.toBe('string');
+      if (typeof result === 'string') return;
+
+      expect(result.env.CLANCY_LABEL_BRIEF).toBeUndefined();
+      expect(result.env.CLANCY_LABEL_PLAN).toBeUndefined();
+      expect(result.env.CLANCY_LABEL_BUILD).toBeUndefined();
+    });
   });
 });

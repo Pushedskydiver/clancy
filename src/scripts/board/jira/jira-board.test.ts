@@ -251,6 +251,117 @@ describe('jira-board', () => {
     });
   });
 
+  describe('ensureLabel', () => {
+    it('is a no-op (Jira auto-creates labels)', async () => {
+      const board = createJiraBoard(baseEnv);
+      await expect(board.ensureLabel('clancy:build')).resolves.toBeUndefined();
+    });
+  });
+
+  describe('addLabel', () => {
+    it('fetches current labels and PUTs updated list', async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ fields: { labels: ['existing'] } }), {
+            status: 200,
+          }),
+        )
+        .mockResolvedValueOnce(new Response(null, { status: 200 }));
+
+      const board = createJiraBoard(baseEnv);
+      await board.addLabel('PROJ-1', 'clancy:build');
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      expect(fetchSpy.mock.calls[0][0]).toContain(
+        '/rest/api/3/issue/PROJ-1?fields=labels',
+      );
+      const putBody = JSON.parse(fetchSpy.mock.calls[1][1]?.body as string);
+      expect(putBody.fields.labels).toEqual(['existing', 'clancy:build']);
+    });
+
+    it('skips PUT when label already present', async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({ fields: { labels: ['clancy:build'] } }),
+            { status: 200 },
+          ),
+        );
+
+      const board = createJiraBoard(baseEnv);
+      await board.addLabel('PROJ-1', 'clancy:build');
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not throw on GET failure', async () => {
+      vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response('', { status: 500 }),
+      );
+
+      const board = createJiraBoard(baseEnv);
+      await expect(
+        board.addLabel('PROJ-1', 'clancy:build'),
+      ).resolves.toBeUndefined();
+    });
+
+    it('does not throw on network error', async () => {
+      vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('network'));
+
+      const board = createJiraBoard(baseEnv);
+      await expect(
+        board.addLabel('PROJ-1', 'clancy:build'),
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('removeLabel', () => {
+    it('fetches current labels and PUTs filtered list', async () => {
+      const fetchSpy = vi
+        .spyOn(globalThis, 'fetch')
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              fields: { labels: ['clancy:build', 'other'] },
+            }),
+            { status: 200 },
+          ),
+        )
+        .mockResolvedValueOnce(new Response(null, { status: 200 }));
+
+      const board = createJiraBoard(baseEnv);
+      await board.removeLabel('PROJ-1', 'clancy:build');
+
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      const putBody = JSON.parse(fetchSpy.mock.calls[1][1]?.body as string);
+      expect(putBody.fields.labels).toEqual(['other']);
+    });
+
+    it('skips PUT when label not present', async () => {
+      const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValueOnce(
+        new Response(JSON.stringify({ fields: { labels: ['other'] } }), {
+          status: 200,
+        }),
+      );
+
+      const board = createJiraBoard(baseEnv);
+      await board.removeLabel('PROJ-1', 'clancy:build');
+
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not throw on network error', async () => {
+      vi.spyOn(globalThis, 'fetch').mockRejectedValueOnce(new Error('network'));
+
+      const board = createJiraBoard(baseEnv);
+      await expect(
+        board.removeLabel('PROJ-1', 'clancy:build'),
+      ).resolves.toBeUndefined();
+    });
+  });
+
   describe('sharedEnv', () => {
     it('returns the env object', () => {
       const board = createJiraBoard(baseEnv);

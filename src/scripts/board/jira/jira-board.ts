@@ -5,6 +5,7 @@
  * existing Jira board functions.
  */
 import type { JiraEnv } from '~/schemas/env.js';
+import { jiraIssueLabelsResponseSchema } from '~/schemas/jira.js';
 import type { FetchedTicket } from '~/scripts/once/types/types.js';
 
 import type { Board, FetchTicketOpts } from '../board.js';
@@ -35,6 +36,9 @@ export function createJiraBoard(env: JiraEnv): Board {
     validateInputs() {
       if (!isSafeJqlValue(env.JIRA_PROJECT_KEY)) {
         return '✗ JIRA_PROJECT_KEY contains invalid characters';
+      }
+      if (env.CLANCY_LABEL_BUILD && !isSafeJqlValue(env.CLANCY_LABEL_BUILD)) {
+        return '✗ CLANCY_LABEL_BUILD contains invalid characters';
       }
       if (env.CLANCY_LABEL && !isSafeJqlValue(env.CLANCY_LABEL)) {
         return '✗ CLANCY_LABEL contains invalid characters';
@@ -93,6 +97,94 @@ export function createJiraBoard(env: JiraEnv): Board {
       );
       if (ok) console.log(`  → Transitioned to ${status}`);
       return ok;
+    },
+
+    async ensureLabel(_label: string) {
+      // No-op — Jira auto-creates labels on use.
+    },
+
+    async addLabel(issueKey: string, label: string) {
+      try {
+        if (!/^[A-Z][A-Z0-9]+-\d+$/.test(issueKey)) return;
+
+        const res = await fetch(
+          `${env.JIRA_BASE_URL}/rest/api/3/issue/${encodeURIComponent(issueKey)}?fields=labels`,
+          { headers: { Authorization: auth, Accept: 'application/json' } },
+        );
+
+        if (!res.ok) {
+          console.warn(`⚠ addLabel GET failed: HTTP ${res.status}`);
+          return;
+        }
+
+        const json = jiraIssueLabelsResponseSchema.parse(await res.json());
+        const current = json.fields?.labels ?? [];
+
+        if (current.includes(label)) return;
+
+        const putRes = await fetch(
+          `${env.JIRA_BASE_URL}/rest/api/3/issue/${encodeURIComponent(issueKey)}`,
+          {
+            method: 'PUT',
+            headers: {
+              Authorization: auth,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              fields: { labels: [...current, label] },
+            }),
+          },
+        );
+        if (!putRes.ok) {
+          console.warn(`⚠ addLabel PUT returned HTTP ${putRes.status}`);
+        }
+      } catch (err) {
+        console.warn(
+          `⚠ addLabel failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    },
+
+    async removeLabel(issueKey: string, label: string) {
+      try {
+        if (!/^[A-Z][A-Z0-9]+-\d+$/.test(issueKey)) return;
+
+        const res = await fetch(
+          `${env.JIRA_BASE_URL}/rest/api/3/issue/${encodeURIComponent(issueKey)}?fields=labels`,
+          { headers: { Authorization: auth, Accept: 'application/json' } },
+        );
+
+        if (!res.ok) {
+          console.warn(`⚠ removeLabel GET failed: HTTP ${res.status}`);
+          return;
+        }
+
+        const json = jiraIssueLabelsResponseSchema.parse(await res.json());
+        const current = json.fields?.labels ?? [];
+
+        if (!current.includes(label)) return;
+
+        const putRes = await fetch(
+          `${env.JIRA_BASE_URL}/rest/api/3/issue/${encodeURIComponent(issueKey)}`,
+          {
+            method: 'PUT',
+            headers: {
+              Authorization: auth,
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              fields: { labels: current.filter((l) => l !== label) },
+            }),
+          },
+        );
+        if (!putRes.ok) {
+          console.warn(`⚠ removeLabel PUT returned HTTP ${putRes.status}`);
+        }
+      } catch (err) {
+        console.warn(
+          `⚠ removeLabel failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     },
 
     sharedEnv() {

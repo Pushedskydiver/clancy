@@ -140,8 +140,8 @@ export async function fetchIssue(
   return results[0];
 }
 
-/** GitHub issue with optional milestone. */
-export type GitHubTicket = Ticket & { milestone?: string };
+/** GitHub issue with optional milestone and labels. */
+export type GitHubTicket = Ticket & { milestone?: string; labels?: string[] };
 
 /**
  * Fetch multiple candidate issues from GitHub Issues.
@@ -221,6 +221,9 @@ export async function fetchIssues(
     description: issue.body ?? '',
     provider: 'github' as const,
     milestone: issue.milestone?.title,
+    labels: issue.labels
+      ?.map((l) => l.name)
+      .filter((n): n is string => Boolean(n)),
   }));
 }
 

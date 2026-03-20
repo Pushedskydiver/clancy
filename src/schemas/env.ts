@@ -57,6 +57,11 @@ export const sharedEnvSchema = z.object({
   CLANCY_TOKEN_RATE: z.optional(z.string()),
   CLANCY_TIME_LIMIT: z.optional(z.string()),
   CLANCY_BRANCH_GUARD: z.optional(z.string()),
+
+  // Pipeline stage labels
+  CLANCY_LABEL_BRIEF: z.optional(z.string()),
+  CLANCY_LABEL_PLAN: z.optional(z.string()),
+  CLANCY_LABEL_BUILD: z.optional(z.string()),
 });
 
 // ─── Board-specific schemas ──────────────────────────────────────────────────

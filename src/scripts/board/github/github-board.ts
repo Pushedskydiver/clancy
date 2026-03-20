@@ -6,6 +6,7 @@
  */
 import type { GitHubEnv } from '~/schemas/env.js';
 import type { FetchedTicket } from '~/scripts/once/types/types.js';
+import { GITHUB_API, githubHeaders } from '~/scripts/shared/http/http.js';
 
 import type { Board, FetchTicketOpts } from '../board.js';
 import {
@@ -87,6 +88,88 @@ export function createGitHubBoard(env: GitHubEnv): Board {
       // GitHub Issues only has open/closed — status transitions not applicable.
       // closeIssue is called separately after merge.
       return false;
+    },
+
+    async ensureLabel(label: string) {
+      try {
+        const headers = githubHeaders(env.GITHUB_TOKEN);
+        const res = await fetch(
+          `${GITHUB_API}/repos/${env.GITHUB_REPO}/labels/${encodeURIComponent(label)}`,
+          { headers },
+        );
+
+        if (res.ok) return; // Label already exists
+
+        if (res.status === 404) {
+          const createRes = await fetch(
+            `${GITHUB_API}/repos/${env.GITHUB_REPO}/labels`,
+            {
+              method: 'POST',
+              headers: { ...headers, 'Content-Type': 'application/json' },
+              body: JSON.stringify({ name: label, color: '0075ca' }),
+            },
+          );
+          if (!createRes.ok && createRes.status !== 422) {
+            console.warn(
+              `⚠ ensureLabel create returned HTTP ${createRes.status}`,
+            );
+          }
+        } else {
+          console.warn(`⚠ ensureLabel GET returned HTTP ${res.status}`);
+        }
+      } catch (err) {
+        console.warn(
+          `⚠ ensureLabel failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    },
+
+    async addLabel(issueKey: string, label: string) {
+      try {
+        await this.ensureLabel(label);
+
+        const issueNumber = parseInt(issueKey.replace('#', ''), 10);
+        if (Number.isNaN(issueNumber)) return;
+
+        const headers = githubHeaders(env.GITHUB_TOKEN);
+        const addRes = await fetch(
+          `${GITHUB_API}/repos/${env.GITHUB_REPO}/issues/${issueNumber}/labels`,
+          {
+            method: 'POST',
+            headers: { ...headers, 'Content-Type': 'application/json' },
+            body: JSON.stringify({ labels: [label] }),
+          },
+        );
+        if (!addRes.ok) {
+          console.warn(`⚠ addLabel returned HTTP ${addRes.status}`);
+        }
+      } catch (err) {
+        console.warn(
+          `⚠ addLabel failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+    },
+
+    async removeLabel(issueKey: string, label: string) {
+      try {
+        const issueNumber = parseInt(issueKey.replace('#', ''), 10);
+        if (Number.isNaN(issueNumber)) return;
+
+        const headers = githubHeaders(env.GITHUB_TOKEN);
+        const res = await fetch(
+          `${GITHUB_API}/repos/${env.GITHUB_REPO}/issues/${issueNumber}/labels/${encodeURIComponent(label)}`,
+          { method: 'DELETE', headers },
+        );
+
+        // Ignore 404 — label may not be on the issue
+        if (!res.ok && res.status !== 404) {
+          console.warn(`⚠ removeLabel returned HTTP ${res.status}`);
+        }
+      } catch (err) {
+        console.warn(
+          `⚠ removeLabel failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
     },
 
     sharedEnv() {

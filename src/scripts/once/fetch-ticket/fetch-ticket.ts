@@ -22,6 +22,30 @@ export type FetchTicketOptions = {
   isAfk?: boolean;
 };
 
+/**
+ * Resolve the implementation queue label.
+ *
+ * Uses `CLANCY_LABEL_BUILD` if set, falls back to `CLANCY_LABEL` for
+ * backward compatibility. Returns `undefined` if neither is set.
+ */
+function resolveBuildLabel(
+  env: Record<string, string | undefined>,
+): string | undefined {
+  return env.CLANCY_LABEL_BUILD || env.CLANCY_LABEL || undefined;
+}
+
+/**
+ * Resolve the plan queue label.
+ *
+ * Used as an exclusion filter — tickets with this label are still in the
+ * planning queue and should not be picked up for implementation.
+ */
+function resolvePlanLabel(
+  env: Record<string, string | undefined>,
+): string | undefined {
+  return env.CLANCY_LABEL_PLAN || env.CLANCY_PLAN_LABEL || undefined;
+}
+
 /** Whether the current run is in AFK mode (set by the AFK runner). */
 function detectAfkMode(opts?: FetchTicketOptions): boolean {
   return opts?.isAfk ?? process.env.CLANCY_AFK_MODE === '1';
@@ -46,13 +70,14 @@ async function fetchCandidates(
     case 'jira': {
       const { env } = config;
       const auth = buildAuthHeader(env.JIRA_USER, env.JIRA_API_TOKEN);
+      const buildLabel = resolveBuildLabel(env);
       const tickets = await fetchJiraTickets(
         env.JIRA_BASE_URL,
         auth,
         env.JIRA_PROJECT_KEY,
         env.CLANCY_JQL_STATUS ?? 'To Do',
         env.CLANCY_JQL_SPRINT,
-        env.CLANCY_LABEL,
+        buildLabel,
         excludeHitl,
       );
 
@@ -67,17 +92,19 @@ async function fetchCandidates(
           description: ticket.description,
           parentInfo: ticket.epicKey ?? 'none',
           blockers: blockerStr,
+          labels: ticket.labels ?? [],
         };
       });
     }
 
     case 'github': {
       const { env } = config;
+      const buildLabel = resolveBuildLabel(env);
       const username = await resolveUsername(env.GITHUB_TOKEN);
       const tickets = await fetchGitHubIssues(
         env.GITHUB_TOKEN,
         env.GITHUB_REPO,
-        env.CLANCY_LABEL,
+        buildLabel,
         username,
         excludeHitl,
       );
@@ -88,16 +115,18 @@ async function fetchCandidates(
         description: ticket.description,
         parentInfo: ticket.milestone ?? 'none',
         blockers: 'None',
+        labels: ticket.labels ?? [],
       }));
     }
 
     case 'linear': {
       const { env } = config;
+      const buildLabel = resolveBuildLabel(env);
       const tickets = await fetchLinearIssues(
         {
           LINEAR_API_KEY: env.LINEAR_API_KEY,
           LINEAR_TEAM_ID: env.LINEAR_TEAM_ID,
-          CLANCY_LABEL: env.CLANCY_LABEL,
+          CLANCY_LABEL: buildLabel,
         },
         excludeHitl,
       );
@@ -110,6 +139,7 @@ async function fetchCandidates(
         blockers: 'None',
         linearIssueId: ticket.issueId,
         issueId: ticket.issueId,
+        labels: ticket.labels ?? [],
       }));
     }
   }
@@ -177,10 +207,19 @@ export async function fetchTicket(
   opts?: FetchTicketOptions,
 ): Promise<FetchedTicket | undefined> {
   const excludeHitl = detectAfkMode(opts);
+  const planLabel = resolvePlanLabel(config.env);
   const candidates = await fetchCandidates(config, excludeHitl);
   if (!candidates.length) return undefined;
 
   for (const candidate of candidates) {
+    // Guard: exclude tickets that still have the plan label (dual-label AFK race).
+    // During add-before-remove transitions a ticket briefly has both plan + build
+    // labels. Skip it until the plan label is fully removed.
+    if (planLabel && candidate.labels?.includes(planLabel)) {
+      console.log(`Skipping ${candidate.key} — still has plan label`);
+      continue;
+    }
+
     const blocked = await isBlocked(config, candidate);
     if (!blocked) return candidate;
     console.log(`Skipping ${candidate.key} — blocked`);

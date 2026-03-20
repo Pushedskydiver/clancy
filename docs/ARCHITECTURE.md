@@ -244,7 +244,7 @@ Each phase has signature `(ctx: RunContext) => Promise<boolean> | boolean`. Retu
 All board operations go through a unified `Board` type (`src/scripts/board/board.ts`):
 
 ```
-Board type (7 methods)
+Board type (10 methods)
   │
   ├── ping()                → { ok, error? }
   ├── validateInputs()      → string | undefined
@@ -253,6 +253,9 @@ Board type (7 methods)
   ├── fetchBlockerStatus(t) → boolean
   ├── fetchChildrenStatus() → { total, incomplete } | undefined
   ├── transitionTicket()    → boolean
+  ├── ensureLabel(label)    → Promise<void>     (create label on board if missing)
+  ├── addLabel(key, label)  → Promise<void>     (add label to issue, calls ensureLabel internally)
+  ├── removeLabel(key, label) → Promise<void>   (remove label from issue, best-effort)
   └── sharedEnv()           → Record<string, string | undefined>
 
 createBoard(config) — single switch on config.provider

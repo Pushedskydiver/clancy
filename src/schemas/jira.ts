@@ -16,6 +16,7 @@ const jiraIssueFieldsSchema = z.object({
   issuelinks: z.optional(z.array(jiraIssueLinkSchema)),
   parent: z.optional(z.object({ key: z.optional(z.string()) })),
   customfield_10014: z.optional(z.nullable(z.string())),
+  labels: z.optional(z.array(z.string())),
 });
 
 /** A single Jira issue from the search response. */
@@ -72,7 +73,19 @@ export const jiraIssueLinksResponseSchema = z.object({
   ),
 });
 
+/** Response from `GET /rest/api/3/issue/{key}?fields=labels`. */
+export const jiraIssueLabelsResponseSchema = z.object({
+  fields: z.optional(
+    z.object({
+      labels: z.optional(z.array(z.string())),
+    }),
+  ),
+});
+
 export type JiraSearchResponse = z.infer<typeof jiraSearchResponseSchema>;
+export type JiraIssueLabelsResponse = z.infer<
+  typeof jiraIssueLabelsResponseSchema
+>;
 export type JiraTransitionsResponse = z.infer<
   typeof jiraTransitionsResponseSchema
 >;

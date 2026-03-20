@@ -23,12 +23,11 @@ Design decisions for Clancy features — the "why" behind non-obvious choices. T
 | `epic-branch-workflow.md` | PR-based delivery, epic branches, epic completion detection | v0.5.12 |
 | `reliable-autonomous-mode.md` | Verification gates, safety hooks, crash recovery, Claude Code hook API research | v0.7.0 |
 | `codebase-refactor.md` | Phase pipeline, Board type abstraction, switch elimination | v0.7.1 |
+| `pipeline-labels.md` | Pipeline stage labels (clancy:brief → clancy:plan → clancy:build), Board label methods, backward compatibility | v0.7.4 |
 
 ### In progress
 
-| Document | Feature | Target |
-|---|---|---|
-| `pipeline-labels.md` | Pipeline stage labels (clancy:brief → clancy:plan → clancy:build) | Pre-v0.8.0 |
+None currently.
 
 ### Deleted after shipping
 

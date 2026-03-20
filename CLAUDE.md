@@ -128,3 +128,6 @@ Spin up a review agent at every necessary phase — not just after code. Review 
 - Cost logging: duration-based token estimate per ticket appended to `.clancy/costs.log` using `CLANCY_TOKEN_RATE` (default 6600 tokens/min)
 - PostCompact hook: re-injects ticket context (key, description, branch) after Claude Code compacts the context window
 - Session report: `.clancy/session-report.md` generated after `/clancy:run` summarises completed/failed tickets
+- Pipeline labels: 3 labels (`CLANCY_LABEL_BRIEF`, `CLANCY_LABEL_PLAN`, `CLANCY_LABEL_BUILD`) control ticket flow through stages. `CLANCY_LABEL` and `CLANCY_PLAN_LABEL` are deprecated but work as fallbacks. Transitions use add-before-remove for crash safety
+- Board label methods: `ensureLabel` (create-if-missing), `addLabel` (add to issue, calls ensureLabel internally), `removeLabel` (best-effort removal) on the Board type
+- `--skip-plan` flag on `/clancy:approve-brief` applies `CLANCY_LABEL_BUILD` directly, skipping the planning queue

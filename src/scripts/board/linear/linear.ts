@@ -155,10 +155,11 @@ export async function fetchIssue(env: LinearEnv): Promise<
   return results[0];
 }
 
-/** Linear ticket with issue ID and optional parent info. */
+/** Linear ticket with issue ID, optional parent info, and labels. */
 export type LinearTicket = Ticket & {
   issueId: string;
   parentIdentifier?: string;
+  labels?: string[];
 };
 
 /**
@@ -250,6 +251,9 @@ export async function fetchIssues(
     provider: 'linear' as const,
     issueId: issue.id,
     parentIdentifier: issue.parent?.identifier,
+    labels: issue.labels?.nodes
+      ?.map((l) => l.name)
+      .filter((n): n is string => Boolean(n)),
   }));
 }
 

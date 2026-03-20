@@ -90,6 +90,7 @@ describe('fetchTicket', () => {
       description: 'Create login page.',
       parentInfo: 'PROJ-1',
       blockers: 'Blocked by: PROJ-5',
+      labels: [],
     });
   });
 
@@ -150,6 +151,7 @@ describe('fetchTicket', () => {
       description: 'Bug description.',
       parentInfo: 'Sprint 3',
       blockers: 'None',
+      labels: [],
     });
   });
 
@@ -195,6 +197,7 @@ describe('fetchTicket', () => {
       blockers: 'None',
       linearIssueId: 'uuid-abc',
       issueId: 'uuid-abc',
+      labels: [],
     });
   });
 
@@ -491,5 +494,226 @@ describe('fetchTicket — HITL/AFK filtering', () => {
       expect.objectContaining({ LINEAR_API_KEY: 'lin_abc' }),
       true, // excludeHitl
     );
+  });
+});
+
+// ─── Pipeline label filtering ─────────────────────────────────────────────
+
+describe('fetchTicket — pipeline label filtering', () => {
+  beforeEach(() => vi.clearAllMocks());
+
+  it('uses CLANCY_LABEL_BUILD for Jira queue filtering with fallback to CLANCY_LABEL', async () => {
+    const config: BoardConfig = {
+      provider: 'jira',
+      env: {
+        JIRA_BASE_URL: 'https://example.atlassian.net',
+        JIRA_USER: 'user@test.com',
+        JIRA_API_TOKEN: 'token',
+        JIRA_PROJECT_KEY: 'PROJ',
+        CLANCY_LABEL_BUILD: 'clancy:build',
+      },
+    };
+
+    vi.mocked(mockFetchJiraTickets).mockResolvedValue([]);
+    await fetchTicket(config);
+
+    expect(mockFetchJiraTickets).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
+      'PROJ',
+      'To Do',
+      undefined,
+      'clancy:build', // uses CLANCY_LABEL_BUILD
+      false,
+    );
+  });
+
+  it('falls back to CLANCY_LABEL when CLANCY_LABEL_BUILD is not set (Jira)', async () => {
+    const config: BoardConfig = {
+      provider: 'jira',
+      env: {
+        JIRA_BASE_URL: 'https://example.atlassian.net',
+        JIRA_USER: 'user@test.com',
+        JIRA_API_TOKEN: 'token',
+        JIRA_PROJECT_KEY: 'PROJ',
+        CLANCY_LABEL: 'clancy',
+      },
+    };
+
+    vi.mocked(mockFetchJiraTickets).mockResolvedValue([]);
+    await fetchTicket(config);
+
+    expect(mockFetchJiraTickets).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.any(String),
+      'PROJ',
+      'To Do',
+      undefined,
+      'clancy', // falls back to CLANCY_LABEL
+      false,
+    );
+  });
+
+  it('uses CLANCY_LABEL_BUILD for GitHub queue filtering', async () => {
+    const config: BoardConfig = {
+      provider: 'github',
+      env: {
+        GITHUB_TOKEN: 'ghp_abc123',
+        GITHUB_REPO: 'acme/app',
+        CLANCY_LABEL_BUILD: 'clancy:build',
+      },
+    };
+
+    vi.mocked(mockFetchGitHubIssues).mockResolvedValue([]);
+    await fetchTicket(config);
+
+    expect(mockFetchGitHubIssues).toHaveBeenCalledWith(
+      'ghp_abc123',
+      'acme/app',
+      'clancy:build', // uses CLANCY_LABEL_BUILD
+      'testuser',
+      false,
+    );
+  });
+
+  it('uses CLANCY_LABEL_BUILD for Linear queue filtering', async () => {
+    const config: BoardConfig = {
+      provider: 'linear',
+      env: {
+        LINEAR_API_KEY: 'lin_abc',
+        LINEAR_TEAM_ID: 'abc-123',
+        CLANCY_LABEL_BUILD: 'clancy:build',
+      },
+    };
+
+    vi.mocked(mockFetchLinearIssues).mockResolvedValue([]);
+    await fetchTicket(config);
+
+    expect(mockFetchLinearIssues).toHaveBeenCalledWith(
+      expect.objectContaining({ CLANCY_LABEL: 'clancy:build' }),
+      false,
+    );
+  });
+
+  it('skips candidate with plan label (dual-label AFK race guard)', async () => {
+    const config: BoardConfig = {
+      provider: 'github',
+      env: {
+        GITHUB_TOKEN: 'ghp_abc123',
+        GITHUB_REPO: 'acme/app',
+        CLANCY_LABEL_BUILD: 'clancy:build',
+        CLANCY_LABEL_PLAN: 'clancy:plan',
+      },
+    };
+
+    vi.mocked(mockFetchGitHubIssues).mockResolvedValue([
+      {
+        key: '#41',
+        title: 'Has both labels',
+        description: 'Dual label.',
+        provider: 'github',
+        labels: ['clancy:build', 'clancy:plan'],
+      },
+      {
+        key: '#42',
+        title: 'Only build label',
+        description: 'Clean.',
+        provider: 'github',
+        labels: ['clancy:build'],
+      },
+    ]);
+    vi.mocked(mockGitHubBlockerStatus).mockResolvedValue(false);
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const result = await fetchTicket(config);
+    log.mockRestore();
+
+    expect(result).toBeDefined();
+    expect(result?.key).toBe('#42');
+  });
+
+  it('returns candidate when no plan label is configured', async () => {
+    vi.mocked(mockFetchGitHubIssues).mockResolvedValue([
+      {
+        key: '#41',
+        title: 'Has some labels',
+        description: 'Desc.',
+        provider: 'github',
+        labels: ['clancy:build', 'some-label'],
+      },
+    ]);
+    vi.mocked(mockGitHubBlockerStatus).mockResolvedValue(false);
+
+    const result = await fetchTicket(githubConfig);
+
+    expect(result).toBeDefined();
+    expect(result?.key).toBe('#41');
+  });
+
+  it('skips Jira candidate with plan label (fallback to CLANCY_PLAN_LABEL)', async () => {
+    const config: BoardConfig = {
+      provider: 'jira',
+      env: {
+        JIRA_BASE_URL: 'https://example.atlassian.net',
+        JIRA_USER: 'user@test.com',
+        JIRA_API_TOKEN: 'token',
+        JIRA_PROJECT_KEY: 'PROJ',
+        CLANCY_PLAN_LABEL: 'needs-refinement',
+      },
+    };
+
+    vi.mocked(mockFetchJiraTickets).mockResolvedValue([
+      {
+        key: 'PROJ-10',
+        title: 'Still being planned',
+        description: 'Desc.',
+        provider: 'jira',
+        blockers: [],
+        labels: ['needs-refinement', 'clancy'],
+      },
+      {
+        key: 'PROJ-11',
+        title: 'Ready to build',
+        description: 'Desc.',
+        provider: 'jira',
+        blockers: [],
+        labels: ['clancy'],
+      },
+    ]);
+    vi.mocked(mockJiraBlockerStatus).mockResolvedValue(false);
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const result = await fetchTicket(config);
+    log.mockRestore();
+
+    expect(result).toBeDefined();
+    expect(result?.key).toBe('PROJ-11');
+  });
+
+  it('returns undefined when all candidates have plan label', async () => {
+    const config: BoardConfig = {
+      provider: 'github',
+      env: {
+        GITHUB_TOKEN: 'ghp_abc123',
+        GITHUB_REPO: 'acme/app',
+        CLANCY_LABEL_PLAN: 'clancy:plan',
+      },
+    };
+
+    vi.mocked(mockFetchGitHubIssues).mockResolvedValue([
+      {
+        key: '#41',
+        title: 'Still planning',
+        description: 'Desc.',
+        provider: 'github',
+        labels: ['clancy:plan'],
+      },
+    ]);
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const result = await fetchTicket(config);
+    log.mockRestore();
+
+    expect(result).toBeUndefined();
   });
 });

@@ -144,3 +144,84 @@ export type LinearIssueRelationsResponse = z.infer<
 export type LinearIssueSearchResponse = z.infer<
   typeof linearIssueSearchResponseSchema
 >;
+
+/** Response from the `team.labels` query for label management. */
+export const linearTeamLabelsResponseSchema = z.object({
+  data: z.optional(
+    z.object({
+      team: z.optional(
+        z.object({
+          labels: z.optional(
+            z.object({
+              nodes: z.array(z.object({ id: z.string(), name: z.string() })),
+            }),
+          ),
+        }),
+      ),
+    }),
+  ),
+});
+
+/** Response from the `issueLabels` workspace query. */
+export const linearWorkspaceLabelsResponseSchema = z.object({
+  data: z.optional(
+    z.object({
+      issueLabels: z.optional(
+        z.object({
+          nodes: z.array(z.object({ id: z.string(), name: z.string() })),
+        }),
+      ),
+    }),
+  ),
+});
+
+/** Response from the `issueLabelCreate` mutation. */
+export const linearLabelCreateResponseSchema = z.object({
+  data: z.optional(
+    z.object({
+      issueLabelCreate: z.optional(
+        z.object({
+          issueLabel: z.optional(z.object({ id: z.string() })),
+          success: z.optional(z.boolean()),
+        }),
+      ),
+    }),
+  ),
+});
+
+/** Response from `issueSearch` for label management (includes label IDs). */
+export const linearIssueLabelSearchResponseSchema = z.object({
+  data: z.optional(
+    z.object({
+      issueSearch: z.optional(
+        z.object({
+          nodes: z.array(
+            z.object({
+              id: z.string(),
+              labels: z.optional(
+                z.object({
+                  nodes: z.array(
+                    z.object({ id: z.string(), name: z.optional(z.string()) }),
+                  ),
+                }),
+              ),
+            }),
+          ),
+        }),
+      ),
+    }),
+  ),
+});
+
+export type LinearTeamLabelsResponse = z.infer<
+  typeof linearTeamLabelsResponseSchema
+>;
+export type LinearWorkspaceLabelsResponse = z.infer<
+  typeof linearWorkspaceLabelsResponseSchema
+>;
+export type LinearLabelCreateResponse = z.infer<
+  typeof linearLabelCreateResponseSchema
+>;
+export type LinearIssueLabelSearchResponse = z.infer<
+  typeof linearIssueLabelSearchResponseSchema
+>;

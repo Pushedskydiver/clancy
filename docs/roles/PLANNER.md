@@ -37,6 +37,15 @@ You can also toggle it via `/clancy:settings`.
 
 Arguments can appear in any order (e.g. `/clancy:plan 3 --fresh` or `/clancy:plan --fresh PROJ-123`).
 
+## Pipeline labels
+
+The planner works with two pipeline labels:
+
+- **`clancy:plan`** (`CLANCY_LABEL_PLAN`) — `/clancy:plan` filters by this label to find tickets needing planning
+- **`clancy:build`** (`CLANCY_LABEL_BUILD`) — `/clancy:approve-plan` adds this label (then removes `clancy:plan`) to mark tickets ready for implementation
+
+The new label is always added before the old one is removed (crash safety). Falls back to `CLANCY_PLAN_LABEL` if `CLANCY_LABEL_PLAN` is not set.
+
 ## Planning queue filters
 
 The planner fetches from a **separate queue** to the implementer, targeting earlier-stage tickets:
@@ -50,8 +59,8 @@ The planner fetches from a **separate queue** to the implementer, targeting earl
 `CLANCY_PLAN_STATE_TYPE` accepts one of: `backlog`, `unstarted`, `started`, `completed`, `canceled`, `triage`.
 
 Additional filters vary by board:
-- **Jira:** `CLANCY_LABEL` and `CLANCY_JQL_SPRINT` apply on top of the planning queue filter
-- **GitHub:** Uses `CLANCY_PLAN_LABEL` only (not `CLANCY_LABEL`)
+- **Jira:** `CLANCY_LABEL_PLAN` and `CLANCY_JQL_SPRINT` apply on top of the planning queue filter (status-based filtering is primary; label is supplementary when set)
+- **GitHub:** Uses `CLANCY_LABEL_PLAN` (falls back to `CLANCY_PLAN_LABEL`) only
 - **Linear:** No additional label filter
 - **All boards:** `assignee = currentUser()` always applies
 
@@ -65,8 +74,8 @@ Additional filters vary by board:
 
 1. **You** add the `needs-refinement` label to issues you want planned (this is a manual step)
 2. `/clancy:plan` picks up issues with that label
-3. `/clancy:approve-plan` removes `needs-refinement` (the plan label). If `CLANCY_LABEL` is set, also adds it as the implementation label.
-4. `/clancy:once` picks up issues (filtered by `CLANCY_LABEL` if set, otherwise all open assigned issues)
+3. `/clancy:approve-plan` adds `CLANCY_LABEL_BUILD` (falls back to `CLANCY_LABEL`), then removes `CLANCY_LABEL_PLAN` (falls back to `CLANCY_PLAN_LABEL`). Crash-safe: add before remove.
+4. `/clancy:once` picks up issues filtered by `CLANCY_LABEL_BUILD` (falls back to `CLANCY_LABEL`, otherwise all open assigned issues)
 5. On completion, Clancy closes the issue
 
 No GitHub Projects integration — Clancy works with the Issues REST API only.
@@ -121,7 +130,7 @@ When `/clancy:approve-plan` runs, it:
 4. Appends the plan to the ticket description (never replaces the original description)
 5. **Edits the plan comment** — prepends an approval note to the existing comment (does not delete it)
 6. **Transitions the ticket** to the implementation queue:
-   - **GitHub:** removes the plan label (`CLANCY_PLAN_LABEL`). If `CLANCY_LABEL` is set, adds it as the implementation label (creates if missing). If not set, only the plan label is removed.
+   - **GitHub:** adds `CLANCY_LABEL_BUILD` first (falls back to `CLANCY_LABEL`, creates if missing), then removes `CLANCY_LABEL_PLAN` (falls back to `CLANCY_PLAN_LABEL`). Crash-safe: add before remove.
    - **Jira:** if `CLANCY_STATUS_PLANNED` is configured, fetches available transitions and POSTs the transition. If not configured, skips (manual transition).
    - **Linear:** resolves the "unstarted" state UUID via `workflowStates` query, then updates the issue state. Always attempted.
    - All transitions are best-effort — warns on failure, never blocks the approval.

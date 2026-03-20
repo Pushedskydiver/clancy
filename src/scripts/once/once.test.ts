@@ -65,6 +65,9 @@ vi.mock('~/scripts/board/factory/factory.js', () => ({
     fetchBlockerStatus: vi.fn(() => Promise.resolve(false)),
     fetchChildrenStatus: vi.fn(() => Promise.resolve(undefined)),
     transitionTicket: vi.fn(() => Promise.resolve(true)),
+    ensureLabel: vi.fn(() => Promise.resolve()),
+    addLabel: vi.fn(() => Promise.resolve()),
+    removeLabel: vi.fn(() => Promise.resolve()),
     sharedEnv: vi.fn(() => ({})),
   })),
 }));

@@ -66,6 +66,17 @@ Ubiquitous language for the Clancy project. Use these terms consistently in code
 | **Devil's advocate agent** | The agent prompt used during AI-grill to interrogate sources (codebase, board, web) and challenge its own answers. Lives in `src/agents/` alongside the map-codebase specialist agents. |
 | **Epic reference convention** | Child tickets include `Epic: {key}` in their description (e.g. `Epic: PROJ-100`, `Epic: #50`, `Epic: ENG-42`). This text convention enables cross-platform epic completion detection. |
 
+## Pipeline Labels
+
+| Term | Definition |
+|---|---|
+| **Pipeline label** | A board label that marks which stage a ticket is at in Clancy's pipeline. Tickets move through stages as they are briefed, planned, and built. Only one pipeline label is present on a ticket at a time (steady state). |
+| **`clancy:brief`** | Default pipeline label for tickets that have been briefed but not yet approved. Applied by `/clancy:brief`, removed by `/clancy:approve-brief`. Customisable via `CLANCY_LABEL_BRIEF`. |
+| **`clancy:plan`** | Default pipeline label for tickets that need planning. Applied by `/clancy:approve-brief` (when planner is enabled), removed by `/clancy:approve-plan`. Customisable via `CLANCY_LABEL_PLAN`. Falls back to `CLANCY_PLAN_LABEL` for backward compatibility. |
+| **`clancy:build`** | Default pipeline label for tickets ready for implementation. Applied by `/clancy:approve-plan` (or `/clancy:approve-brief --skip-plan`), used by `/clancy:once` and `/clancy:run` to filter the queue. Customisable via `CLANCY_LABEL_BUILD`. Falls back to `CLANCY_LABEL` for backward compatibility. |
+| **`--skip-plan`** | Flag for `/clancy:approve-brief` that applies `CLANCY_LABEL_BUILD` directly instead of `CLANCY_LABEL_PLAN`, skipping the planning queue for tickets that are clear enough from the brief. |
+| **Label crash safety** | Labels are transitioned add-before-remove: the new label is added first, then the old one removed. A ticket briefly has two labels (harmless) rather than zero (invisible to all queues). |
+
 ## Planner
 
 | Term | Definition |

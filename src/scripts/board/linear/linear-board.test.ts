@@ -15,6 +15,7 @@ vi.mock('./linear.js', () => ({
     Promise.resolve({ total: 4, incomplete: 2 }),
   ),
   transitionIssue: vi.fn(() => Promise.resolve(true)),
+  linearGraphql: vi.fn(() => Promise.resolve(undefined)),
 }));
 
 const baseEnv: LinearEnv = {
@@ -25,6 +26,7 @@ const baseEnv: LinearEnv = {
 describe('linear-board', () => {
   afterEach(() => {
     vi.restoreAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('createLinearBoard', () => {
@@ -266,6 +268,242 @@ describe('linear-board', () => {
 
       const result = await board.transitionTicket(ticket, 'In Progress');
       expect(result).toBe(false);
+    });
+  });
+
+  describe('ensureLabel', () => {
+    it('caches label ID from team labels', async () => {
+      const { linearGraphql } = await import('./linear.js');
+      vi.mocked(linearGraphql).mockResolvedValueOnce({
+        data: {
+          team: {
+            labels: { nodes: [{ id: 'label-uuid', name: 'clancy:build' }] },
+          },
+        },
+      });
+
+      const board = createLinearBoard(baseEnv);
+      await board.ensureLabel('clancy:build');
+
+      expect(linearGraphql).toHaveBeenCalledTimes(1);
+
+      // Second call should use cache — no additional GraphQL call
+      await board.ensureLabel('clancy:build');
+      expect(linearGraphql).toHaveBeenCalledTimes(1);
+    });
+
+    it('falls back to workspace labels when not found on team', async () => {
+      const { linearGraphql } = await import('./linear.js');
+      vi.mocked(linearGraphql)
+        .mockResolvedValueOnce({
+          data: { team: { labels: { nodes: [] } } },
+        })
+        .mockResolvedValueOnce({
+          data: {
+            issueLabels: {
+              nodes: [{ id: 'ws-label-uuid', name: 'clancy:build' }],
+            },
+          },
+        });
+
+      const board = createLinearBoard(baseEnv);
+      await board.ensureLabel('clancy:build');
+
+      expect(linearGraphql).toHaveBeenCalledTimes(2);
+    });
+
+    it('creates label when not found anywhere', async () => {
+      const { linearGraphql } = await import('./linear.js');
+      vi.mocked(linearGraphql)
+        .mockResolvedValueOnce({
+          data: { team: { labels: { nodes: [] } } },
+        })
+        .mockResolvedValueOnce({
+          data: { issueLabels: { nodes: [] } },
+        })
+        .mockResolvedValueOnce({
+          data: {
+            issueLabelCreate: {
+              issueLabel: { id: 'new-label-uuid' },
+              success: true,
+            },
+          },
+        });
+
+      const board = createLinearBoard(baseEnv);
+      await board.ensureLabel('clancy:build');
+
+      expect(linearGraphql).toHaveBeenCalledTimes(3);
+    });
+
+    it('does not throw on API failure', async () => {
+      const { linearGraphql } = await import('./linear.js');
+      vi.mocked(linearGraphql).mockRejectedValueOnce(new Error('network'));
+
+      const board = createLinearBoard(baseEnv);
+      await expect(board.ensureLabel('clancy:build')).resolves.toBeUndefined();
+    });
+  });
+
+  describe('addLabel', () => {
+    it('calls ensureLabel then updates issue labels', async () => {
+      const { linearGraphql } = await import('./linear.js');
+      vi.mocked(linearGraphql)
+        // ensureLabel: team labels
+        .mockResolvedValueOnce({
+          data: {
+            team: {
+              labels: {
+                nodes: [{ id: 'label-uuid', name: 'clancy:build' }],
+              },
+            },
+          },
+        })
+        // addLabel: issueSearch
+        .mockResolvedValueOnce({
+          data: {
+            issueSearch: {
+              nodes: [
+                {
+                  id: 'issue-uuid',
+                  labels: { nodes: [{ id: 'existing-label' }] },
+                },
+              ],
+            },
+          },
+        })
+        // addLabel: issueUpdate
+        .mockResolvedValueOnce({
+          data: { issueUpdate: { success: true } },
+        });
+
+      const board = createLinearBoard(baseEnv);
+      await board.addLabel('ENG-42', 'clancy:build');
+
+      expect(linearGraphql).toHaveBeenCalledTimes(3);
+      // Verify the issueUpdate call includes both existing and new label
+      const updateCall = vi.mocked(linearGraphql).mock.calls[2];
+      expect(updateCall[2]).toEqual({
+        issueId: 'issue-uuid',
+        labelIds: ['existing-label', 'label-uuid'],
+      });
+    });
+
+    it('skips update when label already on issue', async () => {
+      const { linearGraphql } = await import('./linear.js');
+      vi.mocked(linearGraphql)
+        // ensureLabel: team labels
+        .mockResolvedValueOnce({
+          data: {
+            team: {
+              labels: {
+                nodes: [{ id: 'label-uuid', name: 'clancy:build' }],
+              },
+            },
+          },
+        })
+        // addLabel: issueSearch — label already present
+        .mockResolvedValueOnce({
+          data: {
+            issueSearch: {
+              nodes: [
+                {
+                  id: 'issue-uuid',
+                  labels: { nodes: [{ id: 'label-uuid' }] },
+                },
+              ],
+            },
+          },
+        });
+
+      const board = createLinearBoard(baseEnv);
+      await board.addLabel('ENG-42', 'clancy:build');
+
+      // Should NOT call issueUpdate
+      expect(linearGraphql).toHaveBeenCalledTimes(2);
+    });
+
+    it('does not throw on API failure', async () => {
+      const { linearGraphql } = await import('./linear.js');
+      vi.mocked(linearGraphql).mockRejectedValueOnce(new Error('network'));
+
+      const board = createLinearBoard(baseEnv);
+      await expect(
+        board.addLabel('ENG-42', 'clancy:build'),
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe('removeLabel', () => {
+    it('fetches issue labels and updates with label removed', async () => {
+      const { linearGraphql } = await import('./linear.js');
+      vi.mocked(linearGraphql)
+        // removeLabel: issueSearch
+        .mockResolvedValueOnce({
+          data: {
+            issueSearch: {
+              nodes: [
+                {
+                  id: 'issue-uuid',
+                  labels: {
+                    nodes: [
+                      { id: 'label-uuid', name: 'clancy:build' },
+                      { id: 'other-uuid', name: 'other' },
+                    ],
+                  },
+                },
+              ],
+            },
+          },
+        })
+        // removeLabel: issueUpdate
+        .mockResolvedValueOnce({
+          data: { issueUpdate: { success: true } },
+        });
+
+      const board = createLinearBoard(baseEnv);
+      await board.removeLabel('ENG-42', 'clancy:build');
+
+      expect(linearGraphql).toHaveBeenCalledTimes(2);
+      const updateCall = vi.mocked(linearGraphql).mock.calls[1];
+      expect(updateCall[2]).toEqual({
+        issueId: 'issue-uuid',
+        labelIds: ['other-uuid'],
+      });
+    });
+
+    it('skips update when label not on issue', async () => {
+      const { linearGraphql } = await import('./linear.js');
+      vi.mocked(linearGraphql).mockResolvedValueOnce({
+        data: {
+          issueSearch: {
+            nodes: [
+              {
+                id: 'issue-uuid',
+                labels: {
+                  nodes: [{ id: 'other-uuid', name: 'other' }],
+                },
+              },
+            ],
+          },
+        },
+      });
+
+      const board = createLinearBoard(baseEnv);
+      await board.removeLabel('ENG-42', 'clancy:build');
+
+      // Should NOT call issueUpdate
+      expect(linearGraphql).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not throw on API failure', async () => {
+      const { linearGraphql } = await import('./linear.js');
+      vi.mocked(linearGraphql).mockRejectedValueOnce(new Error('network'));
+
+      const board = createLinearBoard(baseEnv);
+      await expect(
+        board.removeLabel('ENG-42', 'clancy:build'),
+      ).resolves.toBeUndefined();
     });
   });
 
