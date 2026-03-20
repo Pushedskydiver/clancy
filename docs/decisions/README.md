@@ -39,7 +39,7 @@ docs/decisions/v0.8.0/
 
 | Directory | Feature | Version |
 |---|---|---|
-| `v0.9.0/` | Design sub-phase in planner, Google Stitch integration, Playwright/axe-core/Lighthouse verification | v0.9.0 |
+| `v0.9.0/` | Design sub-phase in planner, Google Stitch integration, Playwright/axe-core/Lighthouse verification. Has `brief.md` + `design.md`. | v0.9.0 |
 
 ## What does NOT belong here
 
