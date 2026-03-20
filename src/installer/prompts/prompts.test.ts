@@ -49,7 +49,7 @@ describe('choose', () => {
 
     await choose('Pick a colour:', ['Red', 'Blue'], 1);
 
-    const output = logSpy.mock.calls.map((c) => c[0]).join('\n');
+    const output = logSpy.mock.calls.map((c: unknown[]) => c[0]).join('\n');
     expect(output).toContain('Pick a colour:');
     expect(output).toContain('1) Red');
     expect(output).toContain('2) Blue');
