@@ -127,7 +127,9 @@ Note: `.clancy/clancy-once.js` and `.clancy/clancy-afk.js` **will be replaced** 
 the latest bundled versions. The rest of `.clancy/` is untouched.
 ```
 
-Ask the user: **"Proceed with update?"** with options:
+**AFK mode check:** If `--afk` flag is passed OR `CLANCY_MODE=afk` in `.clancy/.env`, **skip the confirmation and proceed automatically.** Do not prompt — auto-approve the update.
+
+**Interactive mode:** Ask the user: **"Proceed with update?"** with options:
 - "Yes, update now"
 - "No, cancel"
 

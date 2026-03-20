@@ -13,6 +13,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 - **PR retry phase** — new phase 2a in the orchestrator retries PR creation for tickets that were pushed but failed to create a PR (network hiccup recovery). Scans progress.txt for `PUSHED` entries without a corresponding `PR_CREATED` and retries the API call.
 - **Single-child parent auto-close** — when a single child ticket's PR targets `main` directly (single-child skip), the PR body now includes `Closes #{parent}` so the parent issue is also auto-closed on merge.
+- **`--afk` flag on `/clancy:update`** — skips the confirmation prompt for autonomous setups. Respects `CLANCY_MODE=afk` as fallback.
 
 ### Tests
 
