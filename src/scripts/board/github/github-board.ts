@@ -5,8 +5,8 @@
  * existing GitHub board functions.
  */
 import type { GitHubEnv } from '~/schemas/env.js';
-import type { FetchedTicket } from '~/scripts/once/types/types.js';
 import { GITHUB_API, githubHeaders } from '~/scripts/shared/http/http.js';
+import type { FetchedTicket } from '~/types/board.js';
 
 import type { Board, FetchTicketOpts } from '../board.js';
 import {

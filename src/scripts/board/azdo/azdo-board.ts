@@ -5,7 +5,7 @@
  * existing Azure DevOps board functions.
  */
 import type { AzdoEnv } from '~/schemas/env.js';
-import type { FetchedTicket } from '~/scripts/once/types/types.js';
+import type { FetchedTicket } from '~/types/board.js';
 
 import type { Board, FetchTicketOpts } from '../board.js';
 import {

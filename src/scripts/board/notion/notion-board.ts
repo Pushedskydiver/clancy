@@ -10,7 +10,7 @@
  */
 import type { NotionEnv } from '~/schemas/env.js';
 import type { NotionPage } from '~/schemas/notion.js';
-import type { FetchedTicket } from '~/scripts/once/types/types.js';
+import type { FetchedTicket } from '~/types/board.js';
 
 import type { Board, FetchTicketOpts } from '../board.js';
 import {

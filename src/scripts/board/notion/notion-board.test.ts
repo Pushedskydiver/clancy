@@ -1,7 +1,7 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import type { NotionEnv } from '~/schemas/env.js';
-import type { FetchedTicket } from '~/scripts/once/types/types.js';
+import type { FetchedTicket } from '~/types/board.js';
 
 import { createNotionBoard } from './notion-board.js';
 

@@ -27,10 +27,10 @@ import {
   buildApiBaseUrl,
   detectRemote,
 } from '~/scripts/shared/remote/remote.js';
+import type { FetchedTicket } from '~/types/board.js';
 import { dim } from '~/utils/ansi/ansi.js';
 
 import { resolveGitToken } from '../git-token/git-token.js';
-import type { FetchedTicket } from '../types/types.js';
 
 // ─── PR-based rework detection ────────────────────────────────────────────────
 

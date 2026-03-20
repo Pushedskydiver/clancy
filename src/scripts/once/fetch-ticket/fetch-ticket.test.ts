@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 import type { Board } from '~/scripts/board/board.js';
-import type { FetchedTicket } from '~/scripts/once/types/types.js';
+import type { FetchedTicket } from '~/types/board.js';
 
 import {
   fetchTicket,

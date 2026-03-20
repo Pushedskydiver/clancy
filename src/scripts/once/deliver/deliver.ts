@@ -22,13 +22,13 @@ import {
   buildPrBody,
 } from '~/scripts/shared/pull-request/pr-body/pr-body.js';
 import { detectRemote } from '~/scripts/shared/remote/remote.js';
+import type { FetchedTicket } from '~/types/board.js';
 import { dim, green, red, yellow } from '~/utils/ansi/ansi.js';
 
 import {
   attemptPrCreation,
   buildManualPrUrl,
 } from '../pr-creation/pr-creation.js';
-import type { FetchedTicket } from '../types/types.js';
 
 /**
  * Ensure the epic branch exists locally and on the remote.

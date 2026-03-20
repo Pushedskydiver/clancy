@@ -1,6 +1,5 @@
 import type { Board } from '~/scripts/board/board.js';
-
-import type { FetchedTicket } from '../types/types.js';
+import type { FetchedTicket } from '~/types/board.js';
 
 /** Options for ticket fetching behaviour. */
 export type FetchTicketOptions = {

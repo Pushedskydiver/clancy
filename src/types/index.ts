@@ -1,4 +1,4 @@
-export type { BoardProvider, Ticket } from './board.js';
+export type { BoardProvider, FetchedTicket, Ticket } from './board.js';
 export type {
   GitPlatform,
   PrCreationResult,
