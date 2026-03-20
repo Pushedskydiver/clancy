@@ -74,7 +74,7 @@ export async function retryFetch(
   init?: RequestInit,
   opts?: RetryOptions,
 ): Promise<Response> {
-  const maxRetries = opts?.maxRetries ?? 3;
+  const maxRetries = Math.max(0, opts?.maxRetries ?? 3);
   const baseDelayMs = opts?.baseDelayMs ?? 1000;
   const maxDelayMs = opts?.maxDelayMs ?? 10_000;
 
