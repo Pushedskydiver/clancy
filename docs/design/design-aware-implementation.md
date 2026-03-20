@@ -154,22 +154,49 @@ The design preview is posted as a ticket comment with the marker heading `## Cla
 When `/clancy:plan` is run after a design preview has been posted:
 
 1. Clancy detects post-design-preview comments on the ticket (comments with timestamps after the most recent `## Clancy Design Preview` comment)
-2. Each comment is classified as design feedback, technical feedback, or general
-3. Design feedback revises `## Design Specifications` in the plan
-4. Technical feedback revises `## Technical Approach` in the plan
-5. General feedback revises both sections
-6. If design specs changed and `CLANCY_STITCH=true`, a new Stitch preview is generated and posted
+2. Each comment is classified into one of three paths:
+
+```
+Comment classified
+       |
+  +----+----+----+
+  |         |    |
+  Visual    Tech  Both
+  only      only
+  |         |    |
+  v         v    v
+Regenerate Revise  Revise specs
+Stitch     plan    + regenerate
+only       specs   Stitch
+           only
+```
+
+3. **Visual-only feedback** → regenerate Stitch design only. Do NOT revise `## Design Specifications`. The text specs are unchanged — only the visual output needs updating. Examples: "make the sidebar wider", "change the primary colour to blue", "use more whitespace", "the font is too small".
+4. **Technical feedback** → revise `## Technical Approach` in the plan only. Do NOT regenerate Stitch. Examples: "use server components instead", "this should be a REST endpoint not GraphQL", "add pagination".
+5. **Spec-affecting design feedback** → revise `## Design Specifications` AND regenerate Stitch. This applies when design feedback implies a functional change (new components, new props, new states). Examples: "add a close button to the modal" (new prop), "the form needs a password strength indicator" (new component), "add an error state for network failures" (new state).
+6. **General/unclear** → revise both sections and regenerate Stitch. Safety fallback — no feedback is lost.
 
 ### Smart Feedback Classification
 
-Classification uses natural language understanding — Claude reads the comment and decides which category it belongs to. Not keyword matching.
+Classification uses natural language understanding — Claude reads the comment and decides which path it belongs to. Not keyword matching.
 
-**Guidance signals (not rigid rules):**
-- **Design feedback** — mentions visual, layout, colour, spacing, font, icon, alignment, responsive, mobile, accessibility, screen reader, keyboard, contrast, copy, text, wording, label, error message, empty state
-- **Technical feedback** — mentions code, implementation, architecture, API, database, performance, testing, refactoring
-- **General/both** — does not clearly fit one category, or spans both (e.g., "The form should use a different layout AND call the new auth API")
+**The key distinction: does the feedback change functionality or just appearance?**
 
-The "general" fallback ensures no feedback is lost. If classification is uncertain, both sections are revised.
+| Feedback | Affects specs? | Regenerate Stitch? | Path |
+|---|---|---|---|
+| "Make the sidebar wider" | No | Yes | Visual only |
+| "Change the primary colour" | No | Yes | Visual only |
+| "Use more whitespace" | No | Yes | Visual only |
+| "Add a close button" | Yes (new prop) | Yes | Spec-affecting |
+| "Add a loading spinner" | Yes (new state) | Yes | Spec-affecting |
+| "The form needs validation" | Yes (new behaviour) | Yes | Spec-affecting |
+| "Use server components" | Yes | No | Technical |
+| "Add rate limiting" | Yes | No | Technical |
+| "Wrong layout AND wrong API" | Yes | Yes | Both |
+
+The "general" fallback ensures no feedback is lost. If classification is uncertain, both sections are revised and Stitch regenerates.
+
+**Important:** When ONLY the Stitch design is regenerated (visual-only path), the brief and plan are NOT re-run. Only the Stitch MCP tool is invoked with the updated visual instructions. This avoids wasting tokens on re-planning when the specs haven't changed.
 
 ### AFK Mode Behaviour
 
