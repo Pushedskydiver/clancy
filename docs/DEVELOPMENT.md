@@ -8,30 +8,47 @@ How Clancy itself is developed. Covers the version lifecycle, review process, an
 
 Each version follows a formal lifecycle with approval gates and devil's advocate reviews:
 
+### Document status header
+
+Every brief, design doc, and execution plan must include a status header:
+
+```markdown
+**Status:** Draft | DA reviewed — awaiting user approval | Approved | Shipped (decisions only)
+**Date:** YYYY-MM-DD
+```
+
+Update the status at each transition. This makes it clear where each doc is in the lifecycle.
+
 ### 1. Brief — What are we building and why?
 
 - Read the roadmap for this version
 - Create `docs/decisions/v{X}/brief.md` (problem, goals, non-goals, scope, ticket decomposition)
+- Set status: `Draft`
 - Spin up a DA agent to review the brief
 - **Address all DA findings and update the brief BEFORE presenting to the user**
-- User reviews + leaves feedback → re-brief if needed
-- User approves the brief
+- Update status: `DA reviewed — awaiting user approval`
+- User reviews + leaves feedback → re-brief if needed (status stays `DA reviewed`)
+- User approves → update status: `Approved`
 
 ### 2. Design — How does it work?
 
 - Create `docs/decisions/v{X}/design.md` from the brief
+- Set status: `Draft`
 - Spin up a DA agent to review the design doc
 - **Address all DA findings and update the design doc BEFORE presenting to the user**
+- Update status: `DA reviewed — awaiting user approval`
 - User reviews + leaves feedback → revise if needed
-- User approves the design
+- User approves → update status: `Approved`
 
 ### 3. Plan — How do we build it?
 
 - Create `docs/decisions/v{X}/execution-plan.md` (waves, agents, file lists, review gates)
+- Set status: `Draft`
 - Spin up a DA agent to review the execution plan
 - **Address all DA findings and update the execution plan BEFORE presenting to the user**
+- Update status: `DA reviewed — awaiting user approval`
 - User reviews + leaves feedback → revise if needed
-- User approves the plan
+- User approves → update status: `Approved`
 
 ### 4. Build — Execute the plan
 
