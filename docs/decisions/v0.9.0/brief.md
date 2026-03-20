@@ -1,6 +1,6 @@
 # v0.9.0 Brief — Design-Aware Implementation
 
-**Status:** Draft (DA reviewed — awaiting user approval)
+**Status:** DA reviewed — awaiting user approval
 **Date:** 2026-03-20
 
 ---
