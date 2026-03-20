@@ -656,6 +656,16 @@ MAX_ITERATIONS=20
 # CLANCY_GIT_PLATFORM=gitlab               # override auto-detection (github/gitlab/bitbucket)
 # CLANCY_GIT_API_URL=https://gitlab.example.com/api/v4  # self-hosted git API base URL
 
+# ─── Optional: Pipeline labels ────────────────────────────────────────────────
+# Labels that control ticket flow through pipeline stages.
+# CLANCY_LABEL_BRIEF marks tickets that have been briefed (awaiting approval).
+# CLANCY_LABEL_PLAN marks tickets that need planning.
+# CLANCY_LABEL_BUILD marks tickets ready for implementation.
+# Deprecated: CLANCY_LABEL (use CLANCY_LABEL_BUILD), CLANCY_PLAN_LABEL (use CLANCY_LABEL_PLAN)
+# CLANCY_LABEL_BRIEF="clancy:brief"
+# CLANCY_LABEL_PLAN="clancy:plan"
+# CLANCY_LABEL_BUILD="clancy:build"
+
 # ─── Optional: Reliable autonomous mode ───────────────────────────────────────
 # Max self-healing attempts after verification failure (default: 2, range 0-5)
 # CLANCY_FIX_RETRIES=2
