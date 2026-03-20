@@ -82,6 +82,7 @@ export function createAzdoBoard(env: AzdoEnv): Board {
           blockers: 'None',
           issueId: String(ticket.workItemId),
           labels: ticket.labels ?? [],
+          status: status,
         }),
       );
     },

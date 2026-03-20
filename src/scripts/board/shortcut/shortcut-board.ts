@@ -69,6 +69,7 @@ export function createShortcutBoard(env: ShortcutEnv): Board {
           blockers: 'None',
           issueId: String(ticket.storyId),
           labels: ticket.labels ?? [],
+          status: 'unstarted',
         }),
       );
     },

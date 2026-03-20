@@ -71,6 +71,7 @@ export function createLinearBoard(env: LinearEnv): Board {
           linearIssueId: ticket.issueId,
           issueId: ticket.issueId,
           labels: ticket.labels ?? [],
+          status: 'unstarted',
         }),
       );
     },

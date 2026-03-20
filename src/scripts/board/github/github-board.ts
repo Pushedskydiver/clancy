@@ -60,6 +60,7 @@ export function createGitHubBoard(env: GitHubEnv): Board {
           parentInfo: ticket.milestone ?? 'none',
           blockers: 'None',
           labels: ticket.labels ?? [],
+          status: 'open',
         }),
       );
     },

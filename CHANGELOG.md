@@ -7,6 +7,30 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.8.0] — 2026-03-20
+
+### Added
+
+- **Desktop notification hook** (`clancy-notification.js`) — native OS desktop notifications on Notification events. Supports macOS (osascript), Linux (notify-send), Windows (PowerShell). Falls back to console.log on unsupported platforms. Controllable via `CLANCY_DESKTOP_NOTIFY=false`.
+- **Drift detector hook** (`clancy-drift-detector.js`) — PostToolUse hook (debounced, once per session) that compares `.clancy/version.json` against the installed package version. Warns when Clancy runtime files are outdated.
+- **Quiet hours** — AFK runner pauses during `CLANCY_QUIET_START`–`CLANCY_QUIET_END` (24h format). Handles overnight windows (e.g. 22:00–06:00). Sleeps until the end of the quiet window, then resumes.
+- **Version tracking** — installer writes `.clancy/version.json` on install/update for drift detection.
+- **Board ecosystem** — setup workflows now support 6 boards: Jira, GitHub Issues, Linear, Shortcut, Notion, Azure DevOps. Init wizard includes auto-detection, credential collection, and `.env.example` templates for all new boards.
+- **New env vars:** `CLANCY_QUIET_START`, `CLANCY_QUIET_END`, `CLANCY_DESKTOP_NOTIFY`, `SHORTCUT_API_TOKEN`, `SHORTCUT_WORKFLOW`, `CLANCY_SC_STATUS`, `NOTION_TOKEN`, `NOTION_DATABASE_ID`, `NOTION_STATUS_PROP`, `NOTION_ASSIGNEE_PROP`, `AZDO_ORG`, `AZDO_PROJECT`, `AZDO_PAT`.
+- **Settings menu** — `[G10]` Quiet hours, `[G11]` Desktop notifications, board switch support for Shortcut/Notion/Azure DevOps.
+
+### Changed
+
+- **Hook count** — 6 → 8 hooks (+ notification, drift detector).
+- **Board count** — 3 → 6 boards supported in setup workflows.
+- **Init wizard** — board selection expanded to 7 options (6 boards + "not listed"), auto-detection hint for existing env vars.
+
+### Tests
+
+- 896 → 1185 (289 new tests across all waves — board modules, hooks, quiet hours, pipeline labels)
+
+---
+
 ## [0.7.4] — 2026-03-20
 
 ### Added

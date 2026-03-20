@@ -20,14 +20,14 @@ Autonomous, board-driven development for Claude Code. npm package: `chief-clancy
 | `src/scripts/shared/pull-request/` | PR creation + rework comment detection (github, gitlab, bitbucket, post-pr, pr-body, rework-comment) |
 | `src/scripts/shared/remote/` | Remote git host detection (parseRemote, detectRemote, buildApiBaseUrl) |
 | `src/scripts/shared/format/` | Shared formatters (formatDuration) |
-| `src/scripts/board/` | Board-specific modules (jira, github, linear) |
+| `src/scripts/board/` | Board-specific modules (jira, github, linear, shortcut, notion, azure-devops) |
 | `src/schemas/` | Zod schemas for API responses and env validation |
 | `src/types/` | Shared TypeScript types (board, remote, index) |
 | `src/templates/CLAUDE.md` | CLAUDE.md template injected into user projects |
 | `src/agents/` | 7 agent prompts — 5 specialists for `/clancy:map-codebase` + devil's advocate for `/clancy:brief` + verification gate |
 | `src/agents/devils-advocate.md` | Devil's advocate agent prompt for AI-grill mode in `/clancy:brief` |
 | `src/agents/verification-gate.md` | Verification gate agent — interprets lint/test/type errors, applies targeted fixes |
-| `hooks/` | 6 Node.js hooks + 1 agent hook (credential guard, branch guard, context monitor, statusline, update check, post-compact, verification gate) |
+| `hooks/` | 8 Node.js hooks + 1 agent hook (credential guard, branch guard, context monitor, statusline, update check, post-compact, notification, drift detector, verification gate) |
 | `registry/boards.json` | Board registry for community board integrations |
 
 ## Key documentation
@@ -131,3 +131,8 @@ Spin up a review agent at every necessary phase — not just after code. Review 
 - Pipeline labels: 3 labels (`CLANCY_LABEL_BRIEF`, `CLANCY_LABEL_PLAN`, `CLANCY_LABEL_BUILD`) control ticket flow through stages. `CLANCY_LABEL` and `CLANCY_PLAN_LABEL` are deprecated but work as fallbacks. Transitions use add-before-remove for crash safety
 - Board label methods: `ensureLabel` (create-if-missing), `addLabel` (add to issue, calls ensureLabel internally), `removeLabel` (best-effort removal) on the Board type
 - `--skip-plan` flag on `/clancy:approve-brief` applies `CLANCY_LABEL_BUILD` directly, skipping the planning queue
+- Quiet hours: `CLANCY_QUIET_START` and `CLANCY_QUIET_END` (HH:MM 24h format) pause AFK runs during the configured window. Handles overnight windows. Check runs before each iteration in the AFK loop
+- Desktop notifications: `CLANCY_DESKTOP_NOTIFY` enables/disables native OS desktop notifications via the notification hook (macOS osascript, Linux notify-send, Windows PowerShell)
+- Drift detector: PostToolUse hook compares `.clancy/version.json` against installed package VERSION file. Warns once per session when versions differ
+- Version tracking: installer writes `.clancy/version.json` on install/update containing `{ version, installedAt }`
+- Setup workflows support 6 boards: Jira, GitHub Issues, Linear, Shortcut, Notion, Azure DevOps

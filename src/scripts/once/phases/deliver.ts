@@ -10,6 +10,7 @@ import { appendProgress } from '~/scripts/shared/progress/progress.js';
 
 import type { RunContext } from '../context/context.js';
 import { deliverViaPullRequest } from '../deliver/deliver.js';
+import { recordDelivery, recordRework } from '../quality/quality.js';
 import { postReworkActions } from '../rework/rework.js';
 
 export async function deliver(ctx: RunContext): Promise<boolean> {
@@ -58,6 +59,9 @@ export async function deliver(ctx: RunContext): Promise<boolean> {
       parentKey,
     );
 
+    // Quality tracking (best-effort)
+    recordRework(ctx.cwd, ticket.key);
+
     // Post-rework actions (all best-effort)
     if (ctx.reworkPrNumber != null) {
       await postReworkActions(
@@ -81,6 +85,9 @@ export async function deliver(ctx: RunContext): Promise<boolean> {
       ctx.board,
     );
     if (!delivered) return false;
+
+    // Quality tracking (best-effort)
+    recordDelivery(ctx.cwd, ticket.key, Date.now() - ctx.startTime);
   }
 
   return true;

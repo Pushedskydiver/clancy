@@ -10,7 +10,9 @@ Display the following:
 
 Named after Chief Clancy Wiggum (Ralph's dad, The Simpsons). Built on the Ralph technique
 coined by Geoffrey Huntley (ghuntley.com/ralph/). Clancy extends that foundation with board
-integration, structured codebase docs, and a git workflow built for team development.
+integration (6 boards), structured codebase docs, and a git workflow built for team development.
+
+**Supported boards:** Jira, GitHub Issues, Linear, Shortcut, Notion, Azure DevOps
 
 ### Planner *(optional — enable via `CLANCY_ROLES=planner` in `.clancy/.env`)*
 

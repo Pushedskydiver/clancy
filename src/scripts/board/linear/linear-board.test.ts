@@ -102,6 +102,7 @@ describe('linear-board', () => {
           linearIssueId: 'uuid-1',
           issueId: 'uuid-1',
           labels: [],
+          status: 'unstarted',
         },
       ]);
     });

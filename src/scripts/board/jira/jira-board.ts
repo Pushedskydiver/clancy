@@ -65,6 +65,8 @@ export function createJiraBoard(env: JiraEnv): Board {
         opts.excludeHitl,
       );
 
+      const statusName = env.CLANCY_JQL_STATUS ?? 'To Do';
+
       return tickets.map((ticket): FetchedTicket => {
         const blockerStr = ticket.blockers.length
           ? `Blocked by: ${ticket.blockers.join(', ')}`
@@ -77,6 +79,7 @@ export function createJiraBoard(env: JiraEnv): Board {
           parentInfo: ticket.epicKey ?? 'none',
           blockers: blockerStr,
           labels: ticket.labels ?? [],
+          status: statusName,
         };
       });
     },

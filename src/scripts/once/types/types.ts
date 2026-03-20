@@ -11,4 +11,6 @@ export type FetchedTicket = {
   issueId?: string;
   /** Label names present on the ticket — used for pipeline label guard. */
   labels?: string[];
+  /** Board status at fetch time — used for claim detection (e.g., "To Do", "unstarted"). */
+  status?: string;
 };

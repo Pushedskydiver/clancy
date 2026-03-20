@@ -75,7 +75,9 @@ clancy/
 │   ├── clancy-statusline.js        — Statusline: context bar + update notice
 │   ├── clancy-check-update.js      — SessionStart: background version check
 │   ├── clancy-branch-guard.js      — PreToolUse: blocks force push, protected branches, destructive resets
-│   └── clancy-post-compact.js      — PostCompact: re-injects ticket context after context compaction
+│   ├── clancy-post-compact.js      — PostCompact: re-injects ticket context after context compaction
+│   ├── clancy-notification.js      — Notification: native OS desktop notifications
+│   └── clancy-drift-detector.js    — PostToolUse: warns when runtime files are outdated (debounced)
 ├── registry/
 │   └── boards.json             — board definitions for community extensions
 └── docs/                       — project documentation (this directory)

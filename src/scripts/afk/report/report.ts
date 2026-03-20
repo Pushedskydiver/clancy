@@ -7,6 +7,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
+import { getQualityData } from '~/scripts/once/quality/quality.js';
 import { formatDuration } from '~/scripts/shared/format/format.js';
 import {
   type ProgressEntry,
@@ -228,6 +229,26 @@ export function generateSessionReport(
     for (const key of skippedKeys) {
       lines.push(`- ${key} needs manual intervention`);
     }
+  }
+
+  // Quality metrics (best-effort)
+  try {
+    const quality = getQualityData(projectRoot);
+    if (quality) {
+      lines.push('');
+      lines.push('## Quality Metrics');
+      lines.push(`- Avg rework cycles: ${quality.summary.avgReworkCycles}`);
+      lines.push(
+        `- Avg verification retries: ${quality.summary.avgVerificationRetries}`,
+      );
+      if (quality.summary.avgDuration > 0) {
+        lines.push(
+          `- Avg delivery time: ${formatDuration(quality.summary.avgDuration)}`,
+        );
+      }
+    }
+  } catch {
+    // Best-effort — skip quality section if data is unavailable
   }
 
   lines.push('');

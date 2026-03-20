@@ -29,8 +29,8 @@ export type {
 /**
  * Detect which board is configured from raw env vars and return a typed config.
  *
- * Detection priority: Jira → GitHub → Linear (checked by presence of
- * board-specific required keys). Returns the first match.
+ * Detection priority: Jira → GitHub → Linear → Shortcut → Notion → Azure DevOps
+ * (checked by presence of board-specific required keys). Returns the first match.
  *
  * @param raw - The raw key-value record from `.clancy/.env`.
  * @returns A typed `BoardConfig` or an error string if no board is detected

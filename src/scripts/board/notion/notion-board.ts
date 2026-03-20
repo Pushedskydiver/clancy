@@ -277,6 +277,7 @@ function pageToFetchedTicket(
     blockers: 'None',
     issueId: page.id,
     labels,
+    status: 'To-do',
   };
 }
 

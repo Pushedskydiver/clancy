@@ -99,6 +99,7 @@ describe('shortcut-board', () => {
           blockers: 'None',
           issueId: '42',
           labels: ['backend'],
+          status: 'unstarted',
         },
       ]);
     });

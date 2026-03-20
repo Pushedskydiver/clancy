@@ -72,7 +72,12 @@ export async function fetchTicket(
     }
 
     const blocked = await board.fetchBlockerStatus(candidate);
-    if (!blocked) return candidate;
+    if (!blocked) {
+      console.log(
+        `Selected ${candidate.key}${candidate.status ? ` (status: ${candidate.status})` : ''}`,
+      );
+      return candidate;
+    }
     console.log(`Skipping ${candidate.key} — blocked`);
   }
 

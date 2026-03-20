@@ -13,9 +13,70 @@ import { fileURLToPath } from 'node:url';
 
 import { formatDuration } from '~/scripts/shared/format/format.js';
 import { sendNotification } from '~/scripts/shared/notify/notify.js';
-import { bold, dim, green, red } from '~/utils/ansi/ansi.js';
+import { bold, dim, green, red, yellow } from '~/utils/ansi/ansi.js';
 
 import { generateSessionReport } from './report/report.js';
+
+/**
+ * Parse a time string in HH:MM format to { hours, minutes }.
+ * Returns null if the format is invalid.
+ */
+export function parseTime(
+  value: string,
+): { hours: number; minutes: number } | null {
+  const match = value.trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (!match) return null;
+  const hours = parseInt(match[1], 10);
+  const minutes = parseInt(match[2], 10);
+  if (hours < 0 || hours > 23 || minutes < 0 || minutes > 59) return null;
+  return { hours, minutes };
+}
+
+/**
+ * Check if the current time falls within the quiet hours window.
+ * Returns the number of milliseconds to sleep, or 0 if not in quiet hours.
+ *
+ * Handles overnight windows (e.g. 22:00-06:00).
+ *
+ * @param startStr - Start time in HH:MM format (e.g. "22:00")
+ * @param endStr - End time in HH:MM format (e.g. "06:00")
+ * @param now - Current date (default: new Date())
+ */
+export function getQuietSleepMs(
+  startStr: string,
+  endStr: string,
+  now: Date = new Date(),
+): number {
+  const start = parseTime(startStr);
+  const end = parseTime(endStr);
+
+  if (!start || !end) return 0;
+
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+  const startMin = start.hours * 60 + start.minutes;
+  const endMin = end.hours * 60 + end.minutes;
+
+  let inQuiet = false;
+
+  if (startMin < endMin) {
+    // Same-day window (e.g. 09:00–17:00)
+    inQuiet = nowMin >= startMin && nowMin < endMin;
+  } else if (startMin > endMin) {
+    // Overnight window (e.g. 22:00–06:00)
+    inQuiet = nowMin >= startMin || nowMin < endMin;
+  }
+  // startMin === endMin → 24h quiet (nonsensical), skip
+
+  if (!inQuiet) return 0;
+
+  // Calculate ms until end of quiet window
+  let minutesUntilEnd = endMin - nowMin;
+  if (minutesUntilEnd <= 0) minutesUntilEnd += 24 * 60;
+
+  // Subtract seconds already past the current minute
+  const secondsIntoMinute = now.getSeconds();
+  return Math.max(0, minutesUntilEnd * 60000 - secondsIntoMinute * 1000);
+}
 
 /** Stop condition patterns matched against script output. */
 const STOP_PATTERNS = {
@@ -92,6 +153,31 @@ export async function runAfkLoop(
   const loopStart = Date.now();
 
   for (let i = 1; i <= maxIterations; i++) {
+    // ── Quiet hours check ────────────────────────────────────────
+    const quietStart = process.env.CLANCY_QUIET_START;
+    const quietEnd = process.env.CLANCY_QUIET_END;
+
+    if (quietStart && quietEnd) {
+      const sleepMs = getQuietSleepMs(quietStart, quietEnd);
+      if (sleepMs > 0) {
+        const sleepMin = Math.ceil(sleepMs / 60000);
+        console.log('');
+        console.log(
+          yellow(
+            `⏸ Quiet hours active (${quietStart}–${quietEnd}). Sleeping ${sleepMin} minutes until ${quietEnd}.`,
+          ),
+        );
+        await sleep(sleepMs);
+        console.log(dim('  Quiet hours ended. Resuming.'));
+      }
+    } else if ((quietStart && !quietEnd) || (!quietStart && quietEnd)) {
+      console.log(
+        dim(
+          '  ⚠ Only one of CLANCY_QUIET_START / CLANCY_QUIET_END is set — skipping quiet hours check.',
+        ),
+      );
+    }
+
     const iterStart = Date.now();
     console.log('');
     console.log(bold(`🔁 Iteration ${i}/${maxIterations}`));

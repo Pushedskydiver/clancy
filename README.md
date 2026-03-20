@@ -2,7 +2,7 @@
 
 **Autonomous, board-driven development for Claude Code.**
 
-[![npm](https://img.shields.io/npm/v/chief-clancy?style=for-the-badge&color=cb3837)](https://www.npmjs.com/package/chief-clancy) [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE) [![Tests](https://img.shields.io/badge/tests-896%20passing-brightgreen?style=for-the-badge)](docs/TESTING.md) [![GitHub Stars](https://img.shields.io/github/stars/Pushedskydiver/clancy?style=for-the-badge)](https://github.com/Pushedskydiver/clancy/stargazers)
+[![npm](https://img.shields.io/npm/v/chief-clancy?style=for-the-badge&color=cb3837)](https://www.npmjs.com/package/chief-clancy) [![License: MIT](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](./LICENSE) [![Tests](https://img.shields.io/badge/tests-1185%20passing-brightgreen?style=for-the-badge)](docs/TESTING.md) [![GitHub Stars](https://img.shields.io/github/stars/Pushedskydiver/clancy?style=for-the-badge)](https://github.com/Pushedskydiver/clancy/stargazers)
 
 > [!WARNING]
 > Clancy is in early development. Expect bugs, breaking changes, and rough edges. If you hit an issue, please [open a bug report](https://github.com/Pushedskydiver/clancy/issues/new).
@@ -42,7 +42,7 @@ Brief → approve → plan → implement. Pipeline labels (`clancy:brief` → `c
 
 Clancy is for developers who:
 
-- Use a Kanban board (Jira, GitHub Issues, or Linear) and want Claude to work through their backlog unattended
+- Use a Kanban board (Jira, GitHub Issues, Linear, Shortcut, Notion, or Azure DevOps) and want Claude to work through their backlog unattended
 - Are comfortable with Claude Code and want to extend it for team workflows — not just solo hacking
 - Have a codebase with enough structure that an AI agent can make meaningful progress on a ticket without constant hand-holding
 - Want to go AFK and come back to committed, merged work
@@ -91,6 +91,9 @@ A few ways to manage costs:
 - **Jira** — via REST API v3, JQL, ADF description parsing
 - **GitHub Issues** — via REST API with PR filtering
 - **Linear** — via GraphQL, `viewer.assignedIssues`, `state.type: unstarted`
+- **Shortcut** — via REST API v3, workflow state resolution, epic stories
+- **Notion** — via REST API, database rows as tickets, property name overrides
+- **Azure DevOps** — via REST API, work items, org + project scoping
 
 Community can add boards — see [CONTRIBUTING.md](./CONTRIBUTING.md).
 

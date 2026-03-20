@@ -132,6 +132,7 @@ describe('jira-board', () => {
           parentInfo: 'PROJ-100',
           blockers: 'Blocked by: PROJ-50',
           labels: [],
+          status: 'To Do',
         },
       ]);
     });

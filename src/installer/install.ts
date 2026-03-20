@@ -485,6 +485,16 @@ async function main(): Promise<void> {
       JSON.stringify({ type: 'module' }, null, 2) + '\n',
     );
 
+    // Write version.json for drift detection
+    writeFileSync(
+      join(clancyProjectDir, 'version.json'),
+      JSON.stringify(
+        { version: PKG.version, installedAt: new Date().toISOString() },
+        null,
+        2,
+      ) + '\n',
+    );
+
     // Install hooks
     const claudeConfigDir =
       dest === GLOBAL_DEST

@@ -99,6 +99,7 @@ describe('github-board', () => {
           parentInfo: 'v1.0',
           blockers: 'None',
           labels: [],
+          status: 'open',
         },
       ]);
     });
