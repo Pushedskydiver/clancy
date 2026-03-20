@@ -136,3 +136,6 @@ Spin up a review agent at every necessary phase — not just after code. Review 
 - Drift detector: PostToolUse hook compares `.clancy/version.json` against installed package VERSION file. Warns once per session when versions differ
 - Version tracking: installer writes `.clancy/version.json` on install/update containing `{ version, installedAt }`
 - Setup workflows support 6 boards: Jira, GitHub Issues, Linear, Shortcut, Notion, Azure DevOps
+- PR retry phase (2a): retries PR creation for tickets that were pushed but failed to create a PR (network recovery). Scans progress.txt for PUSHED entries without PR_CREATED
+- Single-child parent auto-close: when single-child skip is active, the child PR body includes `Closes #{parent}` (GitHub only, valid issue refs only) so the parent auto-closes on merge
+- AFK auto-pull: all workflows with branch freshness checks auto-pull in AFK mode instead of prompting

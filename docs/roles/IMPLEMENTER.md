@@ -68,7 +68,8 @@ All tickets are delivered via pull request. The target branch depends on whether
 3. Pushes the feature branch and creates a PR:
    - **Parented ticket (epic/milestone):** PR targets the epic branch (`epic/{key}` or `milestone/{slug}`)
    - **Standalone ticket (no parent):** PR targets the base branch (`CLANCY_BASE_BRANCH`, default: `main`)
-   - **Single-child epic:** If the epic has only one child, the epic branch is skipped — PR targets the base branch directly
+   - **Single-child epic:** If the epic has only one child, the epic branch is skipped — PR targets the base branch directly. The PR body includes `Closes #{parent}` (GitHub) to auto-close the parent issue on merge
+   - **PR retry:** If a previous run pushed the branch but failed to create the PR (network hiccup), phase 2a retries the PR creation on the next run
 
 ### Epic branch flow (parented tickets)
 
