@@ -13,6 +13,7 @@ Each version follows a formal lifecycle with approval gates and devil's advocate
 - Read the roadmap for this version
 - Create `docs/decisions/v{X}/brief.md` (problem, goals, non-goals, scope, ticket decomposition)
 - Spin up a DA agent to review the brief
+- **Address all DA findings and update the brief BEFORE presenting to the user**
 - User reviews + leaves feedback → re-brief if needed
 - User approves the brief
 
@@ -20,6 +21,7 @@ Each version follows a formal lifecycle with approval gates and devil's advocate
 
 - Create `docs/decisions/v{X}/design.md` from the brief
 - Spin up a DA agent to review the design doc
+- **Address all DA findings and update the design doc BEFORE presenting to the user**
 - User reviews + leaves feedback → revise if needed
 - User approves the design
 
@@ -27,6 +29,7 @@ Each version follows a formal lifecycle with approval gates and devil's advocate
 
 - Create `docs/decisions/v{X}/execution-plan.md` (waves, agents, file lists, review gates)
 - Spin up a DA agent to review the execution plan
+- **Address all DA findings and update the execution plan BEFORE presenting to the user**
 - User reviews + leaves feedback → revise if needed
 - User approves the plan
 
