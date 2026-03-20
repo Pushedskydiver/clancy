@@ -432,6 +432,22 @@ Three waves with devil's advocate review gates. Each wave is a branch + PR.
 
 **Review gate:** Does dev server detection handle missing scripts gracefully (skip, not crash)? Does structural comparison avoid false positives from font/rendering differences? Does axe-core correctly block on A-level violations and warn on AA/AAA? Does Lighthouse threshold defaulting to 90 produce warnings (not blocks)? Do all three tools fail gracefully when their CLI is not installed?
 
+### Post-Wave 3 — Documentation Updates
+
+After all waves ship, update the following docs (same pattern as previous releases):
+
+- **`docs/GLOSSARY.md`** — add terms: design sub-phase, design specifications, Stitch preview, smart feedback classification, two-phase verification, visual verification, accessibility verification
+- **`docs/LIFECYCLE.md`** — add design preview step in planning phase, add visual/a11y verification in implementation phase
+- **`docs/ARCHITECTURE.md`** — add Stitch MCP integration, verify modules (`src/scripts/shared/verify/`, `src/scripts/shared/stitch/`), two-phase verification in once orchestrator
+- **`docs/VISUAL-ARCHITECTURE.md`** — update planner flow with design specs + Stitch, update delivery flow with post-PR visual checks
+- **`docs/roles/PLANNER.md`** — add design sub-phase section, smart feedback classification
+- **`docs/guides/CONFIGURATION.md`** — add new env vars, design tool configuration
+- **`CLAUDE.md`** — add new key paths, technical details for Stitch MCP, two-phase verification
+- **`README.md`** — update "What it does", test badge
+- **`CHANGELOG.md`** — v0.9.0 entry
+- **`docs/design/README.md`** — move to "Shipped features (decisions only)", trim doc
+- **`package.json`** / **`package-lock.json`** — version bump
+
 ---
 
 ## Risks
