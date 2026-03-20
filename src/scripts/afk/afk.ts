@@ -42,6 +42,8 @@ export function parseTime(
  * @param endStr - End time in HH:MM format (e.g. "06:00")
  * @param now - Current date (default: new Date())
  */
+let quietHoursWarned = false;
+
 export function getQuietSleepMs(
   startStr: string,
   endStr: string,
@@ -51,9 +53,12 @@ export function getQuietSleepMs(
   const end = parseTime(endStr);
 
   if (!start || !end) {
-    console.warn(
-      '⚠ Invalid quiet hours format. Expected HH:MM (24h). Quiet hours disabled.',
-    );
+    if (!quietHoursWarned) {
+      console.warn(
+        '⚠ Invalid quiet hours format. Expected HH:MM (24h). Quiet hours disabled.',
+      );
+      quietHoursWarned = true;
+    }
     return 0;
   }
 

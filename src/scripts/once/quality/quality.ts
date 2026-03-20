@@ -47,9 +47,10 @@ export function readQualityData(projectRoot: string): QualityData {
       parsed &&
       typeof parsed.tickets === 'object' &&
       parsed.tickets !== null &&
-      !Array.isArray(parsed.tickets) &&
-      parsed.summary
+      !Array.isArray(parsed.tickets)
     ) {
+      // Recompute summary from ticket data to handle stale/corrupted summaries
+      recomputeSummary(parsed);
       return parsed;
     }
   } catch {
