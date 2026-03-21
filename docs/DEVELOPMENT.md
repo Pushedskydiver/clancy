@@ -255,7 +255,7 @@ The verification counterpart to the doc sweep (step 5). After doc agents run and
 
 ## Memory Hygiene
 
-Memory files in `.claude/projects/.../memory/` accumulate over time. Without maintenance they overlap, go stale, and stop being useful. Follow these rules:
+Memory files in `~/.claude/projects/{project-slug}/memory/` accumulate over time. Without maintenance they overlap, go stale, and stop being useful. Follow these rules:
 
 ### When creating a new memory
 - **Check for overlap first.** Read MEMORY.md and search for existing memories on the same topic. Update the existing memory instead of creating a new one.
