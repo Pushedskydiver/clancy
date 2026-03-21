@@ -2,7 +2,7 @@
  * Implementer lifecycle integration tests — GitHub Issues.
  *
  * Tests the once orchestrator through various scenarios:
- * - Happy path: full 13-phase pipeline completion
+ * - Happy path: full pipeline completion
  * - Empty queue: no tickets, clean exit
  * - Auth failure: board ping fails, clean exit
  * - Dry-run: exits after ticket fetch, no git operations
