@@ -28,6 +28,7 @@ Thumbs.db
 # Claude Code — local install, personal settings, and skills
 .claude/
 .agents/
+.kiro/
 
 # Clancy — if you run /clancy:init in this repo for testing
 .clancy/
