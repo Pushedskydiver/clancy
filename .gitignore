@@ -29,6 +29,7 @@ Thumbs.db
 .claude/
 .agents/
 .kiro/
+skills-lock.json
 
 # Clancy — if you run /clancy:init in this repo for testing
 .clancy/
