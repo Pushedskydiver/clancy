@@ -129,8 +129,10 @@ export type OnceRunnerResult = Pick<
   'stdout' | 'error'
 >;
 
-/** Function that executes a single once iteration. */
-export type OnceRunner = (onceScript: string) => OnceRunnerResult;
+/** Function that executes a single once iteration. Async to support in-process runners. */
+export type OnceRunner = (
+  onceScript: string,
+) => OnceRunnerResult | Promise<OnceRunnerResult>;
 
 /** Default runner — spawns clancy-once.js as a child process. */
 function defaultRunner(onceScript: string): OnceRunnerResult {
@@ -218,7 +220,7 @@ export async function runAfkLoop(
     // Exit codes are not checked — once.ts always exits 0 by design so that
     // a transient failure in one iteration does not halt the entire AFK run.
     // Stop conditions are explicit board-level signals parsed from stdout.
-    const result = runner(onceScript);
+    const result = await runner(onceScript);
 
     const output = result.stdout ?? '';
 
