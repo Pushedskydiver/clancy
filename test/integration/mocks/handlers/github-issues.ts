@@ -43,7 +43,13 @@ export const githubIssuesHandlers = [
     () => new HttpResponse(null, { status: 204 }),
   ),
 
-  // Ensure label exists
+  // Check label exists (ensureLabel does GET first)
+  http.get(
+    'https://api.github.com/repos/:owner/:repo/labels/:name',
+    () => HttpResponse.json({ name: 'clancy:build' }),
+  ),
+
+  // Create label (fallback if GET returns 404)
   http.post('https://api.github.com/repos/:owner/:repo/labels', () =>
     HttpResponse.json({ name: 'clancy:build' }, { status: 201 }),
   ),

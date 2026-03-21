@@ -53,7 +53,18 @@ export const linearHandlers = [
       });
     }
 
-    // Label queries (team labels, workspace labels)
+    // Team labels query (ensureLabel checks team first)
+    if (query.includes('team') && query.includes('labels')) {
+      return HttpResponse.json({
+        data: {
+          team: {
+            labels: { nodes: [{ id: 'label-1', name: 'clancy:build' }] },
+          },
+        },
+      });
+    }
+
+    // Workspace labels fallback
     if (query.includes('issueLabels') || query.includes('labels')) {
       return HttpResponse.json({
         data: {
