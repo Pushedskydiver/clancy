@@ -9,8 +9,8 @@ import fixture from '../fixtures/shortcut/story-happy-path.json';
 const BASE = 'https://api.app.shortcut.com/api/v3';
 
 export const shortcutHandlers = [
-  // Auth check
-  http.get(`${BASE}/member`, () =>
+  // Ping — GET /api/v3/member-info
+  http.get(`${BASE}/member-info`, () =>
     HttpResponse.json({ id: 'member-uuid', mention_name: 'testuser' }),
   ),
 

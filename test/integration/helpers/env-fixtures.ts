@@ -6,8 +6,10 @@
  * Each fixture provides the minimum required env vars to pass the board's
  * Zod schema validation. Derived from src/schemas/env.ts.
  *
- * Test credential values are constructed at runtime to avoid triggering
- * the credential guard hook and GitHub's secret scanner.
+ * GitHub and Linear token values are constructed at runtime to avoid
+ * triggering the credential guard hook and GitHub's secret scanner.
+ * Other board credentials use simple test strings that don't match
+ * scanner patterns.
  */
 
 // Construct test values at runtime to bypass credential scanners

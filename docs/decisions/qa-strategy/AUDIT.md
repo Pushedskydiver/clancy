@@ -30,7 +30,7 @@
 
 ### Board-specific strengths worth noting
 
-- **Jira:** WIQL injection defense (`isSafeWiqlValue`), ADF text extraction, dual-mode children detection
+- **Jira:** JQL injection defense (`isSafeJqlValue`), ADF text extraction, dual-mode children detection
 - **GitHub:** Username caching + fallback, self-reference filtering in blockers, label auto-creation on 404
 - **Linear:** GraphQL label caching (team + workspace fallback), state type enum coverage, label creation via mutation
 - **Shortcut:** Workflow state caching, story_link blocker detection, label caching
