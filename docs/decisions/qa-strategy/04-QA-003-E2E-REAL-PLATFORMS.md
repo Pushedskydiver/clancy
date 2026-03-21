@@ -160,7 +160,7 @@ Note: `QA_GITHUB_TOKEN` secret name avoids collision with GitHub's built-in `GIT
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - run: npm ci
+      - run: rm -rf node_modules package-lock.json && npm install
       - run: npm run test:e2e:gc
         env: # ... same credential env vars
   e2e:
