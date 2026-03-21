@@ -110,7 +110,11 @@ export const linearEmptyHandlers = [
         data: { viewer: { assignedIssues: { nodes: [] } } },
       });
     }
-    return HttpResponse.json({ data: {} });
+    // Unmatched query — fail fast even in empty-queue variant
+    return HttpResponse.json(
+      { errors: [{ message: `Unhandled GraphQL query: ${query.slice(0, 80)}` }] },
+      { status: 400 },
+    );
   }),
 ];
 

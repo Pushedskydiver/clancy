@@ -202,7 +202,7 @@ const boardConfigs: BoardTestConfig[] = [
     emptyHandlers: notionEmptyHandlers,
     authFailureHandlers: notionAuthFailureHandlers,
     remoteUrl: 'https://github.com/test-owner/test-repo.git',
-    expectedTicketKey: 'ab12cd34',
+    expectedTicketKey: 'notion-ab12cd34',
     expectedBranch: 'feature/notion-ab12cd34',
     simulatorSlug: 'notion-ab12cd34',
   },
@@ -304,12 +304,14 @@ describe.each(boardConfigs)(
       });
       expect(branches).toContain(config.expectedBranch);
 
-      // Assert: progress.txt has entry
+      // Assert: progress.txt has entry with ticket key and PR/push status
       const progress = readFileSync(
         join(r.repoPath, '.clancy', 'progress.txt'),
         'utf8',
       );
       expect(progress).toContain(config.expectedTicketKey);
+      // All boards use a GitHub remote, so PR creation should succeed
+      expect(progress).toMatch(/PR_CREATED|PUSHED/);
 
       // Assert: simulator commit exists
       const log = execFileSync(
