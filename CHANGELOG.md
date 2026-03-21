@@ -23,7 +23,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ### Tests
 
-- 1217 unit tests (unchanged) + 18 integration tests (3 new test files: MSW smoke, temp repo, Claude simulator)
+- 1217 unit tests (unchanged) + 37 integration tests (4 new test files: MSW smoke, temp repo, Claude simulator, handler verification)
 
 ---
 
