@@ -138,6 +138,7 @@ This step bridges the gap between the DA (architecture-level) and Copilot (line-
 - Update `docs/decisions/README.md` — move version from Active to Shipped table
 - Update decision doc statuses to `Shipped (decisions only)`
 - Verify: test badge matches, version correct, memories updated, no stale refs
+- **Memory hygiene:** scan MEMORY.md for memories created during this feature. Merge any that overlap with existing memories. Delete milestone/progress memories. See [Memory Hygiene](#memory-hygiene) section.
 
 ---
 
@@ -246,6 +247,33 @@ The verification counterpart to the doc sweep (step 5). After doc agents run and
 
 ---
 
+## Memory Hygiene
+
+Memory files in `.claude/projects/.../memory/` accumulate over time. Without maintenance they overlap, go stale, and stop being useful. Follow these rules:
+
+### When creating a new memory
+- **Check for overlap first.** Read MEMORY.md and search for existing memories on the same topic. Update the existing memory instead of creating a new one.
+- **One concern per file.** Don't add unrelated rules to an existing memory just because the file exists.
+- **Be specific about triggers.** "Check the badge" is vague. "Run `npm test` + `npm run test:integration`, add counts, update badge" is actionable.
+
+### When to consolidate
+- **After every major feature ships** (post-ship step 7): scan MEMORY.md for memories that were created during the feature work. Merge any that overlap with existing memories.
+- **When the same mistake happens twice despite having a memory about it:** The memory isn't specific enough. Rewrite it with the exact failure mode and the exact steps to prevent it.
+- **When MEMORY.md exceeds 150 lines:** Time to consolidate. Group related memories, merge overlapping ones, delete stale ones.
+
+### When to delete
+- **Progress/milestone memories** (e.g., "v0.3.0 rewrite complete") — delete after shipping. The CHANGELOG is the historical record.
+- **Memories superseded by docs** — if the rule is now in DEVELOPMENT.md or CONVENTIONS.md, the memory is redundant. Delete it.
+- **Memories about code that no longer exists** — grep for the function/file/pattern. If it's gone, the memory is stale.
+
+### MEMORY.md structure
+Organise by category, not chronologically:
+- **Process** — how to work (review phases, PR rules, release checklist)
+- **Project** — what we're building (planned features, parked ideas)
+- **Reference** — where to find things (GitHub settings, external tool analysis)
+
+---
+
 ## When to update this doc
 
 Update DEVELOPMENT.md when:
@@ -253,3 +281,4 @@ Update DEVELOPMENT.md when:
 - A new doc is added to the sweep checklist
 - The DA review process changes
 - A new lightweight path is needed (e.g., security patches, dependency updates)
+- The memory hygiene rules change

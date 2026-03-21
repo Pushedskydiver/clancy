@@ -95,7 +95,7 @@ Always via branch + PR: TypeScript (`src/`, `hooks/`), tests, executable markdow
 
 ### Development process
 
-See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the full version lifecycle (brief → design → plan → build → doc sweep → ship), devil's advocate review rules, and pre-merge sweep checklist.
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the full version lifecycle (brief → design → plan → build → doc sweep → self-review → ship), devil's advocate review rules, pre-merge sweep checklist, and memory hygiene rules.
 
 ## Release checklist
 
