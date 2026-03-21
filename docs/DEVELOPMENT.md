@@ -110,6 +110,7 @@ After DA review and doc sweep, before creating the PR, read every changed file (
 
 **Code accuracy:**
 - Do comments/JSDoc match what the code actually does? (stale comments are the #1 review catch)
+- Do comments hardcode counts, versions, or phase numbers that will go stale? Use generic language instead (e.g. "full pipeline" not "13-phase pipeline")
 - Are all function parameters used? If not, remove or use them
 - Do mock/test URLs match the actual production endpoints? (read the production code to verify)
 - Do fixture shapes match what the production code expects? (check Zod schemas and actual API calls)
