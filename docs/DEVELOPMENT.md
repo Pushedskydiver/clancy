@@ -72,7 +72,8 @@ Update the status at each transition. This makes it clear where each doc is in t
 
 ### 4. Build — Execute the plan
 
-- Create branch (`feature/v{X}` or `feature/{feature-name}`)
+- **Break large tickets into the smallest shippable PRs.** Each PR should do one thing well. Benefits: fewer review rounds, smaller blast radius, faster merges, easier to revert. If a ticket has multiple unknowns (e.g. "figure out mocking strategy" + "write tests for 6 boards"), split them — solve the unknowns first in a small PR, then build on the proven pattern.
+- Create branch (`feature/v{X}` or `feature/{feature-name}`) — one branch per PR
 - Per-wave implementation with parallel agents (wave scope defined in the execution plan)
 - **All tests must pass after every wave** — run `npm test && npm run typecheck && npm run lint` and verify 0 failures before committing. Never push code with failing tests.
 - Per-wave DA review between each wave (catches foundation issues before later waves build on them)
@@ -122,6 +123,9 @@ After DA review and doc sweep, before creating the PR, read every changed file (
 - Is `execSync` used with string interpolation? (use `execFileSync` with argument arrays)
 - Are test credential values constructed at runtime where needed? (GitHub secret scanner)
 
+**Config inheritance:**
+- Did changing a config file affect other configs that extend it? (e.g. `tsconfig.build.json` extends `tsconfig.json` — changing `rootDir` in the base breaks the build output paths)
+
 This step bridges the gap between the DA (architecture-level) and Copilot (line-level). Goal: reduce Copilot review rounds from 3-4 to 1.
 
 ### 6. Ship — Merge, publish, update memory
@@ -152,13 +156,14 @@ Not all changes need the full 7-step lifecycle.
 For bug fixes and small enhancements that don't warrant a full brief/design:
 
 1. **Skip steps 1-3** (brief, design, plan) — go straight to Build
-2. Create a `fix/` or `feature/` branch
-3. Implement the fix with tests
-4. DA review (for non-trivial changes)
-5. Self-review changed files (step 5b — line-level accuracy check)
-6. Run the pre-merge sweep checklist (abbreviated — focus on CHANGELOG, version bump, test badge)
-7. PR + Copilot review → merge → publish
-8. No decision doc directory needed (the fix is documented in the CHANGELOG)
+2. **Break into small PRs** — if the work has multiple unknowns or touches many files, split into smaller PRs. One PR per concern.
+3. Create a `fix/` or `feature/` branch
+4. Implement the fix with tests
+5. DA review (for non-trivial changes)
+6. Self-review changed files (step 5b — line-level accuracy check)
+7. Run the pre-merge sweep checklist (abbreviated — focus on CHANGELOG, version bump, test badge)
+8. PR + Copilot review → merge → publish
+9. No decision doc directory needed (the fix is documented in the CHANGELOG)
 
 ### Docs-only changes
 
@@ -250,7 +255,7 @@ The verification counterpart to the doc sweep (step 5). After doc agents run and
 
 ## Memory Hygiene
 
-Memory files in `.claude/projects/.../memory/` accumulate over time. Without maintenance they overlap, go stale, and stop being useful. Follow these rules:
+Memory files in `~/.claude/projects/{project-slug}/memory/` accumulate over time. Without maintenance they overlap, go stale, and stop being useful. Follow these rules:
 
 ### When creating a new memory
 - **Check for overlap first.** Read MEMORY.md and search for existing memories on the same topic. Update the existing memory instead of creating a new one.

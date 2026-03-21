@@ -25,8 +25,11 @@ node_modules/
 .DS_Store?
 Thumbs.db
 
-# Claude Code — local install and personal settings
+# Claude Code — local install, personal settings, and skills
 .claude/
+.agents/
+.kiro/
+skills-lock.json
 
 # Clancy — if you run /clancy:init in this repo for testing
 .clancy/

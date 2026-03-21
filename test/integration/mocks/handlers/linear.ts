@@ -8,7 +8,7 @@
  */
 import { http, HttpResponse } from 'msw';
 
-import fixture from '../fixtures/linear/issue-happy-path.json';
+import fixture from '../fixtures/linear/issue-happy-path.json' with { type: 'json' };
 
 export const linearHandlers = [
   http.post('https://api.linear.app/graphql', async ({ request }) => {

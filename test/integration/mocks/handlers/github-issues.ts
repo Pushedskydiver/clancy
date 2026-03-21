@@ -4,7 +4,7 @@
  */
 import { http, HttpResponse } from 'msw';
 
-import fixture from '../fixtures/github/issue-happy-path.json';
+import fixture from '../fixtures/github/issue-happy-path.json' with { type: 'json' };
 
 export const githubIssuesHandlers = [
   // Ping — GET /repos/{owner}/{repo}
