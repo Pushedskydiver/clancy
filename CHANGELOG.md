@@ -7,6 +7,18 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 ---
 
+## [0.8.8] — 2026-03-21
+
+### ✨ Features
+
+- **AFK loop integration tests (QA-002a-5)** — in-process runner injection tests for `runAfkLoop`: processes N tickets then exits at MAX_ITERATIONS, exits cleanly on empty queue (stop condition), stops on preflight failure. Added GitHub PR list handler for PR retry phase.
+
+### ✅ Tests
+
+- 1217 unit tests (unchanged) + 71 integration tests (3 new AFK loop tests)
+
+---
+
 ## [0.8.7] — 2026-03-21
 
 ### ✨ Features

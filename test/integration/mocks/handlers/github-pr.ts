@@ -5,6 +5,11 @@
 import { http, HttpResponse } from 'msw';
 
 export const githubPrHandlers = [
+  // List PRs (used by PR retry phase to check for existing PRs)
+  http.get('https://api.github.com/repos/:owner/:repo/pulls', () =>
+    HttpResponse.json([]),
+  ),
+
   http.post(
     'https://api.github.com/repos/:owner/:repo/pulls',
     () =>
