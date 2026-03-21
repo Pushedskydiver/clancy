@@ -11,7 +11,7 @@ Clancy is a CLI tool installed via `npx chief-clancy`. It scaffolds slash comman
 - **Language:** TypeScript (ESM, strict mode)
 - **Runtime:** Node 22+
 - **Build:** `tsc && tsc-alias && esbuild` (path alias `~/` → `./src/`)
-- **Test:** Vitest (co-located tests, ~1200+ tests)
+- **Test:** Vitest (co-located unit tests + integration tests in `test/integration/`)
 - **Lint:** ESLint + Prettier
 - **Validation:** `zod/mini` for all runtime validation of external data
 - **Package:** `"type": "module"` in package.json
@@ -43,7 +43,7 @@ Examples: `✨ feat:`, `🐛 fix:`, `♻️ refactor:`, `📝 docs:`, `📦 chor
 
 ## Architecture
 
-- **Phase pipeline:** `src/scripts/once/once.ts` (~115 lines) is a thin runner calling 14 phase functions in `src/scripts/once/phases/`
+- **Phase pipeline:** `src/scripts/once/once.ts` (~115 lines) is a thin runner calling phase functions in `src/scripts/once/phases/`
 - **Board type:** `src/scripts/board/board.ts` defines a unified `Board` interface. 6 board wrappers + factory in `src/scripts/board/factory/`
 - **Hooks:** 8 command hooks + 1 agent hook in `hooks/` (CommonJS, pre-built)
 - **Roles:** 5 roles in `src/roles/` — Planner (optional), Strategist (optional), Implementer, Reviewer, Setup
@@ -69,7 +69,7 @@ Examples: `✨ feat:`, `🐛 fix:`, `♻️ refactor:`, `📝 docs:`, `📦 chor
 |---|---|
 | `src/installer/install.ts` | Entry point |
 | `src/scripts/once/once.ts` | Phase pipeline orchestrator (~115 lines) |
-| `src/scripts/once/phases/` | 14 phase functions (lock-check → cleanup) |
+| `src/scripts/once/phases/` | Phase functions (lock-check → cleanup) |
 | `src/scripts/once/context/` | RunContext type |
 | `src/scripts/afk/afk.ts` | AFK loop runner |
 | `src/scripts/board/` | 6 board modules + Board type + factory |

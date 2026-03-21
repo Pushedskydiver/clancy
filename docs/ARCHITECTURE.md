@@ -36,7 +36,7 @@ clancy/
 │   ├── scripts/
 │   │   ├── once/               — once orchestrator (phase pipeline)
 │   │   │   ├── context/        — RunContext type, Phase type, createContext factory
-│   │   │   ├── phases/         — 13 phase functions (lock-check → cleanup)
+│   │   │   ├── phases/         — phase functions (lock-check → cleanup)
 │   │   │   ├── types.ts        — FetchedTicket type
 │   │   │   ├── fetch-ticket.ts — ticket fetch with blocker checks + HITL/AFK filtering
 │   │   │   ├── git-token.ts    — resolveGitToken
@@ -165,7 +165,7 @@ The grill phase has two modes:
 
 ## Hook Architecture
 
-Six hook files plus one agent-based hook run at different points in the Claude Code lifecycle:
+Eight hook files plus one agent-based hook run at different points in the Claude Code lifecycle:
 
 | Hook | Event | Purpose |
 |---|---|---|
@@ -219,7 +219,7 @@ clancy-afk.js (loop runner — bundled, self-contained)
 
 ## Phase Pipeline
 
-The once orchestrator (`src/scripts/once/once.ts`, ~115 lines) is a thin pipeline runner. Business logic lives in 14 composable phase functions under `src/scripts/once/phases/`:
+The once orchestrator (`src/scripts/once/once.ts`, ~115 lines) is a thin pipeline runner. Business logic lives in composable phase functions under `src/scripts/once/phases/`:
 
 ```
 RunContext (mutable shared state)

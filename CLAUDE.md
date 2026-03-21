@@ -10,7 +10,7 @@ Autonomous, board-driven development for Claude Code. npm package: `chief-clancy
 | `src/installer/` | Installer modules (file-ops, hook-installer, manifest, prompts) |
 | `src/roles/` | Slash commands and workflows organised by role (planner, implementer, reviewer, setup, strategist) |
 | `src/roles/strategist/` | Strategist role — `/clancy:brief` and `/clancy:approve-brief` commands |
-| `src/scripts/once/` | Once orchestrator — phase pipeline (13 phases in `phases/`), context (`context/`), plus modules: types, fetch-ticket, git-token, pr-creation, deliver, rework, lock, cost, resume |
+| `src/scripts/once/` | Once orchestrator — phase pipeline (`phases/`), context (`context/`), plus modules: types, fetch-ticket, git-token, pr-creation, deliver, rework, lock, cost, resume |
 | `src/scripts/once/lock/` | Lock file management (acquire, release, stale detection) |
 | `src/scripts/once/cost/` | Duration-based token cost estimation + costs.log writer |
 | `src/scripts/once/resume/` | Crash recovery (resume detection, branch/ticket recovery) |
