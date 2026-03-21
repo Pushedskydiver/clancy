@@ -17,7 +17,7 @@
  * - Git remote: vi.mock on remoteBranchExists + fetchRemoteBranch
  */
 import { execFileSync } from 'node:child_process';
-import { readFileSync, unlinkSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
@@ -47,13 +47,11 @@ import fixture from '../mocks/fixtures/github/issue-happy-path.json' with { type
 
 vi.mock('~/scripts/shared/preflight/preflight.js', () => ({
   runPreflight: (projectRoot: string) => {
-    const { existsSync, readFileSync: readSync } = require('node:fs');
-    const { join: joinPath } = require('node:path');
-    const envPath = joinPath(projectRoot, '.clancy', '.env');
+    const envPath = join(projectRoot, '.clancy', '.env');
     if (!existsSync(envPath)) {
       return { ok: false, error: '✗ .clancy/.env not found' };
     }
-    const content = readSync(envPath, 'utf8');
+    const content = readFileSync(envPath, 'utf8');
     const env: Record<string, string> = {};
     for (const line of content.split('\n')) {
       const trimmed = line.trim();
