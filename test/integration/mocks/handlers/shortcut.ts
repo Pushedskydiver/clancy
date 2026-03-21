@@ -29,8 +29,8 @@ export const shortcutHandlers = [
     ]),
   ),
 
-  // Stories search
-  http.post(`${BASE}/stories/search`, () => HttpResponse.json(fixture.data)),
+  // Stories search — returns full { data: [...] } shape
+  http.post(`${BASE}/stories/search`, () => HttpResponse.json(fixture)),
 
   // Single story
   http.get(`${BASE}/stories/:id`, () => HttpResponse.json(fixture.data[0])),

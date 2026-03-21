@@ -8,7 +8,7 @@ const PACKAGE_JSON = JSON.stringify(
     name: 'clancy-test-project',
     private: true,
     scripts: {
-      lint: 'eslint .',
+      lint: 'echo lint-ok',
       test: 'vitest run',
       typecheck: 'tsc --noEmit',
     },

@@ -18,13 +18,8 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
 import { type BoardProvider, boardEnvMap } from './env-fixtures.js';
+import { TEMPLATE_POINTER_PATH } from '../global-setup.js';
 import { SCAFFOLD_FILES } from './scaffold-content.js';
-
-/** Well-known path for the template dir pointer file (written by global-setup). */
-const TEMPLATE_POINTER_PATH = join(
-  tmpdir(),
-  'clancy-test-scaffold-pointer.txt',
-);
 
 /** Read the shared scaffold template directory from the pointer file. */
 function getTemplatePath(): string | undefined {
