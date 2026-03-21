@@ -1,0 +1,23 @@
+{
+  "wiql": {
+    "workItems": [
+      { "id": 1, "url": "https://dev.azure.com/test-org/_apis/wit/workItems/1" }
+    ]
+  },
+  "batch": {
+    "value": [
+      {
+        "id": 1,
+        "fields": {
+          "System.Title": "QA integration test ticket",
+          "System.Description": "Implement the feature.<br><br><h2>Acceptance Criteria</h2><ul><li>Feature works</li><li>Tests pass</li></ul>",
+          "System.State": "New",
+          "System.Tags": "clancy:build",
+          "System.WorkItemType": "Task"
+        },
+        "relations": null
+      }
+    ],
+    "count": 1
+  }
+}

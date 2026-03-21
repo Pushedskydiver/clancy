@@ -1,0 +1,11 @@
+[
+  {
+    "number": 1,
+    "title": "QA integration test ticket",
+    "body": "Implement the feature as described.\n\n## Acceptance Criteria\n- Feature works\n- Tests pass",
+    "state": "open",
+    "labels": [{ "name": "clancy:build" }],
+    "assignee": { "login": "testuser" },
+    "user": { "login": "testuser" }
+  }
+]

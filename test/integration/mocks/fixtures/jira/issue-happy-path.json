@@ -1,0 +1,17 @@
+{
+  "issues": [
+    {
+      "key": "TEST-1",
+      "fields": {
+        "summary": "QA integration test ticket",
+        "description": "Implement the feature as described in the acceptance criteria.\n\n## Acceptance Criteria\n- Feature works as expected\n- Tests pass",
+        "issuelinks": [],
+        "parent": null,
+        "customfield_10014": null,
+        "labels": ["clancy:build"],
+        "status": { "name": "To Do", "statusCategory": { "key": "new" } },
+        "assignee": { "emailAddress": "test@example.com" }
+      }
+    }
+  ]
+}

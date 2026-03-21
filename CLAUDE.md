@@ -29,6 +29,7 @@ Autonomous, board-driven development for Claude Code. npm package: `chief-clancy
 | `src/agents/verification-gate.md` | Verification gate agent — interprets lint/test/type errors, applies targeted fixes |
 | `hooks/` | 8 Node.js hooks + 1 agent hook (credential guard, branch guard, context monitor, statusline, update check, post-compact, notification, drift detector, verification gate) |
 | `registry/boards.json` | Board registry for community board integrations |
+| `test/integration/` | Integration tests — MSW-backed flow tests (helpers, mocks/handlers, mocks/fixtures, flows) |
 
 ## Key documentation
 
@@ -51,12 +52,14 @@ Autonomous, board-driven development for Claude Code. npm package: `chief-clancy
 ## Running tests
 
 ```bash
-npm test          # all unit tests (vitest)
-npm run typecheck # tsc --noEmit
-npm run lint      # eslint
+npm test               # unit tests only (vitest)
+npm run test:integration  # integration tests (MSW-backed, separate config)
+npm run test:all       # both unit + integration
+npm run typecheck      # tsc --noEmit
+npm run lint           # eslint
 ```
 
-Tests are co-located TypeScript files (`<name>/<name>.test.ts`) using Vitest.
+Unit tests are co-located TypeScript files (`<name>/<name>.test.ts`) using Vitest. Integration tests live in `test/integration/` with a separate Vitest config and are excluded from `npm test`.
 
 ## Commit format
 
@@ -92,7 +95,7 @@ Always via branch + PR: TypeScript (`src/`, `hooks/`), tests, executable markdow
 
 ### Development process
 
-See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the full version lifecycle (brief → design → plan → build → doc sweep → ship), devil's advocate review rules, and pre-merge sweep checklist.
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the full version lifecycle (brief → design → plan → build → doc sweep → self-review → ship), devil's advocate review rules, pre-merge sweep checklist, and memory hygiene rules.
 
 ## Release checklist
 
