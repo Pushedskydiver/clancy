@@ -2,18 +2,18 @@
 
 All notable changes to Clancy are documented here.
 
-Format: [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
+Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Docs`, `📦 Chores`
 
 ---
 
 ## [0.8.5] — 2026-03-21
 
-### Added
+### ✨ Features
 
 - **Implementer early exit integration tests (QA-002a-2)** — empty queue, auth failure, and dry-run scenarios for the once orchestrator. GitHub Issues MSW handler variants (`githubIssuesEmptyHandlers`, `githubIssuesAuthFailureHandlers`).
 
-### Tests
+### ✅ Tests
 
 - 1217 unit tests (unchanged) + 41 integration tests (3 new early exit tests)
 
@@ -21,11 +21,11 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [0.8.4] — 2026-03-21
 
-### Added
+### ✨ Features
 
 - **Implementer happy path integration test (QA-002a-1)** — first end-to-end integration test that runs the full 13-phase once orchestrator pipeline against a temp git repo with MSW-intercepted GitHub Issues API calls. Proves the pattern: preflight mock + board detection + ticket fetch + branch setup + Claude simulator + PR creation + progress logging.
 
-### Tests
+### ✅ Tests
 
 - 1217 unit tests (unchanged) + 38 integration tests (1 new flow test)
 
@@ -33,7 +33,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [0.8.3] — 2026-03-21
 
-### Added
+### ✨ Features
 
 - **Integration test infrastructure (QA-001)** — foundation for all subsequent integration test flows:
   - Claude output simulator (`simulateClaudeSuccess`, `simulateClaudeFailure`, `createSequencedClaudeMock`)
@@ -45,7 +45,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
   - Separate Vitest config (`test:integration`) isolated from unit tests
 - **QA gap analysis** (`docs/decisions/qa-strategy/AUDIT.md`) — board + hook test coverage matrix identifying comment posting and ticket creation as universal gaps
 
-### Tests
+### ✅ Tests
 
 - 1217 unit tests (unchanged) + 37 integration tests (4 new test files: MSW smoke, temp repo, Claude simulator, handler verification)
 
@@ -53,11 +53,11 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [0.8.2] — 2026-03-21
 
-### Changed
+### ♻️ Refactors
 
 - **AFK runner injection** — `runAfkLoop()` now accepts an optional `runner` parameter for dependency injection. Default behaviour unchanged (spawns `clancy-once.js` via `spawnSync`). Enables integration tests to call `run()` in-process where MSW can intercept board API calls.
 
-### Internal
+### 📦 Internal
 
 - **QA strategy decision docs** — 2-layer QA plan (integration tests + E2E) added to `docs/decisions/qa-strategy/`. 5 tickets covering infrastructure, implementer flows, board API/pipeline/hooks, E2E real platforms, and CI wiring.
 
@@ -65,21 +65,21 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [0.8.1] — 2026-03-20
 
-### Added
+### ✨ Features
 
 - **PR retry phase** — new phase 2a in the orchestrator retries PR creation for tickets that were pushed but failed to create a PR (network hiccup recovery). Scans progress.txt for `PUSHED` entries without a corresponding `PR_CREATED` and retries the API call.
 - **Single-child parent auto-close** — when a single child ticket's PR targets `main` directly (single-child skip), the PR body now includes `Closes #{parent}` so the parent issue is also auto-closed on merge.
 - **`--afk` flag on `/clancy:update`** — skips the confirmation prompt for autonomous setups. Respects `CLANCY_MODE=afk` as fallback.
 - **AFK auto-pull** — all workflows with branch freshness checks (brief, approve-brief, plan) auto-pull in AFK mode instead of prompting. Planner's missing docs prompt also auto-continues.
 
-### Changed
+### ♻️ Refactors
 
 - **Copilot instructions** (`.github/copilot-instructions.md`) — rewritten to reflect current architecture (6 boards, 14 phases, Board type, 8+1 hooks).
 - **PR template** — expanded checklists for new board support and doc updates.
 - **Dead `.env.example` templates removed** — superseded by scaffold workflow.
 - **Design doc trimmed** — `reliable-autonomous-mode.md` trimmed from 734 → 33 lines (decisions-only).
 
-### Tests
+### ✅ Tests
 
 - 1206 → 1217 (11 new tests — PR retry phase, single-child parent close, alreadyExists handling, GitHub key format)
 
@@ -87,7 +87,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ## [0.8.0] — 2026-03-20
 
-### Added
+### ✨ Features
 
 - **Desktop notification hook** (`clancy-notification.js`) — native OS desktop notifications on Notification events. Supports macOS (osascript), Linux (notify-send), Windows (PowerShell). Falls back to console.log on unsupported platforms. Controllable via `CLANCY_DESKTOP_NOTIFY=false`.
 - **Drift detector hook** (`clancy-drift-detector.js`) — PostToolUse hook (debounced, once per session) that compares `.clancy/version.json` against the installed package version. Warns when Clancy runtime files are outdated.
@@ -97,7 +97,7 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 - **New env vars:** `CLANCY_QUIET_START`, `CLANCY_QUIET_END`, `CLANCY_DESKTOP_NOTIFY`, `SHORTCUT_API_TOKEN`, `SHORTCUT_WORKFLOW`, `NOTION_TOKEN`, `NOTION_DATABASE_ID`, `CLANCY_NOTION_STATUS`, `CLANCY_NOTION_ASSIGNEE`, `CLANCY_NOTION_LABELS`, `CLANCY_NOTION_PARENT`, `AZDO_ORG`, `AZDO_PROJECT`, `AZDO_PAT`.
 - **Settings menu** — `[G10]` Quiet hours, `[G11]` Desktop notifications, board switch support for Shortcut/Notion/Azure DevOps.
 
-### Changed
+### ♻️ Refactors
 
 - **Hook count** — 6 → 8 hooks (+ notification, drift detector).
 - **Board count** — 3 → 6 boards supported in setup workflows.
@@ -118,7 +118,7 @@ Pipeline labels (`CLANCY_LABEL_BRIEF`, `CLANCY_LABEL_PLAN`, `CLANCY_LABEL_BUILD`
 
 Existing `CLANCY_LABEL` and `CLANCY_PLAN_LABEL` continue to work as fallbacks for the build and plan labels. There is no fallback for the brief label — it must be configured or the default is used.
 
-### Tests
+### ✅ Tests
 
 - 896 → 1206 (310 new tests across all waves — board modules, hooks, quiet hours, pipeline labels, installer modules)
 
@@ -126,7 +126,7 @@ Existing `CLANCY_LABEL` and `CLANCY_PLAN_LABEL` continue to work as fallbacks fo
 
 ## [0.7.4] — 2026-03-20
 
-### Added
+### ✨ Features
 
 - **Pipeline labels** — 3 labels (`CLANCY_LABEL_BRIEF`, `CLANCY_LABEL_PLAN`, `CLANCY_LABEL_BUILD`) control ticket flow through stages: `clancy:brief` -> `clancy:plan` -> `clancy:build`. Each label acts as a queue marker. Only one pipeline label is present at a time.
 - **Board label methods** — `ensureLabel` (create-if-missing), `addLabel` (add to issue), `removeLabel` (best-effort removal) on the `Board` type. GitHub: REST API, Jira: labels array, Linear: GraphQL mutations.
@@ -137,12 +137,12 @@ Existing `CLANCY_LABEL` and `CLANCY_PLAN_LABEL` continue to work as fallbacks fo
 - **Pipeline label settings** — `[L1]`, `[L2]`, `[L3]` settings for brief, plan, and build labels with deprecation notices for old vars.
 - `CLANCY_LABEL_BRIEF`, `CLANCY_LABEL_PLAN`, `CLANCY_LABEL_BUILD` env vars added to all `.env.example` templates.
 
-### Changed
+### ♻️ Refactors
 
 - **Workflow label integration** — `/clancy:brief` adds `CLANCY_LABEL_BRIEF`, `/clancy:approve-brief` removes brief label and adds plan/build label to children, `/clancy:approve-plan` swaps plan for build label, `/clancy:once` filters by `CLANCY_LABEL_BUILD`.
 - **Deprecated** — `CLANCY_LABEL` and `CLANCY_PLAN_LABEL` are deprecated in favour of the new pipeline label vars.
 
-### Tests
+### ✅ Tests
 
 - 853 → 896 (43 new tests for board label methods and fetch-ticket pipeline logic)
 
@@ -163,7 +163,7 @@ Pipeline labels are opt-in. Existing `CLANCY_LABEL` and `CLANCY_PLAN_LABEL` cont
 
 ## [0.7.3] — 2026-03-19
 
-### Fixed
+### 🐛 Fixes
 
 - **Epic PR auto-closes GitHub issues** — epic PR body now includes `Closes #N` keywords for the parent and all child issues, so merging the epic PR to the default branch automatically closes them
 
@@ -171,14 +171,14 @@ Pipeline labels are opt-in. Existing `CLANCY_LABEL` and `CLANCY_PLAN_LABEL` cont
 
 ## [0.7.2] — 2026-03-19
 
-### Added
+### ✨ Features
 
 - **`--afk` flag for `/clancy:approve-brief`** — auto-confirm ticket creation without prompting, enabling fully autonomous brief-to-tickets flow
 - **`--afk` flag for `/clancy:plan`** — skip batch confirmations, auto-skip done/closed/canceled tickets
 - **`--afk` flag for `/clancy:approve-plan`** — auto-confirm plan promotion without prompting
 - **Open question cross-referencing** — re-brief revision now explicitly matches feedback against Open Questions, moving resolved ones to Discovery with `(Source: human)` tag
 
-### Fixed
+### 🐛 Fixes
 
 - **AFK mode guard for `/clancy:brief`** — running `/clancy:brief --afk` (or with `CLANCY_MODE=afk`) without a ticket or idea now exits with a helpful message instead of prompting an absent human
 - **Brief comment detection** — marker search is now case-insensitive and heading-level-agnostic (`#` vs `##` vs plain text)
@@ -188,14 +188,14 @@ Pipeline labels are opt-in. Existing `CLANCY_LABEL` and `CLANCY_PLAN_LABEL` cont
 
 ## [0.7.1] — 2026-03-19
 
-### Changed
+### ♻️ Refactors
 
 - **Phase pipeline** — decompose `once.ts` (650 lines) into 13 composable phase functions under `src/scripts/once/phases/`. Orchestrator is now 110 lines.
 - **Board type abstraction** — unified `Board` type with `createBoard()` factory. Single switch statement replaces 6+ scattered switches in `board-ops.ts`.
 - **Delete `board-ops.ts`** — 174 lines of switch dispatch + 319 lines of tests removed. All board operations now go through `ctx.board.*` method calls.
 - **Env templates** — `.env.example` files updated with strategist (v0.6.0) and reliable autonomous mode (v0.7.0) env vars.
 
-### Tests
+### ✅ Tests
 
 - 764 → 853 (89 new tests from phase files + board wrappers, net of deleted board-ops tests)
 
@@ -203,7 +203,7 @@ Pipeline labels are opt-in. Existing `CLANCY_LABEL` and `CLANCY_PLAN_LABEL` cont
 
 ## [0.7.0] — 2026-03-19
 
-### Added
+### ✨ Features
 
 - **Verification gates** — agent-based Stop hook runs lint/test/typecheck before delivery
 - **Self-healing retry** — up to `CLANCY_FIX_RETRIES` attempts to fix failing checks (default 2, max 5)
@@ -216,7 +216,7 @@ Pipeline labels are opt-in. Existing `CLANCY_LABEL` and `CLANCY_PLAN_LABEL` cont
 - **Verification gate agent prompt** (`src/agents/verification-gate.md`)
 - `CLANCY_FIX_RETRIES`, `CLANCY_VERIFY_COMMANDS`, `CLANCY_TOKEN_RATE`, `CLANCY_TIME_LIMIT`, `CLANCY_BRANCH_GUARD` env vars
 
-### Changed
+### ♻️ Refactors
 
 - `once.ts`: lock file lifecycle, `CLANCY_ONCE_ACTIVE` env var, cost logging after delivery
 - `afk.ts`: session report generation after loop completion
@@ -224,7 +224,7 @@ Pipeline labels are opt-in. Existing `CLANCY_LABEL` and `CLANCY_PLAN_LABEL` cont
 - PR body: includes verification warning when checks failed
 - Hook count: 4 → 6 hook files + 1 agent hook
 
-### Tests
+### ✅ Tests
 
 - 579 → 764 (185 new tests)
 
@@ -232,7 +232,7 @@ Pipeline labels are opt-in. Existing `CLANCY_LABEL` and `CLANCY_PLAN_LABEL` cont
 
 ## [0.6.0] — 2026-03-19
 
-### Added
+### ✨ Features
 
 - **Strategist role** — `/clancy:brief` and `/clancy:approve-brief` commands
 - Grill phase (human grill + AI-grill with devil's advocate agent)
@@ -246,14 +246,14 @@ Pipeline labels are opt-in. Existing `CLANCY_LABEL` and `CLANCY_PLAN_LABEL` cont
 - `CLANCY_MODE`, `CLANCY_BRIEF_ISSUE_TYPE`, `CLANCY_BRIEF_EPIC`, `CLANCY_COMPONENT` env vars
 - Devil's advocate agent prompt (`src/agents/devils-advocate.md`)
 
-### Changed
+### ♻️ Refactors
 
 - `fetchTicket` now fetches 5 candidates and returns first unblocked
 - `fetchChildrenStatus` uses dual-mode (text convention + native fallback)
 - Installer treats strategist as optional role (like planner)
 - Setup init/settings/scaffold include strategist configuration
 
-### Tests
+### ✅ Tests
 
 - 507 → 579 (72 new tests)
 
@@ -261,7 +261,7 @@ Pipeline labels are opt-in. Existing `CLANCY_LABEL` and `CLANCY_PLAN_LABEL` cont
 
 ## [0.5.13] — 2026-03-18
 
-### Added
+### ✨ Features
 
 - **Glossary** (`docs/GLOSSARY.md`) — ubiquitous language for the project. Defines terms for roles, delivery model, orchestrator, strategist, planner, and infrastructure. Referenced by Claude and subagents via CLAUDE.md.
 - **Key documentation table** in `CLAUDE.md` — links to architecture, visual diagrams, conventions, testing, git strategy, design docs, role descriptions, and guides. Ensures agents can discover all project documentation.
@@ -279,7 +279,7 @@ Pipeline labels are opt-in. Existing `CLANCY_LABEL` and `CLANCY_PLAN_LABEL` cont
 - **`Part of` for GitHub Issues** — child PRs targeting epic branches use `Part of #N` instead of `Closes #N` to prevent premature auto-close before the epic reaches the base branch.
 - **Rework parent preservation** — rework detection now reads the `parent:KEY` field from progress.txt entries, ensuring rework PRs target the correct epic branch instead of defaulting to main.
 
-### ♻️ Refactor
+### ♻️ Refactors
 
 - **`deliverViaEpicMerge` deleted** — all delivery goes through `deliverViaPullRequest` with the appropriate target branch. Simplifies delivery logic from two paths to one.
 - **Progress parser rewritten** — `parseProgressFile` now uses named-prefix matching (`pr:`, `parent:`) instead of positional segment indexing, supporting the new `parent:KEY` suffix without breaking legacy entries.
@@ -331,7 +331,7 @@ Clancy will detect the local-only branch and print instructions.
 
 ## [0.5.9] — 2026-03-16
 
-### ♻️ Refactor
+### ♻️ Refactors
 
 - **once/ modules reorganised into sub-folders** — each module now follows the project convention `<name>/<name>.ts` + `<name>/<name>.test.ts`, matching `shared/` and `board/` patterns.
 - **`schemas/github.ts` renamed to `github-issues.ts`** — consistent with `gitlab-mr.ts` and `bitbucket-pr.ts`.
@@ -346,7 +346,7 @@ Clancy will detect the local-only branch and print instructions.
 
 ## [0.5.8] — 2026-03-16
 
-### ♻️ Refactor
+### ♻️ Refactors
 
 - **`once.ts` decomposed into 8 focused modules** — the 1292-line orchestrator has been split into small, human-readable modules. Each module handles a single concern: types (12 lines), board operations (122), ticket fetching (89), git token resolution (34), PR creation (107), delivery (200), rework detection + actions (379), and the orchestrator itself (398). Zero logic changes — pure extraction. All 404 tests pass unchanged.
 
@@ -394,7 +394,7 @@ Clancy will detect the local-only branch and print instructions.
 - **Plan comment editing** — after approval, the plan comment is edited to prepend an approval note instead of being deleted.
 - **Auto-select for approve-plan** — `/clancy:approve-plan` (no args) auto-selects the oldest unapproved ticket from `progress.txt` and shows a confirmation prompt.
 
-### ♻️ Refactor
+### ♻️ Refactors
 
 - **`/clancy:approve` renamed to `/clancy:approve-plan`** — prepares for v0.6.0 strategist role which adds `/clancy:approve-brief`.
 - **Plan template reordered** — new canonical section order: Summary, Affected Files, Implementation Approach, Test Strategy, Acceptance Criteria, Dependencies, Figma Link, Risks/Considerations, Size Estimate.
@@ -420,7 +420,7 @@ Clancy will detect the local-only branch and print instructions.
 - **Progress reader** — `findLastEntry()`, `countReworkCycles()`, and `findEntriesWithStatus()` for progress history scanning.
 - **Max rework guard** — after N cycles (default 3, configurable via `CLANCY_MAX_REWORK`), ticket is skipped with "needs human intervention".
 
-### 📝 Documentation
+### 📝 Docs
 
 - **Init workflow** — added Q3e (max rework cycles)
 - **Settings workflow** — added max rework setting
@@ -444,7 +444,7 @@ Clancy will detect the local-only branch and print instructions.
 - **PR body builder** (`src/scripts/shared/pull-request/pr-body/pr-body.ts`) — `buildPrBody()` generates a PR description with a link back to the board ticket.
 - **New env vars** — `CLANCY_STATUS_REVIEW` (transition status when creating a PR, falls back to `CLANCY_STATUS_DONE`), `GITHUB_TOKEN` (shared, for Jira/Linear users on GitHub), `GITLAB_TOKEN`, `BITBUCKET_USER`, `BITBUCKET_TOKEN`, `CLANCY_GIT_PLATFORM` (override auto-detection), `CLANCY_GIT_API_URL` (self-hosted API base).
 
-### ♻️ Refactor
+### ♻️ Refactors
 
 - **PR creation functions consolidated** — extracted GitHub PR creation from `board/github/github.ts` and moved GitLab/Bitbucket PR creation from `shared/remote/` into a new `shared/pull-request/` folder with co-located subfolders. All three git host PR creation functions now live together with a shared `postPullRequest()` utility that DRYs up the common POST + error-handling pattern.
 - **`run()` function decomposed** — extracted `deliverViaEpicMerge()` and `deliverViaPullRequest()` from the 365-line `run()` function in `once.ts` for readability and testability.
@@ -457,7 +457,7 @@ Clancy will detect the local-only branch and print instructions.
 - **URL-encode branch names in manual PR URLs** — `buildManualPrUrl` now uses `encodeURIComponent()` to handle special characters in branch names.
 - **Type-safe shared env access** — replaced unsafe `as Record<string, string | undefined>` casts with a typed `sharedEnv()` helper.
 
-### 📝 Documentation
+### 📝 Docs
 
 - **Init workflow** — added Q2c (git host token for Jira/Linear) and Q3d-2 (review status)
 - **Settings workflow** — added review status (B6/B4), git host token (H1) settings
@@ -533,7 +533,7 @@ Clancy will detect the local-only branch and print instructions.
 - **API error handling** — `/clancy:plan` now shows clear error messages when board API calls fail.
 - **GitHub label clarity** — "no tickets" message explains the separate planning label for GitHub users.
 
-### 📝 Documentation
+### 📝 Docs
 
 - **Updated help output** — `/clancy:help` and the installer banner now include the Planner section with `plan` and `approve` commands.
 - **Updated .env.example templates** — all 3 board templates include planner queue configuration and optional roles.
@@ -543,11 +543,11 @@ Clancy will detect the local-only branch and print instructions.
 
 ## [0.4.0] — 2026-03-12
 
-### ♻️ Refactor
+### ♻️ Refactors
 
 - **Architecture refactor — role-based source structure** — commands and workflows are now organized by role under `src/roles/{planner,implementer,reviewer,setup}/`. The installer walks each role's `commands/` and `workflows/` subdirectories and merges them into the same flat output directories (`.claude/commands/clancy/` and `.claude/clancy/workflows/`), preserving all existing `/clancy:*` command names. No functional changes — all commands work identically.
 
-### 📝 Documentation
+### 📝 Docs
 
 - **Role-grouped help** — `/clancy:help` now displays commands grouped by role (Implementer, Reviewer, Setup & Maintenance) instead of a flat list.
 - **Updated architecture docs** — `ARCHITECTURE.md`, `CONVENTIONS.md`, `CONTRIBUTING.md`, and `CLAUDE.md` updated to reflect the new `src/roles/` structure.
@@ -572,7 +572,7 @@ Clancy will detect the local-only branch and print instructions.
 
 ## [0.3.7] — 2026-03-12
 
-### 🐛 Bug fixes
+### 🐛 Fixes
 
 - **Fixed feasibility check nesting error** — The `claude -p` call in the feasibility check created a blocked nested session when running inside Claude Code via `/clancy:once`. The workflow now evaluates feasibility directly (no subprocess) using the dry-run output, then runs the script with `--skip-feasibility`. The script-level `claude -p` check is preserved for standalone/AFK mode where it works correctly.
 
@@ -588,7 +588,7 @@ Clancy will detect the local-only branch and print instructions.
 
 ## [0.3.5] — 2026-03-12
 
-### 🐛 Bug fixes
+### 🐛 Fixes
 
 - **Fixed Jira search schema validation** — The `POST /rest/api/3/search/jql` endpoint returns `isLast` instead of `total` in its response. The Zod schema required `total` as a mandatory number, causing validation to fail at runtime. Both fields are now optional.
 
@@ -604,7 +604,7 @@ Clancy will detect the local-only branch and print instructions.
 
 ## [0.3.3] — 2026-03-12
 
-### 🐛 Bug fixes
+### 🐛 Fixes
 
 - **Republish with built bundles** — v0.3.2 was published without running the build step, so the bundled runtime scripts in `.clancy/` still contained the old JQL bug. This release is identical to 0.3.2 but with correctly built bundles.
 
@@ -612,7 +612,7 @@ Clancy will detect the local-only branch and print instructions.
 
 ## [0.3.2] — 2026-03-12
 
-### 🐛 Bug fixes
+### 🐛 Fixes
 
 - **Fixed Jira JQL query syntax** — `buildJql()` was joining `ORDER BY priority ASC` with `AND`, producing invalid JQL (`... AND ORDER BY priority ASC`) that Jira rejected with HTTP 400. The once command couldn't fetch tickets while review/status (which build JQL inline) worked fine.
 
@@ -650,14 +650,14 @@ npm uninstall chief-clancy
 - **Shellcheck CI removed** — the shellcheck job is removed from CI since there are no more shell scripts.
 - **Bash tests removed** — all `test/unit/*.test.sh` and `test/smoke/smoke.sh` files are replaced by Vitest tests co-located with their modules.
 
-### ✨ New features
+### ✨ Features
 
 - **Unified once orchestrator** (`src/scripts/once/once.ts`) — single TypeScript entry point handles all three boards (Jira, GitHub Issues, Linear). Full lifecycle: preflight → board detection → fetch ticket → branch computation → dry-run gate → status transition → Claude session → squash merge → close/transition → progress log → notification.
 - **Zod env validation** — all board credentials and shared config are validated at startup using `zod/mini` schemas with clear error messages for missing or malformed values.
 - **Discriminated union board config** — `BoardConfig` type (`{ provider: 'jira' | 'github' | 'linear'; env: ... }`) enables exhaustive type checking across all board-specific code paths.
 - **Board-agnostic runtime scripts** — `.clancy/clancy-once.js` and `.clancy/clancy-afk.js` are identical for all boards. No more board-specific script selection during init or settings changes.
 
-### 🐛 Bug fixes
+### 🐛 Fixes
 
 - **Claude exit code check** — `invokeClaudeSession` now returns a `boolean` based on exit status. The orchestrator skips squash merge when Claude exits with an error, preventing empty or broken merges.
 - **Linear label filtering relaxed** — removed overly restrictive `SAFE_ID_PATTERN` regex that rejected labels containing spaces or special characters. Labels are now trimmed and passed directly as GraphQL variables (inherently safe).
@@ -665,7 +665,7 @@ npm uninstall chief-clancy
 - **GitHub `per_page` bumped** — increased from 3 to 10 to reduce the chance of missing eligible issues when PRs (which the API returns alongside issues) consume result slots.
 - **Force delete after squash merge** — `deleteBranch` now uses `git branch -D` instead of `-d`, since squash-merged branches are never seen as "merged" by git.
 
-### 📝 Documentation
+### 📝 Docs
 
 - **All workflow markdown files updated** — references to shell scripts, `bash`, `chmod +x`, `jq`, and `curl` replaced with TypeScript/Node equivalents throughout all 9 workflow files.
 - **scaffold.md reduced by ~1000 lines** — removed embedded shell scripts (3 board variants × once + afk), replaced with 2 short JS shim blocks.
@@ -702,7 +702,7 @@ rm -f .clancy/clancy-once.sh .clancy/clancy-once-github.sh .clancy/clancy-once-l
 
 ## [0.2.0] — 2026-03-09
 
-### ✨ New features
+### ✨ Features
 
 - **Shellcheck CI** — `.github/workflows/ci.yml` lints all nine shell scripts on every push and PR to `main`, then runs the full unit test suite.
 - **Auto update check** — `hooks/clancy-check-update.js` fires on session start, spawns a background process to check npm for a newer `chief-clancy` version, and writes the result to `~/.claude/cache/clancy-update-check.json`. The CLAUDE.md template reads this file and surfaces an upgrade notice at the top of every session.
@@ -712,7 +712,7 @@ rm -f .clancy/clancy-once.sh .clancy/clancy-once-github.sh .clancy/clancy-once-l
 - **`/clancy:dry-run` command** — dedicated slash command in the Claude Code dropdown. Previews which ticket would be picked up next (including epic, target branch, and feature branch) without making any git changes or calling Claude. Runs full preflight to catch config issues early. Works on all three boards.
 - **Credential guard** — `hooks/clancy-credential-guard.js` is a PreToolUse hook that scans Write, Edit, and MultiEdit operations for credential patterns (API keys, tokens, passwords, private keys, connection strings) and blocks the operation if a match is found. Allowed paths (`.clancy/.env`, `.env.example`, etc.) are exempt. Best-effort — never blocks on error.
 
-### 🐛 Bug fixes
+### 🐛 Fixes
 
 - **`/clancy:uninstall` left orphaned hooks** — the uninstall workflow only removed command and workflow directories. The three hook files, their `settings.json` registrations (SessionStart, PostToolUse, statusline), and the update check cache were all left behind. All are now cleaned up on uninstall.
 - **Statusline never displayed** — the installer wrote `statusline` (lowercase, plain string) to `settings.json` but Claude Code requires `statusLine` (camelCase, `{type, command}` object). The statusline was silently ignored on every install. Fixed the key name and value format in the installer.
@@ -741,7 +741,7 @@ No manual migration steps required. All new features work out of the box or are 
 
 ## [0.1.7] — 2026-03-11
 
-### 📝 Documentation
+### 📝 Docs
 
 - **README** — expanded "Updating Clancy?" section to describe changelog preview, confirmation prompt, and automatic patch backup; corrected "Uninstalling?" section to reflect CLAUDE.md and .gitignore cleanup; added global defaults mention under optional enhancements; updated test badge count from 34 to 51.
 - **Roadmap** — moved patch preservation, global defaults, update preview, and uninstall cleanup from v0.2.0 to v0.1.x (already shipped); updated v0.2.0 to reflect current planned features.
@@ -750,7 +750,7 @@ No manual migration steps required. All new features work out of the box or are 
 
 ## [0.1.6] — 2026-03-11
 
-### ✨ New features
+### ✨ Features
 
 - **Patch preservation on update** — the installer now generates SHA-256 file manifests (`manifest.json`, `workflows-manifest.json`) during install. On subsequent installs (updates), it compares current files against the manifest to detect user modifications. Modified files are backed up to `.claude/clancy/local-patches/` with metadata before overwriting, so customisations are never silently lost.
 - **Global defaults for settings** — `/clancy:settings` now offers a "Save as defaults" option that writes non-credential settings (max iterations, model, base branch, Playwright) to `~/.clancy/defaults.json`. New projects created with `/clancy:init` inherit these defaults automatically.
@@ -759,11 +759,11 @@ No manual migration steps required. All new features work out of the box or are 
 
 ## [0.1.5] — 2026-03-11
 
-### ✨ Improvements
+### ✨ Features
 
 - **`/clancy:update` workflow rewrite** — now detects the installed version from the local `VERSION` file, compares against npm before running, shows the changelog diff and a clean-install warning, asks for user confirmation, and clears the update check cache after a successful update. Previously the update ran immediately with no preview or confirmation.
 
-### 🐛 Bug fixes
+### 🐛 Fixes
 
 - **`/clancy:uninstall` left CLAUDE.md and .gitignore dirty** — uninstall did not clean up the `<!-- clancy:start -->` / `<!-- clancy:end -->` block it added to CLAUDE.md, nor remove the `.clancy/.env` entry it added to .gitignore. If Clancy created CLAUDE.md (no other content), it is now deleted entirely; if Clancy appended to an existing CLAUDE.md, only the Clancy section is removed. The .gitignore entry and comment are also cleaned up, and the file is deleted if Clancy was the only contributor.
 
@@ -771,7 +771,7 @@ No manual migration steps required. All new features work out of the box or are 
 
 ## [0.1.4] — 2026-03-10
 
-### 💄 Improvements
+### ✨ Features
 
 - **Settings menu labels** — renamed `Status filter` to `Queue status` in the Jira settings menu to make it clear this controls which column Clancy pulls tickets *from*, distinct from the status transition settings.
 
@@ -779,7 +779,7 @@ No manual migration steps required. All new features work out of the box or are 
 
 ## [0.1.3] — 2026-03-09
 
-### 🐛 Bug fixes
+### 🐛 Fixes
 
 - **`scaffold.md` out of sync with source templates** — the shell scripts and `.env.example` files embedded in `scaffold.md` (written verbatim by Claude during `/clancy:init`) had diverged from their source templates in `src/templates/`. Synced all seven embedded blocks: four shell scripts (`clancy-once.sh` Jira/GitHub/Linear, `clancy-afk.sh`) and three `.env.example` files. Changes include expanded preflight error messages, additional inline comments, and fuller `.env.example` documentation.
 
@@ -791,7 +791,7 @@ No manual migration steps required. All new features work out of the box or are 
 
 ## [0.1.2] — 2026-03-09
 
-### 🐛 Bug fixes
+### 🐛 Fixes
 
 - **Shell scripts generated incorrectly on init** — the init workflow told Claude to "copy" `clancy-once.sh` from a source that doesn't exist after installation. Claude would improvise and generate a broken script (wrong API endpoint, BSD-incompatible `head -n -1`, etc.). The scaffold workflow now embeds the exact script content for all three boards so Claude writes it verbatim.
 
@@ -799,7 +799,7 @@ No manual migration steps required. All new features work out of the box or are 
 
 ## [0.1.1] — 2026-03-09
 
-### 🐛 Bug fixes
+### 🐛 Fixes
 
 - **Global install: workflow files not found** — commands installed to `~/.claude` reference workflow files via `@` paths that Claude Code resolves relative to the project root. For global installs, the workflow files weren't in the project so all commands failed to load. The installer now inlines workflow content directly into command files at global install time.
 - **Jira: `JIRA_PROJECT_KEY` format validation** — added a format check (`^[A-Z][A-Z0-9]+$`) before using the key in API URLs and JQL queries.
@@ -856,7 +856,7 @@ No manual migration steps required. All new features work out of the box or are 
 - Preflight checks in all scripts: binary check, `.env` validation, git repo check, board reachability ping
 - Board registry (`registry/boards.json`) for community-contributed board integrations
 
-### 🧪 Testing & docs
+### ✅ Tests
 
 - Unit tests against fixture files for all three boards
 - Smoke test suite for live API validation
