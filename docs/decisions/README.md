@@ -41,6 +41,12 @@ docs/decisions/v0.8.0/
 |---|---|---|
 | `v0.9.0/` | Design sub-phase in planner, Google Stitch integration, Playwright/axe-core/Lighthouse verification. Has `brief.md` + `design.md`. | v0.9.0 |
 
+### Cross-cutting
+
+| Directory | Purpose |
+|---|---|
+| `qa-strategy/` | 2-layer QA plan (integration tests + E2E). 5 tickets: infrastructure, implementer flows, board API/pipeline/hooks, E2E real platforms, CI wiring. Ships incrementally as v0.8.x patches before v0.9.0. |
+
 ## What does NOT belong here
 
 - **Architecture docs** — those live in `docs/ARCHITECTURE.md`
