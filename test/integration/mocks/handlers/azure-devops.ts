@@ -1,7 +1,7 @@
 /**
  * MSW handlers for Azure DevOps REST API.
  * Two-step fetch: WIQL query -> work items GET (with ids query param).
- * Smoke handler — happy path only. Full scenario variants in QA-002a.
+ * Happy path + empty queue + auth failure variants.
  */
 import { http, HttpResponse } from 'msw';
 
@@ -33,5 +33,26 @@ export const azdoHandlers = [
   // Update work item (JSON Patch)
   http.patch(`${BASE}/wit/workitems/:id`, () =>
     HttpResponse.json(fixture.batch.value[0]),
+  ),
+];
+
+/** Empty queue — WIQL returns no work items. */
+export const azdoEmptyHandlers = [
+  http.get('https://dev.azure.com/test-org/_apis/projects/test-project', () =>
+    HttpResponse.json({
+      id: 'proj-uuid',
+      name: 'test-project',
+      state: 'wellFormed',
+    }),
+  ),
+  http.post(`${BASE}/wit/wiql`, () =>
+    HttpResponse.json({ workItems: [] }),
+  ),
+];
+
+/** Auth failure — board ping returns 401. */
+export const azdoAuthFailureHandlers = [
+  http.get('https://dev.azure.com/test-org/_apis/projects/test-project', () =>
+    HttpResponse.json({ message: 'Unauthorized' }, { status: 401 }),
   ),
 ];

@@ -1,6 +1,6 @@
 /**
  * MSW handlers for Jira REST API.
- * Smoke handler — happy path only. Full scenario variants in QA-002a.
+ * Happy path + empty queue + auth failure variants.
  */
 import { http, HttpResponse } from 'msw';
 
@@ -42,5 +42,22 @@ export const jiraHandlers = [
   // Get issue (for label read before write)
   http.get(`${BASE}/rest/api/3/issue/:key`, () =>
     HttpResponse.json(fixture.issues[0]),
+  ),
+];
+
+/** Empty queue — no issues returned. */
+export const jiraEmptyHandlers = [
+  http.get(`${BASE}/rest/api/3/project/:projectKey`, () =>
+    HttpResponse.json({ key: 'TEST', name: 'Test Project' }),
+  ),
+  http.post(`${BASE}/rest/api/3/search/jql`, () =>
+    HttpResponse.json({ issues: [] }),
+  ),
+];
+
+/** Auth failure — board ping returns 401. */
+export const jiraAuthFailureHandlers = [
+  http.get(`${BASE}/rest/api/3/project/:projectKey`, () =>
+    HttpResponse.json({ message: 'Unauthorized' }, { status: 401 }),
   ),
 ];

@@ -1,6 +1,6 @@
 /**
  * MSW handlers for Shortcut REST API v3.
- * Smoke handler — happy path only. Full scenario variants in QA-002a.
+ * Happy path + empty queue + auth failure variants.
  */
 import { http, HttpResponse } from 'msw';
 
@@ -46,5 +46,33 @@ export const shortcutHandlers = [
   // Create label
   http.post(`${BASE}/labels`, () =>
     HttpResponse.json({ id: 42, name: 'clancy:build' }, { status: 201 }),
+  ),
+];
+
+/** Empty queue — no stories returned. */
+export const shortcutEmptyHandlers = [
+  http.get(`${BASE}/member-info`, () =>
+    HttpResponse.json({ id: 'member-uuid', mention_name: 'testuser' }),
+  ),
+  http.get(`${BASE}/workflows`, () =>
+    HttpResponse.json([
+      {
+        id: 1,
+        name: 'Engineering',
+        states: [
+          { id: 100, name: 'Unstarted', type: 'unstarted' },
+        ],
+      },
+    ]),
+  ),
+  http.post(`${BASE}/stories/search`, () =>
+    HttpResponse.json({ data: [] }),
+  ),
+];
+
+/** Auth failure — board ping returns 401. */
+export const shortcutAuthFailureHandlers = [
+  http.get(`${BASE}/member-info`, () =>
+    HttpResponse.json({ message: 'Unauthorized' }, { status: 401 }),
   ),
 ];
