@@ -31,3 +31,20 @@ jobs:
 
       - name: Test
         run: npm test
+
+  integration:
+    name: Integration tests
+    needs: build-and-test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: rm -rf node_modules package-lock.json && npm install
+
+      - name: Integration tests
+        run: npm run test:integration
