@@ -18,7 +18,7 @@ export interface SimulatorOptions {
  * Simulate a successful Claude implementation.
  *
  * Creates valid TypeScript files, stages, and commits them.
- * Files pass strict TypeScript compilation and ESLint.
+ * Files pass strict TypeScript compilation in the test scaffold.
  *
  * @returns The commit SHA.
  */
@@ -79,9 +79,9 @@ export function simulateClaudeFailure(
 
   const brokenCode = [
     `// Broken implementation for ${ticketKey}`,
-    `const unusedVariable = 42;`, // unused variable — lint error
+    `const unusedVariable = 42;`, // unused variable
     `export function ${fnName}(): number {`,
-    `  return 'not a number';`, // type error — returns string, declares number
+    `  return 'not a number';`, // type error — returns string, declares number (primary failure signal)
     `}`,
     ``,
   ].join('\n');
@@ -122,6 +122,9 @@ export interface SequencedScenario {
 export function createSequencedClaudeMock(
   scenarios: SequencedScenario[],
 ): (_prompt: string, _model?: string) => boolean {
+  if (scenarios.length === 0) {
+    throw new Error('createSequencedClaudeMock requires at least one scenario');
+  }
   let callIndex = 0;
 
   return (_prompt: string, _model?: string) => {
