@@ -1,11 +1,12 @@
 /**
- * Handler verification test — proves every MSW handler responds to the
- * actual HTTP requests the production board modules make.
+ * Handler verification test — smoke-checks that key MSW handlers respond
+ * to the HTTP requests our boards are expected to make.
  *
- * If a handler endpoint doesn't match what the board module calls,
- * MSW's onUnhandledRequest: 'error' will throw and the test fails.
- * This catches endpoint mismatches mechanically rather than relying
- * on manual review.
+ * The test issues representative fetch() calls mirroring common board
+ * operations. If a handler endpoint doesn't match, MSW's
+ * onUnhandledRequest: 'error' will throw and the test fails.
+ * This provides a mechanical sanity check for curated endpoints but
+ * is not an exhaustive proof for every possible request shape.
  */
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 
