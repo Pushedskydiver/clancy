@@ -32,6 +32,8 @@ import {
   vi,
 } from 'vitest';
 
+import { resetUsernameCache } from '~/scripts/board/github/github.js';
+
 import { simulateClaudeSuccess } from '../helpers/claude-simulator.js';
 import { githubEnv } from '../helpers/env-fixtures.js';
 import {
@@ -80,8 +82,11 @@ vi.mock('~/scripts/shared/preflight/preflight.js', () => ({
   isGitRepo: () => true,
 }));
 
-// Mock Claude CLI — simulator creates files + commits instead of spawning claude
-let claudeSessionMock: (prompt: string, model?: string) => boolean;
+// Mock Claude CLI — simulator creates files + commits instead of spawning claude.
+// Default throws if called unexpectedly (early-exit tests should never reach invoke).
+let claudeSessionMock: (prompt: string, model?: string) => boolean = () => {
+  throw new Error('claudeSessionMock called unexpectedly — pipeline should have exited before invoke phase');
+};
 
 vi.mock('~/scripts/shared/claude-cli/claude-cli.js', () => ({
   invokeClaudeSession: (prompt: string, model?: string) =>
@@ -164,6 +169,7 @@ describe('Implementer lifecycle — GitHub Issues happy path', () => {
   afterEach(() => {
     server.resetHandlers();
     vi.unstubAllEnvs();
+    resetUsernameCache();
     repo?.cleanup();
     repo = undefined;
   });
@@ -217,6 +223,7 @@ describe('Implementer lifecycle — GitHub Issues empty queue', () => {
   afterEach(() => {
     server.resetHandlers();
     vi.unstubAllEnvs();
+    resetUsernameCache();
     repo?.cleanup();
     repo = undefined;
   });
@@ -252,6 +259,7 @@ describe('Implementer lifecycle — GitHub Issues auth failure', () => {
   afterEach(() => {
     server.resetHandlers();
     vi.unstubAllEnvs();
+    resetUsernameCache();
     repo?.cleanup();
     repo = undefined;
   });
@@ -290,6 +298,7 @@ describe('Implementer lifecycle — dry-run mode', () => {
   afterEach(() => {
     server.resetHandlers();
     vi.unstubAllEnvs();
+    resetUsernameCache();
     repo?.cleanup();
     repo = undefined;
   });
