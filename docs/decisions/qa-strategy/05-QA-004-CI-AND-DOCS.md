@@ -22,10 +22,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
       - run: rm -rf node_modules package-lock.json && npm install
       - run: npm test
       - run: npm run typecheck
@@ -38,10 +34,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
       - run: rm -rf node_modules package-lock.json && npm install
       - run: npm run test:integration
 ```

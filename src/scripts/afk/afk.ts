@@ -123,7 +123,7 @@ export function checkStopCondition(output: string): {
   return { stop: false };
 }
 
-/** Result shape returned by the once runner — matches spawnSync output. */
+/** Result shape returned by the once runner — subset of spawnSync output. */
 export type OnceRunnerResult = Pick<
   SpawnSyncReturns<string>,
   'stdout' | 'error'

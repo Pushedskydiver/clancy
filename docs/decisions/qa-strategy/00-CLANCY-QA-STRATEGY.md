@@ -4,7 +4,7 @@
 
 ---
 
-## What Clancy Is (v0.8.1)
+## What Clancy Is (v0.8.2)
 
 Clancy is a TypeScript/ESM CLI tool (`chief-clancy` on npm) — an autonomous board-driven development agent launcher for Claude Code.
 
@@ -76,7 +76,7 @@ This table drives the entire QA strategy. Only scriptable entry points can be in
 | Command | Type | Entry point | Importable? |
 |---|---|---|---|
 | `/clancy:once` | TypeScript | `src/scripts/once/once.ts` | **Yes** — `run(argv: string[]): Promise<void>` |
-| `/clancy:run` (AFK) | TypeScript | `src/scripts/afk/afk.ts` | **Yes** — `runAfkLoop(scriptDir, maxIterations?): Promise<void>` |
+| `/clancy:run` (AFK) | TypeScript | `src/scripts/afk/afk.ts` | **Yes** — `runAfkLoop(scriptDir, maxIterations?, runner?): Promise<void>` |
 | `/clancy:init` | TypeScript | `src/installer/install.ts` | **No** (CLI-only), but 5 sub-modules are independently importable |
 | `/clancy:dry-run` | Markdown | Wraps `/clancy:once --dry-run` | Via `run(['--dry-run'])` |
 | `/clancy:plan` | Markdown | `src/roles/planner/commands/plan.md` | No — prompt-driven |

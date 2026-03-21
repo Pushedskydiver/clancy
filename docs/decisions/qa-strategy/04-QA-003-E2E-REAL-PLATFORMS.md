@@ -132,11 +132,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 22 }
-      - uses: actions/cache@v4
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-node-${{ hashFiles('package-lock.json') }}
-      - run: npm ci
+      - run: rm -rf node_modules package-lock.json && npm install
       - run: npm run test:e2e -- ${{ matrix.board }}
         env:
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
