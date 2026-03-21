@@ -130,11 +130,12 @@ function createInProcessRunner(
     };
 
     try {
-      // Reset to main before each iteration. Real AFK spawns a fresh subprocess
-      // which naturally starts on main with shared disk state (progress.txt
-      // persists across iterations). The in-process runner must preserve
-      // .clancy/ state while switching branches, so we stash, switch, then
-      // restore — matching real AFK behaviour.
+      // Reset to main before each iteration for this in-process test runner.
+      // The production AFK loop simply spawns `node` with cwd set to the repo
+      // and does not reset branches between iterations; it starts from whatever
+      // branch the previous iteration left checked out. For tests we want a
+      // deterministic starting point on main while preserving .clancy/ state,
+      // so we stash, switch, then restore here.
       try {
         execFileSync('git', ['stash', '--include-untracked'], {
           cwd: repoPath,
