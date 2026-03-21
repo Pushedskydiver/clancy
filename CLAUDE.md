@@ -43,7 +43,8 @@ Autonomous, board-driven development for Claude Code. npm package: `chief-clancy
 | [docs/TESTING.md](docs/TESTING.md) | Testing strategy, co-location rules, coverage thresholds |
 | [docs/GIT.md](docs/GIT.md) | Branch strategy, merge conventions |
 | [docs/decisions/](docs/decisions/) | Decision docs — design decisions organised by version |
-| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Development process — version lifecycle, DA reviews, pre-merge sweep checklist |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Development process — version lifecycle, DA reviews, pre-merge sweep checklist, memory hygiene |
+| [docs/SELF-REVIEW.md](docs/SELF-REVIEW.md) | Self-review checklist — living document, evolves from Copilot findings |
 | [docs/TECHNICAL-REFERENCE.md](docs/TECHNICAL-REFERENCE.md) | Implementation details — boards, hooks, delivery, pipeline labels, AFK mode, build system |
 | [docs/COMPARISON.md](docs/COMPARISON.md) | Clancy vs GSD vs PAUL comparison |
 | [docs/roles/](docs/roles/) | Role descriptions (implementer, reviewer, setup, planner, strategist) |
