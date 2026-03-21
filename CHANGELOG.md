@@ -7,6 +7,18 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.8.4] — 2026-03-21
+
+### Added
+
+- **Implementer happy path integration test (QA-002a-1)** — first end-to-end integration test that runs the full 13-phase once orchestrator pipeline against a temp git repo with MSW-intercepted GitHub Issues API calls. Proves the pattern: preflight mock + board detection + ticket fetch + branch setup + Claude simulator + PR creation + progress logging.
+
+### Tests
+
+- 1217 unit tests (unchanged) + 38 integration tests (1 new flow test)
+
+---
+
 ## [0.8.3] — 2026-03-21
 
 ### Added
