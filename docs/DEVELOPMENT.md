@@ -225,7 +225,7 @@ Trivial docs-only changes pushed directly to main (typo fixes, badge updates). T
 The verification counterpart to the doc sweep (step 5). After doc agents run and before creating the PR, verify these manually:
 
 **Always check:**
-1. README.md test badge — does count match `npm test` output?
+1. README.md test badge — does combined count (unit + integration) match `npm test` + `npm run test:integration` output?
 2. CHANGELOG.md — entry present with correct version, date, and test count?
 3. package.json version bump + package-lock.json synced (`npm install --package-lock-only`)?
 4. CLAUDE.md — key paths, technical details, commands, hook count, board count?
