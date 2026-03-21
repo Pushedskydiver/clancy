@@ -139,6 +139,7 @@ This step bridges the gap between the DA (architecture-level) and Copilot (line-
 - Update decision doc statuses to `Shipped (decisions only)`
 - Verify: test badge matches, version correct, memories updated, no stale refs
 - **Memory hygiene:** scan MEMORY.md for memories created during this feature. Merge any that overlap with existing memories. Delete milestone/progress memories. See [Memory Hygiene](#memory-hygiene) section.
+- **Dependency check:** run `npm outdated` — update any safe minor/patch bumps. Run `npx depcheck` if you suspect unused dependencies.
 
 ---
 
