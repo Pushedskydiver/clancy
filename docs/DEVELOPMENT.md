@@ -79,7 +79,7 @@ Update the status at each transition. This makes it clear where each doc is in t
 - Per-wave DA review between each wave (catches foundation issues before later waves build on them)
 - Fix DA findings before proceeding to next wave
 - Self-review changed files after final wave (see [step 5b](#5b-self-review--line-level-accuracy-check))
-- **Session handoff:** When the conversation gets long (context compressing, earlier messages lost) or at natural break points between PRs, start a new chat session. Provide a ready-to-paste handoff prompt with: what shipped (PR numbers, versions), what's next (ticket, spec file, key decisions), current branch state. Fresh sessions have full context window + all memory files loaded clean.
+- **Session handoff:** Start a new chat session after every 3 merged PRs, or when context compression is detected — whichever comes first. Always finish the current PR before handing off. Provide a ready-to-paste handoff prompt with: what shipped (PR numbers, versions), what's next (ticket, spec file, key decisions), current branch state. Fresh sessions have full context window + all memory files loaded clean.
 
 ### 5. Doc Sweep — Update every doc
 
