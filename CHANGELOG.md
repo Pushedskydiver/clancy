@@ -7,6 +7,18 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.8.2] — 2026-03-21
+
+### Changed
+
+- **AFK runner injection** — `runAfkLoop()` now accepts an optional `runner` parameter for dependency injection. Default behaviour unchanged (spawns `clancy-once.js` via `spawnSync`). Enables integration tests to call `run()` in-process where MSW can intercept board API calls.
+
+### Internal
+
+- **QA strategy decision docs** — 2-layer QA plan (integration tests + E2E) added to `docs/decisions/qa-strategy/`. 5 tickets covering infrastructure, implementer flows, board API/pipeline/hooks, E2E real platforms, and CI wiring.
+
+---
+
 ## [0.8.1] — 2026-03-20
 
 ### Added
