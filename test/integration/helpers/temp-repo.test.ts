@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -21,13 +21,13 @@ describe('temp-repo', () => {
   it('creates a repo with main branch and initial commit', () => {
     const r = (repo = createTempRepo());
 
-    const branch = execSync('git branch --show-current', {
+    const branch = execFileSync('git', ['branch', '--show-current'], {
       cwd: r.repoPath,
       encoding: 'utf8',
     }).trim();
     expect(branch).toBe('main');
 
-    const log = execSync('git log --oneline', {
+    const log = execFileSync('git', ['log', '--oneline'], {
       cwd: r.repoPath,
       encoding: 'utf8',
     }).trim();
@@ -37,7 +37,7 @@ describe('temp-repo', () => {
   it('creates a custom base branch when requested', () => {
     const r = (repo = createTempRepo({ baseBranch: 'develop' }));
 
-    const branch = execSync('git branch --show-current', {
+    const branch = execFileSync('git', ['branch', '--show-current'], {
       cwd: r.repoPath,
       encoding: 'utf8',
     }).trim();
@@ -50,7 +50,7 @@ describe('temp-repo', () => {
     // Only run tsc if node_modules exists (global setup provides it)
     if (existsSync(join(r.repoPath, 'node_modules'))) {
       expect(() =>
-        execSync('npx tsc --noEmit', {
+        execFileSync('npx', ['tsc', '--noEmit'], {
           cwd: r.repoPath,
           stdio: 'pipe',
           timeout: 30_000,
@@ -91,18 +91,18 @@ describe('temp-repo', () => {
     const r = (repo = createTempRepo());
     createEpicBranch(r.repoPath, 'PROJ-100');
 
-    const branch = execSync('git branch --show-current', {
+    const branch = execFileSync('git', ['branch', '--show-current'], {
       cwd: r.repoPath,
       encoding: 'utf8',
     }).trim();
     expect(branch).toBe('epic/proj-100');
 
     // Verify it branched from main (same commit)
-    const mainSha = execSync('git rev-parse main', {
+    const mainSha = execFileSync('git', ['rev-parse', 'main'], {
       cwd: r.repoPath,
       encoding: 'utf8',
     }).trim();
-    const epicSha = execSync('git rev-parse HEAD', {
+    const epicSha = execFileSync('git', ['rev-parse', 'HEAD'], {
       cwd: r.repoPath,
       encoding: 'utf8',
     }).trim();

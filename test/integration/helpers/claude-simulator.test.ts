@@ -1,4 +1,4 @@
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
@@ -31,7 +31,7 @@ describe('claude-simulator', () => {
       const r = (repo = createTempRepo());
       simulateClaudeSuccess(r.repoPath, 'PROJ-42');
 
-      const msg = execSync('git log -1 --pretty=%s', {
+      const msg = execFileSync('git', ['log', '-1', '--pretty=%s'], {
         cwd: r.repoPath,
         encoding: 'utf8',
       }).trim();
@@ -44,7 +44,7 @@ describe('claude-simulator', () => {
 
       if (existsSync(join(r.repoPath, 'node_modules'))) {
         expect(() =>
-          execSync('npx tsc --noEmit', {
+          execFileSync('npx', ['tsc', '--noEmit'], {
             cwd: r.repoPath,
             stdio: 'pipe',
             timeout: 30_000,
@@ -81,7 +81,7 @@ describe('claude-simulator', () => {
 
       if (existsSync(join(r.repoPath, 'node_modules'))) {
         expect(() =>
-          execSync('npx tsc --noEmit', {
+          execFileSync('npx', ['tsc', '--noEmit'], {
             cwd: r.repoPath,
             stdio: 'pipe',
             timeout: 30_000,
@@ -108,7 +108,7 @@ describe('claude-simulator', () => {
       expect(result2).toBe(true);
 
       // Should have 3 commits: scaffold + failure + success
-      const count = execSync('git rev-list --count HEAD', {
+      const count = execFileSync('git', ['rev-list', '--count', 'HEAD'], {
         cwd: r.repoPath,
         encoding: 'utf8',
       }).trim();
