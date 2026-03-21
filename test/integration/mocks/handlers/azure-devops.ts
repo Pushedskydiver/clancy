@@ -5,7 +5,7 @@
  */
 import { http, HttpResponse } from 'msw';
 
-import fixture from '../fixtures/azure-devops/workitem-happy-path.json';
+import fixture from '../fixtures/azure-devops/workitem-happy-path.json' with { type: 'json' };
 
 const BASE = 'https://dev.azure.com/test-org/test-project/_apis';
 

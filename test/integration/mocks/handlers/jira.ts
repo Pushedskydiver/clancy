@@ -4,7 +4,7 @@
  */
 import { http, HttpResponse } from 'msw';
 
-import fixture from '../fixtures/jira/issue-happy-path.json';
+import fixture from '../fixtures/jira/issue-happy-path.json' with { type: 'json' };
 
 const BASE = 'https://test.atlassian.net';
 

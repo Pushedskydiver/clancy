@@ -4,7 +4,7 @@
  */
 import { http, HttpResponse } from 'msw';
 
-import fixture from '../fixtures/notion/page-happy-path.json';
+import fixture from '../fixtures/notion/page-happy-path.json' with { type: 'json' };
 
 const BASE = 'https://api.notion.com';
 

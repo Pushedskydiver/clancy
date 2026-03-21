@@ -89,7 +89,8 @@ describe('handler verification — ping endpoints match production code', () => 
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ query: '{ viewer { id } }' }),
     });
-    const data = await res.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = (await res.json()) as any;
     expect(data.data?.viewer?.id).toBeDefined();
   });
 
@@ -101,7 +102,8 @@ describe('handler verification — ping endpoints match production code', () => 
         query: '{ viewer { assignedIssues(filter: {}) { nodes { id } } } }',
       }),
     });
-    const data = await res.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = (await res.json()) as any;
     expect(data.data?.viewer?.assignedIssues).toBeDefined();
   });
 
@@ -113,7 +115,8 @@ describe('handler verification — ping endpoints match production code', () => 
         query: '{ team(id: "t1") { labels { nodes { id name } } } }',
       }),
     });
-    const data = await res.json();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const data = (await res.json()) as any;
     expect(data.data?.team?.labels).toBeDefined();
   });
 

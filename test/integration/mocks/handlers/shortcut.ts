@@ -4,7 +4,7 @@
  */
 import { http, HttpResponse } from 'msw';
 
-import fixture from '../fixtures/shortcut/story-happy-path.json';
+import fixture from '../fixtures/shortcut/story-happy-path.json' with { type: 'json' };
 
 const BASE = 'https://api.app.shortcut.com/api/v3';
 
