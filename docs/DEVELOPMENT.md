@@ -15,6 +15,7 @@ For experienced developers — one line per step:
 3. **Plan** — create `docs/decisions/v{X}/execution-plan.md` → DA review → user approval
 4. **Build** — branch, per-wave agents, tests after every wave, per-wave DA
 5. **Doc Sweep** — 6 parallel agents update all docs, DA verifies, re-run tests
+5b. **Self-Review** — line-level accuracy check on every changed file (comments, endpoints, fixtures, params)
 6. **Ship** — PR + Copilot review, squash merge, npm publish, update memory
 7. **Post-Ship** — trim decision docs, verify badge/version/memories
 
@@ -76,6 +77,7 @@ Update the status at each transition. This makes it clear where each doc is in t
 - **All tests must pass after every wave** — run `npm test && npm run typecheck && npm run lint` and verify 0 failures before committing. Never push code with failing tests.
 - Per-wave DA review between each wave (catches foundation issues before later waves build on them)
 - Fix DA findings before proceeding to next wave
+- Self-review changed files after final wave (see [step 5b](#5b-self-review--line-level-accuracy-check))
 
 ### 5. Doc Sweep — Update every doc
 
@@ -100,6 +102,27 @@ Then spin up a DA agent that reads ALL files touched by agents 1-6 and checks fo
 - Missing items from the pre-merge sweep checklist
 
 **Re-verify after doc sweep:** Run `npm test && npm run typecheck && npm run lint` to ensure doc agents didn't break anything (especially package.json and lock file changes).
+
+### 5b. Self-Review — Line-level accuracy check
+
+After DA review and doc sweep, before creating the PR, read every changed file (`git diff main...HEAD`) and check for detail-level issues that DA and doc agents miss:
+
+**Code accuracy:**
+- Do comments/JSDoc match what the code actually does? (stale comments are the #1 review catch)
+- Are all function parameters used? If not, remove or use them
+- Do mock/test URLs match the actual production endpoints? (read the production code to verify)
+- Do fixture shapes match what the production code expects? (check Zod schemas and actual API calls)
+
+**Consistency:**
+- Are constants duplicated across files? (single source of truth)
+- Are imports unused?
+- Do config options extend defaults rather than replacing them?
+
+**Security/robustness:**
+- Is `execSync` used with string interpolation? (use `execFileSync` with argument arrays)
+- Are test credential values constructed at runtime where needed? (GitHub secret scanner)
+
+This step bridges the gap between the DA (architecture-level) and Copilot (line-level). Goal: reduce Copilot review rounds from 3-4 to 1.
 
 ### 6. Ship — Merge, publish, update memory
 
@@ -129,9 +152,11 @@ For bug fixes and small enhancements that don't warrant a full brief/design:
 1. **Skip steps 1-3** (brief, design, plan) — go straight to Build
 2. Create a `fix/` or `feature/` branch
 3. Implement the fix with tests
-4. Run the pre-merge sweep checklist (abbreviated — focus on CHANGELOG, version bump, test badge)
-5. PR + Copilot review → merge → publish
-6. No decision doc directory needed (the fix is documented in the CHANGELOG)
+4. DA review (for non-trivial changes)
+5. Self-review changed files (step 5b — line-level accuracy check)
+6. Run the pre-merge sweep checklist (abbreviated — focus on CHANGELOG, version bump, test badge)
+7. PR + Copilot review → merge → publish
+8. No decision doc directory needed (the fix is documented in the CHANGELOG)
 
 ### Docs-only changes
 
