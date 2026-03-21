@@ -20,6 +20,7 @@ This is a **living document** — when Copilot catches something the self-review
 - Are imports unused?
 - Do config options extend defaults rather than replacing them?
 - Was the same fix applied everywhere it's needed? (don't fix helpers but miss test files)
+- Do any imported modules cache global state that could leak between tests? (reset caches in `afterEach`)
 
 ## Security / robustness
 
