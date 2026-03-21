@@ -18,7 +18,7 @@
  * directly) because the real runPreflight also checks binaries and git state.
  */
 import { execFileSync } from 'node:child_process';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 
@@ -47,13 +47,11 @@ import { githubPrHandlers } from '../mocks/handlers/github-pr.js';
 vi.mock('~/scripts/shared/preflight/preflight.js', () => ({
   runPreflight: (projectRoot: string) => {
     // Read the .env file directly — skip binary/git/remote checks
-    const fs = require('node:fs');
-    const path = require('node:path');
-    const envPath = path.join(projectRoot, '.clancy', '.env');
-    if (!fs.existsSync(envPath)) {
+    const envPath = join(projectRoot, '.clancy', '.env');
+    if (!existsSync(envPath)) {
       return { ok: false, error: '✗ .clancy/.env not found' };
     }
-    const content = fs.readFileSync(envPath, 'utf8') as string;
+    const content = readFileSync(envPath, 'utf8');
     const env: Record<string, string> = {};
     for (const line of content.split('\n')) {
       const trimmed = line.trim();
