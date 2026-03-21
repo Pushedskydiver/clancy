@@ -122,6 +122,9 @@ After DA review and doc sweep, before creating the PR, read every changed file (
 - Is `execSync` used with string interpolation? (use `execFileSync` with argument arrays)
 - Are test credential values constructed at runtime where needed? (GitHub secret scanner)
 
+**Config inheritance:**
+- Did changing a config file affect other configs that extend it? (e.g. `tsconfig.build.json` extends `tsconfig.json` — changing `rootDir` in the base breaks the build output paths)
+
 This step bridges the gap between the DA (architecture-level) and Copilot (line-level). Goal: reduce Copilot review rounds from 3-4 to 1.
 
 ### 6. Ship — Merge, publish, update memory
