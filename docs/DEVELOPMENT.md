@@ -126,8 +126,8 @@ This step bridges the gap between the DA (architecture-level) and Copilot (line-
 
 ### 6. Ship — Merge, publish, update memory
 
-- Create PR with label + assignee
-- Copilot review rounds — GitHub Copilot automated code review. Fix all findings before merge.
+- Create PR with label, assignee, and `--reviewer @copilot` (Copilot review starts immediately on PR creation)
+- Copilot review rounds — fix all findings before merge. Address or decline each comment with reasoning.
 - Squash merge to main (PR title = squash commit message, must follow gitmoji + conventional commit format)
 - Publish to npm: `npm publish`
 - Update MEMORY.md (current state, shipped versions, next steps) — do this AFTER publish succeeds
