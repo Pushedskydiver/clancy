@@ -110,7 +110,9 @@ Then spin up a DA agent that reads ALL files touched by agents 1-6 and checks fo
 Three checks, in this strict order, before creating the PR:
 
 **1. DA Review (architecture-level)**
-Spin up a devil's advocate agent to review all changed files. For non-trivial changes this is mandatory — skip only for trivial fixes (typos, badge updates). DA catches architectural issues, stale references, missing edge cases, and test coverage gaps.
+Spin up a devil's advocate agent to review all changed files. For non-trivial changes this is mandatory. DA catches architectural issues, stale references, missing edge cases, and test coverage gaps.
+
+What is **non-trivial**? Code with logic (new functions, changed conditionals, refactored modules), changed type signatures, orchestrator flow changes, new env vars, test infrastructure changes. **Trivial** = typos, badge updates, reformatting, adding test cases to proven structures. When in doubt, run DA.
 
 **2. Self-Review (line-level)**
 Run through the **[Self-Review Checklist](SELF-REVIEW.md)**. Read every changed file (`git diff main...HEAD`) and check for detail-level issues that DA and doc agents miss — stale comments, wrong endpoints, fixture shapes, unused params.
@@ -143,7 +145,15 @@ The self-review checklist is a **living document** — when Copilot catches some
 
 ## Lightweight Paths
 
-Not all changes need the full 7-step lifecycle.
+Not all changes need the full 7-step lifecycle. Use this decision matrix:
+
+| Path | When to use | Steps |
+|---|---|---|
+| **Full** | New commands, roles, orchestrator phases, board integrations | brief → design → plan → build → review gate → doc sweep → ship |
+| **Lightweight** | Bug fixes, refactors, test additions, chores, patches | build → review gate → ship |
+| **Docs-only** | Glossary, architecture docs, decision docs, typo fixes, badges | Direct to main, no PR |
+
+**Rule of thumb:** if it changes runtime behaviour or test infrastructure, use Lightweight minimum. If it adds a user-facing capability, use Full.
 
 ### Hotfixes / Patches (e.g. v0.8.1)
 

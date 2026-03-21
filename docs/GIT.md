@@ -19,8 +19,16 @@ All work branches from `main` and merges back to `main` via PR.
 
 ### Rules
 
-- **If it runs, it needs a PR.** TypeScript (`src/`, `hooks/`), tests, executable markdown (`src/roles/`, `src/templates/`, `src/agents/`), package.json, CHANGELOG.md, CI config (`.github/`) — always via branch + PR.
-- **If it's only read, direct to main is fine.** Decision docs (`docs/decisions/`), glossary, architecture docs (`docs/`), CLAUDE.md doc link updates, README badge/link fixes, typo corrections.
+- **If it runs, it needs a PR.** TypeScript (`src/`, `hooks/`), tests, executable markdown, package.json, CHANGELOG.md, CI config (`.github/`) — always via branch + PR.
+- **If it's only read by humans/agents for context, direct to main is fine.** Decision docs (`docs/decisions/`), glossary, architecture docs (`docs/`), CLAUDE.md doc link updates, README badge/link fixes, typo corrections.
+
+**What is "executable markdown"?** Any markdown file containing instructions that Claude will execute as part of a command or workflow. These are code, not documentation:
+- `src/roles/*/commands/*.md` — slash command definitions
+- `src/roles/*/workflows/*.md` — implementation workflows
+- `src/templates/CLAUDE.md` — template injected into user projects
+- `src/agents/*.md` — agent prompts (devil's advocate, verification gate, specialists)
+
+Docs in `docs/` are informational — Claude reads them for context but doesn't execute them as commands. They're safe for direct-to-main.
 - Delete branches after merging
 - CI must pass before merging
 

@@ -159,6 +159,51 @@ Next /clancy:once or /clancy:run iteration:
 
 ---
 
+## Pipeline Label Flow
+
+Labels control which role picks up a ticket. Each transition is atomic — the new label is added before the old one is removed (crash-safe ordering).
+
+```
+┌─────────────┐     /clancy:brief      ┌─────────────┐
+│  (no label)  │ ───────────────────▶  │ clancy:brief │
+└─────────────┘                        └──────┬──────┘
+                                              │
+                              /clancy:approve-brief
+                                              │
+                         ┌────────────────────┤
+                         │                    │
+                    (--skip-plan          (planner
+                     or no planner)       enabled)
+                         │                    │
+                         ▼                    ▼
+                  ┌─────────────┐     ┌─────────────┐
+                  │ clancy:build │     │ clancy:plan  │
+                  └─────────────┘     └──────┬──────┘
+                         ▲                    │
+                         │        /clancy:approve-plan
+                         │                    │
+                         └────────────────────┘
+
+                  ┌─────────────┐
+                  │ clancy:build │ ◀── implementation queue
+                  └──────┬──────┘
+                         │
+                    /clancy:once
+                    /clancy:run
+                         │
+                         ▼
+                  ┌─────────────┐
+                  │  (no label)  │     label removed after
+                  └─────────────┘     ticket is picked up
+```
+
+**Guard rules:**
+- A ticket with BOTH `clancy:plan` and `clancy:build` is skipped (dual-label race protection during add-before-remove transitions).
+- In AFK mode, tickets with `clancy:hitl` are excluded from all queues.
+- `CLANCY_LABEL_BUILD` / `CLANCY_LABEL_PLAN` / `CLANCY_LABEL_BRIEF` env vars override the default label names.
+
+---
+
 ## Human Touchpoints Summary
 
 | Step | Human action | Required? |

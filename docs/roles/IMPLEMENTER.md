@@ -101,7 +101,9 @@ When all children of an epic are done (PRs merged), Clancy automatically creates
 
 ## Rework flow
 
-When a reviewer sends a ticket back for changes, Clancy picks it up automatically with the reviewer's feedback and pushes fixes. Rework tickets take priority over fresh tickets in the queue -- Clancy checks for rework before fetching new tickets on every run.
+When a reviewer sends a ticket back for changes, Clancy picks it up automatically with the reviewer's feedback and pushes fixes. Rework tickets take priority over fresh tickets in the queue — Clancy checks for rework before fetching new tickets on every run.
+
+**Max rework cycles:** After `CLANCY_MAX_REWORK` cycles (default: 3), Clancy stops retrying and logs `SKIPPED` — the ticket needs human intervention. Configure via `/clancy:settings` if you need more cycles. This prevents infinite rework loops when reviewer feedback is contradictory or the fix is beyond Clancy's capability.
 
 ### How rework is detected
 
