@@ -129,6 +129,8 @@ After DA review and doc sweep, before creating the PR, read every changed file (
 
 This step bridges the gap between the DA (architecture-level) and Copilot (line-level). Goal: reduce Copilot review rounds from 3-4 to 1.
 
+**Evolving the checklist:** When Copilot catches something that the self-review should have spotted, add the specific check to this list immediately (both in `docs/DEVELOPMENT.md` and `feedback_code_review_phases.md`). The checklist grows from real mistakes, not hypotheticals.
+
 ### 6. Ship — Merge, publish, update memory
 
 - Create PR with label, assignee, and `--reviewer @copilot` (Copilot review starts immediately on PR creation)
