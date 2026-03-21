@@ -9,6 +9,7 @@
  * - Blocked ticket: skipped when blockers are unresolved
  * - Epic branch targeting: PR targets epic branch, not main
  * - Stale lock cleanup: stale lock.json cleaned up, run proceeds
+ * - AFK resume detection: crashed session with unpushed commits recovered
  *
  * Mock boundaries:
  * - Network: MSW intercepts all fetch() calls
@@ -26,7 +27,7 @@ import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import type { RequestHandler } from 'msw';
+import { http, HttpResponse, type RequestHandler } from 'msw';
 
 import { resetUsernameCache } from '~/scripts/board/github/github.js';
 import {
@@ -40,6 +41,7 @@ import {
   githubEnv,
   jiraEnv,
   linearEnv,
+  githubGitHostEnv,
   notionEnv,
   shortcutEnv,
   type BoardProvider,
@@ -532,16 +534,46 @@ describe('Epic branch targeting — jira', () => {
   });
 
   it('PR targets epic branch when ticket has parent', async () => {
+    // Request-capturing PR handler — asserts the PR base branch
+    let capturedPrBase: string | undefined;
+    const capturingPrHandlers = [
+      // GitHub username resolution (needed for PR creation)
+      http.get('https://api.github.com/user', () =>
+        HttpResponse.json({ login: 'testuser' }),
+      ),
+      http.post(
+        'https://api.github.com/repos/:owner/:repo/pulls',
+        async ({ request }) => {
+          const body = (await request.json()) as { base?: string };
+          capturedPrBase = body.base;
+          return HttpResponse.json(
+            {
+              number: 1,
+              html_url: 'https://github.com/test-owner/test-repo/pull/1',
+              state: 'open',
+            },
+            { status: 201 },
+          );
+        },
+      ),
+      http.post(
+        'https://api.github.com/repos/:owner/:repo/pulls/:number/requested_reviewers',
+        () => HttpResponse.json({}, { status: 201 }),
+      ),
+    ];
+
     const server = createIntegrationServer(
       ...jiraEpicHandlers,
-      ...githubPrHandlers,
+      ...capturingPrHandlers,
     );
     activeServer = server;
     startServer(server);
 
+    // Include a GitHub token in Jira env so PR creation calls the API
+    const jiraWithGitHost = { ...jiraEnv, ...githubGitHostEnv };
     const r = (repo = setupTestRepo(
       'jira',
-      jiraEnv,
+      jiraWithGitHost,
       'https://github.com/test-owner/test-repo.git',
     ));
 
@@ -572,15 +604,17 @@ describe('Epic branch targeting — jira', () => {
     expect(branches).toContain('feature/test-1');
 
     // Assert: feature branch was created from epic branch (not main)
-    // Check that the feature branch has the epic branch as an ancestor
-    const mergeBase = execFileSync(
-      'git',
-      ['merge-base', '--is-ancestor', 'epic/test-100', 'feature/test-1'],
-      { cwd: r.repoPath, stdio: 'pipe' },
-    );
-    // Command exits 0 if epic/test-100 IS an ancestor of feature/test-1
-    // (execFileSync would throw on non-zero exit)
-    expect(mergeBase).toBeDefined();
+    const checkAncestry = () =>
+      execFileSync(
+        'git',
+        ['merge-base', '--is-ancestor', 'epic/test-100', 'feature/test-1'],
+        { cwd: r.repoPath, stdio: 'pipe' },
+      );
+    // exits 0 if epic/test-100 IS an ancestor (throws on non-zero)
+    expect(checkAncestry).not.toThrow();
+
+    // Assert: PR creation targeted the epic branch, not main
+    expect(capturedPrBase).toBe('epic/test-100');
 
     // Assert: progress.txt has entry
     const progress = readFileSync(

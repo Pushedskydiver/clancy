@@ -79,7 +79,7 @@ export const shortcutAuthFailureHandlers = [
 
 /**
  * Blocked ticket — search returns a story with `blocked: true` and
- * a story_link pointing to an unresolved blocker story.
+ * a `story_links` entry pointing to an unresolved blocker story.
  */
 export const shortcutBlockedHandlers = [
   // Ping
