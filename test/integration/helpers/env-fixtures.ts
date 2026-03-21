@@ -1,3 +1,5 @@
+/// <reference types="vitest/globals" />
+
 /**
  * Per-board environment variable fixtures for integration tests.
  *
