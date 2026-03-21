@@ -110,7 +110,7 @@ After DA review and doc sweep, before creating the PR, run through the **[Self-R
 
 This step bridges the gap between the DA (architecture-level) and Copilot (line-level). Goal: reduce Copilot review rounds from 3-4 to 1.
 
-The checklist is a **living document** — when Copilot catches something the self-review should have spotted, add the check to [SELF-REVIEW.md](SELF-REVIEW.md) and `feedback_code_review_phases.md` immediately.
+The checklist is a **living document** — when Copilot catches something the self-review should have spotted, add the check to [SELF-REVIEW.md](SELF-REVIEW.md) immediately.
 
 ### 6. Ship — Merge, publish, update memory
 
