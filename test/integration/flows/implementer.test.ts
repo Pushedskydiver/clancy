@@ -26,6 +26,10 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { RequestHandler } from 'msw';
 
 import { resetUsernameCache } from '~/scripts/board/github/github.js';
+import {
+  resetLabelCache as resetShortcutLabelCache,
+  resetWorkflowCache as resetShortcutWorkflowCache,
+} from '~/scripts/board/shortcut/shortcut.js';
 
 import { simulateClaudeSuccess } from '../helpers/claude-simulator.js';
 import {
@@ -134,7 +138,7 @@ const { run } = await import('~/scripts/once/once.js');
 // Per-board configuration
 // ---------------------------------------------------------------------------
 
-interface BoardTestConfig {
+type BoardTestConfig = {
   provider: BoardProvider;
   env: Record<string, string>;
   handlers: RequestHandler[];
@@ -148,7 +152,7 @@ interface BoardTestConfig {
   expectedBranch: string;
   /** Slug used for Claude simulator file naming */
   simulatorSlug: string;
-}
+};
 
 const boardConfigs: BoardTestConfig[] = [
   {
@@ -275,6 +279,8 @@ describe.each(boardConfigs)(
       activeServer = undefined;
       vi.unstubAllEnvs();
       resetUsernameCache();
+      resetShortcutWorkflowCache();
+      resetShortcutLabelCache();
       claudeSessionMock = defaultClaudeMock;
       repo?.cleanup();
       repo = undefined;
@@ -310,7 +316,8 @@ describe.each(boardConfigs)(
         'utf8',
       );
       expect(progress).toContain(config.expectedTicketKey);
-      // All boards use a GitHub remote, so PR creation should succeed
+      // PRs are only created when a git-host token is present; otherwise
+      // pushes are logged as PUSHED, so we allow either outcome here.
       expect(progress).toMatch(/PR_CREATED|PUSHED/);
 
       // Assert: simulator commit exists
@@ -366,6 +373,12 @@ describe.each(boardConfigs)(
         encoding: 'utf8',
       });
       expect(branches).not.toContain('feature/');
+
+      const progress = readFileSync(
+        join(r.repoPath, '.clancy', 'progress.txt'),
+        'utf8',
+      );
+      expect(progress.trim()).toBe('');
     });
 
     it('dry-run: exits after ticket fetch', async () => {
