@@ -21,6 +21,8 @@ This is a **living document** — when Copilot catches something the self-review
 - Do config options extend defaults rather than replacing them?
 - Was the same fix applied everywhere it's needed? (don't fix helpers but miss test files)
 - Do any imported modules cache global state that could leak between tests? (reset caches in `afterEach`)
+- Are module-scoped mutable variables (e.g. mock implementations) reset in `afterEach`? (prevents one test's setup leaking into the next)
+- Do docs reference files that only exist in memory (`~/.claude/projects/`) but not in the repo? Contributors can't see memory files
 
 ## Security / robustness
 
