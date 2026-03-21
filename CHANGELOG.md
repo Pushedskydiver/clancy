@@ -7,6 +7,18 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 ---
 
+## [0.8.7] — 2026-03-21
+
+### ✨ Features
+
+- **Advanced implementer integration tests (QA-002a-4)** — blocked ticket skip (4 boards: Jira, Linear, Shortcut, Azure DevOps with native blocker detection), epic branch targeting (PR targets epic branch when ticket has parent), stale lock cleanup (dead PID detection + normal execution continues), and AFK resume detection (unpushed commits recovered from crashed session).
+
+### ✅ Tests
+
+- 1217 unit tests (unchanged) + 68 integration tests (7 new: 4 blocked + 1 epic + 1 stale lock + 1 resume)
+
+---
+
 ## [0.8.6] — 2026-03-21
 
 ### ✨ Features

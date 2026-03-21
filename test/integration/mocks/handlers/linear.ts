@@ -4,7 +4,7 @@
  * Linear uses a single POST endpoint for all operations. The handler
  * dispatches based on the query content in the request body.
  *
- * Happy path + empty queue + auth failure variants.
+ * Happy path + empty queue + auth failure + blocked ticket variants.
  */
 import { http, HttpResponse } from 'msw';
 
@@ -126,4 +126,50 @@ export const linearAuthFailureHandlers = [
       { status: 401 },
     ),
   ),
+];
+
+/**
+ * Blocked ticket — assignedIssues returns a ticket, but the relations
+ * query returns an unresolved blockedBy relation.
+ */
+export const linearBlockedHandlers = [
+  http.post('https://api.linear.app/graphql', async ({ request }) => {
+    const body = (await request.json()) as { query: string };
+    const query = body.query ?? '';
+
+    // Auth check
+    if (query.includes('viewer') && query.includes('id') && !query.includes('assignedIssues')) {
+      return HttpResponse.json({
+        data: { viewer: { id: 'usr_1', name: 'Test User' } },
+      });
+    }
+
+    // Fetch assigned issues — return ticket normally
+    if (query.includes('assignedIssues')) {
+      return HttpResponse.json(fixture);
+    }
+
+    // Relations query — return unresolved blocker
+    if (query.includes('relations')) {
+      return HttpResponse.json({
+        data: {
+          issue: {
+            relations: {
+              nodes: [
+                {
+                  type: 'blockedBy',
+                  relatedIssue: { state: { type: 'started' } },
+                },
+              ],
+            },
+          },
+        },
+      });
+    }
+
+    return HttpResponse.json(
+      { errors: [{ message: `Unhandled GraphQL query: ${query.slice(0, 80)}` }] },
+      { status: 400 },
+    );
+  }),
 ];

@@ -110,7 +110,9 @@ Then spin up a DA agent that reads ALL files touched by agents 1-6 and checks fo
 Three checks, in this strict order, before creating the PR:
 
 **1. DA Review (architecture-level)**
-Spin up a devil's advocate agent to review all changed files. For non-trivial changes this is mandatory — skip only for trivial fixes (typos, badge updates). DA catches architectural issues, stale references, missing edge cases, and test coverage gaps.
+Spin up a devil's advocate agent to review all changed files. For non-trivial changes this is mandatory. DA catches architectural issues, stale references, missing edge cases, and test coverage gaps.
+
+What is **non-trivial**? Code with logic (new functions, changed conditionals, refactored modules), changed type signatures, orchestrator flow changes, new env vars, test infrastructure changes. **Trivial** = typos, badge updates, reformatting, adding test cases to proven structures. When in doubt, run DA.
 
 **2. Self-Review (line-level)**
 Run through the **[Self-Review Checklist](SELF-REVIEW.md)**. Read every changed file (`git diff main...HEAD`) and check for detail-level issues that DA and doc agents miss — stale comments, wrong endpoints, fixture shapes, unused params.
@@ -124,8 +126,14 @@ The self-review checklist is a **living document** — when Copilot catches some
 
 ### 6. Ship — Merge, publish, update memory
 
-- Create PR with label, assignee, and `--reviewer @copilot` (Copilot review starts immediately on PR creation)
-- Copilot review rounds — fix all findings before merge. Address or decline each comment with reasoning.
+- Create PR with label, assignee, and `--reviewer @copilot` (Copilot review starts immediately on PR creation). Available PR labels — use the one matching your branch prefix:
+  - `feature/` → `feature` | `fix/` → `fix` | `chore/` → `chore`
+  - Do not create new PR labels unless adding a new branch prefix type — no one-off topic labels (e.g. `QA`, `docs`). Ask the user before creating any new label.
+- **If pushing additional commits to an open PR, update the PR body** (`gh pr edit`) to reflect all changes. Reviewers and Copilot read the body to understand scope — a stale body that only describes the original changes is misleading.
+- Copilot review rounds — fix all findings before merge. For each comment:
+  1. **Evaluate** — Copilot's suggestions are directionally correct but not always optimal. Read the suggestion, understand the underlying issue, then decide whether the suggested fix is the best approach or if there's a simpler/more efficient solution.
+  2. **Fix or decline** — apply your own fix if better, apply Copilot's suggestion if it's the best option, or decline with reasoning if the comment is incorrect.
+  3. **Reply** — always reply to every comment (`gh api` with `in_reply_to`) explaining what was done and why. Never leave comments unanswered.
 - Squash merge to main (PR title = squash commit message, must follow gitmoji + conventional commit format)
 - Publish to npm: `npm publish`
 - Update MEMORY.md (current state, shipped versions, next steps) — do this AFTER publish succeeds
@@ -143,7 +151,15 @@ The self-review checklist is a **living document** — when Copilot catches some
 
 ## Lightweight Paths
 
-Not all changes need the full 7-step lifecycle.
+Not all changes need the full 7-step lifecycle. Use this decision matrix:
+
+| Path | When to use | Steps |
+|---|---|---|
+| **Full** | New commands, roles, orchestrator phases, board integrations | brief → design → plan → build → review gate → doc sweep → ship |
+| **Lightweight** | Bug fixes, refactors, test additions, chores, patches | build → review gate → ship |
+| **Docs-only** | Glossary, architecture docs, decision docs, typo fixes, badges | Direct to main, no PR (only when no branch/PR is open — otherwise commit to current branch) |
+
+**Rule of thumb:** if it changes runtime behaviour or test infrastructure, use Lightweight minimum. If it adds a user-facing capability, use Full.
 
 ### Hotfixes / Patches (e.g. v0.8.1)
 
