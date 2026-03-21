@@ -40,6 +40,8 @@ type/short-description
 
 Types: `feature`, `fix`, `chore`
 
+Each type has a matching GitHub label — use `--label {type}` when creating PRs. These are the only labels that exist. Do not create new labels unless adding a new branch prefix type.
+
 Examples:
 
 ```
