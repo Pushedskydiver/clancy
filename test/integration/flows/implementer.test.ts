@@ -400,6 +400,12 @@ describe.each(boardConfigs)(
         encoding: 'utf8',
       });
       expect(branches).not.toContain('feature/');
+
+      const progress = readFileSync(
+        join(r.repoPath, '.clancy', 'progress.txt'),
+        'utf8',
+      );
+      expect(progress.trim()).toBe('');
     });
   },
 );
