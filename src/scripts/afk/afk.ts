@@ -5,7 +5,7 @@
  * Detects stop conditions by parsing the script's stdout output.
  * Does NOT know about boards — board logic lives entirely in the once script.
  */
-import { spawnSync } from 'node:child_process';
+import { type SpawnSyncReturns, spawnSync } from 'node:child_process';
 import { existsSync } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
@@ -123,6 +123,25 @@ export function checkStopCondition(output: string): {
   return { stop: false };
 }
 
+/** Result shape returned by the once runner — matches spawnSync output. */
+export type OnceRunnerResult = Pick<
+  SpawnSyncReturns<string>,
+  'stdout' | 'error'
+>;
+
+/** Function that executes a single once iteration. */
+export type OnceRunner = (onceScript: string) => OnceRunnerResult;
+
+/** Default runner — spawns clancy-once.js as a child process. */
+function defaultRunner(onceScript: string): OnceRunnerResult {
+  return spawnSync('node', [onceScript], {
+    encoding: 'utf8',
+    stdio: ['inherit', 'pipe', 'inherit'],
+    cwd: process.cwd(),
+    env: { ...process.env, CLANCY_AFK_MODE: '1' },
+  });
+}
+
 /**
  * Run the AFK loop.
  *
@@ -131,10 +150,14 @@ export function checkStopCondition(output: string): {
  *
  * @param scriptDir - The directory containing `clancy-once.js`.
  * @param maxIterations - Maximum number of iterations (default: 5).
+ * @param runner - Optional runner function for executing once iterations.
+ *   Defaults to spawning `clancy-once.js` as a child process.
+ *   Integration tests inject a custom runner to call `run()` in-process.
  */
 export async function runAfkLoop(
   scriptDir: string,
   maxIterations = 5,
+  runner: OnceRunner = defaultRunner,
 ): Promise<void> {
   const onceScript = join(scriptDir, 'clancy-once.js');
 
@@ -192,16 +215,10 @@ export async function runAfkLoop(
     console.log('');
     console.log(bold(`🔁 Iteration ${i}/${maxIterations}`));
 
-    // stderr is inherited so errors are visible to the user in real time.
     // Exit codes are not checked — once.ts always exits 0 by design so that
     // a transient failure in one iteration does not halt the entire AFK run.
     // Stop conditions are explicit board-level signals parsed from stdout.
-    const result = spawnSync('node', [onceScript], {
-      encoding: 'utf8',
-      stdio: ['inherit', 'pipe', 'inherit'],
-      cwd: process.cwd(),
-      env: { ...process.env, CLANCY_AFK_MODE: '1' },
-    });
+    const result = runner(onceScript);
 
     const output = result.stdout ?? '';
 
