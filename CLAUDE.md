@@ -96,7 +96,9 @@ Always via branch + PR: TypeScript (`src/`, `hooks/`), tests, executable markdow
 
 ### Development process
 
-See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the full version lifecycle (brief → design → plan → build → doc sweep → self-review → ship), devil's advocate review rules, pre-merge sweep checklist, and memory hygiene rules.
+See [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) for the full version lifecycle (brief → design → plan → build → doc sweep → review gate → ship), devil's advocate review rules, pre-merge sweep checklist, and memory hygiene rules.
+
+**Review gate (strict order before every PR):** DA review → self-review → pre-merge sweep. DA always runs before self-review. See [step 5b](docs/DEVELOPMENT.md#5b-review-gate--da--self-review--pre-merge-sweep).
 
 ## Release checklist
 

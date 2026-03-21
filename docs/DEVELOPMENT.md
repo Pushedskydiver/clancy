@@ -15,7 +15,7 @@ For experienced developers — one line per step:
 3. **Plan** — create `docs/decisions/v{X}/execution-plan.md` → DA review → user approval
 4. **Build** — branch, per-wave agents, tests after every wave, per-wave DA
 5. **Doc Sweep** — 6 parallel agents update all docs, DA verifies, re-run tests
-5b. **Self-Review** — line-level accuracy check on every changed file (comments, endpoints, fixtures, params)
+5b. **Review Gate** — DA review (architecture) → self-review (line-level) → pre-merge sweep (artifacts). **This order is strict — DA always runs before self-review.**
 6. **Ship** — PR + Copilot review, squash merge, npm publish, update memory
 7. **Post-Ship** — trim decision docs, verify badge/version/memories
 
@@ -78,7 +78,7 @@ Update the status at each transition. This makes it clear where each doc is in t
 - **All tests must pass after every wave** — run `npm test && npm run typecheck && npm run lint` and verify 0 failures before committing. Never push code with failing tests.
 - Per-wave DA review between each wave (catches foundation issues before later waves build on them)
 - Fix DA findings before proceeding to next wave
-- Self-review changed files after final wave (see [step 5b](#5b-self-review--line-level-accuracy-check))
+- After final wave, run the [Review Gate](#5b-review-gate--da--self-review--pre-merge-sweep): DA review → self-review → pre-merge sweep. **DA must run before self-review** — DA catches architectural issues that change what the self-review should focus on.
 - **Session handoff:** Start a new chat session after every 3 merged PRs, or when context compression is detected — whichever comes first. Always finish the current PR before handing off. Provide a ready-to-paste handoff prompt with: what shipped (PR numbers, versions), what's next (ticket, spec file, key decisions), current branch state. Fresh sessions have full context window + all memory files loaded clean.
 
 ### 5. Doc Sweep — Update every doc
@@ -105,13 +105,22 @@ Then spin up a DA agent that reads ALL files touched by agents 1-6 and checks fo
 
 **Re-verify after doc sweep:** Run `npm test && npm run typecheck && npm run lint` to ensure doc agents didn't break anything (especially package.json and lock file changes).
 
-### 5b. Self-Review — Line-level accuracy check
+### 5b. Review Gate — DA → Self-Review → Pre-Merge Sweep
 
-After DA review and doc sweep, before creating the PR, run through the **[Self-Review Checklist](SELF-REVIEW.md)**. Read every changed file (`git diff main...HEAD`) and check for detail-level issues that DA and doc agents miss.
+Three checks, in this strict order, before creating the PR:
 
-This step bridges the gap between the DA (architecture-level) and Copilot (line-level). Goal: reduce Copilot review rounds from 3-4 to 1.
+**1. DA Review (architecture-level)**
+Spin up a devil's advocate agent to review all changed files. For non-trivial changes this is mandatory — skip only for trivial fixes (typos, badge updates). DA catches architectural issues, stale references, missing edge cases, and test coverage gaps.
 
-The checklist is a **living document** — when Copilot catches something the self-review should have spotted, add the check to [SELF-REVIEW.md](SELF-REVIEW.md) immediately.
+**2. Self-Review (line-level)**
+Run through the **[Self-Review Checklist](SELF-REVIEW.md)**. Read every changed file (`git diff main...HEAD`) and check for detail-level issues that DA and doc agents miss — stale comments, wrong endpoints, fixture shapes, unused params.
+
+**3. Pre-Merge Sweep (artifacts)**
+Run the [Pre-Merge Sweep Checklist](#pre-merge-sweep-checklist). Verify README badge, CHANGELOG, version bump, CLAUDE.md, and all docs are consistent.
+
+**Why this order matters:** DA may flag issues that change the code, which invalidates a self-review done earlier. Self-review may fix issues that change test counts, which invalidates a pre-merge sweep done earlier. Running them out of order means repeating work or shipping with stale artifacts.
+
+The self-review checklist is a **living document** — when Copilot catches something the self-review should have spotted, add the check to [SELF-REVIEW.md](SELF-REVIEW.md) immediately.
 
 ### 6. Ship — Merge, publish, update memory
 
@@ -144,11 +153,12 @@ For bug fixes and small enhancements that don't warrant a full brief/design:
 2. **Break into small PRs** — if the work has multiple unknowns or touches many files, split into smaller PRs. One PR per concern.
 3. Create a `fix/` or `feature/` branch
 4. Implement the fix with tests
-5. DA review (for non-trivial changes)
-6. Self-review changed files (step 5b — line-level accuracy check)
-7. Run the pre-merge sweep checklist (abbreviated — focus on CHANGELOG, version bump, test badge)
-8. PR + Copilot review → merge → publish
-9. No decision doc directory needed (the fix is documented in the CHANGELOG)
+5. **Review Gate (same strict order as full lifecycle):**
+   - **DA review** — spin up DA agent for non-trivial changes
+   - **Self-review** — [Self-Review Checklist](SELF-REVIEW.md) on all changed files
+   - **Pre-merge sweep** — README badge, CHANGELOG, version bump, test counts
+6. PR + Copilot review → merge → publish
+7. No decision doc directory needed (the fix is documented in the CHANGELOG)
 
 ### Docs-only changes
 
