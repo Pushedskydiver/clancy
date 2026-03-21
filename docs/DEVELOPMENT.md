@@ -130,7 +130,7 @@ The self-review checklist is a **living document** — when Copilot catches some
   - `feature/` → `feature` | `fix/` → `fix` | `chore/` → `chore`
   - These are the only labels that exist. Do not create new labels unless adding a new branch prefix type to the project — no one-off topic labels (e.g. `QA`, `docs`). Ask the user before creating any new label.
 - **If pushing additional commits to an open PR, update the PR body** (`gh pr edit`) to reflect all changes. Reviewers and Copilot read the body to understand scope — a stale body that only describes the original changes is misleading.
-- Copilot review rounds — fix all findings before merge. Address or decline each comment with reasoning.
+- Copilot review rounds — fix all findings before merge. Address or decline each comment with reasoning. **Always reply to every Copilot comment** (`gh api` with `in_reply_to`) explaining what was fixed or why it was declined — don't leave comments unanswered.
 - Squash merge to main (PR title = squash commit message, must follow gitmoji + conventional commit format)
 - Publish to npm: `npm publish`
 - Update MEMORY.md (current state, shipped versions, next steps) — do this AFTER publish succeeds
