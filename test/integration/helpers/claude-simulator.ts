@@ -28,13 +28,15 @@ export function simulateClaudeSuccess(
   options: SimulatorOptions = {},
 ): string {
   const slug = ticketKey.toLowerCase().replace(/[^a-z0-9]/g, '-');
+  // Ensure valid TS identifier: strip leading non-letters, prefix if needed
+  const fnName = slug.replace(/-/g, '').replace(/^[^a-z]+/, '') || 'impl';
 
   const files = options.files ?? {
     [`src/${slug}.ts`]: [
       `/**`,
       ` * Implementation for ${ticketKey}.`,
       ` */`,
-      `export function ${slug.replace(/-/g, '')}(): string {`,
+      `export function ${fnName}(): string {`,
       `  return '${ticketKey} implemented';`,
       `}`,
       ``,
@@ -73,11 +75,12 @@ export function simulateClaudeFailure(
   ticketKey: string,
 ): string {
   const slug = ticketKey.toLowerCase().replace(/[^a-z0-9]/g, '-');
+  const fnName = slug.replace(/-/g, '').replace(/^[^a-z]+/, '') || 'impl';
 
   const brokenCode = [
     `// Broken implementation for ${ticketKey}`,
     `const unusedVariable = 42;`, // unused variable — lint error
-    `export function ${slug.replace(/-/g, '')}(): number {`,
+    `export function ${fnName}(): number {`,
     `  return 'not a number';`, // type error — returns string, declares number
     `}`,
     ``,
