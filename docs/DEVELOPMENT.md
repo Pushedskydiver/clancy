@@ -106,27 +106,11 @@ Then spin up a DA agent that reads ALL files touched by agents 1-6 and checks fo
 
 ### 5b. Self-Review — Line-level accuracy check
 
-After DA review and doc sweep, before creating the PR, read every changed file (`git diff main...HEAD`) and check for detail-level issues that DA and doc agents miss:
-
-**Code accuracy:**
-- Do comments/JSDoc match what the code actually does? (stale comments are the #1 review catch)
-- Are all function parameters used? If not, remove or use them
-- Do mock/test URLs match the actual production endpoints? (read the production code to verify)
-- Do fixture shapes match what the production code expects? (check Zod schemas and actual API calls)
-
-**Consistency:**
-- Are constants duplicated across files? (single source of truth)
-- Are imports unused?
-- Do config options extend defaults rather than replacing them?
-
-**Security/robustness:**
-- Is `execSync` used with string interpolation? (use `execFileSync` with argument arrays)
-- Are test credential values constructed at runtime where needed? (GitHub secret scanner)
-
-**Config inheritance:**
-- Did changing a config file affect other configs that extend it? (e.g. `tsconfig.build.json` extends `tsconfig.json` — changing `rootDir` in the base breaks the build output paths)
+After DA review and doc sweep, before creating the PR, run through the **[Self-Review Checklist](SELF-REVIEW.md)**. Read every changed file (`git diff main...HEAD`) and check for detail-level issues that DA and doc agents miss.
 
 This step bridges the gap between the DA (architecture-level) and Copilot (line-level). Goal: reduce Copilot review rounds from 3-4 to 1.
+
+The checklist is a **living document** — when Copilot catches something the self-review should have spotted, add the check to [SELF-REVIEW.md](SELF-REVIEW.md) immediately.
 
 ### 6. Ship — Merge, publish, update memory
 

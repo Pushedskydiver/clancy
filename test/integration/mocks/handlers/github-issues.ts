@@ -1,6 +1,6 @@
 /**
  * MSW handlers for GitHub Issues REST API.
- * Smoke handler — happy path only. Full scenario variants in QA-002a.
+ * Happy path + empty queue + auth failure variants.
  */
 import { http, HttpResponse } from 'msw';
 
@@ -52,5 +52,35 @@ export const githubIssuesHandlers = [
   // Create label (fallback if GET returns 404)
   http.post('https://api.github.com/repos/:owner/:repo/labels', () =>
     HttpResponse.json({ name: 'clancy:build' }, { status: 201 }),
+  ),
+];
+
+/** Empty queue — no issues returned. */
+export const githubIssuesEmptyHandlers = [
+  // Ping succeeds
+  http.get('https://api.github.com/repos/:owner/:repo', () =>
+    HttpResponse.json({ full_name: 'test-owner/test-repo', private: false }),
+  ),
+  http.get('https://api.github.com/user', () =>
+    HttpResponse.json({ login: 'testuser' }),
+  ),
+
+  // Issues endpoint returns empty array
+  http.get('https://api.github.com/repos/:owner/:repo/issues', () =>
+    HttpResponse.json([]),
+  ),
+  http.get('https://api.github.com/search/issues', () =>
+    HttpResponse.json({ total_count: 0, items: [] }),
+  ),
+];
+
+/** Auth failure — board ping returns 401. */
+export const githubIssuesAuthFailureHandlers = [
+  // Ping fails with 401
+  http.get('https://api.github.com/repos/:owner/:repo', () =>
+    HttpResponse.json(
+      { message: 'Bad credentials' },
+      { status: 401 },
+    ),
   ),
 ];

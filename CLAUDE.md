@@ -10,7 +10,7 @@ Autonomous, board-driven development for Claude Code. npm package: `chief-clancy
 | `src/installer/` | Installer modules (file-ops, hook-installer, manifest, prompts) |
 | `src/roles/` | Slash commands and workflows organised by role (planner, implementer, reviewer, setup, strategist) |
 | `src/roles/strategist/` | Strategist role — `/clancy:brief` and `/clancy:approve-brief` commands |
-| `src/scripts/once/` | Once orchestrator — phase pipeline (13 phases in `phases/`), context (`context/`), plus modules: types, fetch-ticket, git-token, pr-creation, deliver, rework, lock, cost, resume |
+| `src/scripts/once/` | Once orchestrator — phase pipeline (`phases/`), context (`context/`), plus modules: types, fetch-ticket, git-token, pr-creation, deliver, rework, lock, cost, resume |
 | `src/scripts/once/lock/` | Lock file management (acquire, release, stale detection) |
 | `src/scripts/once/cost/` | Duration-based token cost estimation + costs.log writer |
 | `src/scripts/once/resume/` | Crash recovery (resume detection, branch/ticket recovery) |
@@ -43,7 +43,8 @@ Autonomous, board-driven development for Claude Code. npm package: `chief-clancy
 | [docs/TESTING.md](docs/TESTING.md) | Testing strategy, co-location rules, coverage thresholds |
 | [docs/GIT.md](docs/GIT.md) | Branch strategy, merge conventions |
 | [docs/decisions/](docs/decisions/) | Decision docs — design decisions organised by version |
-| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Development process — version lifecycle, DA reviews, pre-merge sweep checklist |
+| [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md) | Development process — version lifecycle, DA reviews, pre-merge sweep checklist, memory hygiene |
+| [docs/SELF-REVIEW.md](docs/SELF-REVIEW.md) | Self-review checklist — living document, evolves from Copilot findings |
 | [docs/TECHNICAL-REFERENCE.md](docs/TECHNICAL-REFERENCE.md) | Implementation details — boards, hooks, delivery, pipeline labels, AFK mode, build system |
 | [docs/COMPARISON.md](docs/COMPARISON.md) | Clancy vs GSD vs PAUL comparison |
 | [docs/roles/](docs/roles/) | Role descriptions (implementer, reviewer, setup, planner, strategist) |
