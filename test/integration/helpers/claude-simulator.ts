@@ -5,7 +5,7 @@
  * stages them, and commits with a conventional commit message. Provides both
  * success (valid code) and failure (broken code) variants.
  */
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -47,14 +47,17 @@ export function simulateClaudeSuccess(
     writeFileSync(fullPath, content);
   }
 
-  execSync('git add -A', { cwd: repoPath, stdio: 'pipe' });
-  execSync(`git commit -m "feat(${ticketKey}): implement ticket"`, {
-    cwd: repoPath,
-    stdio: 'pipe',
-  });
+  execFileSync('git', ['add', '-A'], { cwd: repoPath, stdio: 'pipe' });
+  execFileSync(
+    'git',
+    ['commit', '-m', `feat(${ticketKey}): implement ticket`],
+    { cwd: repoPath, stdio: 'pipe' },
+  );
 
-  return execSync('git rev-parse HEAD', { cwd: repoPath, encoding: 'utf8' })
-    .trim();
+  return execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: repoPath,
+    encoding: 'utf8',
+  }).trim();
 }
 
 /**
@@ -84,13 +87,17 @@ export function simulateClaudeFailure(
   mkdirSync(join(fullPath, '..'), { recursive: true });
   writeFileSync(fullPath, brokenCode);
 
-  execSync('git add -A', { cwd: repoPath, stdio: 'pipe' });
-  execSync(`git commit -m "feat(${ticketKey}): implement ticket"`, {
-    cwd: repoPath,
-    stdio: 'pipe',
-  });
+  execFileSync('git', ['add', '-A'], { cwd: repoPath, stdio: 'pipe' });
+  execFileSync(
+    'git',
+    ['commit', '-m', `feat(${ticketKey}): implement ticket`],
+    { cwd: repoPath, stdio: 'pipe' },
+  );
 
-  return execSync('git rev-parse HEAD', { cwd: repoPath, encoding: 'utf8' })
+  return execFileSync('git', ['rev-parse', 'HEAD'], {
+    cwd: repoPath,
+    encoding: 'utf8',
+  })
     .trim();
 }
 

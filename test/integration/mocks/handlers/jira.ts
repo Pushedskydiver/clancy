@@ -9,9 +9,9 @@ import fixture from '../fixtures/jira/issue-happy-path.json';
 const BASE = 'https://test.atlassian.net';
 
 export const jiraHandlers = [
-  // Auth check
-  http.get(`${BASE}/rest/api/2/myself`, () =>
-    HttpResponse.json({ emailAddress: 'test@example.com' }),
+  // Ping — GET /rest/api/3/project/{projectKey}
+  http.get(`${BASE}/rest/api/3/project/:projectKey`, () =>
+    HttpResponse.json({ key: 'TEST', name: 'Test Project' }),
   ),
 
   // Ticket search (POST — new Jira endpoint)

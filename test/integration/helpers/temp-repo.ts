@@ -4,7 +4,7 @@
  * Creates temporary git repositories with a real TypeScript project scaffold.
  * node_modules is symlinked from the shared template created in global-setup.ts.
  */
-import { execSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import {
   existsSync,
   mkdirSync,
@@ -17,6 +17,7 @@ import {
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
+import { type BoardProvider, boardEnvMap } from './env-fixtures.js';
 import { SCAFFOLD_FILES } from './scaffold-content.js';
 
 /** Well-known path for the template dir pointer file (written by global-setup). */
@@ -58,14 +59,18 @@ export function createTempRepo(options: TempRepoOptions = {}): TempRepoResult {
   const repoPath = mkdtempSync(join(tmpdir(), 'clancy-test-repo-'));
 
   // Init git with repo-local config
-  execSync(
-    [
-      `git init -b ${baseBranch}`,
-      'git config user.name "Clancy Test"',
-      'git config user.email "test@clancy.dev"',
-    ].join(' && '),
-    { cwd: repoPath, stdio: 'pipe' },
-  );
+  execFileSync('git', ['init', '-b', baseBranch], {
+    cwd: repoPath,
+    stdio: 'pipe',
+  });
+  execFileSync('git', ['config', 'user.name', 'Clancy Test'], {
+    cwd: repoPath,
+    stdio: 'pipe',
+  });
+  execFileSync('git', ['config', 'user.email', 'test@clancy.dev'], {
+    cwd: repoPath,
+    stdio: 'pipe',
+  });
 
   // Write shared scaffold files
   for (const [relativePath, content] of Object.entries(SCAFFOLD_FILES)) {
@@ -84,7 +89,8 @@ export function createTempRepo(options: TempRepoOptions = {}): TempRepoResult {
   }
 
   // Initial commit
-  execSync('git add -A && git commit -m "chore: initial scaffold"', {
+  execFileSync('git', ['add', '-A'], { cwd: repoPath, stdio: 'pipe' });
+  execFileSync('git', ['commit', '-m', 'chore: initial scaffold'], {
     cwd: repoPath,
     stdio: 'pipe',
   });
@@ -100,7 +106,7 @@ export function createTempRepo(options: TempRepoOptions = {}): TempRepoResult {
  */
 export function createEpicBranch(repoPath: string, epicKey: string): void {
   const branchName = `epic/${epicKey.toLowerCase()}`;
-  execSync(`git checkout -b ${branchName}`, {
+  execFileSync('git', ['checkout', '-b', branchName], {
     cwd: repoPath,
     stdio: 'pipe',
   });
@@ -113,15 +119,17 @@ export function createEpicBranch(repoPath: string, epicKey: string): void {
  */
 export function createClancyScaffold(
   repoPath: string,
-  board: string,
+  board: BoardProvider,
   envOverrides: Record<string, string> = {},
 ): void {
   const clancyDir = join(repoPath, '.clancy');
   const docsDir = join(clancyDir, 'docs');
   mkdirSync(docsDir, { recursive: true });
 
-  // .clancy/.env with board-appropriate vars
-  const envContent = Object.entries(envOverrides)
+  // .clancy/.env — merge board defaults with overrides
+  const boardDefaults = boardEnvMap[board];
+  const merged = { ...boardDefaults, ...envOverrides };
+  const envContent = Object.entries(merged)
     .map(([k, v]) => `${k}=${v}`)
     .join('\n');
   writeFileSync(join(clancyDir, '.env'), envContent + '\n');

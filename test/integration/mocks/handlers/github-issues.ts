@@ -7,7 +7,12 @@ import { http, HttpResponse } from 'msw';
 import fixture from '../fixtures/github/issue-happy-path.json';
 
 export const githubIssuesHandlers = [
-  // Auth check
+  // Ping — GET /repos/{owner}/{repo}
+  http.get('https://api.github.com/repos/:owner/:repo', () =>
+    HttpResponse.json({ full_name: 'test-owner/test-repo', private: false }),
+  ),
+
+  // Auth / username resolution
   http.get('https://api.github.com/user', () =>
     HttpResponse.json({ login: 'testuser' }),
   ),

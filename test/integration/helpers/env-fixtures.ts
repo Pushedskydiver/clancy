@@ -84,7 +84,7 @@ export const bitbucketGitHostEnv = {
 } as const;
 
 /** Board provider to env fixture mapping. */
-const boardEnvMap = {
+export const boardEnvMap = {
   jira: jiraEnv,
   github: githubEnv,
   linear: linearEnv,
