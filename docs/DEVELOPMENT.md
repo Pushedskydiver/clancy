@@ -127,6 +127,7 @@ The self-review checklist is a **living document** — when Copilot catches some
 ### 6. Ship — Merge, publish, update memory
 
 - Create PR with label, assignee, and `--reviewer @copilot` (Copilot review starts immediately on PR creation)
+- **If pushing additional commits to an open PR, update the PR body** (`gh pr edit`) to reflect all changes. Reviewers and Copilot read the body to understand scope — a stale body that only describes the original changes is misleading.
 - Copilot review rounds — fix all findings before merge. Address or decline each comment with reasoning.
 - Squash merge to main (PR title = squash commit message, must follow gitmoji + conventional commit format)
 - Publish to npm: `npm publish`
