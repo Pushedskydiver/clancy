@@ -21,6 +21,8 @@ import { readFileSync, unlinkSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import { http, HttpResponse } from 'msw';
+
 import { type OnceRunnerResult } from '~/scripts/afk/afk.js';
 import { resetUsernameCache } from '~/scripts/board/github/github.js';
 
@@ -37,6 +39,7 @@ import {
   githubIssuesHandlers,
 } from '../mocks/handlers/github-issues.js';
 import { githubPrHandlers } from '../mocks/handlers/github-pr.js';
+import fixture from '../mocks/fixtures/github/issue-happy-path.json' with { type: 'json' };
 
 // ---------------------------------------------------------------------------
 // Module mocks — must be at top level, before any imports that use them
@@ -129,16 +132,31 @@ function createInProcessRunner(
     };
 
     try {
-      // Reset to main before each iteration (mirrors real AFK: each subprocess
-      // starts on main with a clean working tree)
+      // Reset to main before each iteration. Real AFK spawns a fresh subprocess
+      // which naturally starts on main with shared disk state (progress.txt
+      // persists across iterations). The in-process runner must preserve
+      // .clancy/ state while switching branches, so we stash, switch, then
+      // restore — matching real AFK behaviour.
+      try {
+        execFileSync('git', ['stash', '--include-untracked'], {
+          cwd: repoPath,
+          stdio: 'pipe',
+        });
+      } catch {
+        // Nothing to stash on first iteration
+      }
       execFileSync('git', ['checkout', 'main'], {
         cwd: repoPath,
         stdio: 'pipe',
       });
-      execFileSync('git', ['checkout', '--', '.'], {
-        cwd: repoPath,
-        stdio: 'pipe',
-      });
+      try {
+        execFileSync('git', ['stash', 'pop'], {
+          cwd: repoPath,
+          stdio: 'pipe',
+        });
+      } catch {
+        // No stash to pop on first iteration
+      }
 
       process.chdir(repoPath);
       await run(['--skip-feasibility']);
@@ -190,6 +208,11 @@ function setupTestRepo(
     vi.stubEnv(key, value);
   }
 
+  // Match real AFK mode: defaultRunner sets CLANCY_AFK_MODE=1 in the
+  // subprocess env. Without this, the orchestrator runs in interactive mode
+  // which changes ticket filtering and resume behaviour.
+  vi.stubEnv('CLANCY_AFK_MODE', '1');
+
   return result;
 }
 
@@ -218,7 +241,39 @@ describe('AFK loop — github', () => {
   });
 
   it('processes N tickets then exits at MAX_ITERATIONS', async () => {
+    // Sequenced issue handler: returns issue #1 on first call, #2 on second,
+    // so each iteration gets a unique ticket and branch (no collision).
+    // MSW matches handlers in registration order (first match wins), so
+    // sequenced handlers must be registered before the base set.
+    let issueCallCount = 0;
+    const sequencedOverrides = [
+      http.get(
+        'https://api.github.com/repos/:owner/:repo/issues',
+        () => {
+          issueCallCount++;
+          const issue = {
+            ...fixture[0],
+            number: issueCallCount,
+            title: `Test ticket ${issueCallCount}`,
+          };
+          return HttpResponse.json([issue]);
+        },
+      ),
+      http.get(
+        'https://api.github.com/repos/:owner/:repo/issues/:number',
+        ({ params }) => {
+          const num = Number(params.number);
+          return HttpResponse.json({
+            ...fixture[0],
+            number: num,
+            title: `Test ticket ${num}`,
+          });
+        },
+      ),
+    ];
+
     const server = createIntegrationServer(
+      ...sequencedOverrides,
       ...githubIssuesHandlers,
       ...githubPrHandlers,
     );
@@ -230,10 +285,11 @@ describe('AFK loop — github', () => {
       'https://github.com/test-owner/test-repo.git',
     ));
 
-    let callCount = 0;
+    let claudeCallCount = 0;
     claudeSessionMock = () => {
-      callCount++;
-      simulateClaudeSuccess(r.repoPath, `issue-1`);
+      claudeCallCount++;
+      // Slug must match the issue number the orchestrator sees
+      simulateClaudeSuccess(r.repoPath, `issue-${claudeCallCount}`);
       return true;
     };
 
@@ -242,15 +298,24 @@ describe('AFK loop — github', () => {
 
     await runAfkLoop(scriptDir, 2, runner);
 
-    // Assert: runner was called twice (MAX_ITERATIONS=2)
-    expect(callCount).toBe(2);
+    // Assert: Claude was invoked twice (MAX_ITERATIONS=2)
+    expect(claudeCallCount).toBe(2);
 
-    // Assert: progress.txt has entries
+    // Assert: two distinct feature branches created
+    const branches = execFileSync('git', ['branch', '--list'], {
+      cwd: r.repoPath,
+      encoding: 'utf8',
+    });
+    expect(branches).toContain('feature/issue-1');
+    expect(branches).toContain('feature/issue-2');
+
+    // Assert: progress.txt has entries for both tickets
     const progress = readFileSync(
       join(r.repoPath, '.clancy', 'progress.txt'),
       'utf8',
     );
     expect(progress).toContain('#1');
+    expect(progress).toContain('#2');
   });
 
   it('exits cleanly on empty queue', async () => {
