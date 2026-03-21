@@ -20,7 +20,7 @@ All work branches from `main` and merges back to `main` via PR.
 ### Rules
 
 - **If it runs, it needs a PR.** TypeScript (`src/`, `hooks/`), tests, executable markdown, package.json, CHANGELOG.md, CI config (`.github/`) — always via branch + PR.
-- **If it's only read by humans/agents for context, direct to main is fine.** Decision docs (`docs/decisions/`), glossary, architecture docs (`docs/`), CLAUDE.md doc link updates, README badge/link fixes, typo corrections.
+- **If it's only read by humans/agents for context, direct to main is fine — but only when no branch/PR is open.** Decision docs (`docs/decisions/`), glossary, architecture docs (`docs/`), CLAUDE.md doc link updates, README badge/link fixes, typo corrections. If you have an open feature branch, commit doc changes there instead — pushing to main while a branch is open creates divergent history and merge conflicts on squash merge.
 
 **What is "executable markdown"?** Any markdown file containing instructions that Claude will execute as part of a command or workflow. These are code, not documentation:
 - `src/roles/*/commands/*.md` — slash command definitions

@@ -88,9 +88,9 @@ See [docs/GIT.md](docs/GIT.md) for full details. Summary:
 
 ### Direct-to-main rule
 
-**If it runs, it needs a PR. If it's only read, direct to main is fine.**
+**If it runs, it needs a PR. If it's only read, direct to main is fine — but only when no branch/PR is open.**
 
-Direct to main (no PR): decision docs (`docs/decisions/`), glossary, architecture docs (`docs/`), CLAUDE.md doc link updates, README badge/link fixes, typo corrections.
+Direct to main (no PR, no open branch): decision docs (`docs/decisions/`), glossary, architecture docs (`docs/`), CLAUDE.md doc link updates, README badge/link fixes, typo corrections. **If an open branch/PR exists, commit doc changes to that branch instead** — pushing to main creates divergent history and merge conflicts on squash merge.
 
 Always via branch + PR: TypeScript (`src/`, `hooks/`), tests, executable markdown (`src/roles/`, `src/templates/`, `src/agents/`), package.json, CHANGELOG.md, CI config (`.github/`).
 
