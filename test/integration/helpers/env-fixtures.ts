@@ -60,7 +60,7 @@ export const shortcutEnv = {
 export const notionEnv = {
   ...sharedEnv,
   NOTION_TOKEN: 'secret-test-notion-token-value-12345678',
-  NOTION_DATABASE_ID: 'test-notion-database-id-value',
+  NOTION_DATABASE_ID: 'ab12cd34-5678-9abc-def0-123456789abc',
 } as const;
 
 /** Azure DevOps board env vars. */

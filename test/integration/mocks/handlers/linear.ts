@@ -4,7 +4,7 @@
  * Linear uses a single POST endpoint for all operations. The handler
  * dispatches based on the query content in the request body.
  *
- * Smoke handler — happy path only. Full scenario variants in QA-002a.
+ * Happy path + empty queue + auth failure variants.
  */
 import { http, HttpResponse } from 'msw';
 
@@ -94,4 +94,32 @@ export const linearHandlers = [
       { status: 400 },
     );
   }),
+];
+
+/** Empty queue — no issues returned. */
+export const linearEmptyHandlers = [
+  http.post('https://api.linear.app/graphql', async ({ request }) => {
+    const body = (await request.json()) as { query: string };
+    const query = body.query ?? '';
+
+    if (query.includes('viewer') && !query.includes('assignedIssues')) {
+      return HttpResponse.json({ data: { viewer: { id: 'usr_1' } } });
+    }
+    if (query.includes('assignedIssues')) {
+      return HttpResponse.json({
+        data: { viewer: { assignedIssues: { nodes: [] } } },
+      });
+    }
+    return HttpResponse.json({ data: {} });
+  }),
+];
+
+/** Auth failure — viewer query returns error. */
+export const linearAuthFailureHandlers = [
+  http.post('https://api.linear.app/graphql', () =>
+    HttpResponse.json(
+      { errors: [{ message: 'Authentication required' }] },
+      { status: 401 },
+    ),
+  ),
 ];

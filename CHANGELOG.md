@@ -7,6 +7,18 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 ---
 
+## [0.8.6] — 2026-03-21
+
+### ✨ Features
+
+- **All 6 boards integration tested (QA-002a-3)** — parameterised implementer lifecycle tests across Jira, GitHub Issues, Linear, Shortcut, Notion, and Azure DevOps. Each board runs happy path, empty queue, auth failure, and dry-run scenarios. MSW handler variants (empty + auth failure) added for all boards.
+
+### ✅ Tests
+
+- 1217 unit tests (unchanged) + 61 integration tests (24 new: 6 boards × 4 scenarios)
+
+---
+
 ## [0.8.5] — 2026-03-21
 
 ### ✨ Features

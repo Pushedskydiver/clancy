@@ -1,6 +1,6 @@
 /**
  * MSW handlers for Notion REST API.
- * Smoke handler — happy path only. Full scenario variants in QA-002a.
+ * Happy path + empty queue + auth failure variants.
  */
 import { http, HttpResponse } from 'msw';
 
@@ -27,5 +27,22 @@ export const notionHandlers = [
   // Update page (transition, labels)
   http.patch(`${BASE}/v1/pages/:id`, () =>
     HttpResponse.json(fixture.results[0]),
+  ),
+];
+
+/** Empty queue — no pages returned. */
+export const notionEmptyHandlers = [
+  http.get(`${BASE}/v1/users/me`, () =>
+    HttpResponse.json({ id: 'bot-user-uuid', type: 'bot', name: 'Clancy' }),
+  ),
+  http.post(`${BASE}/v1/databases/:id/query`, () =>
+    HttpResponse.json({ results: [], has_more: false, next_cursor: null }),
+  ),
+];
+
+/** Auth failure — board ping returns 401. */
+export const notionAuthFailureHandlers = [
+  http.get(`${BASE}/v1/users/me`, () =>
+    HttpResponse.json({ message: 'Unauthorized' }, { status: 401 }),
   ),
 ];
