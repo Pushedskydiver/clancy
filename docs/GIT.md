@@ -29,6 +29,7 @@ All work branches from `main` and merges back to `main` via PR.
 - `src/agents/*.md` — agent prompts (devil's advocate, verification gate, specialists)
 
 Docs in `docs/` are informational — Claude reads them for context but doesn't execute them as commands. They're safe for direct-to-main.
+
 - Delete branches after merging
 - CI must pass before merging
 

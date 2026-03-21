@@ -157,7 +157,7 @@ Not all changes need the full 7-step lifecycle. Use this decision matrix:
 |---|---|---|
 | **Full** | New commands, roles, orchestrator phases, board integrations | brief → design → plan → build → review gate → doc sweep → ship |
 | **Lightweight** | Bug fixes, refactors, test additions, chores, patches | build → review gate → ship |
-| **Docs-only** | Glossary, architecture docs, decision docs, typo fixes, badges | Direct to main, no PR |
+| **Docs-only** | Glossary, architecture docs, decision docs, typo fixes, badges | Direct to main, no PR (only when no branch/PR is open — otherwise commit to current branch) |
 
 **Rule of thumb:** if it changes runtime behaviour or test infrastructure, use Lightweight minimum. If it adds a user-facing capability, use Full.
 
