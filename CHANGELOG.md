@@ -7,6 +7,18 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.8.5] — 2026-03-21
+
+### Added
+
+- **Implementer early exit integration tests (QA-002a-2)** — empty queue, auth failure, and dry-run scenarios for the once orchestrator. GitHub Issues MSW handler variants (`githubIssuesEmptyHandlers`, `githubIssuesAuthFailureHandlers`).
+
+### Tests
+
+- 1217 unit tests (unchanged) + 41 integration tests (3 new early exit tests)
+
+---
+
 ## [0.8.4] — 2026-03-21
 
 ### Added

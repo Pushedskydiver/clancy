@@ -1,9 +1,11 @@
 /**
- * Implementer lifecycle integration tests — GitHub Issues happy path.
+ * Implementer lifecycle integration tests — GitHub Issues.
  *
- * Imports run() from the once orchestrator and exercises the full 13-phase
- * pipeline with MSW intercepting board API calls and the Claude simulator
- * replacing the Claude CLI invocation.
+ * Tests the once orchestrator through various scenarios:
+ * - Happy path: full 13-phase pipeline completion
+ * - Empty queue: no tickets, clean exit
+ * - Auth failure: board ping fails, clean exit
+ * - Dry-run: exits after ticket fetch, no git operations
  *
  * Mock boundaries:
  * - Network: MSW intercepts all fetch() calls
@@ -20,7 +22,15 @@
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
+import {
+  afterAll,
+  afterEach,
+  beforeAll,
+  describe,
+  expect,
+  it,
+  vi,
+} from 'vitest';
 
 import { simulateClaudeSuccess } from '../helpers/claude-simulator.js';
 import { githubEnv } from '../helpers/env-fixtures.js';
@@ -35,7 +45,11 @@ import {
   withCwd,
   type TempRepoResult,
 } from '../helpers/temp-repo.js';
-import { githubIssuesHandlers } from '../mocks/handlers/github-issues.js';
+import {
+  githubIssuesAuthFailureHandlers,
+  githubIssuesEmptyHandlers,
+  githubIssuesHandlers,
+} from '../mocks/handlers/github-issues.js';
 import { githubPrHandlers } from '../mocks/handlers/github-pr.js';
 
 // ---------------------------------------------------------------------------
@@ -77,7 +91,10 @@ vi.mock('~/scripts/shared/claude-cli/claude-cli.js', () => ({
 
 // Mock git push operations — can't push to a non-existent remote
 vi.mock('~/scripts/shared/git-ops/git-ops.js', async (importOriginal) => {
-  const original = await importOriginal<typeof import('~/scripts/shared/git-ops/git-ops.js')>();
+  const original =
+    await importOriginal<
+      typeof import('~/scripts/shared/git-ops/git-ops.js')
+    >();
   return {
     ...original,
     pushBranch: () => true,
@@ -90,7 +107,48 @@ vi.mock('~/scripts/shared/git-ops/git-ops.js', async (importOriginal) => {
 const { run } = await import('~/scripts/once/once.js');
 
 // ---------------------------------------------------------------------------
-// Test suite
+// Shared setup helper
+// ---------------------------------------------------------------------------
+
+/** Create a temp repo with .clancy/ scaffold, fake remote, and stubbed env. */
+function setupTestRepo(): TempRepoResult {
+  const result = createTempRepo();
+
+  // Add a fake remote URL so detectRemote() parses it as GitHub
+  execFileSync(
+    'git',
+    [
+      'remote',
+      'add',
+      'origin',
+      'https://github.com/test-owner/test-repo.git',
+    ],
+    { cwd: result.repoPath, stdio: 'pipe' },
+  );
+
+  // Create .clancy/ scaffold with GitHub env vars
+  createClancyScaffold(result.repoPath, 'github', githubEnv);
+
+  // Commit the scaffold so the working dir is clean
+  execFileSync('git', ['add', '-A'], {
+    cwd: result.repoPath,
+    stdio: 'pipe',
+  });
+  execFileSync('git', ['commit', '-m', 'chore: add clancy scaffold'], {
+    cwd: result.repoPath,
+    stdio: 'pipe',
+  });
+
+  // Stub env vars for board detection
+  for (const [key, value] of Object.entries(githubEnv)) {
+    vi.stubEnv(key, value);
+  }
+
+  return result;
+}
+
+// ---------------------------------------------------------------------------
+// Test suites
 // ---------------------------------------------------------------------------
 
 describe('Implementer lifecycle — GitHub Issues happy path', () => {
@@ -111,31 +169,10 @@ describe('Implementer lifecycle — GitHub Issues happy path', () => {
   });
 
   it('completes full pipeline: fetch ticket, create branch, simulate Claude, create PR, log progress', async () => {
-    const r = (repo = createTempRepo());
-
-    // Add a fake remote URL so detectRemote() parses it as GitHub
-    execFileSync('git', ['remote', 'add', 'origin', 'https://github.com/test-owner/test-repo.git'], {
-      cwd: r.repoPath,
-      stdio: 'pipe',
-    });
-
-    // Create .clancy/ scaffold with GitHub env vars
-    createClancyScaffold(r.repoPath, 'github', githubEnv);
-
-    // Commit the scaffold so the working dir is clean (preflight warns on uncommitted changes)
-    execFileSync('git', ['add', '-A'], { cwd: r.repoPath, stdio: 'pipe' });
-    execFileSync('git', ['commit', '-m', 'chore: add clancy scaffold'], {
-      cwd: r.repoPath,
-      stdio: 'pipe',
-    });
-
-    // Stub env vars for board detection
-    for (const [key, value] of Object.entries(githubEnv)) {
-      vi.stubEnv(key, value);
-    }
+    const r = (repo = setupTestRepo());
 
     // Wire Claude simulator — creates valid TS files + commits
-    claudeSessionMock = (_prompt: string) => {
+    claudeSessionMock = () => {
       simulateClaudeSuccess(r.repoPath, 'issue-1');
       return true;
     };
@@ -167,5 +204,116 @@ describe('Implementer lifecycle — GitHub Issues happy path', () => {
       { cwd: r.repoPath, encoding: 'utf8' },
     );
     expect(log).toContain('feat(issue-1): implement ticket');
+  });
+});
+
+describe('Implementer lifecycle — GitHub Issues empty queue', () => {
+  let repo: TempRepoResult | undefined;
+  const server = createIntegrationServer(...githubIssuesEmptyHandlers);
+
+  beforeAll(() => startServer(server));
+  afterAll(() => stopServer(server));
+
+  afterEach(() => {
+    server.resetHandlers();
+    vi.unstubAllEnvs();
+    repo?.cleanup();
+    repo = undefined;
+  });
+
+  it('exits cleanly when no tickets are available', async () => {
+    const r = (repo = setupTestRepo());
+
+    await withCwd(r.repoPath, () => run(['--skip-feasibility']));
+
+    // Assert: no feature branch was created
+    const branches = execFileSync('git', ['branch', '--list'], {
+      cwd: r.repoPath,
+      encoding: 'utf8',
+    });
+    expect(branches).not.toContain('feature/');
+
+    // Assert: progress.txt is empty (no ticket was processed)
+    const progress = readFileSync(
+      join(r.repoPath, '.clancy', 'progress.txt'),
+      'utf8',
+    );
+    expect(progress.trim()).toBe('');
+  });
+});
+
+describe('Implementer lifecycle — GitHub Issues auth failure', () => {
+  let repo: TempRepoResult | undefined;
+  const server = createIntegrationServer(...githubIssuesAuthFailureHandlers);
+
+  beforeAll(() => startServer(server));
+  afterAll(() => stopServer(server));
+
+  afterEach(() => {
+    server.resetHandlers();
+    vi.unstubAllEnvs();
+    repo?.cleanup();
+    repo = undefined;
+  });
+
+  it('exits cleanly when board auth fails', async () => {
+    const r = (repo = setupTestRepo());
+
+    await withCwd(r.repoPath, () => run(['--skip-feasibility']));
+
+    // Assert: no feature branch was created
+    const branches = execFileSync('git', ['branch', '--list'], {
+      cwd: r.repoPath,
+      encoding: 'utf8',
+    });
+    expect(branches).not.toContain('feature/');
+
+    // Assert: progress.txt is empty (pipeline exited at preflight/ping)
+    const progress = readFileSync(
+      join(r.repoPath, '.clancy', 'progress.txt'),
+      'utf8',
+    );
+    expect(progress.trim()).toBe('');
+  });
+});
+
+describe('Implementer lifecycle — dry-run mode', () => {
+  let repo: TempRepoResult | undefined;
+  const server = createIntegrationServer(
+    ...githubIssuesHandlers,
+    ...githubPrHandlers,
+  );
+
+  beforeAll(() => startServer(server));
+  afterAll(() => stopServer(server));
+
+  afterEach(() => {
+    server.resetHandlers();
+    vi.unstubAllEnvs();
+    repo?.cleanup();
+    repo = undefined;
+  });
+
+  it('exits after ticket fetch without creating branches or PRs', async () => {
+    const r = (repo = setupTestRepo());
+
+    // Run with --dry-run flag — should exit after showing ticket info
+    await withCwd(r.repoPath, () =>
+      run(['--dry-run', '--skip-feasibility']),
+    );
+
+    // Assert: no feature branch was created
+    const branches = execFileSync('git', ['branch', '--list'], {
+      cwd: r.repoPath,
+      encoding: 'utf8',
+    });
+    expect(branches).not.toContain('feature/');
+
+    // Assert: progress.txt is empty (dry-run doesn't log progress)
+    const progress = readFileSync(
+      join(r.repoPath, '.clancy', 'progress.txt'),
+      'utf8',
+    );
+    expect(progress.trim()).toBe('');
   });
 });
