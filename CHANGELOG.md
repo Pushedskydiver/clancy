@@ -7,6 +7,26 @@ Versioning: [Semantic Versioning](https://semver.org/spec/v2.0.0.html)
 
 ---
 
+## [0.8.3] — 2026-03-21
+
+### Added
+
+- **Integration test infrastructure (QA-001)** — foundation for all subsequent integration test flows:
+  - Claude output simulator (`simulateClaudeSuccess`, `simulateClaudeFailure`, `createSequencedClaudeMock`)
+  - Temp git repo with real TypeScript project scaffold (shared `node_modules` via symlink for fast setup)
+  - MSW server helper with strict unhandled request checking
+  - Smoke MSW handlers for all 6 boards (Jira, GitHub, Linear, Shortcut, Notion, Azure DevOps) + 3 git hosts (GitHub PR, GitLab MR, Bitbucket PR)
+  - Per-board environment variable fixtures derived from Zod schemas
+  - `withCwd()` helper for running orchestrator in temp repo context
+  - Separate Vitest config (`test:integration`) isolated from unit tests
+- **QA gap analysis** (`docs/decisions/qa-strategy/AUDIT.md`) — board + hook test coverage matrix identifying comment posting and ticket creation as universal gaps
+
+### Tests
+
+- 1217 unit tests (unchanged) + 18 integration tests (3 new test files: MSW smoke, temp repo, Claude simulator)
+
+---
+
 ## [0.8.2] — 2026-03-21
 
 ### Changed

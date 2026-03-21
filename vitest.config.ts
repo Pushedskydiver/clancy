@@ -9,6 +9,7 @@ export default defineConfig({
   },
   test: {
     globals: true,
+    exclude: ['test/**', 'node_modules/**'],
     coverage: {
       provider: 'v8',
       reporter: ['text', 'lcov'],

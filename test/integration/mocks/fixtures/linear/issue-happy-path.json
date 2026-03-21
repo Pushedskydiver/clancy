@@ -1,0 +1,24 @@
+{
+  "data": {
+    "viewer": {
+      "assignedIssues": {
+        "nodes": [
+          {
+            "id": "issue-id-001",
+            "identifier": "TEAM-1",
+            "title": "QA integration test ticket",
+            "description": "Implement the feature.\n\n## Acceptance Criteria\n- Feature works\n- Tests pass",
+            "parent": null,
+            "labels": {
+              "nodes": [{ "name": "clancy:build" }]
+            },
+            "state": {
+              "name": "Todo",
+              "type": "unstarted"
+            }
+          }
+        ]
+      }
+    }
+  }
+}

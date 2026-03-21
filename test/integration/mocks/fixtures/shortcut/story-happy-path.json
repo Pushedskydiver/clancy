@@ -1,0 +1,16 @@
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "QA integration test ticket",
+      "description": "Implement the feature.\n\n## Acceptance Criteria\n- Feature works\n- Tests pass",
+      "workflow_state_id": 100,
+      "labels": [{ "id": 1, "name": "clancy:build" }],
+      "epic_id": null,
+      "story_links": [],
+      "blocked": false,
+      "owner_ids": ["member-uuid"],
+      "requested_by_id": "member-uuid"
+    }
+  ]
+}
