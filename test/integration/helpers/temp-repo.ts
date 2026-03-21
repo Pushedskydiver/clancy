@@ -79,13 +79,19 @@ export function createTempRepo(options: TempRepoOptions = {}): TempRepoResult {
     writeFileSync(fullPath, content);
   }
 
-  // Symlink node_modules from the shared template
+  // Symlink node_modules from the shared template.
+  // Falls back gracefully if symlinks aren't available (e.g. Windows without
+  // Developer Mode) — tests still pass, they just skip tsc/eslint assertions.
   const templateDir = getTemplatePath();
   if (templateDir && existsSync(join(templateDir, 'node_modules'))) {
-    symlinkSync(
-      join(templateDir, 'node_modules'),
-      join(repoPath, 'node_modules'),
-    );
+    try {
+      symlinkSync(
+        join(templateDir, 'node_modules'),
+        join(repoPath, 'node_modules'),
+      );
+    } catch {
+      // Best-effort — symlink may fail on Windows without elevated privileges
+    }
   }
 
   // Initial commit
