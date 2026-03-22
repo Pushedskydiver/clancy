@@ -20,11 +20,14 @@ import {
 import {
   buildEpicPrBody,
   buildPrBody,
+  isEpicBranch,
 } from '~/scripts/shared/pull-request/pr-body/pr-body.js';
+import type { EpicContext } from '~/scripts/shared/pull-request/pr-body/pr-body.js';
 import { detectRemote } from '~/scripts/shared/remote/remote.js';
 import type { FetchedTicket } from '~/types/board.js';
 import { dim, green, red, yellow } from '~/utils/ansi/ansi.js';
 
+import { resolveBuildLabel } from '../fetch-ticket/fetch-ticket.js';
 import {
   attemptPrCreation,
   buildManualPrUrl,
@@ -177,6 +180,23 @@ export async function deliverViaPullRequest(
   const platformOverride = sharedEnv(config).CLANCY_GIT_PLATFORM;
   const remote = detectRemote(platformOverride);
   const prTitle = `feat(${ticket.key}): ${ticket.title}`;
+
+  // Build epic context for child PRs targeting epic/milestone branches
+  let epicContext: EpicContext | undefined;
+  if (parent && isEpicBranch(targetBranch)) {
+    const siblingEntries = [
+      ...findEntriesWithStatus(process.cwd(), 'PR_CREATED'),
+      ...findEntriesWithStatus(process.cwd(), 'DONE'),
+      ...findEntriesWithStatus(process.cwd(), 'REWORK'),
+      ...findEntriesWithStatus(process.cwd(), 'PUSHED'),
+    ].filter((e) => e.parent === parent && e.key !== ticket.key);
+    epicContext = {
+      parentKey: parent,
+      siblingsDelivered: siblingEntries.length,
+      epicBranch: targetBranch,
+    };
+  }
+
   const prBody = buildPrBody(
     config,
     {
@@ -188,6 +208,7 @@ export async function deliverViaPullRequest(
     targetBranch,
     verificationWarning,
     singleChildParent,
+    epicContext,
   );
 
   if (
@@ -391,8 +412,21 @@ export async function deliverEpicToBase(
       pr.number,
     );
 
-    // Transition epic ticket to Review
-    if (config.provider !== 'github' && board) {
+    // Transition epic ticket to Review / add build label
+    if (config.provider === 'github' && board) {
+      // GitHub: add build label so downstream tooling (e.g., Ralph) can find the epic PR
+      const buildLabel = resolveBuildLabel(config.env);
+      if (buildLabel) {
+        try {
+          await board.addLabel(epicKey, buildLabel);
+          console.log(dim(`  Added ${buildLabel} to ${epicKey}`));
+        } catch {
+          console.log(
+            yellow(`⚠ Could not add ${buildLabel} label to ${epicKey}`),
+          );
+        }
+      }
+    } else if (board) {
       const statusReview =
         config.env.CLANCY_STATUS_REVIEW ?? config.env.CLANCY_STATUS_DONE;
       if (statusReview) {

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { BoardConfig, Ticket } from '~/types/index.js';
 
+import type { EpicContext } from './pr-body.js';
 import { buildEpicPrBody, buildPrBody, isEpicBranch } from './pr-body.js';
 
 const baseTicket: Ticket = {
@@ -222,6 +223,144 @@ describe('singleChildParent', () => {
     } as BoardConfig;
     const body = buildPrBody(config, baseTicket, 'main', undefined, 'PROJ-100');
     expect(body).not.toContain('Closes PROJ-100');
+  });
+});
+
+describe('epicContext', () => {
+  const githubConfig: BoardConfig = {
+    provider: 'github',
+    env: { GITHUB_TOKEN: 'ghp_test', GITHUB_REPO: 'owner/repo' },
+  };
+  const githubTicket: Ticket = {
+    ...baseTicket,
+    key: '#50',
+    provider: 'github',
+  };
+
+  it('includes epic banner when targeting epic branch with context', () => {
+    const epic: EpicContext = {
+      parentKey: '#49',
+      siblingsDelivered: 3,
+      epicBranch: 'milestone/49',
+    };
+    const body = buildPrBody(
+      githubConfig,
+      githubTicket,
+      'milestone/49',
+      undefined,
+      undefined,
+      epic,
+    );
+    expect(body).toContain('## Part of epic #49');
+    expect(body).toContain('3 siblings previously delivered to `milestone/49`');
+    expect(body).toContain('This PR targets `milestone/49`');
+    expect(body).toContain('final epic PR');
+  });
+
+  it('shows singular sibling text when one sibling merged', () => {
+    const epic: EpicContext = {
+      parentKey: '#49',
+      siblingsDelivered: 1,
+      epicBranch: 'milestone/49',
+    };
+    const body = buildPrBody(
+      githubConfig,
+      githubTicket,
+      'milestone/49',
+      undefined,
+      undefined,
+      epic,
+    );
+    expect(body).toContain('1 sibling previously delivered');
+    expect(body).not.toContain('siblings');
+  });
+
+  it('shows no siblings text when first child', () => {
+    const epic: EpicContext = {
+      parentKey: '#49',
+      siblingsDelivered: 0,
+      epicBranch: 'milestone/49',
+    };
+    const body = buildPrBody(
+      githubConfig,
+      githubTicket,
+      'milestone/49',
+      undefined,
+      undefined,
+      epic,
+    );
+    expect(body).toContain('No siblings delivered yet');
+  });
+
+  it('does not include epic banner when not targeting epic branch', () => {
+    const epic: EpicContext = {
+      parentKey: '#49',
+      siblingsDelivered: 3,
+      epicBranch: 'milestone/49',
+    };
+    const body = buildPrBody(
+      githubConfig,
+      githubTicket,
+      'main',
+      undefined,
+      undefined,
+      epic,
+    );
+    expect(body).not.toContain('Part of epic');
+    expect(body).not.toContain('siblings');
+  });
+
+  it('does not include epic banner when epicContext is undefined', () => {
+    const body = buildPrBody(githubConfig, githubTicket, 'milestone/49');
+    expect(body).not.toContain('Part of epic');
+  });
+
+  it('places epic banner before ticket reference', () => {
+    const epic: EpicContext = {
+      parentKey: '#49',
+      siblingsDelivered: 2,
+      epicBranch: 'milestone/49',
+    };
+    const body = buildPrBody(
+      githubConfig,
+      githubTicket,
+      'milestone/49',
+      undefined,
+      undefined,
+      epic,
+    );
+    const bannerIndex = body.indexOf('## Part of epic #49');
+    const ticketRefIndex = body.indexOf('Part of #50');
+    expect(bannerIndex).toBeLessThan(ticketRefIndex);
+  });
+
+  it('works with Jira boards targeting epic branch', () => {
+    const jiraConfig: BoardConfig = {
+      provider: 'jira',
+      env: {
+        JIRA_BASE_URL: 'https://example.atlassian.net',
+        JIRA_USER: 'user',
+        JIRA_API_TOKEN: 'token',
+        JIRA_PROJECT_KEY: 'PROJ',
+      },
+    };
+    const epic: EpicContext = {
+      parentKey: 'PROJ-100',
+      siblingsDelivered: 5,
+      epicBranch: 'epic/proj-100',
+    };
+    const body = buildPrBody(
+      jiraConfig,
+      baseTicket,
+      'epic/proj-100',
+      undefined,
+      undefined,
+      epic,
+    );
+    expect(body).toContain('## Part of epic PROJ-100');
+    expect(body).toContain(
+      '5 siblings previously delivered to `epic/proj-100`',
+    );
   });
 });
 
