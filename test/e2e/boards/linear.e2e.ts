@@ -34,6 +34,7 @@ import { cleanupGitAuth, configureGitAuth } from '../helpers/git-auth.js';
 import {
   createTestTicket,
   generateRunId,
+  resolveLinearTeamUuid,
   type CreatedTicket,
 } from '../helpers/ticket-factory.js';
 
@@ -113,12 +114,18 @@ describe.skipIf(!canRun)('E2E: Linear — full pipeline', () => {
     const githubCreds = getGitHubCredentials()!;
     const linearCreds = getLinearCredentials()!;
 
-    // 1. Create test ticket via real Linear API
+    // 1. Resolve team UUID — LINEAR_TEAM_ID may be a key (e.g. "CLA") not a UUID
+    const teamUuid = await resolveLinearTeamUuid(
+      linearCreds.apiKey,
+      linearCreds.teamId,
+    );
+
+    // 2. Create test ticket via real Linear API
     ticket = await createTestTicket('linear', runId);
-    // Linear keys are like "ENG-123" → branch is "feature/eng-123"
+    // Linear keys are like "CLA-5" → branch is "feature/cla-5"
     ticketBranch = `feature/${ticket.key.toLowerCase()}`;
 
-    // 2. Set up temp repo with real remote pointing to sandbox
+    // 3. Set up temp repo with real remote pointing to sandbox
     repo = createTempRepo();
     const remoteUrl = `https://github.com/${githubCreds.repo}.git`;
 
@@ -143,13 +150,14 @@ describe.skipIf(!canRun)('E2E: Linear — full pipeline', () => {
       });
     }
 
-    // 3. Create Clancy scaffold with real Linear + GitHub credentials
-    // Linear personal API keys do NOT use "Bearer" prefix
+    // 3. Create Clancy scaffold with real Linear + GitHub credentials.
+    // IMPORTANT: Do NOT include GITHUB_REPO — detectBoard checks
+    // GITHUB_TOKEN + GITHUB_REPO before Linear and would detect GitHub Issues.
+    // GITHUB_TOKEN alone is used as the git host token for PR creation.
     createClancyScaffold(repo.repoPath, 'linear', {
       LINEAR_API_KEY: linearCreds.apiKey,
-      LINEAR_TEAM_ID: linearCreds.teamId,
+      LINEAR_TEAM_ID: teamUuid,
       GITHUB_TOKEN: githubCreds.token,
-      GITHUB_REPO: githubCreds.repo,
       CLANCY_BASE_BRANCH: 'main',
       CLANCY_LABEL_BUILD: 'clancy:build',
     });

@@ -181,10 +181,7 @@ export async function fetchIssues(
   const labelFilter = hasLabel ? 'labels: { name: { eq: $label } }' : '';
 
   // Build variable declarations for the query
-  const varDecls = [
-    '$teamId: String!',
-    ...(hasLabel ? ['$label: String!'] : []),
-  ];
+  const varDecls = ['$teamId: ID!', ...(hasLabel ? ['$label: String!'] : [])];
 
   // Build filter parts
   const filterParts = [
@@ -201,7 +198,7 @@ export async function fetchIssues(
             ${filterParts.join('\n            ')}
           }
           first: ${excludeHitl ? limit * 3 : limit}
-          orderBy: priority
+          orderBy: createdAt
         ) {
           nodes {
             id

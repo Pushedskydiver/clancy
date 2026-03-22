@@ -17,8 +17,11 @@ import {
   getGitHubCredentials,
   getJiraCredentials,
   getLinearCredentials,
+  getNotionCredentials,
   getShortcutCredentials,
+  getAzdoCredentials,
 } from './env.js';
+import { buildAzdoAuth, azdoBaseUrl, azdoHeaders } from './azdo-auth.js';
 import { fetchWithTimeout } from './fetch-timeout.js';
 import { buildJiraAuth } from './jira-auth.js';
 
@@ -38,9 +41,9 @@ export async function cleanupOrphanTickets(board: E2EBoard): Promise<number> {
     case 'shortcut':
       return cleanupShortcutOrphans();
     case 'notion':
+      return cleanupNotionOrphans();
     case 'azdo':
-      console.log(`  ⏭ GC not implemented for ${board} — skipping`);
-      return 0;
+      return cleanupAzdoOrphans();
   }
 }
 
@@ -408,6 +411,171 @@ async function cleanupShortcutOrphans(): Promise<number> {
 
     nextToken = data.next ?? undefined;
     if (!nextToken) break;
+  }
+
+  return cleaned;
+}
+
+// ---------------------------------------------------------------------------
+// Notion — orphan cleanup
+// ---------------------------------------------------------------------------
+
+async function cleanupNotionOrphans(): Promise<number> {
+  const creds = getNotionCredentials();
+  if (!creds) {
+    console.log('  ⏭ Notion credentials not available — skipping');
+    return 0;
+  }
+
+  const headers = {
+    Authorization: `Bearer ${creds.token}`,
+    'Notion-Version': '2022-06-28',
+    'Content-Type': 'application/json',
+  };
+
+  let cleaned = 0;
+  const cutoff = Date.now() - ONE_DAY_MS;
+
+  // Query for pages with [QA] in title — Notion doesn't support text search
+  // on title, so we query all pages and filter client-side.
+  let startCursor: string | undefined;
+
+  for (let page = 0; page < 10; page++) {
+    const body: Record<string, unknown> = { page_size: 100 };
+    if (startCursor) body.start_cursor = startCursor;
+
+    const resp = await fetchWithTimeout(
+      `https://api.notion.com/v1/databases/${creds.databaseId}/query`,
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(body),
+      },
+    );
+
+    if (!resp.ok) {
+      console.log(`  ⚠ Notion query failed: ${resp.status}`);
+      break;
+    }
+
+    const data = (await resp.json()) as {
+      results: Array<{
+        id: string;
+        created_time: string;
+        properties: Record<string, { type: string; title?: Array<{ plain_text: string }> }>;
+      }>;
+      has_more: boolean;
+      next_cursor: string | null;
+    };
+
+    for (const result of data.results) {
+      // Extract title from the Name property
+      const titleProp = Object.values(result.properties).find(
+        (p) => p.type === 'title',
+      );
+      const title = titleProp?.title?.map((t) => t.plain_text).join('') ?? '';
+
+      if (!title.includes('[QA]')) continue;
+      if (new Date(result.created_time).getTime() > cutoff) continue;
+
+      console.log(`  🧹 Archiving orphan: ${title}`);
+
+      const archiveResp = await fetchWithTimeout(
+        `https://api.notion.com/v1/pages/${result.id}`,
+        {
+          method: 'PATCH',
+          headers,
+          body: JSON.stringify({ archived: true }),
+        },
+      );
+
+      if (archiveResp.ok) cleaned++;
+      else console.log(`    ⚠ Failed to archive Notion page: ${archiveResp.status}`);
+    }
+
+    if (!data.has_more || !data.next_cursor) break;
+    startCursor = data.next_cursor;
+  }
+
+  return cleaned;
+}
+
+// ---------------------------------------------------------------------------
+// Azure DevOps — orphan cleanup
+// ---------------------------------------------------------------------------
+
+async function cleanupAzdoOrphans(): Promise<number> {
+  const creds = getAzdoCredentials();
+  if (!creds) {
+    console.log('  ⏭ Azure DevOps credentials not available — skipping');
+    return 0;
+  }
+
+  const auth = buildAzdoAuth(creds.pat);
+  const base = azdoBaseUrl(creds.org, creds.project);
+
+  let cleaned = 0;
+
+  // WIQL query for [QA] work items created > 24h ago
+  // Defence-in-depth: validate project name before interpolation (mirrors runtime isSafeWiqlValue)
+  if (!/^[a-zA-Z0-9 _\-.]+$/.test(creds.project) || /--|;|\/\*/.test(creds.project)) {
+    console.log(`  ⚠ Azure DevOps project name contains unsafe characters — skipping`);
+    return 0;
+  }
+  const wiql = `SELECT [System.Id] FROM WorkItems WHERE [System.TeamProject] = '${creds.project}' AND [System.Title] CONTAINS '[QA]' AND [System.CreatedDate] < @Today - 1 AND [System.State] <> 'Closed' AND [System.State] <> 'Removed'`;
+
+  const searchResp = await fetchWithTimeout(
+    `${base}/wit/wiql?api-version=7.1`,
+    {
+      method: 'POST',
+      headers: azdoHeaders(auth),
+      body: JSON.stringify({ query: wiql }),
+    },
+  );
+
+  if (!searchResp.ok) {
+    console.log(`  ⚠ Azure DevOps WIQL query failed: ${searchResp.status}`);
+    return 0;
+  }
+
+  const data = (await searchResp.json()) as {
+    workItems: Array<{ id: number }>;
+  };
+
+  for (const item of data.workItems) {
+    console.log(`  🧹 Deleting orphan: azdo-${item.id}`);
+
+    // Try hard delete first
+    const delResp = await fetchWithTimeout(
+      `${base}/wit/workitems/${item.id}?destroy=true&api-version=7.1`,
+      {
+        method: 'DELETE',
+        headers: { Authorization: `Basic ${auth}` },
+      },
+    );
+
+    if (delResp.ok) {
+      cleaned++;
+      continue;
+    }
+
+    // Fallback: close the work item
+    const closeResp = await fetchWithTimeout(
+      `${base}/wit/workitems/${item.id}?api-version=7.1`,
+      {
+        method: 'PATCH',
+        headers: {
+          Authorization: `Basic ${auth}`,
+          'Content-Type': 'application/json-patch+json',
+        },
+        body: JSON.stringify([
+          { op: 'replace', path: '/fields/System.State', value: 'Closed' },
+        ]),
+      },
+    );
+
+    if (closeResp.ok) cleaned++;
+    else console.log(`    ⚠ Failed to close azdo-${item.id}: ${closeResp.status}`);
   }
 
   return cleaned;

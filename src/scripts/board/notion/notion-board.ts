@@ -64,7 +64,8 @@ export function createNotionBoard(env: NotionEnv): Board {
 
     async fetchTickets(opts: FetchTicketOpts) {
       // Build filter: status = backlog/to-do (not in-progress)
-      const statusFilter = buildStatusFilter(statusProp, 'To-do');
+      const todoName = env.CLANCY_NOTION_TODO ?? 'To-do';
+      const statusFilter = buildStatusFilter(statusProp, todoName);
 
       const result = await queryDatabase(
         env.NOTION_TOKEN,
@@ -213,21 +214,17 @@ export function createNotionBoard(env: NotionEnv): Board {
 
 // ─── Internal helpers ───────────────────────────────────────────────────────
 
-/** Build a status filter for "To-do" or custom status. */
+/** Build a status filter for "To-do" or custom status.
+ * Uses `status` type filter (Notion's native status property). */
 function buildStatusFilter(
   statusProp: string,
   customStatus?: string,
 ): Record<string, unknown> {
   const statusName = customStatus ?? 'To-do';
 
-  // Try both Status and Select property types — Notion returns empty
-  // results (not errors) when the filter type doesn't match the property.
-  // Using `or` ensures we find pages regardless of which type is used.
   return {
-    or: [
-      { property: statusProp, status: { equals: statusName } },
-      { property: statusProp, select: { equals: statusName } },
-    ],
+    property: statusProp,
+    status: { equals: statusName },
   };
 }
 

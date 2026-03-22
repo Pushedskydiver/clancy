@@ -1,15 +1,15 @@
 /**
- * Jira — E2E test against real Jira API + GitHub sandbox repo.
+ * Notion — E2E test against real Notion API + GitHub sandbox repo.
  *
- * Creates a real Jira issue, runs the once orchestrator with Claude mocked
+ * Creates a real Notion page, runs the once orchestrator with Claude mocked
  * (simulator), verifies the PR was created on the GitHub sandbox and the
  * progress file was updated, then cleans up.
  *
  * Prerequisites:
- * - .env.e2e with JIRA_BASE_URL, JIRA_USER, JIRA_API_TOKEN, JIRA_PROJECT_KEY
+ * - .env.e2e with NOTION_TOKEN and NOTION_DATABASE_ID
  * - .env.e2e with GITHUB_TOKEN and GITHUB_REPO (for git push + PR creation)
- * - Sandbox Jira project exists with a "Done" transition
- * - clancy:build label exists on the Jira project
+ * - Sandbox Notion database exists with a title, status, and multi_select property (names auto-discovered)
+ * - Notion rate limit: 3 req/s — retryFetch handles Retry-After at runtime
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
@@ -19,7 +19,6 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { githubHeaders } from '~/scripts/shared/http/http.js';
 
 import { fetchWithTimeout } from '../helpers/fetch-timeout.js';
-
 import { simulateClaudeSuccess } from '../../integration/helpers/claude-simulator.js';
 import {
   createClancyScaffold,
@@ -29,19 +28,20 @@ import {
 } from '../../integration/helpers/temp-repo.js';
 
 import { cleanupBranch, cleanupPullRequest, cleanupTicket } from '../helpers/cleanup.js';
-import { getGitHubCredentials, getJiraCredentials, hasCredentials } from '../helpers/env.js';
+import { getGitHubCredentials, getNotionCredentials, hasCredentials } from '../helpers/env.js';
 import { cleanupGitAuth, configureGitAuth } from '../helpers/git-auth.js';
 import {
   createTestTicket,
+  discoverNotionSchema,
   generateRunId,
   type CreatedTicket,
 } from '../helpers/ticket-factory.js';
 
 // ---------------------------------------------------------------------------
-// Skip if credentials not available (need both Jira + GitHub)
+// Skip if credentials not available (need both Notion + GitHub)
 // ---------------------------------------------------------------------------
 
-const canRun = hasCredentials('jira') && hasCredentials('github');
+const canRun = hasCredentials('notion') && hasCredentials('github');
 
 // ---------------------------------------------------------------------------
 // Module mocks — Claude is always simulated, preflight partially real
@@ -78,7 +78,7 @@ const { run } = await import('~/scripts/once/once.js');
 // Test suite
 // ---------------------------------------------------------------------------
 
-describe.skipIf(!canRun)('E2E: Jira — full pipeline', () => {
+describe.skipIf(!canRun)('E2E: Notion — full pipeline', () => {
   const runId = generateRunId();
   let ticket: CreatedTicket | undefined;
   let repo: TempRepoResult | undefined;
@@ -92,13 +92,13 @@ describe.skipIf(!canRun)('E2E: Jira — full pipeline', () => {
 
   afterAll(async () => {
     if (prNumber) {
-      await cleanupPullRequest('jira', prNumber).catch(() => {});
+      await cleanupPullRequest('notion', prNumber).catch(() => {});
     }
     if (repo && ticketBranch) {
       cleanupBranch(repo.repoPath, ticketBranch);
     }
     if (ticket) {
-      await cleanupTicket('jira', ticket.key).catch(() => {});
+      await cleanupTicket('notion', ticket.id).catch(() => {});
     }
     if (repo) {
       repo.cleanup();
@@ -111,10 +111,17 @@ describe.skipIf(!canRun)('E2E: Jira — full pipeline', () => {
 
   it('creates a ticket, runs the pipeline, and verifies PR creation', async () => {
     const githubCreds = getGitHubCredentials()!;
-    const jiraCreds = getJiraCredentials()!;
+    const notionCreds = getNotionCredentials()!;
 
-    // 1. Create test ticket via real Jira API
-    ticket = await createTestTicket('jira', runId);
+    // 1. Discover database schema — status option name varies per database
+    const schema = await discoverNotionSchema(
+      notionCreds.token,
+      notionCreds.databaseId,
+    );
+
+    // 2. Create test ticket via real Notion API
+    ticket = await createTestTicket('notion', runId);
+    // Notion keys are like "notion-ab12cd34" → branch is "feature/notion-ab12cd34"
     ticketBranch = `feature/${ticket.key.toLowerCase()}`;
 
     // 2. Set up temp repo with real remote pointing to sandbox
@@ -142,16 +149,18 @@ describe.skipIf(!canRun)('E2E: Jira — full pipeline', () => {
       });
     }
 
-    // 3. Create Clancy scaffold with real Jira + GitHub credentials
-    createClancyScaffold(repo.repoPath, 'jira', {
-      JIRA_BASE_URL: jiraCreds.baseUrl,
-      JIRA_USER: jiraCreds.user,
-      JIRA_API_TOKEN: jiraCreds.apiToken,
-      JIRA_PROJECT_KEY: jiraCreds.projectKey,
+    // 4. Create Clancy scaffold with real Notion + GitHub credentials
+    // Pass discovered status option name so production code filters correctly
+    createClancyScaffold(repo.repoPath, 'notion', {
+      NOTION_TOKEN: notionCreds.token,
+      NOTION_DATABASE_ID: notionCreds.databaseId,
       GITHUB_TOKEN: githubCreds.token,
-
       CLANCY_BASE_BRANCH: 'main',
-      CLANCY_LABEL_BUILD: 'clancy-build',
+      CLANCY_NOTION_TODO: schema.statusOptionName,
+      ...(schema.labelsPropName && {
+        CLANCY_NOTION_LABELS: schema.labelsPropName,
+        CLANCY_LABEL_BUILD: 'clancy:build',
+      }),
     });
 
     writeFileSync(

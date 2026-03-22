@@ -17,6 +17,7 @@ import {
 } from '~/schemas/shortcut.js';
 import type {
   ShortcutLabelsResponse,
+  ShortcutStoryNode,
   ShortcutWorkflowsResponse,
 } from '~/schemas/shortcut.js';
 import type { Ticket } from '~/types/index.js';
@@ -63,9 +64,15 @@ export async function pingShortcut(
   let response: Response;
 
   try {
+    // /member-info may 404 for some API token types — fall back to /workflows
     response = await fetch(`${SHORTCUT_API}/member-info`, {
       headers: shortcutHeaders(token),
     });
+    if (!response.ok) {
+      response = await fetch(`${SHORTCUT_API}/workflows`, {
+        headers: shortcutHeaders(token),
+      });
+    }
   } catch {
     return {
       ok: false,
@@ -86,10 +93,14 @@ export async function pingShortcut(
     };
   }
 
+  // /member-info returns { id, ... } — validate if available.
+  // /workflows returns an array — just check response.ok (already done above).
   try {
     const json: unknown = await response.json();
     const parsed = shortcutMemberInfoResponseSchema.safeParse(json);
     if (parsed.success && parsed.data.id) return { ok: true };
+    // If schema doesn't match (e.g. /workflows fallback), OK response is sufficient
+    if (Array.isArray(json)) return { ok: true };
   } catch {
     // Invalid JSON — treat as auth issue
   }
@@ -227,9 +238,13 @@ export async function fetchStories(
 
   const body: Record<string, unknown> = {};
 
-  // Use workflow state IDs for server-side filtering
-  if (workflowStateIds.length) {
-    body.workflow_state_ids = workflowStateIds;
+  // Filter by workflow state. Shortcut removed workflow_state_ids (plural) and
+  // now expects workflow_state_id (singular); we always send the singular field.
+  if (workflowStateIds.length === 1) {
+    body.workflow_state_id = workflowStateIds[0];
+  } else if (workflowStateIds.length > 1) {
+    // Multiple state IDs: use first one (most common case is single "unstarted" state)
+    body.workflow_state_id = workflowStateIds[0];
   }
 
   if (ownerUuid) body.owner_ids = [ownerUuid];
@@ -262,16 +277,29 @@ export async function fetchStories(
     return [];
   }
 
+  // Shortcut may return { data: [...] } (paginated) or a bare array
   const parsed = shortcutStorySearchResponseSchema.safeParse(json);
 
-  if (!parsed.success) {
+  let stories: ShortcutStoryNode[];
+
+  if (parsed.success) {
+    stories = parsed.data.data;
+  } else if (Array.isArray(json)) {
+    // Wrap bare array in the expected shape and re-parse
+    const wrapped = shortcutStorySearchResponseSchema.safeParse({ data: json });
+    if (!wrapped.success) {
+      console.warn(
+        `⚠ Unexpected Shortcut response shape: ${wrapped.error.message}`,
+      );
+      return [];
+    }
+    stories = wrapped.data.data;
+  } else {
     console.warn(
       `⚠ Unexpected Shortcut response shape: ${parsed.error.message}`,
     );
     return [];
   }
-
-  let stories = parsed.data.data;
 
   // HITL/AFK filtering: exclude stories with clancy:hitl label
   if (excludeHitl) {

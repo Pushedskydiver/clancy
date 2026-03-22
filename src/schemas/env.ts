@@ -94,6 +94,7 @@ export const notionEnvSchema = z.extend(sharedEnvSchema, {
   NOTION_TOKEN: nonEmpty,
   NOTION_DATABASE_ID: nonEmpty,
   CLANCY_NOTION_STATUS: z.optional(z.string()),
+  CLANCY_NOTION_TODO: z.optional(z.string()),
   CLANCY_NOTION_ASSIGNEE: z.optional(z.string()),
   CLANCY_NOTION_LABELS: z.optional(z.string()),
   CLANCY_NOTION_PARENT: z.optional(z.string()),

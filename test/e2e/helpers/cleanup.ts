@@ -12,8 +12,11 @@ import {
   getGitHubCredentials,
   getJiraCredentials,
   getLinearCredentials,
+  getNotionCredentials,
   getShortcutCredentials,
+  getAzdoCredentials,
 } from './env.js';
+import { buildAzdoAuth, azdoBaseUrl, azdoPatchHeaders } from './azdo-auth.js';
 import { fetchWithTimeout } from './fetch-timeout.js';
 import { buildJiraAuth } from './jira-auth.js';
 
@@ -34,16 +37,16 @@ export async function cleanupTicket(
     case 'shortcut':
       return cleanupShortcutTicket(ticketId);
     case 'notion':
+      return cleanupNotionTicket(ticketId);
     case 'azdo':
-      throw new Error(`cleanupTicket not implemented for board: ${board}`);
+      return cleanupAzdoTicket(ticketId);
   }
 }
 
 /**
  * Close a PR on the git host by PR number.
  *
- * For boards that use GitHub as the git host (`github`, `jira`, `linear`, `shortcut`),
- * pass the corresponding board value; all route to the shared GitHub sandbox repo.
+ * All boards use the same GitHub sandbox repo for PRs.
  */
 export async function cleanupPullRequest(
   board: E2EBoard,
@@ -54,13 +57,10 @@ export async function cleanupPullRequest(
     case 'jira':
     case 'linear':
     case 'shortcut':
-      // All boards use the same GitHub sandbox repo for PRs
-      return cleanupGitHubPullRequest(prNumber);
     case 'notion':
     case 'azdo':
-      throw new Error(
-        `cleanupPullRequest not implemented for board: ${board}`,
-      );
+      // All boards use the same GitHub sandbox repo for PRs
+      return cleanupGitHubPullRequest(prNumber);
   }
 }
 
@@ -226,4 +226,60 @@ async function cleanupShortcutTicket(storyId: string): Promise<void> {
     method: 'DELETE',
     headers: { 'Shortcut-Token': creds.token },
   });
+}
+
+// ---------------------------------------------------------------------------
+// Notion
+// ---------------------------------------------------------------------------
+
+async function cleanupNotionTicket(pageId: string): Promise<void> {
+  const creds = getNotionCredentials();
+  if (!creds) return;
+
+  // Archive the page (Notion doesn't support hard delete via API)
+  await fetchWithTimeout(`https://api.notion.com/v1/pages/${pageId}`, {
+    method: 'PATCH',
+    headers: {
+      Authorization: `Bearer ${creds.token}`,
+      'Notion-Version': '2022-06-28',
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ archived: true }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Azure DevOps
+// ---------------------------------------------------------------------------
+
+async function cleanupAzdoTicket(workItemId: string): Promise<void> {
+  const creds = getAzdoCredentials();
+  if (!creds) return;
+
+  const auth = buildAzdoAuth(creds.pat);
+  const base = azdoBaseUrl(creds.org, creds.project);
+
+  // Try hard delete first — falls back to close + tag if destroy permission unavailable
+  const delResp = await fetchWithTimeout(
+    `${base}/wit/workitems/${workItemId}?destroy=true&api-version=7.1`,
+    {
+      method: 'DELETE',
+      headers: { Authorization: `Basic ${auth}` },
+    },
+  );
+
+  if (delResp.ok) return;
+
+  // Fallback: close the work item and tag it for manual cleanup
+  await fetchWithTimeout(
+    `${base}/wit/workitems/${workItemId}?api-version=7.1`,
+    {
+      method: 'PATCH',
+      headers: azdoPatchHeaders(auth),
+      body: JSON.stringify([
+        { op: 'add', path: '/fields/System.State', value: 'Closed' },
+        { op: 'add', path: '/fields/System.Tags', value: 'qa-cleanup' },
+      ]),
+    },
+  );
 }

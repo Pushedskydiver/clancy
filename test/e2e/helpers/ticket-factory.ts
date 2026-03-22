@@ -11,9 +11,12 @@ import {
   getGitHubCredentials,
   getJiraCredentials,
   getLinearCredentials,
+  getNotionCredentials,
   getShortcutCredentials,
+  getAzdoCredentials,
 } from './env.js';
 import { fetchWithTimeout } from './fetch-timeout.js';
+import { buildAzdoAuth, azdoBaseUrl, azdoPatchHeaders } from './azdo-auth.js';
 import { buildJiraAuth } from './jira-auth.js';
 
 export interface CreateTicketOptions {
@@ -56,8 +59,9 @@ export async function createTestTicket(
     case 'shortcut':
       return createShortcutTicket(runId, options);
     case 'notion':
+      return createNotionTicket(runId, options);
     case 'azdo':
-      throw new Error(`createTestTicket not implemented for board: ${board}`);
+      return createAzdoTicket(runId, options);
   }
 }
 
@@ -202,7 +206,7 @@ async function createJiraTicket(
             ],
           },
           issuetype: { name: 'Task' },
-          labels: ['clancy:build'],
+          labels: ['clancy-build'],
           assignee: { accountId },
         },
       }),
@@ -276,51 +280,84 @@ async function linearGraphql<T>(
   return json.data;
 }
 
+/** Resolve the Linear team UUID from a key or UUID. Exported for E2E scaffold setup.
+ * LINEAR_TEAM_ID may be a key (e.g. "clancy-qa") or UUID — resolve to UUID. */
+export async function resolveLinearTeamUuid(
+  apiKey: string,
+  teamIdOrKey: string,
+): Promise<string> {
+  // If it looks like a UUID, use it directly
+  if (/^[0-9a-f]{8}-/i.test(teamIdOrKey)) return teamIdOrKey;
+
+  // Otherwise look up by key
+  const data = await linearGraphql<{
+    teams: { nodes: Array<{ id: string; key: string; name: string }> };
+  }>(apiKey, `{ teams { nodes { id key name } } }`);
+
+  const needle = teamIdOrKey.toLowerCase();
+  const team = data.teams.nodes.find(
+    (t) =>
+      t.key.toLowerCase() === needle ||
+      t.name.toLowerCase() === needle ||
+      t.id === teamIdOrKey,
+  );
+  if (!team) {
+    const available = data.teams.nodes
+      .map((t) => `${t.key} (${t.name}) [${t.id}]`)
+      .join(', ');
+    throw new Error(
+      `Linear team not found for "${teamIdOrKey}". Available: ${available}`,
+    );
+  }
+  return team.id;
+}
+
 /** Look up the first "unstarted" workflow state ID for the team. */
 async function resolveLinearUnstartedStateId(
   apiKey: string,
-  teamId: string,
+  teamUuid: string,
 ): Promise<string> {
   const data = await linearGraphql<{
-    workflowStates: { nodes: Array<{ id: string; name: string }> };
+    team: { states: { nodes: Array<{ id: string; name: string; type: string }> } };
   }>(
     apiKey,
     `query($teamId: String!) {
-      workflowStates(filter: { team: { id: { eq: $teamId } }, type: { eq: "unstarted" } }) {
-        nodes { id name }
+      team(id: $teamId) {
+        states { nodes { id name type } }
       }
     }`,
-    { teamId },
+    { teamId: teamUuid },
   );
 
-  const state = data.workflowStates.nodes[0];
+  const state = data.team.states.nodes.find((s) => s.type === 'unstarted');
   if (!state) throw new Error('No unstarted workflow state found for Linear team');
   return state.id;
 }
 
-/** Look up the label ID for a given label name, creating it if needed. */
+/** Look up the label ID for a given label name, creating it if needed.
+ * Queries team labels first; creates on the team if not found. */
 async function resolveLinearLabelId(
   apiKey: string,
   teamId: string,
   labelName: string,
 ): Promise<string> {
-  // Try to find existing label
+  // Check team labels (matches production linear-board.ts ensureLabel)
   const data = await linearGraphql<{
-    issueLabels: { nodes: Array<{ id: string; name: string }> };
+    team: { labels: { nodes: Array<{ id: string; name: string }> } };
   }>(
     apiKey,
-    `query($teamId: String!, $name: String!) {
-      issueLabels(filter: { team: { id: { eq: $teamId } }, name: { eq: $name } }) {
-        nodes { id name }
+    `query($teamId: String!) {
+      team(id: $teamId) {
+        labels { nodes { id name } }
       }
     }`,
-    { teamId, name: labelName },
+    { teamId },
   );
 
-  const existing = data.issueLabels.nodes.find((l) => l.name === labelName);
+  const existing = data.team.labels.nodes.find((l) => l.name === labelName);
   if (existing) return existing.id;
 
-  // Create it
+  // Create it on the team
   const created = await linearGraphql<{
     issueLabelCreate: { issueLabel: { id: string } };
   }>(
@@ -354,11 +391,14 @@ async function createLinearTicket(
 
   const title = `[QA] E2E test — linear — ${runId}${options.titleSuffix ? ` — ${options.titleSuffix}` : ''}`;
 
+  // LINEAR_TEAM_ID may be a key (e.g. "clancy-qa") or UUID — resolve to UUID
+  const teamUuid = await resolveLinearTeamUuid(creds.apiKey, creds.teamId);
+
   // Resolve state, label, and viewer IDs
   // Clancy's Linear fetch uses viewer.assignedIssues — ticket must be assigned
   const [stateId, labelId, viewerId] = await Promise.all([
-    resolveLinearUnstartedStateId(creds.apiKey, creds.teamId),
-    resolveLinearLabelId(creds.apiKey, creds.teamId, 'clancy:build'),
+    resolveLinearUnstartedStateId(creds.apiKey, teamUuid),
+    resolveLinearLabelId(creds.apiKey, teamUuid, 'clancy:build'),
     resolveLinearViewerId(creds.apiKey),
   ]);
 
@@ -380,7 +420,7 @@ async function createLinearTicket(
         issue { id identifier url }
       }
     }`,
-    { teamId: creds.teamId, title, stateId, labelIds: [labelId], assigneeId: viewerId },
+    { teamId: teamUuid, title, stateId, labelIds: [labelId], assigneeId: viewerId },
   );
 
   const issue = data.issueCreate.issue;
@@ -429,18 +469,44 @@ async function resolveShortcutUnstartedStateId(
   throw new Error('No unstarted workflow state found in Shortcut');
 }
 
-/** Resolve the authenticated member's ID. */
+/** Resolve the authenticated member's UUID.
+ * Tries /member-info first (user tokens), falls back to /members (API tokens). */
 async function resolveShortcutMemberId(token: string): Promise<string> {
-  const response = await fetchWithTimeout(`${SHORTCUT_API}/member-info`, {
+  // Try /member-info (works with user tokens)
+  const infoResp = await fetchWithTimeout(`${SHORTCUT_API}/member-info`, {
     headers: shortcutHeaders(token),
   });
 
-  if (!response.ok) {
-    throw new Error(`Failed to resolve Shortcut member: ${response.status}`);
+  if (infoResp.ok) {
+    const data = (await infoResp.json()) as {
+      id?: string;
+      member?: { id: string };
+    };
+    // Response may nest under .member or be flat
+    const memberId = data.member?.id ?? data.id;
+    if (memberId) return memberId;
+    // Fall through to /members if no ID found
   }
 
-  const data = (await response.json()) as { id: string };
-  return data.id;
+  // Fallback: list all members and pick the first owner
+  // (API tokens can't use /member-info — use /members list instead)
+  const membersResp = await fetchWithTimeout(`${SHORTCUT_API}/members`, {
+    headers: shortcutHeaders(token),
+  });
+
+  if (!membersResp.ok) {
+    throw new Error(`Failed to resolve Shortcut member: ${membersResp.status}`);
+  }
+
+  const members = (await membersResp.json()) as Array<{
+    id: string;
+    role: string;
+  }>;
+
+  // Return the first owner member as best guess for the token owner
+  const owner = members.find((m) => m.role === 'owner') ?? members[0];
+  if (!owner) throw new Error('No members found in Shortcut workspace');
+  return owner.id;
 }
 
 async function createShortcutTicket(
@@ -485,5 +551,222 @@ async function createShortcutTicket(
     id: String(data.id),
     key: `sc-${data.id}`,
     url: data.app_url,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Notion
+// ---------------------------------------------------------------------------
+
+const NOTION_API = 'https://api.notion.com/v1';
+
+function notionHeaders(token: string): Record<string, string> {
+  return {
+    Authorization: `Bearer ${token}`,
+    'Notion-Version': '2022-06-28',
+    'Content-Type': 'application/json',
+  };
+}
+
+/** Discover Notion database property names and status option.
+ * Exported for E2E scaffold setup. */
+export async function discoverNotionSchema(
+  token: string,
+  databaseId: string,
+): Promise<{ titlePropName: string; statusOptionName: string; statusPropName: string; labelsPropName?: string }> {
+  const dbResp = await fetchWithTimeout(
+    `${NOTION_API}/databases/${databaseId}`,
+    { headers: notionHeaders(token) },
+  );
+  if (!dbResp.ok) {
+    throw new Error(`Failed to fetch Notion database: ${dbResp.status}`);
+  }
+  const dbData = (await dbResp.json()) as {
+    properties: Record<string, { type: string }>;
+  };
+
+  const statusEntry = Object.entries(dbData.properties).find(
+    ([, v]) => v.type === 'status',
+  );
+  const statusPropName = statusEntry?.[0] ?? 'Status';
+  const statusProp = statusEntry?.[1] as
+    | {
+        status?: {
+          groups?: Array<{ name: string; option_ids: string[] }>;
+          options?: Array<{ id: string; name: string }>;
+        };
+      }
+    | undefined;
+  const todoGroup = statusProp?.status?.groups?.find((g) => g.name === 'To-do');
+  const firstTodoOptionId = todoGroup?.option_ids?.[0];
+  const statusOptionName =
+    statusProp?.status?.options?.find((o) => o.id === firstTodoOptionId)?.name ??
+    statusProp?.status?.options?.[0]?.name ??
+    'To-do';
+
+  const titlePropName =
+    Object.entries(dbData.properties).find(([, v]) => v.type === 'title')?.[0] ?? 'Name';
+
+  const multiSelectProps = Object.entries(dbData.properties).filter(
+    ([, v]) => v.type === 'multi_select',
+  );
+  const labelsPropName =
+    multiSelectProps.find(([k]) => /tags|labels/i.test(k))?.[0] ??
+    multiSelectProps[0]?.[0];
+
+  return { titlePropName, statusOptionName, statusPropName, labelsPropName };
+}
+
+async function createNotionTicket(
+  runId: string,
+  options: CreateTicketOptions,
+): Promise<CreatedTicket> {
+  const creds = getNotionCredentials();
+  if (!creds) throw new Error('Notion credentials not available');
+
+  const title = `[QA] E2E test — notion — ${runId}${options.titleSuffix ? ` — ${options.titleSuffix}` : ''}`;
+
+  // Discover database schema (single fetch for all property lookups)
+  const schema = await discoverNotionSchema(creds.token, creds.databaseId);
+  const { titlePropName, statusOptionName, statusPropName, labelsPropName: tagsPropName } = schema;
+
+  // Build properties object dynamically
+  const pageProperties: Record<string, unknown> = {
+    [titlePropName]: {
+      title: [{ text: { content: title } }],
+    },
+    [statusPropName]: {
+      status: { name: statusOptionName },
+    },
+  };
+  if (tagsPropName) {
+    pageProperties[tagsPropName] = {
+      multi_select: [{ name: 'clancy:build' }],
+    };
+  }
+
+  const response = await fetchWithTimeout(`${NOTION_API}/pages`, {
+    method: 'POST',
+    headers: notionHeaders(creds.token),
+    body: JSON.stringify({
+      parent: { database_id: creds.databaseId },
+      properties: pageProperties,
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(
+      `Failed to create Notion page: ${response.status} ${text}`,
+    );
+  }
+
+  const data = (await response.json()) as {
+    id: string;
+    url: string;
+  };
+
+  // Notion IDs are UUIDs — Clancy uses the short form (first 8 chars) as the key prefix
+  const shortId = data.id.replace(/-/g, '').slice(0, 8);
+
+  return {
+    id: data.id,
+    key: `notion-${shortId}`,
+    url: data.url,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Azure DevOps
+// ---------------------------------------------------------------------------
+
+/** Resolve the authenticated Azure DevOps user's identity.
+ * Tries the VSSPS profile API first, then falls back to the connectionData API.
+ * Throws if no identity can be resolved from either endpoint. */
+async function resolveAzdoIdentity(
+  org: string,
+  auth: string,
+): Promise<string> {
+  // Try VSSPS profile API (works with most PAT types)
+  const profileResp = await fetchWithTimeout(
+    `https://vssps.dev.azure.com/${encodeURIComponent(org)}/_apis/profile/profiles/me?api-version=7.1`,
+    { headers: { Authorization: `Basic ${auth}` } },
+  );
+
+  if (profileResp.ok) {
+    const data = (await profileResp.json()) as {
+      emailAddress?: string;
+      displayName?: string;
+    };
+    if (data.emailAddress) return data.emailAddress;
+    if (data.displayName) return data.displayName;
+  }
+
+  // Try connectionData API as fallback
+  const connResp = await fetchWithTimeout(
+    `https://dev.azure.com/${encodeURIComponent(org)}/_apis/connectionData?api-version=7.1`,
+    { headers: { Authorization: `Basic ${auth}` } },
+  );
+
+  if (connResp.ok) {
+    const data = (await connResp.json()) as {
+      authenticatedUser: { uniqueName?: string; providerDisplayName?: string };
+    };
+    const name = data.authenticatedUser.uniqueName ?? data.authenticatedUser.providerDisplayName;
+    if (name) return name;
+  }
+
+  throw new Error('Failed to resolve AzDo identity: no profile or connectionData available');
+}
+
+async function createAzdoTicket(
+  runId: string,
+  options: CreateTicketOptions,
+): Promise<CreatedTicket> {
+  const creds = getAzdoCredentials();
+  if (!creds) throw new Error('Azure DevOps credentials not available');
+
+  const auth = buildAzdoAuth(creds.pat);
+  const base = azdoBaseUrl(creds.org, creds.project);
+  const title = `[QA] E2E test — azdo — ${runId}${options.titleSuffix ? ` — ${options.titleSuffix}` : ''}`;
+
+  // Resolve the PAT owner's identity for assignment
+  const identity = await resolveAzdoIdentity(creds.org, auth);
+
+  // Create a Task work item using JSON Patch operations
+  const response = await fetchWithTimeout(
+    `${base}/wit/workitems/$Task?api-version=7.1`,
+    {
+      method: 'POST',
+      headers: azdoPatchHeaders(auth),
+      body: JSON.stringify([
+        { op: 'add', path: '/fields/System.Title', value: title },
+        {
+          op: 'add',
+          path: '/fields/System.Description',
+          value: 'Automated E2E test ticket created by Clancy QA suite.',
+        },
+        { op: 'add', path: '/fields/System.Tags', value: 'clancy:build' },
+        { op: 'add', path: '/fields/System.AssignedTo', value: identity },
+      ]),
+    },
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(
+      `Failed to create Azure DevOps work item: ${response.status} ${text}`,
+    );
+  }
+
+  const data = (await response.json()) as {
+    id: number;
+    _links: { html: { href: string } };
+  };
+
+  return {
+    id: String(data.id),
+    key: `azdo-${data.id}`,
+    url: data._links.html.href,
   };
 }

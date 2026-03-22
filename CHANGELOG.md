@@ -7,6 +7,22 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 ---
 
+## [0.8.20] — 2026-03-22
+
+### ✅ Tests
+
+- **E2E tests for Notion and Azure DevOps (QA-003c)** — ticket factory, cleanup, and orphan GC implementations for the final 2 boards, completing Layer 2 E2E coverage across all 6 supported boards. Notion: `POST /v1/pages` creation, archive cleanup, paginated database query GC. Azure DevOps: `POST /_apis/wit/workitems/$Task` with JSON Patch, hard-delete cleanup (fallback to close), WIQL-based orphan GC. Shared `azdo-auth.ts` helper for consistent auth across E2E files. E2E scaffold fix: non-GitHub boards must not include `GITHUB_REPO` (causes `detectBoard` to detect GitHub Issues instead). 2 new E2E tests (6 total). 1235 unit + 238 integration + 6 E2E = 1479 total tests.
+
+### 🐛 Fixes
+
+- **Linear API compatibility (production)** — Linear's GraphQL schema now requires `ID!` (not `String!`) for the `$teamId` variable in `viewer.assignedIssues` filter, and removed `priority` from the `PaginationOrderBy` enum. Both changes caused the production `fetchTickets` query to silently return HTTP 400, resulting in "No tickets found". Fixed `$teamId` type and changed `orderBy: priority` to `orderBy: createdAt`.
+- **Shortcut API compatibility (production)** — Shortcut removed `workflow_state_ids` from `/stories/search` (now `workflow_state_id` singular). Response shape changed from `{ data: [...] }` to bare array. `/member-info` returns 404 for some API token types — ping now falls back to `/workflows` and accepts array responses.
+- **Notion status filter (production)** — `or(status, select)` filter now returns 400. Use single `status` type. Added `CLANCY_NOTION_TODO` env var for configurable status value name (default `"To-do"`).
+- **detectBoard priority** — non-GitHub board scaffolds must not include `GITHUB_REPO` — `detectBoard` checks `GITHUB_TOKEN + GITHUB_REPO` before other boards, causing misdetection as GitHub Issues.
+- **Jira E2E label** — `clancy:build` contains a colon which fails Jira's `isSafeJqlValue` validation. Jira E2E uses `clancy-build`.
+
+---
+
 ## [0.8.19] — 2026-03-22
 
 ### ✅ Tests

@@ -1,15 +1,14 @@
 /**
- * Jira — E2E test against real Jira API + GitHub sandbox repo.
+ * Azure DevOps — E2E test against real Azure DevOps API + GitHub sandbox repo.
  *
- * Creates a real Jira issue, runs the once orchestrator with Claude mocked
+ * Creates a real work item, runs the once orchestrator with Claude mocked
  * (simulator), verifies the PR was created on the GitHub sandbox and the
  * progress file was updated, then cleans up.
  *
  * Prerequisites:
- * - .env.e2e with JIRA_BASE_URL, JIRA_USER, JIRA_API_TOKEN, JIRA_PROJECT_KEY
+ * - .env.e2e with AZURE_ORG, AZURE_PROJECT, AZURE_PAT
  * - .env.e2e with GITHUB_TOKEN and GITHUB_REPO (for git push + PR creation)
- * - Sandbox Jira project exists with a "Done" transition
- * - clancy:build label exists on the Jira project
+ * - Azure DevOps project exists with Task work item type
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync, writeFileSync } from 'node:fs';
@@ -19,7 +18,6 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 import { githubHeaders } from '~/scripts/shared/http/http.js';
 
 import { fetchWithTimeout } from '../helpers/fetch-timeout.js';
-
 import { simulateClaudeSuccess } from '../../integration/helpers/claude-simulator.js';
 import {
   createClancyScaffold,
@@ -29,7 +27,7 @@ import {
 } from '../../integration/helpers/temp-repo.js';
 
 import { cleanupBranch, cleanupPullRequest, cleanupTicket } from '../helpers/cleanup.js';
-import { getGitHubCredentials, getJiraCredentials, hasCredentials } from '../helpers/env.js';
+import { getAzdoCredentials, getGitHubCredentials, hasCredentials } from '../helpers/env.js';
 import { cleanupGitAuth, configureGitAuth } from '../helpers/git-auth.js';
 import {
   createTestTicket,
@@ -38,10 +36,10 @@ import {
 } from '../helpers/ticket-factory.js';
 
 // ---------------------------------------------------------------------------
-// Skip if credentials not available (need both Jira + GitHub)
+// Skip if credentials not available (need both AzDo + GitHub)
 // ---------------------------------------------------------------------------
 
-const canRun = hasCredentials('jira') && hasCredentials('github');
+const canRun = hasCredentials('azdo') && hasCredentials('github');
 
 // ---------------------------------------------------------------------------
 // Module mocks — Claude is always simulated, preflight partially real
@@ -78,7 +76,7 @@ const { run } = await import('~/scripts/once/once.js');
 // Test suite
 // ---------------------------------------------------------------------------
 
-describe.skipIf(!canRun)('E2E: Jira — full pipeline', () => {
+describe.skipIf(!canRun)('E2E: Azure DevOps — full pipeline', () => {
   const runId = generateRunId();
   let ticket: CreatedTicket | undefined;
   let repo: TempRepoResult | undefined;
@@ -92,13 +90,13 @@ describe.skipIf(!canRun)('E2E: Jira — full pipeline', () => {
 
   afterAll(async () => {
     if (prNumber) {
-      await cleanupPullRequest('jira', prNumber).catch(() => {});
+      await cleanupPullRequest('azdo', prNumber).catch(() => {});
     }
     if (repo && ticketBranch) {
       cleanupBranch(repo.repoPath, ticketBranch);
     }
     if (ticket) {
-      await cleanupTicket('jira', ticket.key).catch(() => {});
+      await cleanupTicket('azdo', ticket.id).catch(() => {});
     }
     if (repo) {
       repo.cleanup();
@@ -111,10 +109,11 @@ describe.skipIf(!canRun)('E2E: Jira — full pipeline', () => {
 
   it('creates a ticket, runs the pipeline, and verifies PR creation', async () => {
     const githubCreds = getGitHubCredentials()!;
-    const jiraCreds = getJiraCredentials()!;
+    const azdoCreds = getAzdoCredentials()!;
 
-    // 1. Create test ticket via real Jira API
-    ticket = await createTestTicket('jira', runId);
+    // 1. Create test ticket via real Azure DevOps API
+    ticket = await createTestTicket('azdo', runId);
+    // AzDo keys are like "azdo-123" → branch is "feature/azdo-123"
     ticketBranch = `feature/${ticket.key.toLowerCase()}`;
 
     // 2. Set up temp repo with real remote pointing to sandbox
@@ -142,16 +141,17 @@ describe.skipIf(!canRun)('E2E: Jira — full pipeline', () => {
       });
     }
 
-    // 3. Create Clancy scaffold with real Jira + GitHub credentials
-    createClancyScaffold(repo.repoPath, 'jira', {
-      JIRA_BASE_URL: jiraCreds.baseUrl,
-      JIRA_USER: jiraCreds.user,
-      JIRA_API_TOKEN: jiraCreds.apiToken,
-      JIRA_PROJECT_KEY: jiraCreds.projectKey,
+    // 3. Create Clancy scaffold with real AzDo + GitHub credentials
+    // E2E env uses AZURE_* but Clancy expects AZDO_*
+    createClancyScaffold(repo.repoPath, 'azdo', {
+      AZDO_ORG: azdoCreds.org,
+      AZDO_PROJECT: azdoCreds.project,
+      AZDO_PAT: azdoCreds.pat,
       GITHUB_TOKEN: githubCreds.token,
 
       CLANCY_BASE_BRANCH: 'main',
-      CLANCY_LABEL_BUILD: 'clancy-build',
+      CLANCY_LABEL_BUILD: 'clancy:build',
+      CLANCY_AZDO_STATUS: 'To Do',
     });
 
     writeFileSync(
