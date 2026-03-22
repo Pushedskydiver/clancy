@@ -121,7 +121,7 @@ describe('file-ops — copyDir', () => {
     expect(readFileSync(join(dest, 'file.md'), 'utf8')).toBe('content');
   });
 
-  it('throws when destination is a symlink', () => {
+  it.skipIf(process.platform === 'win32')('throws when destination is a symlink', () => {
     const src = freshDir('symlink-src');
     const realDest = freshDir('symlink-real');
     const symlinkDest = join(tmp, 'symlink-dest');
