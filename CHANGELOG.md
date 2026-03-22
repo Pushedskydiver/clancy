@@ -7,6 +7,14 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 ---
 
+## [0.8.13] — 2026-03-22
+
+### ✅ Tests
+
+- **Installer sub-module integration tests (QA-002b-3)** — real filesystem tests for installer sub-modules: file-ops (copyDir recursive copy, symlink rejection, parent auto-creation, overwrite), manifest (buildManifest SHA-256 hashes, detectModifiedFiles change detection, backupModifiedFiles with metadata, end-to-end build→modify→detect→backup), hook-installer (file copying, CommonJS package.json, settings.json merge, existing config preservation, idempotent re-install, verification gate agent hook, statusLine preservation), role filtering (null=all, empty=core-only, selective optional roles, core always included). 1220 unit tests (unchanged) + 151 integration tests (33 new).
+
+---
+
 ## [0.8.12] — 2026-03-22
 
 ### ✅ Tests
