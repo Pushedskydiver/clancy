@@ -176,9 +176,9 @@ describe('Pipeline label transitions', () => {
         http.get(`${GITHUB_API}/user`, () =>
           HttpResponse.json({ login: 'testuser' }),
         ),
-        // Label check (ensureLabel)
-        http.get(`${GITHUB_API}/repos/:owner/:repo/labels/:name`, () =>
-          HttpResponse.json({ name: 'clancy:build' }),
+        // Label check (ensureLabel) — return the requested label name
+        http.get(`${GITHUB_API}/repos/:owner/:repo/labels/:name`, ({ params }) =>
+          HttpResponse.json({ name: params.name }),
         ),
         // Create label (fallback)
         http.post(`${GITHUB_API}/repos/:owner/:repo/labels`, async ({ request }) => {
@@ -292,6 +292,11 @@ describe('Pipeline label transitions', () => {
       );
       expect(buildAdds).toHaveLength(1);
       expect(planRemoves).toHaveLength(1);
+
+      // Verify add-before-remove ordering (Plan → Build)
+      const buildAddIdx = spy.captured.findIndex((r) => r.method === 'ADD_LABEL');
+      const planRemoveIdx = spy.captured.findIndex((r) => r.method === 'REMOVE_LABEL');
+      expect(buildAddIdx).toBeLessThan(planRemoveIdx);
 
       // Stage 4: Orchestrator picks up the ticket with clancy:build label
       const envWithLabels = {
