@@ -289,7 +289,7 @@ async function resolveLinearUnstartedStateId(
     workflowStates: { nodes: Array<{ id: string; name: string }> };
   }>(
     apiKey,
-    `query($teamId: ID!) {
+    `query($teamId: String!) {
       workflowStates(filter: { team: { id: { eq: $teamId } }, type: { eq: "unstarted" } }) {
         nodes { id name }
       }
@@ -302,34 +302,35 @@ async function resolveLinearUnstartedStateId(
   return state.id;
 }
 
-/** Look up the label ID for a given label name, creating it if needed. */
+/** Look up the label ID for a given label name, creating it if needed.
+ * Mirrors production pattern: query team labels, then create if missing. */
 async function resolveLinearLabelId(
   apiKey: string,
   teamId: string,
   labelName: string,
 ): Promise<string> {
-  // Try to find existing label
+  // Check team labels (matches production linear-board.ts ensureLabel)
   const data = await linearGraphql<{
-    issueLabels: { nodes: Array<{ id: string; name: string }> };
+    team: { labels: { nodes: Array<{ id: string; name: string }> } };
   }>(
     apiKey,
-    `query($teamId: ID!, $name: String!) {
-      issueLabels(filter: { team: { id: { eq: $teamId } }, name: { eq: $name } }) {
-        nodes { id name }
+    `query($teamId: String!) {
+      team(id: $teamId) {
+        labels { nodes { id name } }
       }
     }`,
-    { teamId, name: labelName },
+    { teamId },
   );
 
-  const existing = data.issueLabels.nodes.find((l) => l.name === labelName);
+  const existing = data.team.labels.nodes.find((l) => l.name === labelName);
   if (existing) return existing.id;
 
-  // Create it
+  // Create it on the team
   const created = await linearGraphql<{
     issueLabelCreate: { issueLabel: { id: string } };
   }>(
     apiKey,
-    `mutation($teamId: ID!, $name: String!) {
+    `mutation($teamId: String!, $name: String!) {
       issueLabelCreate(input: { teamId: $teamId, name: $name, color: "#0075ca" }) {
         issueLabel { id }
       }
@@ -372,7 +373,7 @@ async function createLinearTicket(
     };
   }>(
     creds.apiKey,
-    `mutation($teamId: ID!, $title: String!, $stateId: ID!, $labelIds: [ID!], $assigneeId: ID!) {
+    `mutation($teamId: String!, $title: String!, $stateId: String!, $labelIds: [String!], $assigneeId: String!) {
       issueCreate(input: {
         teamId: $teamId,
         title: $title,

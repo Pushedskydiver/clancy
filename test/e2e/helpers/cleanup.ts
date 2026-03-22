@@ -196,7 +196,7 @@ async function cleanupLinearTicket(issueId: string): Promise<void> {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      query: `mutation($id: ID!) { issueDelete(id: $id) { success } }`,
+      query: `mutation($id: String!) { issueDelete(id: $id) { success } }`,
       variables: { id: issueId },
     }),
   });
