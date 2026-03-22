@@ -13,6 +13,8 @@ import {
   type ProgressEntry,
   parseProgressFile,
 } from '~/scripts/shared/progress/progress.js';
+import type { ProgressStatus } from '~/types/index.js';
+import { COMPLETED_STATUSES, FAILED_STATUSES } from '~/types/index.js';
 
 /** A parsed cost entry from costs.log. */
 export type CostEntry = {
@@ -26,7 +28,7 @@ export type CostEntry = {
 export type SessionTicket = {
   key: string;
   summary: string;
-  status: string;
+  status: ProgressStatus;
   prNumber?: number;
   duration?: string;
   tokens?: string;
@@ -94,18 +96,6 @@ export function progressTimestampToMs(timestamp: string): number {
   if (!/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}$/.test(timestamp)) return NaN;
   return new Date(timestamp.replace(' ', 'T') + ':00Z').getTime();
 }
-
-/** Statuses that indicate a successfully completed ticket. */
-const COMPLETED_STATUSES = new Set([
-  'DONE',
-  'PR_CREATED',
-  'PUSHED',
-  'EPIC_PR_CREATED',
-  'RESUMED',
-]);
-
-/** Statuses that indicate a failed/skipped ticket. */
-const FAILED_STATUSES = new Set(['SKIPPED', 'PUSH_FAILED', 'TIME_LIMIT']);
 
 /**
  * Generate a session report from progress.txt and costs.log entries

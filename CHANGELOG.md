@@ -7,6 +7,18 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 ---
 
+## [0.8.19] — 2026-03-22
+
+### ✅ Tests
+
+- **E2E tests for Jira, Linear, Shortcut (QA-003b)** — ticket factory, cleanup, and orphan GC implementations for 3 new boards. Jira: `POST /rest/api/3/issue` creation, transition-to-Done cleanup, JQL-based orphan GC. Linear: `issueCreate` GraphQL mutation, `issueDelete` cleanup, title-based orphan GC (personal API keys — no Bearer prefix). Shortcut: `POST /api/v3/stories` creation with workflow state resolution, `DELETE` cleanup, search-based orphan GC. Each E2E test creates a real ticket → runs orchestrator with Claude simulator → verifies PR created on GitHub sandbox repo → cleans up. All non-GitHub boards use GitHub as git host for PR creation. 3 new E2E tests (4 total).
+
+### ♻️ Refactors
+
+- **Centralise progress status constants** — extracted `DELIVERED_STATUSES`, `COMPLETED_STATUSES`, and `FAILED_STATUSES` from inline `Set` definitions in `resume.ts` and `report.ts` into shared constants in `src/types/remote.ts`. Addresses Copilot review feedback on PR #72 about status set drift. `SessionTicket.status` typed as `ProgressStatus` (was `string`).
+
+---
+
 ## [0.8.18] — 2026-03-22
 
 ### 🐛 Fixes

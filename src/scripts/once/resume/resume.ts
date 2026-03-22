@@ -21,6 +21,7 @@ import {
 } from '~/scripts/shared/progress/progress.js';
 import { buildPrBody } from '~/scripts/shared/pull-request/pr-body/pr-body.js';
 import { detectRemote } from '~/scripts/shared/remote/remote.js';
+import { DELIVERED_STATUSES } from '~/types/index.js';
 import { dim, green, yellow } from '~/utils/ansi/ansi.js';
 
 import type { LockData } from '../lock/lock.js';
@@ -113,14 +114,8 @@ export function detectResume(lock: LockData): ResumeInfo | undefined {
     // This handles the case where the session crashed after push+PR but before
     // lock deletion — the branch exists with no local work to recover, but the
     // ticket was already delivered to the remote.
-    const deliveredStatuses = new Set([
-      'PR_CREATED',
-      'PUSHED',
-      'REWORK',
-      'RESUMED',
-    ]);
     const lastEntry = findLastEntry(process.cwd(), lock.ticketKey);
-    if (lastEntry && deliveredStatuses.has(lastEntry.status)) {
+    if (lastEntry && DELIVERED_STATUSES.has(lastEntry.status)) {
       return {
         branch,
         hasUncommitted: false,
