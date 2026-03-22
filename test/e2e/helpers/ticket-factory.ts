@@ -56,12 +56,33 @@ export async function createTestTicket(
 // GitHub Issues
 // ---------------------------------------------------------------------------
 
+/** Resolve the authenticated GitHub username via GET /user. */
+async function resolveGitHubUsername(token: string): Promise<string> {
+  const response = await fetch('https://api.github.com/user', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      Accept: 'application/vnd.github+json',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to resolve GitHub username: ${response.status}`);
+  }
+
+  const data = (await response.json()) as { login: string };
+  return data.login;
+}
+
 async function createGitHubTicket(
   runId: string,
   options: CreateTicketOptions,
 ): Promise<CreatedTicket> {
   const creds = getGitHubCredentials();
   if (!creds) throw new Error('GitHub credentials not available');
+
+  // Resolve the authenticated username — Clancy's GitHub board only
+  // fetches issues assigned to the authenticated user.
+  const username = await resolveGitHubUsername(creds.token);
 
   const title = `[QA] E2E test — github — ${runId}${options.titleSuffix ? ` — ${options.titleSuffix}` : ''}`;
   const body = [
@@ -90,6 +111,7 @@ async function createGitHubTicket(
         title,
         body,
         labels: ['clancy:build'],
+        assignees: [username],
       }),
     },
   );

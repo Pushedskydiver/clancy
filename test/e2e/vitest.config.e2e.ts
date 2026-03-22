@@ -15,6 +15,8 @@ export default defineConfig({
     globalSetup: './test/integration/global-setup.ts',
     // Sequential: E2E tests use process.chdir and real git/filesystem ops.
     fileParallelism: false,
-    retry: 2,
+    // No retry — E2E tests create real external resources (issues, PRs,
+    // branches). Retries would leak earlier-attempt resources. The GC
+    // script handles orphan cleanup instead.
   },
 });
