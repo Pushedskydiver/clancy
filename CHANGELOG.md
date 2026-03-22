@@ -9,13 +9,9 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 ## [0.8.12] — 2026-03-22
 
-### ✨ Features
-
-- **Pipeline label transition integration tests (QA-002b-2)** — cross-role label lifecycle tests: Brief → Plan → Build full pipeline with add-before-remove ordering, plan-label guard (dual-label race condition prevention with console spy verification), label crash safety (500 on removeLabel → both labels present, no crash), CLANCY_LABEL backward compatibility fallback.
-
 ### ✅ Tests
 
-- 1220 unit tests (unchanged) + 118 integration tests (6 new pipeline label tests)
+- **Pipeline label transition integration tests (QA-002b-2)** — cross-role label lifecycle tests: Brief → Plan → Build full pipeline with add-before-remove ordering, plan-label guard (dual-label race condition prevention with console spy verification), label crash safety (500 on removeLabel), CLANCY_LABEL backward compatibility fallback. 1220 unit tests (unchanged) + 118 integration tests (6 new).
 
 ---
 

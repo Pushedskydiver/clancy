@@ -4,11 +4,13 @@
  * Tests the 3-stage label lifecycle (clancy:brief → clancy:plan → clancy:build)
  * using GitHub Issues (simplest label API). Covers:
  * - Full pipeline: label transitions via Board + orchestrator picks up build ticket
+ * - Add-before-remove ordering: verified per transition stage
  * - Plan-label guard: dual-label race condition prevention
- * - Label crash safety: add succeeds but remove fails → both labels, no crash
+ * - Label crash safety: add succeeds but remove fails → no crash
+ * - CLANCY_LABEL fallback: backward compat when CLANCY_LABEL_BUILD not set
  *
  * Uses the once orchestrator for the end-to-end flow test, and direct Board
- * calls for the label transition and crash safety tests.
+ * calls for the label transition, crash safety, and fallback tests.
  */
 import { execFileSync } from 'node:child_process';
 import { existsSync, readFileSync } from 'node:fs';
@@ -401,13 +403,16 @@ describe('QA-002b-2: Pipeline label transitions', () => {
 
       const logSpy = vi.spyOn(console, 'log');
 
-      await withCwd(r.repoPath, () => run(['--skip-feasibility']));
+      try {
+        await withCwd(r.repoPath, () => run(['--skip-feasibility']));
 
-      // Assert: plan-label guard was the actual skip reason
-      expect(logSpy).toHaveBeenCalledWith(
-        expect.stringContaining('still has plan label'),
-      );
-      logSpy.mockRestore();
+        // Assert: plan-label guard was the actual skip reason
+        expect(logSpy).toHaveBeenCalledWith(
+          expect.stringContaining('still has plan label'),
+        );
+      } finally {
+        logSpy.mockRestore();
+      }
 
       // Assert: no feature branch created (ticket skipped)
       const branches = execFileSync('git', ['branch', '--list'], {
@@ -632,7 +637,7 @@ describe('QA-002b-2: Pipeline label transitions', () => {
       resetAllMocks();
     });
 
-    it('addLabel succeeds but removeLabel returns 500 — no crash, both labels present', async () => {
+    it('addLabel succeeds but removeLabel returns 500 — no crash, remove attempted', async () => {
       spy = createRequestSpy();
 
       let removeCalled = false;
@@ -674,8 +679,8 @@ describe('QA-002b-2: Pipeline label transitions', () => {
       // Assert: remove was attempted
       expect(removeCalled).toBe(true);
 
-      // Assert: both labels are in the crash-safe state
-      // (new label added, old label not removed — but system didn't crash)
+      // Assert: remove was attempted but failed (crash-safe — add succeeded,
+      // remove returned 500, system didn't crash)
       const removes = spy.captured.filter((r) => r.method === 'REMOVE_LABEL');
       expect(removes).toHaveLength(1);
     });
