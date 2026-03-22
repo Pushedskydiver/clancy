@@ -64,7 +64,8 @@ export function createNotionBoard(env: NotionEnv): Board {
 
     async fetchTickets(opts: FetchTicketOpts) {
       // Build filter: status = backlog/to-do (not in-progress)
-      const statusFilter = buildStatusFilter(statusProp, 'To-do');
+      const todoName = env.CLANCY_NOTION_TODO ?? 'To-do';
+      const statusFilter = buildStatusFilter(statusProp, todoName);
 
       const result = await queryDatabase(
         env.NOTION_TOKEN,

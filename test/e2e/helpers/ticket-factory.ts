@@ -566,6 +566,45 @@ function notionHeaders(token: string): Record<string, string> {
   };
 }
 
+/** Discover Notion database property names and status option.
+ * Exported for E2E scaffold setup. */
+export async function discoverNotionSchema(
+  token: string,
+  databaseId: string,
+): Promise<{ statusOptionName: string; statusPropName: string }> {
+  const dbResp = await fetchWithTimeout(
+    `${NOTION_API}/databases/${databaseId}`,
+    { headers: notionHeaders(token) },
+  );
+  if (!dbResp.ok) {
+    throw new Error(`Failed to fetch Notion database: ${dbResp.status}`);
+  }
+  const dbData = (await dbResp.json()) as {
+    properties: Record<string, { type: string }>;
+  };
+
+  const statusEntry = Object.entries(dbData.properties).find(
+    ([, v]) => v.type === 'status',
+  );
+  const statusPropName = statusEntry?.[0] ?? 'Status';
+  const statusProp = statusEntry?.[1] as
+    | {
+        status?: {
+          groups?: Array<{ name: string; option_ids: string[] }>;
+          options?: Array<{ id: string; name: string }>;
+        };
+      }
+    | undefined;
+  const todoGroup = statusProp?.status?.groups?.find((g) => g.name === 'To-do');
+  const firstTodoOptionId = todoGroup?.option_ids?.[0];
+  const statusOptionName =
+    statusProp?.status?.options?.find((o) => o.id === firstTodoOptionId)?.name ??
+    statusProp?.status?.options?.[0]?.name ??
+    'To-do';
+
+  return { statusOptionName, statusPropName };
+}
+
 async function createNotionTicket(
   runId: string,
   options: CreateTicketOptions,
@@ -575,7 +614,7 @@ async function createNotionTicket(
 
   const title = `[QA] E2E test — notion — ${runId}${options.titleSuffix ? ` — ${options.titleSuffix}` : ''}`;
 
-  // Query database schema to find the actual property names
+  // Discover database schema
   const dbResp = await fetchWithTimeout(
     `${NOTION_API}/databases/${creds.databaseId}`,
     { headers: notionHeaders(creds.token) },
@@ -587,25 +626,12 @@ async function createNotionTicket(
     properties: Record<string, { type: string }>;
   };
 
-  // Find the title property (always exactly one per database)
   const titlePropName =
     Object.entries(dbData.properties).find(([, v]) => v.type === 'title')?.[0] ?? 'Name';
-  // Find the status property and its first "To-do" group option
-  const statusEntry = Object.entries(dbData.properties).find(
-    ([, v]) => v.type === 'status',
+  const { statusOptionName, statusPropName } = await discoverNotionSchema(
+    creds.token,
+    creds.databaseId,
   );
-  const statusPropName = statusEntry?.[0] ?? 'Status';
-  const statusProp = statusEntry?.[1] as
-    | { status?: { groups?: Array<{ name: string; option_ids: string[] }>; options?: Array<{ id: string; name: string }> } }
-    | undefined;
-  // Find the first option in the "To-do" group, or fall back to first option
-  const todoGroup = statusProp?.status?.groups?.find((g) => g.name === 'To-do');
-  const firstTodoOptionId = todoGroup?.option_ids?.[0];
-  const statusOptionName =
-    statusProp?.status?.options?.find((o) => o.id === firstTodoOptionId)?.name ??
-    statusProp?.status?.options?.[0]?.name ??
-    'To-do';
-  // Find a multi_select property for labels (prefer "Tags" or "Labels")
   const multiSelectProps = Object.entries(dbData.properties).filter(
     ([, v]) => v.type === 'multi_select',
   );

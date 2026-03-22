@@ -32,6 +32,7 @@ import { getGitHubCredentials, getNotionCredentials, hasCredentials } from '../h
 import { cleanupGitAuth, configureGitAuth } from '../helpers/git-auth.js';
 import {
   createTestTicket,
+  discoverNotionSchema,
   generateRunId,
   type CreatedTicket,
 } from '../helpers/ticket-factory.js';
@@ -112,7 +113,13 @@ describe.skipIf(!canRun)('E2E: Notion — full pipeline', () => {
     const githubCreds = getGitHubCredentials()!;
     const notionCreds = getNotionCredentials()!;
 
-    // 1. Create test ticket via real Notion API
+    // 1. Discover database schema — status option name varies per database
+    const schema = await discoverNotionSchema(
+      notionCreds.token,
+      notionCreds.databaseId,
+    );
+
+    // 2. Create test ticket via real Notion API
     ticket = await createTestTicket('notion', runId);
     // Notion keys are like "notion-ab12cd34" → branch is "feature/notion-ab12cd34"
     ticketBranch = `feature/${ticket.key.toLowerCase()}`;
@@ -142,14 +149,14 @@ describe.skipIf(!canRun)('E2E: Notion — full pipeline', () => {
       });
     }
 
-    // 3. Create Clancy scaffold with real Notion + GitHub credentials
+    // 4. Create Clancy scaffold with real Notion + GitHub credentials
+    // Pass discovered status option name so production code filters correctly
     createClancyScaffold(repo.repoPath, 'notion', {
       NOTION_TOKEN: notionCreds.token,
       NOTION_DATABASE_ID: notionCreds.databaseId,
       GITHUB_TOKEN: githubCreds.token,
-
       CLANCY_BASE_BRANCH: 'main',
-      CLANCY_LABEL_BUILD: 'clancy:build',
+      CLANCY_NOTION_TODO: schema.statusOptionName,
     });
 
     writeFileSync(
