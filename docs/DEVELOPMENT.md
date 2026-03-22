@@ -112,6 +112,8 @@ Three checks, in this strict order, before creating the PR:
 **1. DA Review (architecture-level)**
 Spin up a devil's advocate agent to review all changed files. For non-trivial changes this is mandatory. DA catches architectural issues, stale references, missing edge cases, and test coverage gaps.
 
+**All medium+ severity DA findings must be fixed before committing.** Low-severity items can be acknowledged and deferred with explicit justification. Deferring a DA finding to see if Copilot catches it is not acceptable — it wastes review rounds and delays the PR. If you disagree with a DA finding, articulate why it's wrong or inapplicable; don't silently skip it.
+
 What is **non-trivial**? Code with logic (new functions, changed conditionals, refactored modules), changed type signatures, orchestrator flow changes, new env vars, test infrastructure changes. **Trivial** = typos, badge updates, reformatting, adding test cases to proven structures. When in doubt, run DA.
 
 **2. Self-Review (line-level)**
