@@ -120,9 +120,9 @@ async function cleanupGitHubOrphans(): Promise<number> {
     }
   }
 
-  // Clean orphan branches — only delete feature/issue-* branches whose
+  // Clean orphan branches — only delete feature/* branches whose
   // associated PR was already cleaned up (closed with [QA] in title).
-  // This avoids accidentally deleting non-E2E branches.
+  // Safe because we only inspect PRs that matched the [QA] title search.
   const closedPrQuery = encodeURIComponent(
     `repo:${creds.repo} is:pr is:closed "[QA]" in:title created:<${cutoff}`,
   );
