@@ -280,11 +280,31 @@ async function linearGraphql<T>(
   return json.data;
 }
 
-/** Look up the first "unstarted" workflow state ID for the team.
- * Uses team(id) { states } — avoids workflowStates filter issues. */
+/** Resolve the Linear team UUID from a key or UUID.
+ * LINEAR_TEAM_ID may be a key (e.g. "clancy-qa") or UUID — resolve to UUID. */
+async function resolveLinearTeamUuid(
+  apiKey: string,
+  teamIdOrKey: string,
+): Promise<string> {
+  // If it looks like a UUID, use it directly
+  if (/^[0-9a-f]{8}-/.test(teamIdOrKey)) return teamIdOrKey;
+
+  // Otherwise look up by key
+  const data = await linearGraphql<{
+    teams: { nodes: Array<{ id: string; key: string }> };
+  }>(apiKey, `{ teams { nodes { id key } } }`);
+
+  const team = data.teams.nodes.find(
+    (t) => t.key.toLowerCase() === teamIdOrKey.toLowerCase(),
+  );
+  if (!team) throw new Error(`Linear team not found for key: ${teamIdOrKey}`);
+  return team.id;
+}
+
+/** Look up the first "unstarted" workflow state ID for the team. */
 async function resolveLinearUnstartedStateId(
   apiKey: string,
-  teamId: string,
+  teamUuid: string,
 ): Promise<string> {
   const data = await linearGraphql<{
     team: { states: { nodes: Array<{ id: string; name: string; type: string }> } };
@@ -295,7 +315,7 @@ async function resolveLinearUnstartedStateId(
         states { nodes { id name type } }
       }
     }`,
-    { teamId },
+    { teamId: teamUuid },
   );
 
   const state = data.team.states.nodes.find((s) => s.type === 'unstarted');
@@ -360,11 +380,14 @@ async function createLinearTicket(
 
   const title = `[QA] E2E test — linear — ${runId}${options.titleSuffix ? ` — ${options.titleSuffix}` : ''}`;
 
+  // LINEAR_TEAM_ID may be a key (e.g. "clancy-qa") or UUID — resolve to UUID
+  const teamUuid = await resolveLinearTeamUuid(creds.apiKey, creds.teamId);
+
   // Resolve state, label, and viewer IDs
   // Clancy's Linear fetch uses viewer.assignedIssues — ticket must be assigned
   const [stateId, labelId, viewerId] = await Promise.all([
-    resolveLinearUnstartedStateId(creds.apiKey, creds.teamId),
-    resolveLinearLabelId(creds.apiKey, creds.teamId, 'clancy:build'),
+    resolveLinearUnstartedStateId(creds.apiKey, teamUuid),
+    resolveLinearLabelId(creds.apiKey, teamUuid, 'clancy:build'),
     resolveLinearViewerId(creds.apiKey),
   ]);
 
@@ -386,7 +409,7 @@ async function createLinearTicket(
         issue { id identifier url }
       }
     }`,
-    { teamId: creds.teamId, title, stateId, labelIds: [labelId], assigneeId: viewerId },
+    { teamId: teamUuid, title, stateId, labelIds: [labelId], assigneeId: viewerId },
   );
 
   const issue = data.issueCreate.issue;
