@@ -1,4 +1,3 @@
-import { resolveUsername } from '~/scripts/board/github/github.js';
 import { computeTicketBranch } from '~/scripts/shared/branch/branch.js';
 import type { BoardConfig } from '~/scripts/shared/env-schema/env-schema.js';
 import { sharedEnv } from '~/scripts/shared/env-schema/env-schema.js';
@@ -78,16 +77,6 @@ export async function fetchReworkFromPrReview(config: BoardConfig): Promise<
   const apiBase = buildApiBaseUrl(remote, sharedEnv(config).CLANCY_GIT_API_URL);
   if (!apiBase) return undefined;
 
-  // Resolve GitHub username for author filtering (GitHub only)
-  let ghUsername: string | undefined;
-  if (remote.host === 'github') {
-    try {
-      ghUsername = await resolveUsername(creds.token, apiBase);
-    } catch {
-      // Best-effort — skip author filtering if username resolution fails
-    }
-  }
-
   // Limit to first 5 candidates to avoid rate limits
   const toCheck = candidates.slice(0, 5);
 
@@ -123,7 +112,6 @@ export async function fetchReworkFromPrReview(config: BoardConfig): Promise<
           remote.owner,
           apiBase,
           since,
-          ghUsername,
         );
         break;
       case 'gitlab':
@@ -171,7 +159,6 @@ export async function fetchReworkFromPrReview(config: BoardConfig): Promise<
             reviewState.prNumber,
             apiBase,
             since,
-            ghUsername,
           );
           break;
         case 'gitlab': {

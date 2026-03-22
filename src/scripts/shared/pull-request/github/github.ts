@@ -44,7 +44,6 @@ export async function checkPrReviewState(
   owner: string,
   apiBase = GITHUB_API,
   since?: string,
-  excludeAuthor?: string,
 ): Promise<PrReviewState | undefined> {
   try {
     const headers = githubHeaders(token);
@@ -81,12 +80,14 @@ export async function checkPrReviewState(
     const rawInline = githubPrCommentsSchema.parse(await inlineRes.json());
     const rawConvo = githubCommentsResponseSchema.parse(await convoRes.json());
 
-    const inlineComments = excludeAuthor
-      ? rawInline.filter((c) => c.user?.login !== excludeAuthor)
-      : rawInline;
-    const convoComments = excludeAuthor
-      ? rawConvo.filter((c) => c.user?.login !== excludeAuthor)
-      : rawConvo;
+    // Filter out Clancy's own automated comments (prefixed with [clancy])
+    // to prevent self-triggering rework loops. User comments — including
+    // from the same GitHub account — pass through.
+    const isClancyComment = (body?: string | null) =>
+      body?.trimStart().startsWith('[clancy]') ?? false;
+
+    const inlineComments = rawInline.filter((c) => !isClancyComment(c.body));
+    const convoComments = rawConvo.filter((c) => !isClancyComment(c.body));
 
     const hasInlineComments = inlineComments.length > 0;
     const hasReworkConvo = convoComments.some(
@@ -158,7 +159,6 @@ export async function fetchPrReviewComments(
   prNumber: number,
   apiBase = GITHUB_API,
   since?: string,
-  excludeAuthor?: string,
 ): Promise<string[]> {
   try {
     const headers = githubHeaders(token);
@@ -184,12 +184,11 @@ export async function fetchPrReviewComments(
     const rawInline = githubPrCommentsSchema.parse(await inlineRes.json());
     const rawConvo = githubCommentsResponseSchema.parse(await convoRes.json());
 
-    const inlineComments = excludeAuthor
-      ? rawInline.filter((c) => c.user?.login !== excludeAuthor)
-      : rawInline;
-    const convoComments = excludeAuthor
-      ? rawConvo.filter((c) => c.user?.login !== excludeAuthor)
-      : rawConvo;
+    const isClancyComment = (body?: string | null) =>
+      body?.trimStart().startsWith('[clancy]') ?? false;
+
+    const inlineComments = rawInline.filter((c) => !isClancyComment(c.body));
+    const convoComments = rawConvo.filter((c) => !isClancyComment(c.body));
 
     const combined: string[] = [];
 

@@ -7,6 +7,18 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 ---
 
+## [0.8.11] — 2026-03-22
+
+### 🐛 Fixes
+
+- **GitHub rework detection no longer filters out PR owner's comments** — replaced `excludeAuthor` (author-based filtering) with `[clancy]` content-based filtering. Clancy's automated post-rework comments are still excluded, but the user's own `Rework:` comments now pass through even when using the same GitHub token. Fixes infinite loop reported by Jamie.
+
+### ✅ Tests
+
+- 1220 unit tests (3 new: `[clancy]` prefix filtering, user Rework: passthrough, mixed comment filtering) + 112 integration tests
+
+---
+
 ## [0.8.10] — 2026-03-22
 
 ### ♻️ Refactors
