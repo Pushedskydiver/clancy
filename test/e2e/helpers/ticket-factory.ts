@@ -5,6 +5,8 @@
  * Ticket titles include a unique run ID for isolation between concurrent runs.
  * Only GitHub is implemented in QA-003a; other boards throw "not implemented".
  */
+import { githubHeaders } from '~/scripts/shared/http/http.js';
+
 import {
   type E2EBoard,
   getGitHubCredentials,
@@ -59,10 +61,7 @@ export async function createTestTicket(
 /** Resolve the authenticated GitHub username via GET /user. */
 async function resolveGitHubUsername(token: string): Promise<string> {
   const response = await fetch('https://api.github.com/user', {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      Accept: 'application/vnd.github+json',
-    },
+    headers: githubHeaders(token),
   });
 
   if (!response.ok) {
@@ -103,9 +102,8 @@ async function createGitHubTicket(
     {
       method: 'POST',
       headers: {
-        Authorization: `Bearer ${creds.token}`,
+        ...githubHeaders(creds.token),
         'Content-Type': 'application/json',
-        Accept: 'application/vnd.github+json',
       },
       body: JSON.stringify({
         title,

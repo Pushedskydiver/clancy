@@ -6,6 +6,8 @@
  */
 import { execFileSync } from 'node:child_process';
 
+import { githubHeaders } from '~/scripts/shared/http/http.js';
+
 import { type E2EBoard, getGitHubCredentials } from './env.js';
 
 /**
@@ -73,9 +75,8 @@ async function cleanupGitHubTicket(issueNumber: string): Promise<void> {
 
   const baseUrl = `https://api.github.com/repos/${creds.repo}/issues/${issueNumber}`;
   const headers = {
-    Authorization: `Bearer ${creds.token}`,
+    ...githubHeaders(creds.token),
     'Content-Type': 'application/json',
-    Accept: 'application/vnd.github+json',
   };
 
   // Close the issue
@@ -104,9 +105,8 @@ async function cleanupGitHubPullRequest(prNumber: string): Promise<void> {
     {
       method: 'PATCH',
       headers: {
-        Authorization: `Bearer ${creds.token}`,
+        ...githubHeaders(creds.token),
         'Content-Type': 'application/json',
-        Accept: 'application/vnd.github+json',
       },
       body: JSON.stringify({ state: 'closed' }),
     },

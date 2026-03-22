@@ -15,6 +15,8 @@ import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
+import { githubHeaders } from '~/scripts/shared/http/http.js';
+
 import { simulateClaudeSuccess } from '../../integration/helpers/claude-simulator.js';
 import {
   createClancyScaffold,
@@ -25,7 +27,7 @@ import {
 
 import { cleanupBranch, cleanupPullRequest, cleanupTicket } from '../helpers/cleanup.js';
 import { getGitHubCredentials, hasCredentials } from '../helpers/env.js';
-import { configureGitAuth } from '../helpers/git-auth.js';
+import { cleanupGitAuth, configureGitAuth } from '../helpers/git-auth.js';
 import {
   createTestTicket,
   generateRunId,
@@ -101,7 +103,10 @@ describe.skipIf(!canRun)('E2E: GitHub Issues — full pipeline', () => {
     if (repo) {
       repo.cleanup();
     }
-    // Restore env
+    // Restore env and clean up auth files
+    cleanupGitAuth();
+    delete process.env.GIT_ASKPASS;
+    delete process.env.GIT_TERMINAL_PROMPT;
     vi.unstubAllEnvs();
   });
 
@@ -200,10 +205,7 @@ describe.skipIf(!canRun)('E2E: GitHub Issues — full pipeline', () => {
       const prResponse = await fetch(
         `https://api.github.com/repos/${creds.repo}/pulls/${prNumber}`,
         {
-          headers: {
-            Authorization: `Bearer ${creds.token}`,
-            Accept: 'application/vnd.github+json',
-          },
+          headers: githubHeaders(creds.token),
         },
       );
       expect(prResponse.ok).toBe(true);

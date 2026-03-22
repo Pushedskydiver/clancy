@@ -10,6 +10,8 @@
  *
  * Usage: npx tsx test/e2e/helpers/gc.ts
  */
+import { githubHeaders } from '~/scripts/shared/http/http.js';
+
 import { getGitHubCredentials, type E2EBoard } from './env.js';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
@@ -42,10 +44,7 @@ async function cleanupGitHubOrphans(): Promise<number> {
     return 0;
   }
 
-  const headers = {
-    Authorization: `Bearer ${creds.token}`,
-    Accept: 'application/vnd.github+json',
-  };
+  const headers = githubHeaders(creds.token);
 
   let cleaned = 0;
 
@@ -67,7 +66,7 @@ async function cleanupGitHubOrphans(): Promise<number> {
 
     for (const issue of data.items) {
       console.log(`  🧹 Closing orphan issue #${issue.number}: ${issue.title}`);
-      await fetch(
+      const closeResp = await fetch(
         `https://api.github.com/repos/${creds.repo}/issues/${issue.number}`,
         {
           method: 'PATCH',
@@ -75,7 +74,8 @@ async function cleanupGitHubOrphans(): Promise<number> {
           body: JSON.stringify({ state: 'closed' }),
         },
       );
-      cleaned++;
+      if (closeResp.ok) cleaned++;
+      else console.log(`    ⚠ Failed to close issue #${issue.number}: ${closeResp.status}`);
     }
   }
 
@@ -96,7 +96,7 @@ async function cleanupGitHubOrphans(): Promise<number> {
 
     for (const pr of data.items) {
       console.log(`  🧹 Closing orphan PR #${pr.number}: ${pr.title}`);
-      await fetch(
+      const closeResp = await fetch(
         `https://api.github.com/repos/${creds.repo}/pulls/${pr.number}`,
         {
           method: 'PATCH',
@@ -104,7 +104,8 @@ async function cleanupGitHubOrphans(): Promise<number> {
           body: JSON.stringify({ state: 'closed' }),
         },
       );
-      cleaned++;
+      if (closeResp.ok) cleaned++;
+      else console.log(`    ⚠ Failed to close PR #${pr.number}: ${closeResp.status}`);
     }
   }
 
@@ -146,11 +147,12 @@ async function cleanupGitHubOrphans(): Promise<number> {
         );
         if (branchResp.ok) {
           console.log(`  🧹 Deleting orphan branch: ${branchName}`);
-          await fetch(
+          const delResp = await fetch(
             `https://api.github.com/repos/${creds.repo}/git/refs/heads/${branchName}`,
             { method: 'DELETE', headers },
           );
-          cleaned++;
+          if (delResp.ok) cleaned++;
+          else console.log(`    ⚠ Failed to delete branch ${branchName}: ${delResp.status}`);
         }
       }
     }
