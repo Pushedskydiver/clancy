@@ -194,14 +194,13 @@ describe.skipIf(!canRun)('E2E: GitHub Issues — full pipeline', () => {
     expect(progress).toContain(`#${ticket.id}`);
     expect(progress).toMatch(/PR_CREATED|PUSHED/);
 
-    // Extract PR number from progress if available
+    // Extract PR number from progress — must be present (PR_CREATED with pr:N)
     const prMatch = progress.match(/pr:(\d+)/);
-    if (prMatch) {
-      prNumber = prMatch[1];
-    }
+    expect(prMatch).not.toBeNull();
+    prNumber = (prMatch as RegExpMatchArray)[1];
 
     // 7. Verify via real GitHub API: PR exists on sandbox repo
-    if (prNumber) {
+    {
       const prResponse = await fetch(
         `https://api.github.com/repos/${creds.repo}/pulls/${prNumber}`,
         {
@@ -228,10 +227,7 @@ describe.skipIf(!canRun)('E2E: GitHub Issues — full pipeline', () => {
     const issueResponse = await fetch(
       `https://api.github.com/repos/${creds.repo}/issues/${ticket.id}`,
       {
-        headers: {
-          Authorization: `Bearer ${creds.token}`,
-          Accept: 'application/vnd.github+json',
-        },
+        headers: githubHeaders(creds.token),
       },
     );
     expect(issueResponse.ok).toBe(true);
