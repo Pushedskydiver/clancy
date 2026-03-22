@@ -112,7 +112,7 @@ async function cleanupGitHubOrphans(): Promise<number> {
   // associated PR was already cleaned up (closed with [QA] in title).
   // This avoids accidentally deleting non-E2E branches.
   const closedPrQuery = encodeURIComponent(
-    `repo:${creds.repo} is:pr is:closed "[QA]" in:title`,
+    `repo:${creds.repo} is:pr is:closed "[QA]" in:title created:<${cutoff}`,
   );
 
   const closedPrResp = await fetch(
@@ -163,9 +163,10 @@ async function cleanupGitHubOrphans(): Promise<number> {
 // CLI entry point
 // ---------------------------------------------------------------------------
 
-const isDirectRun =
-  process.argv[1]?.endsWith('gc.ts') ||
-  process.argv[1]?.endsWith('gc.js');
+// When invoked via `npx tsx`, argv[1] is the tsx CLI and argv[2] is the script.
+const isDirectRun = [process.argv[1], process.argv[2]].some(
+  (arg) => arg?.endsWith('gc.ts') || arg?.endsWith('gc.js'),
+);
 
 if (isDirectRun) {
   console.log('🧹 Clancy E2E — Orphan Ticket Garbage Collector\n');

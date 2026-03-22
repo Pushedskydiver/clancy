@@ -3,13 +3,14 @@
  *
  * Configures GIT_ASKPASS so that `git push` can authenticate using
  * the GitHub PAT from E2E credentials. The token is stored in a
- * separate file (not interpolated into shell) to avoid injection.
- * Cleanup is registered on process exit.
+ * private temp directory (created via mkdtempSync) to avoid symlink
+ * attacks. Cleanup is registered on process exit.
  */
-import { chmodSync, rmSync, writeFileSync } from 'node:fs';
+import { chmodSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { tmpdir } from 'node:os';
 
+let authDir: string | undefined;
 let askpassPath: string | undefined;
 let tokenPath: string | undefined;
 let cleanupRegistered = false;
@@ -17,12 +18,10 @@ let cleanupRegistered = false;
 /**
  * Create a GIT_ASKPASS helper script that returns the given token.
  *
- * The token is written to a separate file and the askpass script reads
- * it via `cat`. This avoids shell injection if the token contains
- * special characters ($, ", `, \).
- *
- * The script inspects the prompt argument to distinguish between
- * username and password prompts — git calls GIT_ASKPASS for both.
+ * Both the token file and askpass script are placed inside a private
+ * temp directory (0o700) created via mkdtempSync. The askpass script
+ * inspects the prompt argument to distinguish between username and
+ * password prompts — git calls GIT_ASKPASS for both.
  *
  * @returns The path to the askpass script.
  */
@@ -30,9 +29,12 @@ export function createGitAskpass(token: string): string {
   // Always recreate — token may differ between calls
   cleanupGitAuth();
 
-  const timestamp = Date.now();
-  tokenPath = join(tmpdir(), `clancy-e2e-token-${timestamp}`);
-  askpassPath = join(tmpdir(), `clancy-e2e-askpass-${timestamp}.sh`);
+  // Create a private temp directory (owner-only access)
+  authDir = mkdtempSync(join(tmpdir(), 'clancy-e2e-auth-'));
+  chmodSync(authDir, 0o700);
+
+  tokenPath = join(authDir, 'token');
+  askpassPath = join(authDir, 'askpass.sh');
 
   // Write token to a separate file (owner-read only)
   writeFileSync(tokenPath, token);
@@ -66,16 +68,14 @@ export function createGitAskpass(token: string): string {
 }
 
 /**
- * Remove the askpass script and token file from disk.
+ * Remove the auth directory containing the askpass script and token file.
  */
 export function cleanupGitAuth(): void {
-  if (tokenPath) {
-    rmSync(tokenPath, { force: true });
-    tokenPath = undefined;
-  }
-  if (askpassPath) {
-    rmSync(askpassPath, { force: true });
+  if (authDir) {
+    rmSync(authDir, { recursive: true, force: true });
+    authDir = undefined;
     askpassPath = undefined;
+    tokenPath = undefined;
   }
 }
 
