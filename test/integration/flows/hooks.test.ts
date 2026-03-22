@@ -1,14 +1,17 @@
 /**
- * QA-002b-4: Credential guard and branch guard hook integration tests.
+ * QA-002b-4 + QA-002b-5: Hook integration tests.
  *
- * Tests hooks via their JSON contract — passes JSON payloads as argv[2] to
- * the hook process and asserts on stdout JSON. Expanded coverage beyond
- * co-located unit tests: every credential pattern category, all allowed
- * paths, edge cases, and all branch guard protected operations.
+ * Tests hooks via their JSON contract — credential guard and branch guard
+ * use argv[2], context monitor and post-compact use stdin. Expanded coverage
+ * beyond co-located unit tests: every credential pattern category, all
+ * allowed paths, edge cases, all branch guard protected operations, context
+ * monitor threshold/debounce/time guard, and post-compact re-injection.
  */
 import { execFileSync } from 'node:child_process';
-import { resolve } from 'node:path';
-import { describe, expect, it } from 'vitest';
+import { existsSync, mkdirSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join, resolve } from 'node:path';
+import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 // ─── Hook runners ───────────────────────────────────────────────────────────
 
@@ -575,5 +578,377 @@ describe('branch guard — allowed operations', () => {
       encoding: 'utf8',
     });
     expect(JSON.parse(result.trim()).decision).toBe('approve');
+  });
+});
+
+// ─── Context monitor — threshold + debounce logic ───────────────────────────
+
+const CONTEXT_MONITOR = resolve(
+  __dirname,
+  '../../../hooks/clancy-context-monitor.js',
+);
+
+const CTX_SESSION = `integ-ctx-${process.pid}-${Date.now()}`;
+const ctxBridgePath = join(tmpdir(), `clancy-ctx-${CTX_SESSION}.json`);
+const ctxWarnPath = join(tmpdir(), `clancy-ctx-${CTX_SESSION}-warned.json`);
+const ctxProjectDir = join(
+  tmpdir(),
+  `clancy-ctx-integ-${process.pid}-${Date.now()}`,
+);
+const ctxLockDir = join(ctxProjectDir, '.clancy');
+const ctxLockPath = join(ctxLockDir, 'lock.json');
+
+function writeBridge(remaining: number, usedPct: number): void {
+  const now = Math.floor(Date.now() / 1000);
+  writeFileSync(
+    ctxBridgePath,
+    JSON.stringify({ remaining_percentage: remaining, used_pct: usedPct, timestamp: now }),
+  );
+}
+
+function writeLock(startedAt: string): void {
+  mkdirSync(ctxLockDir, { recursive: true });
+  writeFileSync(
+    ctxLockPath,
+    JSON.stringify({
+      pid: process.pid,
+      ticketKey: 'TEST-1',
+      ticketTitle: 'Test ticket',
+      ticketBranch: 'feature/test-1',
+      targetBranch: 'main',
+      parentKey: '',
+      startedAt,
+    }),
+  );
+}
+
+function runContextMonitor(env: Record<string, string> = {}): string {
+  const payload = JSON.stringify({ session_id: CTX_SESSION, cwd: ctxProjectDir });
+  return execFileSync('node', [CONTEXT_MONITOR], {
+    input: payload,
+    encoding: 'utf8',
+    env: { ...process.env, ...env },
+    timeout: 5000,
+  });
+}
+
+function getContextOutput(env: Record<string, string> = {}): string {
+  const raw = runContextMonitor(env).trim();
+  if (!raw) return '';
+  const result = JSON.parse(raw) as {
+    hookSpecificOutput?: { additionalContext?: string };
+  };
+  return result?.hookSpecificOutput?.additionalContext ?? '';
+}
+
+describe('context monitor — threshold + debounce logic', () => {
+  beforeEach(() => {
+    for (const p of [ctxBridgePath, ctxWarnPath, ctxLockPath]) {
+      if (existsSync(p)) rmSync(p);
+    }
+    mkdirSync(ctxLockDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    for (const p of [ctxBridgePath, ctxWarnPath]) {
+      if (existsSync(p)) rmSync(p);
+    }
+    if (existsSync(ctxProjectDir)) rmSync(ctxProjectDir, { recursive: true });
+  });
+
+  it('emits nothing when remaining is 40% (above threshold)', () => {
+    writeBridge(40, 60);
+    expect(getContextOutput()).toBe('');
+  });
+
+  it('emits WARNING when remaining is 35% (at threshold)', () => {
+    writeBridge(35, 65);
+    const ctx = getContextOutput();
+    expect(ctx).toContain('CONTEXT WARNING');
+    expect(ctx).toContain('65%');
+  });
+
+  it('emits CRITICAL when remaining is 25% (at threshold)', () => {
+    writeBridge(25, 75);
+    const ctx = getContextOutput();
+    expect(ctx).toContain('CONTEXT CRITICAL');
+    expect(ctx).toContain('75%');
+  });
+
+  it('debounces repeated warnings at same severity', () => {
+    writeBridge(30, 70);
+
+    // First call fires
+    const ctx1 = getContextOutput();
+    expect(ctx1).toContain('CONTEXT WARNING');
+
+    // Calls 2-5 are debounced (need 5 calls to reset)
+    for (let i = 0; i < 4; i++) {
+      expect(getContextOutput()).toBe('');
+    }
+
+    // 6th call fires again (5 calls since last)
+    const ctx6 = getContextOutput();
+    expect(ctx6).toContain('CONTEXT WARNING');
+  });
+
+  it('severity escalation from WARNING to CRITICAL bypasses debounce', () => {
+    writeBridge(30, 70);
+
+    // First call — warning fires
+    const ctx1 = getContextOutput();
+    expect(ctx1).toContain('CONTEXT WARNING');
+
+    // Immediately escalate to critical — should fire despite debounce
+    writeBridge(20, 80);
+    const ctx2 = getContextOutput();
+    expect(ctx2).toContain('CONTEXT CRITICAL');
+  });
+
+  it('ignores stale bridge file (timestamp > 60s old)', () => {
+    const staleTimestamp = Math.floor(Date.now() / 1000) - 120; // 2 min ago
+    writeFileSync(
+      ctxBridgePath,
+      JSON.stringify({
+        remaining_percentage: 20,
+        used_pct: 80,
+        timestamp: staleTimestamp,
+      }),
+    );
+
+    expect(getContextOutput()).toBe('');
+  });
+
+  it('exits silently when no bridge file and no lock file exist', () => {
+    // Clean state — no bridge, no lock
+    if (existsSync(ctxLockPath)) rmSync(ctxLockPath);
+    expect(getContextOutput()).toBe('');
+  });
+});
+
+// ─── Context monitor — time guard ───────────────────────────────────────────
+
+describe('context monitor — time guard', () => {
+  beforeEach(() => {
+    for (const p of [ctxBridgePath, ctxWarnPath, ctxLockPath]) {
+      if (existsSync(p)) rmSync(p);
+    }
+    mkdirSync(ctxLockDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    for (const p of [ctxBridgePath, ctxWarnPath]) {
+      if (existsSync(p)) rmSync(p);
+    }
+    if (existsSync(ctxProjectDir)) rmSync(ctxProjectDir, { recursive: true });
+  });
+
+  const TIME_ENV = { CLANCY_TIME_LIMIT: '30' };
+
+  it('emits TIME WARNING at 80% of CLANCY_TIME_LIMIT', () => {
+    writeBridge(50, 50); // no context warning
+    // 25 min ago with 30 min limit = 83%
+    writeLock(new Date(Date.now() - 25 * 60000).toISOString());
+
+    const ctx = getContextOutput(TIME_ENV);
+    expect(ctx).toContain('TIME WARNING');
+    expect(ctx).toContain('25min of 30min');
+    expect(ctx).not.toContain('CONTEXT');
+  });
+
+  it('emits TIME CRITICAL at 100%+ of CLANCY_TIME_LIMIT', () => {
+    writeBridge(50, 50);
+    // 32 min ago with 30 min limit = 106%
+    writeLock(new Date(Date.now() - 32 * 60000).toISOString());
+
+    const ctx = getContextOutput(TIME_ENV);
+    expect(ctx).toContain('TIME CRITICAL');
+    expect(ctx).toContain('32min of 30min');
+  });
+
+  it('emits nothing below 80% of limit', () => {
+    writeBridge(50, 50);
+    // 10 min ago with 30 min limit = 33%
+    writeLock(new Date(Date.now() - 10 * 60000).toISOString());
+
+    expect(getContextOutput(TIME_ENV)).toBe('');
+  });
+
+  it('time severity escalation bypasses debounce', () => {
+    writeBridge(50, 50);
+
+    // First call at ~83% — warning fires
+    writeLock(new Date(Date.now() - 25 * 60000).toISOString());
+    const ctx1 = getContextOutput(TIME_ENV);
+    expect(ctx1).toContain('TIME WARNING');
+
+    // Escalate to 100%+ — should fire despite debounce
+    writeLock(new Date(Date.now() - 35 * 60000).toISOString());
+    const ctx2 = getContextOutput(TIME_ENV);
+    expect(ctx2).toContain('TIME CRITICAL');
+  });
+});
+
+// ─── PostCompact re-injection ───────────────────────────────────────────────
+
+const POST_COMPACT = resolve(
+  __dirname,
+  '../../../hooks/clancy-post-compact.js',
+);
+
+function runPostCompact(payload: Record<string, unknown>): string {
+  return execFileSync('node', [POST_COMPACT], {
+    input: JSON.stringify(payload),
+    encoding: 'utf8',
+    timeout: 5000,
+  });
+}
+
+describe('post-compact re-injection', () => {
+  let pcTmpDir: string;
+
+  beforeEach(() => {
+    pcTmpDir = join(
+      tmpdir(),
+      `clancy-pc-integ-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    );
+    mkdirSync(pcTmpDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    rmSync(pcTmpDir, { recursive: true, force: true });
+  });
+
+  it('returns additionalContext with ticket context from lock file', () => {
+    const clancyDir = join(pcTmpDir, '.clancy');
+    mkdirSync(clancyDir, { recursive: true });
+    writeFileSync(
+      join(clancyDir, 'lock.json'),
+      JSON.stringify({
+        pid: process.pid,
+        ticketKey: 'ENG-99',
+        ticketTitle: 'Implement search feature',
+        ticketBranch: 'feature/eng-99',
+        targetBranch: 'main',
+        parentKey: 'ENG-50',
+        description: 'Build full-text search with Elasticsearch.',
+        startedAt: new Date().toISOString(),
+      }),
+    );
+
+    const raw = runPostCompact({ cwd: pcTmpDir });
+    const output = JSON.parse(raw) as {
+      hookSpecificOutput: {
+        hookEventName: string;
+        additionalContext: string;
+      };
+    };
+
+    expect(output.hookSpecificOutput.hookEventName).toBe('PostCompact');
+    expect(output.hookSpecificOutput.additionalContext).toContain(
+      'CONTEXT RESTORED',
+    );
+    expect(output.hookSpecificOutput.additionalContext).toContain('ENG-99');
+    expect(output.hookSpecificOutput.additionalContext).toContain(
+      'Implement search feature',
+    );
+    expect(output.hookSpecificOutput.additionalContext).toContain(
+      'feature/eng-99',
+    );
+    expect(output.hookSpecificOutput.additionalContext).toContain(
+      'targeting main',
+    );
+    expect(output.hookSpecificOutput.additionalContext).toContain(
+      'Parent: ENG-50',
+    );
+    expect(output.hookSpecificOutput.additionalContext).toContain(
+      'Elasticsearch',
+    );
+    expect(output.hookSpecificOutput.additionalContext).toContain(
+      'Continue your implementation',
+    );
+  });
+
+  it('exits silently when no lock file exists', () => {
+    const raw = runPostCompact({ cwd: pcTmpDir });
+    expect(raw.trim()).toBe('');
+  });
+
+  it('exits silently when lock file is missing required fields', () => {
+    const clancyDir = join(pcTmpDir, '.clancy');
+    mkdirSync(clancyDir, { recursive: true });
+    writeFileSync(
+      join(clancyDir, 'lock.json'),
+      JSON.stringify({ pid: process.pid, startedAt: new Date().toISOString() }),
+    );
+
+    const raw = runPostCompact({ cwd: pcTmpDir });
+    expect(raw.trim()).toBe('');
+  });
+
+  it('exits silently on corrupt lock file (fail-open)', () => {
+    const clancyDir = join(pcTmpDir, '.clancy');
+    mkdirSync(clancyDir, { recursive: true });
+    writeFileSync(join(clancyDir, 'lock.json'), 'not valid json!!!');
+
+    const raw = runPostCompact({ cwd: pcTmpDir });
+    expect(raw.trim()).toBe('');
+  });
+
+  it('omits parent line when parentKey is empty', () => {
+    const clancyDir = join(pcTmpDir, '.clancy');
+    mkdirSync(clancyDir, { recursive: true });
+    writeFileSync(
+      join(clancyDir, 'lock.json'),
+      JSON.stringify({
+        pid: process.pid,
+        ticketKey: 'SOLO-1',
+        ticketTitle: 'Standalone ticket',
+        ticketBranch: 'feature/solo-1',
+        targetBranch: 'main',
+        parentKey: '',
+        description: 'No parent.',
+        startedAt: new Date().toISOString(),
+      }),
+    );
+
+    const raw = runPostCompact({ cwd: pcTmpDir });
+    const output = JSON.parse(raw) as {
+      hookSpecificOutput: { additionalContext: string };
+    };
+
+    expect(output.hookSpecificOutput.additionalContext).not.toContain(
+      'Parent:',
+    );
+    expect(output.hookSpecificOutput.additionalContext).toContain('SOLO-1');
+  });
+
+  it('truncates description to 2000 chars', () => {
+    const clancyDir = join(pcTmpDir, '.clancy');
+    mkdirSync(clancyDir, { recursive: true });
+    writeFileSync(
+      join(clancyDir, 'lock.json'),
+      JSON.stringify({
+        pid: process.pid,
+        ticketKey: 'LONG-1',
+        ticketTitle: 'Long description',
+        ticketBranch: 'feature/long-1',
+        targetBranch: 'main',
+        parentKey: '',
+        description: 'X'.repeat(3000),
+        startedAt: new Date().toISOString(),
+      }),
+    );
+
+    const raw = runPostCompact({ cwd: pcTmpDir });
+    const output = JSON.parse(raw) as {
+      hookSpecificOutput: { additionalContext: string };
+    };
+
+    const match = output.hookSpecificOutput.additionalContext.match(
+      /Requirements: (X+)/,
+    );
+    expect(match).not.toBeNull();
+    expect(match![1].length).toBe(2000);
   });
 });
