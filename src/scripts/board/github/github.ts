@@ -301,6 +301,7 @@ export async function fetchChildrenStatus(
   token: string,
   repo: string,
   parentNumber: number,
+  currentTicketKey?: string,
 ): Promise<ChildrenStatus | undefined> {
   if (!isValidRepo(repo)) return undefined;
 
@@ -315,11 +316,27 @@ export async function fetchChildrenStatus(
     if (epicTextResult && epicTextResult.total > 0) return epicTextResult;
 
     // Mode 2: Fall back to native Parent: convention
-    return await fetchChildrenByBodyRef(
+    const parentTextResult = await fetchChildrenByBodyRef(
       token,
       repo,
       `Parent: #${parentNumber}`,
     );
+
+    // If Parent: search returned results, use them
+    if (parentTextResult && parentTextResult.total > 0) return parentTextResult;
+
+    // If either search failed (returned undefined), propagate undefined
+    if (!epicTextResult || !parentTextResult) return undefined;
+
+    // Both searches succeeded and returned 0 results. If we know the current
+    // ticket is a child (it has Epic:/Parent: in its body pointing to this
+    // parent), the search API likely hasn't indexed it yet (~3-5s delay).
+    // Count at least 1 to avoid misclassifying as "no children".
+    if (currentTicketKey) {
+      return { total: 1, incomplete: 1 };
+    }
+
+    return parentTextResult;
   } catch {
     return undefined;
   }

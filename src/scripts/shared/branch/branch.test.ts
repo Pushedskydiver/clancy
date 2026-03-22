@@ -29,7 +29,15 @@ describe('computeTargetBranch', () => {
     );
   });
 
-  it('returns milestone/{slug} for GitHub with milestone', () => {
+  it('returns epic/{number} for GitHub issue ref (#N)', () => {
+    expect(computeTargetBranch('github', 'main', '#44')).toBe('epic/44');
+  });
+
+  it('returns epic/{number} for single-digit GitHub issue ref', () => {
+    expect(computeTargetBranch('github', 'main', '#7')).toBe('epic/7');
+  });
+
+  it('returns milestone/{slug} for GitHub with milestone title', () => {
     expect(computeTargetBranch('github', 'main', 'Sprint 3')).toBe(
       'milestone/sprint-3',
     );

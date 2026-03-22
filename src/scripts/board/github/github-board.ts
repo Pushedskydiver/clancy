@@ -92,13 +92,18 @@ export function createGitHubBoard(env: GitHubEnv): Board {
       );
     },
 
-    async fetchChildrenStatus(parentKey: string) {
+    async fetchChildrenStatus(
+      parentKey: string,
+      _parentId?: string,
+      currentTicketKey?: string,
+    ) {
       const issueNumber = parseInt(parentKey.replace('#', ''), 10);
       if (Number.isNaN(issueNumber)) return undefined;
       return fetchGitHubChildrenStatus(
         env.GITHUB_TOKEN,
         env.GITHUB_REPO,
         issueNumber,
+        currentTicketKey,
       );
     },
 

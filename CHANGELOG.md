@@ -7,6 +7,14 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 ---
 
+## [0.8.17] — 2026-03-22
+
+### 🐛 Fixes
+
+- **GitHub single-child epic flow (2 bugs)** — (1) `computeTargetBranch` now detects `#N` issue refs and uses `epic/{number}` prefix instead of `milestone/{slug}`. Previously `Parent: #44` produced `milestone/44`, causing PRs to target a non-existent branch instead of `main`. Milestone titles (e.g. "Sprint 3") still produce `milestone/sprint-3`. (2) `fetchChildrenStatus` now falls back to `{ total: 1, incomplete: 1 }` when GitHub Search API returns 0 results but a `currentTicketKey` is provided — guards against the ~3-5s indexing delay when a child ticket is created and the implementer runs immediately. Fixes #70. 4 new unit tests (1227 total).
+
+---
+
 ## [0.8.16] — 2026-03-22
 
 ### ✅ Tests

@@ -25,6 +25,7 @@ export type Board = {
   fetchChildrenStatus(
     parentKey: string,
     parentId?: string,
+    currentTicketKey?: string,
   ): Promise<{ total: number; incomplete: number } | undefined>;
   transitionTicket(ticket: FetchedTicket, status: string): Promise<boolean>;
   ensureLabel(label: string): Promise<void>;

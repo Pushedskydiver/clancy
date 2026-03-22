@@ -42,7 +42,8 @@ export function computeTicketBranch(
  * branch. Otherwise falls back to the base branch.
  *
  * - Jira: epic key → `epic/{key-lowercase}`
- * - GitHub: milestone → `milestone/{slug}`
+ * - GitHub issue ref (`#N`): `epic/{number}` (parent issue, not a milestone)
+ * - GitHub milestone title: `milestone/{slug}`
  * - Linear: parent identifier → `epic/{id-lowercase}`
  *
  * @param provider - The board provider.
@@ -53,6 +54,7 @@ export function computeTicketBranch(
  * @example
  * ```ts
  * computeTargetBranch('jira', 'main', 'PROJ-100');       // 'epic/proj-100'
+ * computeTargetBranch('github', 'main', '#44');           // 'epic/44'
  * computeTargetBranch('github', 'main', 'Sprint 3');     // 'milestone/sprint-3'
  * computeTargetBranch('linear', 'main', 'ENG-50');       // 'epic/eng-50'
  * computeTargetBranch('jira', 'main');                   // 'main'
@@ -66,6 +68,12 @@ export function computeTargetBranch(
   if (!parent) return baseBranch;
 
   if (provider === 'github') {
+    // Issue refs (#N) from Epic:/Parent: conventions use epic/ prefix.
+    // Milestone titles (e.g. "Sprint 3") use milestone/ prefix.
+    const issueRefMatch = parent.match(/^#(\d+)$/);
+    if (issueRefMatch) {
+      return `epic/${issueRefMatch[1]}`;
+    }
     const slug = parent
       .toLowerCase()
       .replace(/\s+/g, '-')
