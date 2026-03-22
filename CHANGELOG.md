@@ -7,6 +7,14 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 ---
 
+## [0.8.16] — 2026-03-22
+
+### ✅ Tests
+
+- **E2E test infrastructure + GitHub board E2E test (QA-003a)** — Layer 2 E2E testing against real APIs. Vitest E2E config (60s timeout, retry: 2, reuses integration global-setup for shared node_modules). Credential loading from `.env.e2e` (local) or `process.env` (CI) with per-board `hasCredentials()` gating. Ticket factory creates real issues on GitHub Issues with `[QA]` prefix and unique run ID for isolation. Cleanup helpers close tickets, close PRs, and delete remote branches. Orphan GC script (`npm run test:e2e:gc`) queries for stale `[QA]` tickets/PRs/branches older than 24 hours. GIT_ASKPASS helper for secure git push authentication without embedding tokens in URLs. GitHub E2E test: creates real issue → runs orchestrator with Claude simulator → verifies feature branch pushed to sandbox repo → verifies PR created via GitHub API → verifies progress.txt entry → cleans up. 1 new E2E test.
+
+---
+
 ## [0.8.15] — 2026-03-22
 
 ### ✅ Tests
