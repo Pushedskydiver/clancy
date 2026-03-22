@@ -11,9 +11,12 @@ import {
   getGitHubCredentials,
   getJiraCredentials,
   getLinearCredentials,
+  getNotionCredentials,
   getShortcutCredentials,
+  getAzdoCredentials,
 } from './env.js';
 import { fetchWithTimeout } from './fetch-timeout.js';
+import { buildAzdoAuth, azdoBaseUrl, azdoPatchHeaders } from './azdo-auth.js';
 import { buildJiraAuth } from './jira-auth.js';
 
 export interface CreateTicketOptions {
@@ -56,8 +59,9 @@ export async function createTestTicket(
     case 'shortcut':
       return createShortcutTicket(runId, options);
     case 'notion':
+      return createNotionTicket(runId, options);
     case 'azdo':
-      throw new Error(`createTestTicket not implemented for board: ${board}`);
+      return createAzdoTicket(runId, options);
   }
 }
 
@@ -485,5 +489,149 @@ async function createShortcutTicket(
     id: String(data.id),
     key: `sc-${data.id}`,
     url: data.app_url,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Notion
+// ---------------------------------------------------------------------------
+
+const NOTION_API = 'https://api.notion.com/v1';
+
+function notionHeaders(token: string): Record<string, string> {
+  return {
+    Authorization: `Bearer ${token}`,
+    'Notion-Version': '2022-06-28',
+    'Content-Type': 'application/json',
+  };
+}
+
+async function createNotionTicket(
+  runId: string,
+  options: CreateTicketOptions,
+): Promise<CreatedTicket> {
+  const creds = getNotionCredentials();
+  if (!creds) throw new Error('Notion credentials not available');
+
+  const title = `[QA] E2E test — notion — ${runId}${options.titleSuffix ? ` — ${options.titleSuffix}` : ''}`;
+
+  // Create a page in the database. Property names must match the sandbox DB schema.
+  // Uses standard Notion property names — configurable via CLANCY_NOTION_* env vars at runtime.
+  const response = await fetchWithTimeout(`${NOTION_API}/pages`, {
+    method: 'POST',
+    headers: notionHeaders(creds.token),
+    body: JSON.stringify({
+      parent: { database_id: creds.databaseId },
+      properties: {
+        Name: {
+          title: [{ text: { content: title } }],
+        },
+        Status: {
+          status: { name: 'To-do' },
+        },
+        Tags: {
+          multi_select: [{ name: 'clancy:build' }],
+        },
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(
+      `Failed to create Notion page: ${response.status} ${text}`,
+    );
+  }
+
+  const data = (await response.json()) as {
+    id: string;
+    url: string;
+  };
+
+  // Notion IDs are UUIDs — Clancy uses the short form (first 8 chars) as the key prefix
+  const shortId = data.id.replace(/-/g, '').slice(0, 8);
+
+  return {
+    id: data.id,
+    key: `notion-${shortId}`,
+    url: data.url,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Azure DevOps
+// ---------------------------------------------------------------------------
+
+/** Resolve the authenticated Azure DevOps user's unique name via connectionData. */
+async function resolveAzdoIdentity(
+  org: string,
+  auth: string,
+): Promise<string> {
+  const response = await fetchWithTimeout(
+    `https://dev.azure.com/${encodeURIComponent(org)}/_apis/connectionData?api-version=7.1`,
+    { headers: { Authorization: `Basic ${auth}` } },
+  );
+
+  if (!response.ok) {
+    throw new Error(`Failed to resolve AzDo identity: ${response.status}`);
+  }
+
+  const data = (await response.json()) as {
+    authenticatedUser: { uniqueName?: string; providerDisplayName?: string };
+  };
+
+  // uniqueName is the user's email/UPN — used for System.AssignedTo
+  return data.authenticatedUser.uniqueName ?? data.authenticatedUser.providerDisplayName ?? '';
+}
+
+async function createAzdoTicket(
+  runId: string,
+  options: CreateTicketOptions,
+): Promise<CreatedTicket> {
+  const creds = getAzdoCredentials();
+  if (!creds) throw new Error('Azure DevOps credentials not available');
+
+  const auth = buildAzdoAuth(creds.pat);
+  const base = azdoBaseUrl(creds.org, creds.project);
+  const title = `[QA] E2E test — azdo — ${runId}${options.titleSuffix ? ` — ${options.titleSuffix}` : ''}`;
+
+  // Resolve the PAT owner's identity for assignment
+  const identity = await resolveAzdoIdentity(creds.org, auth);
+
+  // Create a Task work item using JSON Patch operations
+  const response = await fetchWithTimeout(
+    `${base}/wit/workitems/$Task?api-version=7.1`,
+    {
+      method: 'POST',
+      headers: azdoPatchHeaders(auth),
+      body: JSON.stringify([
+        { op: 'add', path: '/fields/System.Title', value: title },
+        {
+          op: 'add',
+          path: '/fields/System.Description',
+          value: 'Automated E2E test ticket created by Clancy QA suite.',
+        },
+        { op: 'add', path: '/fields/System.Tags', value: 'clancy:build' },
+        { op: 'add', path: '/fields/System.AssignedTo', value: identity },
+      ]),
+    },
+  );
+
+  if (!response.ok) {
+    const text = await response.text();
+    throw new Error(
+      `Failed to create Azure DevOps work item: ${response.status} ${text}`,
+    );
+  }
+
+  const data = (await response.json()) as {
+    id: number;
+    _links: { html: { href: string } };
+  };
+
+  return {
+    id: String(data.id),
+    key: `azdo-${data.id}`,
+    url: data._links.html.href,
   };
 }
