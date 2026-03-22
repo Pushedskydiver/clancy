@@ -13,6 +13,7 @@ import {
   getLinearCredentials,
   getShortcutCredentials,
 } from './env.js';
+import { fetchWithTimeout } from './fetch-timeout.js';
 
 export interface CreateTicketOptions {
   /** Override the default ticket title suffix. */
@@ -65,7 +66,7 @@ export async function createTestTicket(
 
 /** Resolve the authenticated GitHub username via GET /user. */
 async function resolveGitHubUsername(token: string): Promise<string> {
-  const response = await fetch('https://api.github.com/user', {
+  const response = await fetchWithTimeout('https://api.github.com/user', {
     headers: githubHeaders(token),
   });
 
@@ -102,7 +103,7 @@ async function createGitHubTicket(
     '- [ ] Progress file is updated with DONE entry',
   ].join('\n');
 
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     `https://api.github.com/repos/${creds.repo}/issues`,
     {
       method: 'POST',
@@ -151,7 +152,7 @@ async function resolveJiraAccountId(
   baseUrl: string,
   auth: string,
 ): Promise<string> {
-  const response = await fetch(`${baseUrl}/rest/api/3/myself`, {
+  const response = await fetchWithTimeout(`${baseUrl}/rest/api/3/myself`, {
     headers: jiraHeaders(auth),
   });
 
@@ -176,7 +177,7 @@ async function createJiraTicket(
   // Resolve account ID — Clancy's Jira fetch filters by assignee=currentUser()
   const accountId = await resolveJiraAccountId(creds.baseUrl, auth);
 
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     `${creds.baseUrl}/rest/api/3/issue`,
     {
       method: 'POST',
@@ -249,7 +250,7 @@ async function linearGraphql<T>(
   query: string,
   variables?: Record<string, unknown>,
 ): Promise<T> {
-  const response = await fetch(LINEAR_API_URL, {
+  const response = await fetchWithTimeout(LINEAR_API_URL, {
     method: 'POST',
     headers: linearHeaders(apiKey),
     body: JSON.stringify({ query, variables }),
@@ -411,7 +412,7 @@ function shortcutHeaders(token: string): Record<string, string> {
 async function resolveShortcutUnstartedStateId(
   token: string,
 ): Promise<number> {
-  const response = await fetch(`${SHORTCUT_API}/workflows`, {
+  const response = await fetchWithTimeout(`${SHORTCUT_API}/workflows`, {
     headers: shortcutHeaders(token),
   });
 
@@ -433,7 +434,7 @@ async function resolveShortcutUnstartedStateId(
 
 /** Resolve the authenticated member's ID. */
 async function resolveShortcutMemberId(token: string): Promise<string> {
-  const response = await fetch(`${SHORTCUT_API}/member`, {
+  const response = await fetchWithTimeout(`${SHORTCUT_API}/member`, {
     headers: shortcutHeaders(token),
   });
 
@@ -459,7 +460,7 @@ async function createShortcutTicket(
     resolveShortcutMemberId(creds.token),
   ]);
 
-  const response = await fetch(`${SHORTCUT_API}/stories`, {
+  const response = await fetchWithTimeout(`${SHORTCUT_API}/stories`, {
     method: 'POST',
     headers: shortcutHeaders(creds.token),
     body: JSON.stringify({

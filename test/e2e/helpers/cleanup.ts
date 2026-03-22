@@ -14,6 +14,7 @@ import {
   getLinearCredentials,
   getShortcutCredentials,
 } from './env.js';
+import { fetchWithTimeout } from './fetch-timeout.js';
 
 /**
  * Clean up a test ticket by closing it and adding a qa-cleanup label.
@@ -92,14 +93,14 @@ async function cleanupGitHubTicket(issueNumber: string): Promise<void> {
   };
 
   // Close the issue
-  await fetch(baseUrl, {
+  await fetchWithTimeout(baseUrl, {
     method: 'PATCH',
     headers,
     body: JSON.stringify({ state: 'closed' }),
   });
 
   // Add qa-cleanup label (best-effort)
-  await fetch(`${baseUrl}/labels`, {
+  await fetchWithTimeout(`${baseUrl}/labels`, {
     method: 'POST',
     headers,
     body: JSON.stringify({ labels: ['qa-cleanup'] }),
@@ -112,7 +113,7 @@ async function cleanupGitHubPullRequest(prNumber: string): Promise<void> {
   const creds = getGitHubCredentials();
   if (!creds) return;
 
-  await fetch(
+  await fetchWithTimeout(
     `https://api.github.com/repos/${creds.repo}/pulls/${prNumber}`,
     {
       method: 'PATCH',
@@ -140,7 +141,7 @@ async function cleanupJiraTicket(issueIdOrKey: string): Promise<void> {
   };
 
   // Fetch available transitions to find "Done"
-  const transResp = await fetch(
+  const transResp = await fetchWithTimeout(
     `${creds.baseUrl}/rest/api/3/issue/${issueIdOrKey}/transitions`,
     { headers },
   );
@@ -153,7 +154,7 @@ async function cleanupJiraTicket(issueIdOrKey: string): Promise<void> {
       t.name.toLowerCase().includes('done'),
     );
     if (done) {
-      await fetch(
+      await fetchWithTimeout(
         `${creds.baseUrl}/rest/api/3/issue/${issueIdOrKey}/transitions`,
         {
           method: 'POST',
@@ -165,7 +166,7 @@ async function cleanupJiraTicket(issueIdOrKey: string): Promise<void> {
   }
 
   // Add qa-cleanup label (best-effort)
-  await fetch(
+  await fetchWithTimeout(
     `${creds.baseUrl}/rest/api/3/issue/${issueIdOrKey}`,
     {
       method: 'PUT',
@@ -185,8 +186,9 @@ async function cleanupLinearTicket(issueId: string): Promise<void> {
   const creds = getLinearCredentials();
   if (!creds) return;
 
-  // Delete the issue entirely (Linear supports full delete)
-  await fetch('https://api.linear.app/graphql', {
+  // Delete the issue entirely (Linear supports full delete).
+  // Check GraphQL response — Linear returns HTTP 200 even on errors.
+  const resp = await fetchWithTimeout('https://api.linear.app/graphql', {
     method: 'POST',
     headers: {
       Authorization: creds.apiKey,
@@ -197,6 +199,17 @@ async function cleanupLinearTicket(issueId: string): Promise<void> {
       variables: { id: issueId },
     }),
   });
+
+  if (resp.ok) {
+    const json = (await resp.json()) as {
+      data?: { issueDelete?: { success?: boolean } };
+      errors?: Array<{ message: string }>;
+    };
+    if (json.errors?.length || !json.data?.issueDelete?.success) {
+      // Best-effort — log but don't throw (cleanup should not break tests)
+      console.log(`  ⚠ Linear cleanup may have failed for ${issueId}`);
+    }
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -208,7 +221,7 @@ async function cleanupShortcutTicket(storyId: string): Promise<void> {
   if (!creds) return;
 
   // Delete the story entirely (Shortcut supports full delete)
-  await fetch(`https://api.app.shortcut.com/api/v3/stories/${storyId}`, {
+  await fetchWithTimeout(`https://api.app.shortcut.com/api/v3/stories/${storyId}`, {
     method: 'DELETE',
     headers: { 'Shortcut-Token': creds.token },
   });

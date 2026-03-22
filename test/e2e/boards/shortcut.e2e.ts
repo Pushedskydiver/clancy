@@ -6,7 +6,7 @@
  * progress file was updated, then cleans up.
  *
  * Prerequisites:
- * - .env.e2e with SHORTCUT_TOKEN
+ * - .env.e2e with SHORTCUT_TOKEN (harness reads this and writes SHORTCUT_API_TOKEN into .clancy/.env)
  * - .env.e2e with GITHUB_TOKEN and GITHUB_REPO (for git push + PR creation)
  * - Shortcut workspace exists with an "Unstarted" workflow state
  */

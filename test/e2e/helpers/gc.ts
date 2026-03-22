@@ -19,6 +19,7 @@ import {
   getLinearCredentials,
   getShortcutCredentials,
 } from './env.js';
+import { fetchWithTimeout } from './fetch-timeout.js';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -63,7 +64,7 @@ async function cleanupGitHubOrphans(): Promise<number> {
     `repo:${creds.repo} is:issue is:open "[QA]" in:title created:<${cutoff}`,
   );
 
-  const searchResp = await fetch(
+  const searchResp = await fetchWithTimeout(
     `https://api.github.com/search/issues?q=${query}&per_page=100`,
     { headers },
   );
@@ -75,7 +76,7 @@ async function cleanupGitHubOrphans(): Promise<number> {
 
     for (const issue of data.items) {
       console.log(`  🧹 Closing orphan issue #${issue.number}: ${issue.title}`);
-      const closeResp = await fetch(
+      const closeResp = await fetchWithTimeout(
         `https://api.github.com/repos/${creds.repo}/issues/${issue.number}`,
         {
           method: 'PATCH',
@@ -93,7 +94,7 @@ async function cleanupGitHubOrphans(): Promise<number> {
     `repo:${creds.repo} is:pr is:open "[QA]" in:title created:<${cutoff}`,
   );
 
-  const prSearchResp = await fetch(
+  const prSearchResp = await fetchWithTimeout(
     `https://api.github.com/search/issues?q=${prSearchQuery}&per_page=100`,
     { headers },
   );
@@ -105,7 +106,7 @@ async function cleanupGitHubOrphans(): Promise<number> {
 
     for (const pr of data.items) {
       console.log(`  🧹 Closing orphan PR #${pr.number}: ${pr.title}`);
-      const closeResp = await fetch(
+      const closeResp = await fetchWithTimeout(
         `https://api.github.com/repos/${creds.repo}/pulls/${pr.number}`,
         {
           method: 'PATCH',
@@ -125,7 +126,7 @@ async function cleanupGitHubOrphans(): Promise<number> {
     `repo:${creds.repo} is:pr is:closed "[QA]" in:title created:<${cutoff}`,
   );
 
-  const closedPrResp = await fetch(
+  const closedPrResp = await fetchWithTimeout(
     `https://api.github.com/search/issues?q=${closedPrQuery}&per_page=100`,
     { headers },
   );
@@ -137,7 +138,7 @@ async function cleanupGitHubOrphans(): Promise<number> {
 
     for (const pr of data.items) {
       // Fetch PR details to get the head branch name
-      const prDetailResp = await fetch(
+      const prDetailResp = await fetchWithTimeout(
         `https://api.github.com/repos/${creds.repo}/pulls/${pr.number}`,
         { headers },
       );
@@ -150,13 +151,13 @@ async function cleanupGitHubOrphans(): Promise<number> {
 
       if (branchName.startsWith('feature/issue-')) {
         // Check if branch still exists before attempting delete
-        const branchResp = await fetch(
+        const branchResp = await fetchWithTimeout(
           `https://api.github.com/repos/${creds.repo}/git/refs/heads/${branchName}`,
           { headers },
         );
         if (branchResp.ok) {
           console.log(`  🧹 Deleting orphan branch: ${branchName}`);
-          const delResp = await fetch(
+          const delResp = await fetchWithTimeout(
             `https://api.github.com/repos/${creds.repo}/git/refs/heads/${branchName}`,
             { method: 'DELETE', headers },
           );
@@ -192,7 +193,7 @@ async function cleanupJiraOrphans(): Promise<number> {
   // Search for [QA] issues created > 24h ago (relative JQL avoids timezone truncation)
   const jql = `project = ${creds.projectKey} AND summary ~ "[QA]" AND created <= -1d AND status != Done`;
 
-  const searchResp = await fetch(
+  const searchResp = await fetchWithTimeout(
     `${creds.baseUrl}/rest/api/3/search/jql`,
     {
       method: 'POST',
@@ -218,7 +219,7 @@ async function cleanupJiraOrphans(): Promise<number> {
     console.log(`  🧹 Transitioning orphan ${issue.key}: ${issue.fields.summary}`);
 
     // Fetch transitions to find "Done"
-    const transResp = await fetch(
+    const transResp = await fetchWithTimeout(
       `${creds.baseUrl}/rest/api/3/issue/${issue.key}/transitions`,
       { headers },
     );
@@ -231,7 +232,7 @@ async function cleanupJiraOrphans(): Promise<number> {
         t.name.toLowerCase().includes('done'),
       );
       if (done) {
-        const closeResp = await fetch(
+        const closeResp = await fetchWithTimeout(
           `${creds.baseUrl}/rest/api/3/issue/${issue.key}/transitions`,
           {
             method: 'POST',
@@ -267,7 +268,7 @@ async function cleanupLinearOrphans(): Promise<number> {
   let cleaned = 0;
 
   // Search for issues with [QA] in title
-  const searchResp = await fetch('https://api.linear.app/graphql', {
+  const searchResp = await fetchWithTimeout('https://api.linear.app/graphql', {
     method: 'POST',
     headers: linearHeaders,
     body: JSON.stringify({
@@ -306,7 +307,7 @@ async function cleanupLinearOrphans(): Promise<number> {
 
     console.log(`  🧹 Deleting orphan: ${issue.title}`);
 
-    const delResp = await fetch('https://api.linear.app/graphql', {
+    const delResp = await fetchWithTimeout('https://api.linear.app/graphql', {
       method: 'POST',
       headers: linearHeaders,
       body: JSON.stringify({
@@ -360,7 +361,7 @@ async function cleanupShortcutOrphans(): Promise<number> {
   let cleaned = 0;
 
   // Search for stories with [QA] in name
-  const searchResp = await fetch(
+  const searchResp = await fetchWithTimeout(
     'https://api.app.shortcut.com/api/v3/search/stories',
     {
       method: 'POST',
@@ -385,7 +386,7 @@ async function cleanupShortcutOrphans(): Promise<number> {
 
     console.log(`  🧹 Deleting orphan: sc-${story.id} ${story.name}`);
 
-    const delResp = await fetch(
+    const delResp = await fetchWithTimeout(
       `https://api.app.shortcut.com/api/v3/stories/${story.id}`,
       {
         method: 'DELETE',
