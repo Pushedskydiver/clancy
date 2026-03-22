@@ -696,26 +696,29 @@ async function createNotionTicket(
 // Azure DevOps
 // ---------------------------------------------------------------------------
 
-/** Resolve the authenticated Azure DevOps user's unique name via connectionData. */
+/** Resolve the authenticated Azure DevOps user's identity.
+ * Tries connectionData first, falls back to creating without assignment
+ * (AzDo WIQL @Me resolves server-side from the PAT). */
 async function resolveAzdoIdentity(
   org: string,
   auth: string,
 ): Promise<string> {
-  const response = await fetchWithTimeout(
+  // Try connectionData API
+  const connResp = await fetchWithTimeout(
     `https://dev.azure.com/${encodeURIComponent(org)}/_apis/connectionData?api-version=7.1`,
     { headers: { Authorization: `Basic ${auth}` } },
   );
 
-  if (!response.ok) {
-    throw new Error(`Failed to resolve AzDo identity: ${response.status}`);
+  if (connResp.ok) {
+    const data = (await connResp.json()) as {
+      authenticatedUser: { uniqueName?: string; providerDisplayName?: string };
+    };
+    const name = data.authenticatedUser.uniqueName ?? data.authenticatedUser.providerDisplayName;
+    if (name) return name;
   }
 
-  const data = (await response.json()) as {
-    authenticatedUser: { uniqueName?: string; providerDisplayName?: string };
-  };
-
-  // uniqueName is the user's email/UPN — used for System.AssignedTo
-  return data.authenticatedUser.uniqueName ?? data.authenticatedUser.providerDisplayName ?? '';
+  // Fallback: empty string — AzDo may auto-assign from PAT owner
+  return '';
 }
 
 async function createAzdoTicket(
