@@ -1,0 +1,191 @@
+name: E2E Tests
+
+on:
+  schedule:
+    # Weekly: Monday 6am UTC
+    - cron: '0 6 * * 1'
+
+  workflow_dispatch:
+    inputs:
+      board:
+        description: 'Board to test (or "all")'
+        required: false
+        default: 'all'
+        type: choice
+        options:
+          - all
+          - github
+          - jira
+          - linear
+          - shortcut
+          - notion
+          - azure-devops
+
+permissions:
+  contents: read
+
+concurrency:
+  group: e2e-tests
+  cancel-in-progress: false
+
+# Note: Each E2E board step only receives the target board's credentials plus
+# the GitHub sandbox creds (needed for git push auth by all boards). The GC job
+# needs all credentials because it cleans up orphans across all boards.
+# detectBoard reads .clancy/.env (not process.env), so env var presence doesn't
+# cause board detection interference.
+
+jobs:
+  # ── Garbage collection ────────────────────────────────────────────────────
+  # Clean up orphan tickets from prior failed/timed-out runs before testing.
+
+  gc:
+    name: Orphan cleanup
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: rm -rf node_modules package-lock.json && npm install
+
+      - name: Run orphan GC
+        env:
+          GITHUB_TOKEN: ${{ secrets.QA_GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ secrets.QA_GITHUB_REPO }}
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_USER: ${{ secrets.JIRA_USER }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_PROJECT_KEY: ${{ secrets.JIRA_PROJECT_KEY }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_TEAM_ID: ${{ secrets.LINEAR_TEAM_ID }}
+          SHORTCUT_TOKEN: ${{ secrets.SHORTCUT_TOKEN }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          AZURE_ORG: ${{ secrets.AZURE_ORG }}
+          AZURE_PROJECT: ${{ secrets.AZURE_PROJECT }}
+          AZURE_PAT: ${{ secrets.AZURE_PAT }}
+        run: npm run test:e2e:gc
+
+  # ── E2E test matrix ───────────────────────────────────────────────────────
+  # Each board runs independently. One failure doesn't skip others.
+  # Each step scopes credentials to only the target board + GitHub sandbox.
+
+  e2e:
+    name: E2E — ${{ matrix.board }}
+    needs: gc
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        board: [github, jira, linear, shortcut, notion, azure-devops]
+
+    # Skip boards that don't match the manual dispatch filter
+    if: >-
+      github.event_name != 'workflow_dispatch' ||
+      github.event.inputs.board == 'all' ||
+      github.event.inputs.board == matrix.board
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: rm -rf node_modules package-lock.json && npm install
+
+      - name: Run E2E — GitHub Issues
+        if: matrix.board == 'github'
+        env:
+          GITHUB_TOKEN: ${{ secrets.QA_GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ secrets.QA_GITHUB_REPO }}
+        run: npm run test:e2e -- github
+
+      - name: Run E2E — Jira
+        if: matrix.board == 'jira'
+        env:
+          GITHUB_TOKEN: ${{ secrets.QA_GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ secrets.QA_GITHUB_REPO }}
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_USER: ${{ secrets.JIRA_USER }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          JIRA_PROJECT_KEY: ${{ secrets.JIRA_PROJECT_KEY }}
+        run: npm run test:e2e -- jira
+
+      - name: Run E2E — Linear
+        if: matrix.board == 'linear'
+        env:
+          GITHUB_TOKEN: ${{ secrets.QA_GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ secrets.QA_GITHUB_REPO }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          LINEAR_TEAM_ID: ${{ secrets.LINEAR_TEAM_ID }}
+        run: npm run test:e2e -- linear
+
+      - name: Run E2E — Shortcut
+        if: matrix.board == 'shortcut'
+        env:
+          GITHUB_TOKEN: ${{ secrets.QA_GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ secrets.QA_GITHUB_REPO }}
+          SHORTCUT_TOKEN: ${{ secrets.SHORTCUT_TOKEN }}
+        run: npm run test:e2e -- shortcut
+
+      - name: Run E2E — Notion
+        if: matrix.board == 'notion'
+        env:
+          GITHUB_TOKEN: ${{ secrets.QA_GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ secrets.QA_GITHUB_REPO }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+        run: npm run test:e2e -- notion
+
+      - name: Run E2E — Azure DevOps
+        if: matrix.board == 'azure-devops'
+        env:
+          GITHUB_TOKEN: ${{ secrets.QA_GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ secrets.QA_GITHUB_REPO }}
+          AZURE_ORG: ${{ secrets.AZURE_ORG }}
+          AZURE_PROJECT: ${{ secrets.AZURE_PROJECT }}
+          AZURE_PAT: ${{ secrets.AZURE_PAT }}
+        run: npm run test:e2e -- azure-devops
+
+  # ── Live schema check ─────────────────────────────────────────────────────
+  # Lighter than full E2E — hits auth endpoints, validates against Zod schemas.
+  # Catches API drift faster (no ticket creation, no Git ops).
+  # Runs after E2E to avoid competing for API rate limits.
+
+  schema-check:
+    name: Live schema validation
+    needs: e2e
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: rm -rf node_modules package-lock.json && npm install
+
+      - name: Validate live schemas
+        env:
+          GITHUB_TOKEN: ${{ secrets.QA_GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ secrets.QA_GITHUB_REPO }}
+          JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
+          JIRA_USER: ${{ secrets.JIRA_USER }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
+          SHORTCUT_TOKEN: ${{ secrets.SHORTCUT_TOKEN }}
+          NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
+          NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
+          AZURE_ORG: ${{ secrets.AZURE_ORG }}
+          AZURE_PROJECT: ${{ secrets.AZURE_PROJECT }}
+          AZURE_PAT: ${{ secrets.AZURE_PAT }}
+        run: npm run test:fixtures:live

@@ -11,7 +11,7 @@ Clancy is a CLI tool installed via `npx chief-clancy`. It scaffolds slash comman
 - **Language:** TypeScript (ESM, strict mode)
 - **Runtime:** Node 22+
 - **Build:** `tsc && tsc-alias && esbuild` (path alias `~/` → `./src/`)
-- **Test:** Vitest (co-located unit tests + integration tests in `test/integration/`)
+- **Test:** Vitest (co-located unit tests + MSW integration tests + real-API E2E tests)
 - **Lint:** ESLint + Prettier
 - **Validation:** `zod/mini` for all runtime validation of external data
 - **Package:** `"type": "module"` in package.json
@@ -78,11 +78,26 @@ Examples: `✨ feat:`, `🐛 fix:`, `♻️ refactor:`, `📝 docs:`, `📦 chor
 | `src/roles/` | Slash commands and workflows by role |
 | `src/agents/` | 7 agent prompts |
 | `hooks/` | 8+1 pre-built CommonJS hooks |
+| `test/integration/` | MSW-backed integration tests (Claude simulator, temp repo, env fixtures) |
+| `test/e2e/` | Real-API E2E tests (ticket factory, cleanup, orphan GC) |
 
-## Running checks
+## Testing
 
 ```bash
-npm test          # vitest (all unit tests)
-npm run typecheck # tsc --noEmit
-npm run lint      # eslint + prettier
+npm test                      # unit tests (co-located vitest)
+npm run test:integration      # integration tests (MSW + Claude simulator)
+npm run test:all              # unit + integration
+npm run test:e2e              # E2E tests (real APIs — needs .env.e2e credentials)
+npm run test:e2e -- github    # E2E for a single board
+npm run test:e2e:gc           # orphan ticket cleanup
+npm run test:fixtures:validate  # validate MSW fixtures against Zod schemas (offline)
+npm run test:fixtures:live      # validate real API auth endpoints against Zod schemas
+npm run typecheck             # tsc --noEmit
+npm run lint                  # eslint + prettier
 ```
+
+## CI
+
+- **CI** (`.github/workflows/ci.yml`): unit tests + integration tests on push/PR to main
+- **E2E** (`.github/workflows/e2e-tests.yml`): weekly (Monday 6am UTC) + manual dispatch. Orphan GC → per-board matrix (6 boards) + live schema validation. Uses `QA_GITHUB_TOKEN` / `QA_GITHUB_REPO` secrets (not the built-in `GITHUB_TOKEN`).
+- **Release** (`.github/workflows/release.yml`): auto-tag + GitHub Release on version bump
