@@ -575,24 +575,53 @@ async function createNotionTicket(
 
   const title = `[QA] E2E test — notion — ${runId}${options.titleSuffix ? ` — ${options.titleSuffix}` : ''}`;
 
-  // Create a page in the database. Property names must match the sandbox DB schema.
-  // Uses standard Notion property names — configurable via CLANCY_NOTION_* env vars at runtime.
+  // Query database schema to find the actual property names
+  const dbResp = await fetchWithTimeout(
+    `${NOTION_API}/databases/${creds.databaseId}`,
+    { headers: notionHeaders(creds.token) },
+  );
+  if (!dbResp.ok) {
+    throw new Error(`Failed to fetch Notion database: ${dbResp.status}`);
+  }
+  const dbData = (await dbResp.json()) as {
+    properties: Record<string, { type: string }>;
+  };
+
+  // Find the title property (always exactly one per database)
+  const titlePropName =
+    Object.entries(dbData.properties).find(([, v]) => v.type === 'title')?.[0] ?? 'Name';
+  // Find the status property
+  const statusPropName =
+    Object.entries(dbData.properties).find(([, v]) => v.type === 'status')?.[0] ?? 'Status';
+  // Find a multi_select property for labels (prefer "Tags" or "Labels")
+  const multiSelectProps = Object.entries(dbData.properties).filter(
+    ([, v]) => v.type === 'multi_select',
+  );
+  const tagsPropName =
+    multiSelectProps.find(([k]) => /tags|labels/i.test(k))?.[0] ??
+    multiSelectProps[0]?.[0];
+
+  // Build properties object dynamically
+  const pageProperties: Record<string, unknown> = {
+    [titlePropName]: {
+      title: [{ text: { content: title } }],
+    },
+    [statusPropName]: {
+      status: { name: 'To-do' },
+    },
+  };
+  if (tagsPropName) {
+    pageProperties[tagsPropName] = {
+      multi_select: [{ name: 'clancy:build' }],
+    };
+  }
+
   const response = await fetchWithTimeout(`${NOTION_API}/pages`, {
     method: 'POST',
     headers: notionHeaders(creds.token),
     body: JSON.stringify({
       parent: { database_id: creds.databaseId },
-      properties: {
-        Name: {
-          title: [{ text: { content: title } }],
-        },
-        Status: {
-          status: { name: 'To-do' },
-        },
-        Tags: {
-          multi_select: [{ name: 'clancy:build' }],
-        },
-      },
+      properties: pageProperties,
     }),
   });
 
