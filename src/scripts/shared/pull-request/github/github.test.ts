@@ -760,6 +760,11 @@ describe('pull-request/github', () => {
                 user: { login: 'testuser' },
               },
             ]),
+        })
+        // Reviews — empty (no CHANGES_REQUESTED)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]),
         });
       vi.stubGlobal('fetch', mockFetch);
 
