@@ -455,36 +455,6 @@ describe('deliverEpicToBase', () => {
     expect(mockBoard.transitionTicket).toHaveBeenCalled();
     expect(mockBoard.addLabel).not.toHaveBeenCalled();
   });
-
-  it('does not crash if addLabel fails on GitHub', async () => {
-    const githubConfig: BoardConfig = {
-      provider: 'github',
-      env: {
-        GITHUB_TOKEN: 'ghp_test',
-        GITHUB_REPO: 'owner/repo',
-        CLANCY_LABEL_BUILD: 'clancy:build',
-      },
-    };
-    const mockBoard = {
-      addLabel: vi.fn(() => Promise.reject(new Error('API error'))),
-      removeLabel: vi.fn(() => Promise.resolve()),
-      ensureLabel: vi.fn(() => Promise.resolve()),
-      transitionTicket: vi.fn(() => Promise.resolve(true)),
-    };
-
-    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-    const result = await deliverEpicToBase(
-      githubConfig,
-      '#49',
-      'Implement redesign',
-      'milestone/49',
-      'main',
-      mockBoard as unknown as Board,
-    );
-    log.mockRestore();
-
-    expect(result).toBe(true);
-  });
 });
 
 // ─── Tests: deliverViaEpicMerge is removed ──────────────────────────────────

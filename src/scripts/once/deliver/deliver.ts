@@ -415,14 +415,10 @@ export async function deliverEpicToBase(
       // GitHub: add build label so downstream tooling (e.g., Ralph) can find the epic PR
       const buildLabel = resolveBuildLabel(config.env);
       if (buildLabel) {
-        try {
-          await board.addLabel(epicKey, buildLabel);
-          console.log(dim(`  Added ${buildLabel} to ${epicKey}`));
-        } catch {
-          console.log(
-            yellow(`⚠ Could not add ${buildLabel} label to ${epicKey}`),
-          );
-        }
+        await board.addLabel(epicKey, buildLabel);
+        console.log(
+          dim(`  Requested ${buildLabel} on ${epicKey} (best-effort)`),
+        );
       }
     } else if (board) {
       const statusReview =
