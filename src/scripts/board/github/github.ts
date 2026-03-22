@@ -325,12 +325,13 @@ export async function fetchChildrenStatus(
     // If Parent: search returned results, use them
     if (parentTextResult && parentTextResult.total > 0) return parentTextResult;
 
-    // If both searches returned undefined (API failure), propagate undefined
-    if (!parentTextResult) return undefined;
+    // If either search failed (returned undefined), propagate undefined
+    if (!epicTextResult || !parentTextResult) return undefined;
 
-    // Both searches returned 0 results. If we know the current ticket
-    // is a child (it has Epic:/Parent: in its body pointing to this parent),
-    // the search API hasn't indexed it yet (~3-5s delay). Count at least 1.
+    // Both searches succeeded and returned 0 results. If we know the current
+    // ticket is a child (it has Epic:/Parent: in its body pointing to this
+    // parent), the search API likely hasn't indexed it yet (~3-5s delay).
+    // Count at least 1 to avoid misclassifying as "no children".
     if (currentTicketKey) {
       return { total: 1, incomplete: 1 };
     }
