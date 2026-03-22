@@ -126,7 +126,12 @@ The self-review checklist is a **living document** — when Copilot catches some
 
 ### 6. Ship — Merge, publish, update memory
 
-- Create PR with label, assignee, and `--reviewer @copilot` (Copilot review starts immediately on PR creation). Available PR labels — use the one matching your branch prefix:
+- Create PR with label and assignee. Then request Copilot review via the API (`gh pr create --reviewer copilot` does NOT work):
+  ```bash
+  gh api repos/{owner}/{repo}/pulls/{number}/requested_reviewers \
+    -X POST -f "reviewers[]=copilot-pull-request-reviewer[bot]"
+  ```
+  Available PR labels — use the one matching your branch prefix:
   - `feature/` → `feature` | `fix/` → `fix` | `chore/` → `chore`
   - Do not create new PR labels unless adding a new branch prefix type — no one-off topic labels (e.g. `QA`, `docs`). Ask the user before creating any new label.
 - **If pushing additional commits to an open PR, update the PR body** (`gh pr edit`) to reflect all changes. Reviewers and Copilot read the body to understand scope — a stale body that only describes the original changes is misleading.

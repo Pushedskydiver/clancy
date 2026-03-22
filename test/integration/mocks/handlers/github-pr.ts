@@ -5,6 +5,11 @@
 import { http, HttpResponse } from 'msw';
 
 export const githubPrHandlers = [
+  // List PRs (used by PR review state checking / rework detection)
+  http.get('https://api.github.com/repos/:owner/:repo/pulls', () =>
+    HttpResponse.json([]),
+  ),
+
   http.post(
     'https://api.github.com/repos/:owner/:repo/pulls',
     () =>
