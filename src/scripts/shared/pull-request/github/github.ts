@@ -23,11 +23,23 @@ import {
 } from '../rework-comment/rework-comment.js';
 
 /**
+ * Check whether a comment was posted by Clancy's automation.
+ *
+ * Clancy prefixes all automated comments with `[clancy]` (see
+ * `buildReworkComment` in rework.ts). These are filtered out to
+ * prevent self-triggering rework loops.
+ */
+function isClancyComment(body?: string | null): boolean {
+  return body?.trimStart().startsWith('[clancy]') ?? false;
+}
+
+/**
  * Check the review state of an open PR for a given branch.
  *
  * Finds the open PR matching the branch, fetches inline and conversation
  * comments. Any inline comment (left on a specific line) triggers rework.
  * Conversation comments only trigger rework when prefixed with `Rework:`.
+ * Comments prefixed with `[clancy]` are excluded to prevent self-triggering.
  *
  * @param token - The GitHub personal access token.
  * @param repo - The repository in `owner/repo` format.
@@ -44,7 +56,6 @@ export async function checkPrReviewState(
   owner: string,
   apiBase = GITHUB_API,
   since?: string,
-  excludeAuthor?: string,
 ): Promise<PrReviewState | undefined> {
   try {
     const headers = githubHeaders(token);
@@ -81,12 +92,8 @@ export async function checkPrReviewState(
     const rawInline = githubPrCommentsSchema.parse(await inlineRes.json());
     const rawConvo = githubCommentsResponseSchema.parse(await convoRes.json());
 
-    const inlineComments = excludeAuthor
-      ? rawInline.filter((c) => c.user?.login !== excludeAuthor)
-      : rawInline;
-    const convoComments = excludeAuthor
-      ? rawConvo.filter((c) => c.user?.login !== excludeAuthor)
-      : rawConvo;
+    const inlineComments = rawInline.filter((c) => !isClancyComment(c.body));
+    const convoComments = rawConvo.filter((c) => !isClancyComment(c.body));
 
     const hasInlineComments = inlineComments.length > 0;
     const hasReworkConvo = convoComments.some(
@@ -139,11 +146,11 @@ export async function checkPrReviewState(
 /**
  * Fetch feedback comments (inline + conversation) for a PR.
  *
- * Inline comments (left on specific lines) are always included — they
- * inherently represent change requests. Conversation comments are only
- * included when they start with `Rework:` (case-insensitive), with the
- * prefix stripped. Inline comments are prefixed with `[path]` when a
- * file path is available.
+ * Inline comments (left on specific lines) are included — they inherently
+ * represent change requests. Conversation comments are only included when
+ * they start with `Rework:` (case-insensitive), with the prefix stripped.
+ * Comments prefixed with `[clancy]` are excluded to prevent self-triggering.
+ * Inline comments are prefixed with `[path]` when a file path is available.
  *
  * @param token - The GitHub personal access token.
  * @param repo - The repository in `owner/repo` format.
@@ -158,7 +165,6 @@ export async function fetchPrReviewComments(
   prNumber: number,
   apiBase = GITHUB_API,
   since?: string,
-  excludeAuthor?: string,
 ): Promise<string[]> {
   try {
     const headers = githubHeaders(token);
@@ -184,12 +190,8 @@ export async function fetchPrReviewComments(
     const rawInline = githubPrCommentsSchema.parse(await inlineRes.json());
     const rawConvo = githubCommentsResponseSchema.parse(await convoRes.json());
 
-    const inlineComments = excludeAuthor
-      ? rawInline.filter((c) => c.user?.login !== excludeAuthor)
-      : rawInline;
-    const convoComments = excludeAuthor
-      ? rawConvo.filter((c) => c.user?.login !== excludeAuthor)
-      : rawConvo;
+    const inlineComments = rawInline.filter((c) => !isClancyComment(c.body));
+    const convoComments = rawConvo.filter((c) => !isClancyComment(c.body));
 
     const combined: string[] = [];
 

@@ -723,12 +723,148 @@ describe('pull-request/github', () => {
         prUrl: 'https://github.com/owner/repo/pull/10',
       });
     });
+
+    it('filters out [clancy] prefixed comments (self-trigger prevention)', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                number: 10,
+                html_url: 'https://github.com/owner/repo/pull/10',
+                state: 'open',
+              },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                body: '[clancy] Rework pushed addressing 1 feedback item.',
+                path: 'src/index.ts',
+                user: { login: 'testuser' },
+              },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                id: 1,
+                body: '[clancy] Rework pushed addressing reviewer feedback.',
+                created_at: '2026-01-01T00:00:00Z',
+                user: { login: 'testuser' },
+              },
+            ]),
+        })
+        // Reviews — empty (no CHANGES_REQUESTED)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkPrReviewState(
+        'ghp_test',
+        'owner/repo',
+        'feature/test',
+        'owner',
+      );
+
+      expect(result?.changesRequested).toBe(false);
+    });
+
+    it('allows user Rework: comments through even when same author as Clancy token', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                number: 10,
+                html_url: 'https://github.com/owner/repo/pull/10',
+                state: 'open',
+              },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve([]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                id: 1,
+                body: 'Rework: Fix the validation logic',
+                created_at: '2026-01-01T00:00:00Z',
+                user: { login: 'testuser' },
+              },
+            ]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await checkPrReviewState(
+        'ghp_test',
+        'owner/repo',
+        'feature/test',
+        'owner',
+      );
+
+      expect(result?.changesRequested).toBe(true);
+    });
   });
 
   describe('fetchPrReviewComments', () => {
     afterEach(() => {
       vi.restoreAllMocks();
       vi.unstubAllGlobals();
+    });
+
+    it('filters out [clancy] prefixed inline and conversation comments', async () => {
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              { body: 'Real reviewer feedback', path: 'src/index.ts' },
+              {
+                body: '[clancy] Rework pushed addressing 1 feedback item.',
+                path: 'src/index.ts',
+              },
+            ]),
+        })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () =>
+            Promise.resolve([
+              {
+                id: 1,
+                body: 'Rework: Fix validation',
+                created_at: '2026-01-01T00:00:00Z',
+              },
+              {
+                id: 2,
+                body: '[clancy] Rework pushed addressing reviewer feedback.',
+                created_at: '2026-01-01T00:00:00Z',
+              },
+            ]),
+        });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await fetchPrReviewComments('ghp_test', 'owner/repo', 10);
+
+      expect(result).toEqual([
+        '[src/index.ts] Real reviewer feedback',
+        'Fix validation',
+      ]);
     });
 
     it('returns all inline comments and only Rework: conversation comments', async () => {
