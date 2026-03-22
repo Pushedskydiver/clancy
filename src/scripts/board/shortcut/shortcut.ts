@@ -276,16 +276,29 @@ export async function fetchStories(
     return [];
   }
 
+  // Shortcut may return { data: [...] } (paginated) or a bare array
   const parsed = shortcutStorySearchResponseSchema.safeParse(json);
 
-  if (!parsed.success) {
+  let stories;
+
+  if (parsed.success) {
+    stories = parsed.data.data;
+  } else if (Array.isArray(json)) {
+    // Wrap bare array in the expected shape and re-parse
+    const wrapped = shortcutStorySearchResponseSchema.safeParse({ data: json });
+    if (!wrapped.success) {
+      console.warn(
+        `⚠ Unexpected Shortcut response shape: ${parsed.error.message}`,
+      );
+      return [];
+    }
+    stories = wrapped.data.data;
+  } else {
     console.warn(
       `⚠ Unexpected Shortcut response shape: ${parsed.error.message}`,
     );
     return [];
   }
-
-  let stories = parsed.data.data;
 
   // HITL/AFK filtering: exclude stories with clancy:hitl label
   if (excludeHitl) {
