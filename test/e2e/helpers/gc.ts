@@ -360,43 +360,54 @@ async function cleanupShortcutOrphans(): Promise<number> {
   };
 
   let cleaned = 0;
-
-  // Search for stories with [QA] in name
-  const searchResp = await fetchWithTimeout(
-    'https://api.app.shortcut.com/api/v3/stories/search',
-    {
-      method: 'POST',
-      headers: scHeaders,
-      body: JSON.stringify({ query: '[QA]', page_size: 25 }),
-    },
-  );
-
-  if (!searchResp.ok) {
-    console.log(`  ⚠ Shortcut search failed: ${searchResp.status}`);
-    return 0;
-  }
-
-  const data = (await searchResp.json()) as {
-    data: Array<{ id: number; name: string; created_at: string }>;
-  };
-
   const cutoff = Date.now() - ONE_DAY_MS;
+  let nextToken: string | undefined;
 
-  for (const story of data.data) {
-    if (new Date(story.created_at).getTime() > cutoff) continue;
+  // Paginate through all search results — Shortcut /stories/search is paginated
+  for (let page = 0; page < 100; page++) {
+    const body: Record<string, unknown> = { query: '[QA]', page_size: 25 };
+    if (nextToken) body.next = nextToken;
 
-    console.log(`  🧹 Deleting orphan: sc-${story.id} ${story.name}`);
-
-    const delResp = await fetchWithTimeout(
-      `https://api.app.shortcut.com/api/v3/stories/${story.id}`,
+    const searchResp = await fetchWithTimeout(
+      'https://api.app.shortcut.com/api/v3/stories/search',
       {
-        method: 'DELETE',
-        headers: { 'Shortcut-Token': creds.token },
+        method: 'POST',
+        headers: scHeaders,
+        body: JSON.stringify(body),
       },
     );
 
-    if (delResp.ok) cleaned++;
-    else console.log(`    ⚠ Failed to delete Shortcut story sc-${story.id}: ${delResp.status}`);
+    if (!searchResp.ok) {
+      console.log(`  ⚠ Shortcut search failed: ${searchResp.status}`);
+      break;
+    }
+
+    const data = (await searchResp.json()) as {
+      data: Array<{ id: number; name: string; created_at: string }>;
+      next?: string | null;
+    };
+
+    if (!data.data?.length) break;
+
+    for (const story of data.data) {
+      if (new Date(story.created_at).getTime() > cutoff) continue;
+
+      console.log(`  🧹 Deleting orphan: sc-${story.id} ${story.name}`);
+
+      const delResp = await fetchWithTimeout(
+        `https://api.app.shortcut.com/api/v3/stories/${story.id}`,
+        {
+          method: 'DELETE',
+          headers: { 'Shortcut-Token': creds.token },
+        },
+      );
+
+      if (delResp.ok) cleaned++;
+      else console.log(`    ⚠ Failed to delete Shortcut story sc-${story.id}: ${delResp.status}`);
+    }
+
+    nextToken = data.next ?? undefined;
+    if (!nextToken) break;
   }
 
   return cleaned;
