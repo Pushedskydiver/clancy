@@ -289,7 +289,7 @@ async function resolveLinearUnstartedStateId(
     workflowStates: { nodes: Array<{ id: string; name: string }> };
   }>(
     apiKey,
-    `query($teamId: String!) {
+    `query($teamId: ID!) {
       workflowStates(filter: { team: { id: { eq: $teamId } }, type: { eq: "unstarted" } }) {
         nodes { id name }
       }
@@ -313,7 +313,7 @@ async function resolveLinearLabelId(
     issueLabels: { nodes: Array<{ id: string; name: string }> };
   }>(
     apiKey,
-    `query($teamId: String!, $name: String!) {
+    `query($teamId: ID!, $name: String!) {
       issueLabels(filter: { team: { id: { eq: $teamId } }, name: { eq: $name } }) {
         nodes { id name }
       }
@@ -329,7 +329,7 @@ async function resolveLinearLabelId(
     issueLabelCreate: { issueLabel: { id: string } };
   }>(
     apiKey,
-    `mutation($teamId: String!, $name: String!) {
+    `mutation($teamId: ID!, $name: String!) {
       issueLabelCreate(input: { teamId: $teamId, name: $name, color: "#0075ca" }) {
         issueLabel { id }
       }
@@ -372,7 +372,7 @@ async function createLinearTicket(
     };
   }>(
     creds.apiKey,
-    `mutation($teamId: String!, $title: String!, $stateId: String!, $labelIds: [String!], $assigneeId: String!) {
+    `mutation($teamId: ID!, $title: String!, $stateId: ID!, $labelIds: [ID!], $assigneeId: ID!) {
       issueCreate(input: {
         teamId: $teamId,
         title: $title,
