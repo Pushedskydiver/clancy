@@ -13,7 +13,6 @@
  */
 import {
   existsSync,
-  lstatSync,
   mkdirSync,
   readFileSync,
   rmSync,
@@ -26,6 +25,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { copyDir } from '~/installer/file-ops/file-ops.js';
 import { installHooks } from '~/installer/hook-installer/hook-installer.js';
+import { copyRoleFiles } from '~/installer/role-filter/role-filter.js';
 import {
   backupModifiedFiles,
   buildManifest,
@@ -622,25 +622,10 @@ describe('hook-installer — installHooks', () => {
 
 // ─── Role filtering ─────────────────────────────────────────────────────────
 
-describe('role filtering — copyRoleFiles integration', () => {
-  /**
-   * These tests exercise the role filtering logic from install.ts by
-   * replicating a minimal roles directory structure and calling copyDir
-   * directly, mirroring what copyRoleFiles does internally.
-   *
-   * We can't call copyRoleFiles directly (it's not exported), so we test
-   * the filtering logic by simulating what the installer does:
-   * 1. Read role directories
-   * 2. Check against CORE_ROLES and enabledRoles
-   * 3. Call copyDir for included roles
-   */
-
-  const CORE_ROLES = new Set(['implementer', 'reviewer', 'setup']);
-
+describe('role filtering — copyRoleFiles', () => {
   function createRolesDir(): string {
     const rolesDir = freshDir('roles');
 
-    // Create role directories with command files
     for (const role of [
       'implementer',
       'reviewer',
@@ -656,39 +641,11 @@ describe('role filtering — copyRoleFiles integration', () => {
     return rolesDir;
   }
 
-  function copyRoleFilesLocal(
-    rolesDir: string,
-    subdir: string,
-    dest: string,
-    enabledRoles: Set<string> | null,
-  ): void {
-    mkdirSync(dest, { recursive: true });
-
-    const entries = [
-      'implementer',
-      'reviewer',
-      'setup',
-      'planner',
-      'strategist',
-    ];
-
-    for (const role of entries) {
-      const srcDir = join(rolesDir, role, subdir);
-      if (!existsSync(srcDir)) continue;
-
-      if (!CORE_ROLES.has(role) && enabledRoles !== null) {
-        if (!enabledRoles.has(role)) continue;
-      }
-
-      copyDir(srcDir, dest);
-    }
-  }
-
   it('installs all roles when enabledRoles is null (first install)', () => {
     const rolesDir = createRolesDir();
     const dest = join(tmp, 'all-roles-dest');
 
-    copyRoleFilesLocal(rolesDir, 'commands', dest, null);
+    copyRoleFiles(rolesDir, 'commands', dest, null);
 
     expect(existsSync(join(dest, 'implementer-cmd.md'))).toBe(true);
     expect(existsSync(join(dest, 'reviewer-cmd.md'))).toBe(true);
@@ -701,7 +658,7 @@ describe('role filtering — copyRoleFiles integration', () => {
     const rolesDir = createRolesDir();
     const dest = join(tmp, 'core-only-dest');
 
-    copyRoleFilesLocal(rolesDir, 'commands', dest, new Set());
+    copyRoleFiles(rolesDir, 'commands', dest, new Set());
 
     expect(existsSync(join(dest, 'implementer-cmd.md'))).toBe(true);
     expect(existsSync(join(dest, 'reviewer-cmd.md'))).toBe(true);
@@ -714,12 +671,7 @@ describe('role filtering — copyRoleFiles integration', () => {
     const rolesDir = createRolesDir();
     const dest = join(tmp, 'planner-dest');
 
-    copyRoleFilesLocal(
-      rolesDir,
-      'commands',
-      dest,
-      new Set(['planner']),
-    );
+    copyRoleFiles(rolesDir, 'commands', dest, new Set(['planner']));
 
     expect(existsSync(join(dest, 'implementer-cmd.md'))).toBe(true);
     expect(existsSync(join(dest, 'reviewer-cmd.md'))).toBe(true);
@@ -732,7 +684,7 @@ describe('role filtering — copyRoleFiles integration', () => {
     const rolesDir = createRolesDir();
     const dest = join(tmp, 'both-optional-dest');
 
-    copyRoleFilesLocal(
+    copyRoleFiles(
       rolesDir,
       'commands',
       dest,
@@ -748,19 +700,34 @@ describe('role filtering — copyRoleFiles integration', () => {
     const rolesDir = createRolesDir();
     const dest = join(tmp, 'core-always-dest');
 
-    // Even with enabledRoles containing only 'strategist',
-    // core roles must still be installed
-    copyRoleFilesLocal(
-      rolesDir,
-      'commands',
-      dest,
-      new Set(['strategist']),
-    );
+    copyRoleFiles(rolesDir, 'commands', dest, new Set(['strategist']));
 
     expect(existsSync(join(dest, 'implementer-cmd.md'))).toBe(true);
     expect(existsSync(join(dest, 'reviewer-cmd.md'))).toBe(true);
     expect(existsSync(join(dest, 'setup-cmd.md'))).toBe(true);
     expect(existsSync(join(dest, 'strategist-cmd.md'))).toBe(true);
     expect(existsSync(join(dest, 'planner-cmd.md'))).toBe(false);
+  });
+
+  it('removes previously-installed optional role files when role is disabled', () => {
+    const rolesDir = createRolesDir();
+    const dest = join(tmp, 'cleanup-dest');
+
+    // First install: all roles (null = first install)
+    copyRoleFiles(rolesDir, 'commands', dest, null);
+    expect(existsSync(join(dest, 'planner-cmd.md'))).toBe(true);
+    expect(existsSync(join(dest, 'strategist-cmd.md'))).toBe(true);
+
+    // Second install: only core roles (empty set = no optional roles)
+    copyRoleFiles(rolesDir, 'commands', dest, new Set());
+
+    // Optional role files should be removed
+    expect(existsSync(join(dest, 'planner-cmd.md'))).toBe(false);
+    expect(existsSync(join(dest, 'strategist-cmd.md'))).toBe(false);
+
+    // Core role files should still be present
+    expect(existsSync(join(dest, 'implementer-cmd.md'))).toBe(true);
+    expect(existsSync(join(dest, 'reviewer-cmd.md'))).toBe(true);
+    expect(existsSync(join(dest, 'setup-cmd.md'))).toBe(true);
   });
 });

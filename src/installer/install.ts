@@ -13,14 +13,12 @@ import {
   mkdirSync,
   readFileSync,
   readdirSync,
-  unlinkSync,
   writeFileSync,
 } from 'node:fs';
 import { createRequire } from 'node:module';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { copyDir } from '~/installer/file-ops/file-ops.js';
 import { installHooks } from '~/installer/hook-installer/hook-installer.js';
 import {
   backupModifiedFiles,
@@ -28,6 +26,7 @@ import {
   detectModifiedFiles,
 } from '~/installer/manifest/manifest.js';
 import { ask, choose, closePrompts } from '~/installer/prompts/prompts.js';
+import { copyRoleFiles } from '~/installer/role-filter/role-filter.js';
 import { printBanner, printSuccess } from '~/installer/ui/ui.js';
 import { loadClancyEnv } from '~/scripts/shared/env-parser/env-parser.js';
 import { blue, dim, green, red } from '~/utils/ansi/ansi.js';
@@ -108,9 +107,6 @@ function inlineWorkflows(commandsDir: string, workflowsDir: string): void {
 // Role directory copying
 // ---------------------------------------------------------------------------
 
-/** Roles that are always installed regardless of CLANCY_ROLES. */
-const CORE_ROLES = new Set(['implementer', 'reviewer', 'setup']);
-
 /**
  * Parse the CLANCY_ROLES env var from `.clancy/.env` in the current project.
  *
@@ -133,51 +129,6 @@ function parseEnabledRoles(): Set<string> | null {
       .map((r) => r.trim().toLowerCase())
       .filter(Boolean),
   );
-}
-
-/**
- * Copy files from role subdirectories into a flat destination directory.
- *
- * Walks `src/roles/{role}/{subdir}/` for each role and copies all files
- * flat into `dest`. Core roles (implementer, reviewer, setup) are always
- * copied. Optional roles (planner, etc.) are only copied if listed in
- * the CLANCY_ROLES env var, or if no .clancy/.env exists yet (first install).
- *
- * @param rolesDir - The roles source directory (`src/roles/`).
- * @param subdir - The subdirectory within each role (`commands` or `workflows`).
- * @param dest - The flat destination directory.
- * @param enabledRoles - Set of enabled optional roles, or null to install all (first install).
- */
-function copyRoleFiles(
-  rolesDir: string,
-  subdir: string,
-  dest: string,
-  enabledRoles: Set<string> | null,
-): void {
-  mkdirSync(dest, { recursive: true });
-
-  const roles = readdirSync(rolesDir, { withFileTypes: true }).filter((d) =>
-    d.isDirectory(),
-  );
-
-  for (const role of roles) {
-    const srcDir = join(rolesDir, role.name, subdir);
-    if (!existsSync(srcDir)) continue;
-
-    // Core roles always install; optional roles need explicit opt-in
-    if (!CORE_ROLES.has(role.name) && enabledRoles !== null) {
-      if (!enabledRoles.has(role.name)) {
-        // Remove previously-installed files for disabled optional roles
-        for (const file of readdirSync(srcDir)) {
-          const target = join(dest, file);
-          if (existsSync(target)) unlinkSync(target);
-        }
-        continue;
-      }
-    }
-
-    copyDir(srcDir, dest);
-  }
 }
 
 // ---------------------------------------------------------------------------

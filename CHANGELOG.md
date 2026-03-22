@@ -17,7 +17,7 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 - **GitHub Issues: parse `Epic: #N` from description for parent detection** — when a child issue has no milestone but contains `Epic: #N` (or `Parent: #N`) in its description, the parent relationship is now detected. Previously `parentInfo` was always `ticket.milestone ?? 'none'`, so strategist-created child issues under a parent issue (not a milestone) had no parent, breaking single-child epic skip and `Closes` auto-close in PR bodies.
 
-1223 unit tests (3 new) + 151 integration tests (33 new).
+1223 unit tests (3 new) + 152 integration tests (34 new).
 
 ---
 
