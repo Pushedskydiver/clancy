@@ -15,7 +15,10 @@ import {
   hasUncommittedChanges,
   pushBranch,
 } from '~/scripts/shared/git-ops/git-ops.js';
-import { appendProgress } from '~/scripts/shared/progress/progress.js';
+import {
+  appendProgress,
+  findLastEntry,
+} from '~/scripts/shared/progress/progress.js';
 import { buildPrBody } from '~/scripts/shared/pull-request/pr-body/pr-body.js';
 import { detectRemote } from '~/scripts/shared/remote/remote.js';
 import { dim, green, yellow } from '~/utils/ansi/ansi.js';
@@ -29,6 +32,7 @@ export type ResumeInfo = {
   branch: string;
   hasUncommitted: boolean;
   hasUnpushed: boolean;
+  alreadyDelivered: boolean;
 };
 
 // ─── Detection ───────────────────────────────────────────────────────────────
@@ -105,10 +109,35 @@ export function detectResume(lock: LockData): ResumeInfo | undefined {
   }
 
   if (!uncommitted && !unpushed) {
+    // Check if the ticket was already delivered in a prior session.
+    // This handles the case where the session crashed after push+PR but before
+    // lock deletion — the branch exists with no local work to recover, but the
+    // ticket was already delivered to the remote.
+    const deliveredStatuses = new Set([
+      'PR_CREATED',
+      'PUSHED',
+      'REWORK',
+      'RESUMED',
+    ]);
+    const lastEntry = findLastEntry(process.cwd(), lock.ticketKey);
+    if (lastEntry && deliveredStatuses.has(lastEntry.status)) {
+      return {
+        branch,
+        hasUncommitted: false,
+        hasUnpushed: false,
+        alreadyDelivered: true,
+      };
+    }
+
     return undefined;
   }
 
-  return { branch, hasUncommitted: uncommitted, hasUnpushed: unpushed };
+  return {
+    branch,
+    hasUncommitted: uncommitted,
+    hasUnpushed: unpushed,
+    alreadyDelivered: false,
+  };
 }
 
 // ─── Execution ───────────────────────────────────────────────────────────────

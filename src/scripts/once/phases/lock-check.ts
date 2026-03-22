@@ -42,6 +42,20 @@ export async function lockCheck(ctx: RunContext): Promise<boolean> {
   // Resume detection — check if the ticket branch has recoverable work
   try {
     const resumeInfo = detectResume(existingLock);
+    if (resumeInfo?.alreadyDelivered) {
+      // Work was already pushed/PR'd in the crashed session — skip re-processing.
+      // Without this guard the AFK runner would pick up the same ticket again,
+      // reset the branch with -B, and fail to push (divergent history → PUSH_FAILED loop).
+      console.log(
+        green(
+          `  ✓ ${existingLock.ticketKey} was already delivered — skipping.`,
+        ),
+      );
+      // Return true so the orchestrator continues to fetch a fresh ticket
+      // rather than exiting (the delivered ticket will be filtered out by
+      // rework detection or the board queue).
+      return true;
+    }
     if (resumeInfo) {
       if (ctx.isAfk) {
         console.log(
