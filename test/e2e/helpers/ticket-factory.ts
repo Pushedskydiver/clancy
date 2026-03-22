@@ -280,24 +280,25 @@ async function linearGraphql<T>(
   return json.data;
 }
 
-/** Look up the first "unstarted" workflow state ID for the team. */
+/** Look up the first "unstarted" workflow state ID for the team.
+ * Uses team(id) { states } — avoids workflowStates filter issues. */
 async function resolveLinearUnstartedStateId(
   apiKey: string,
   teamId: string,
 ): Promise<string> {
   const data = await linearGraphql<{
-    workflowStates: { nodes: Array<{ id: string; name: string }> };
+    team: { states: { nodes: Array<{ id: string; name: string; type: string }> } };
   }>(
     apiKey,
-    `query($teamId: ID!) {
-      workflowStates(filter: { team: { id: { eq: $teamId } }, type: { eq: "unstarted" } }) {
-        nodes { id name }
+    `query($teamId: String!) {
+      team(id: $teamId) {
+        states { nodes { id name type } }
       }
     }`,
     { teamId },
   );
 
-  const state = data.workflowStates.nodes[0];
+  const state = data.team.states.nodes.find((s) => s.type === 'unstarted');
   if (!state) throw new Error('No unstarted workflow state found for Linear team');
   return state.id;
 }
