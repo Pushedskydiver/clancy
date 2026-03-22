@@ -18,6 +18,21 @@ import {
   resolveUsername,
 } from './github.js';
 
+/** Pattern matching `Epic: #N` or `Parent: #N` in issue descriptions. */
+const EPIC_REF_PATTERN = /^(?:Epic|Parent): (#\d+)/m;
+
+/**
+ * Extract a parent issue reference from a GitHub issue description.
+ *
+ * Looks for `Epic: #N` or `Parent: #N` (the conventions used by the
+ * strategist and pre-v0.6.0 workflows). Returns the `#N` string if
+ * found, or `undefined` otherwise.
+ */
+function parseEpicRef(description: string): string | undefined {
+  const match = description.match(EPIC_REF_PATTERN);
+  return match?.[1];
+}
+
 /**
  * Create a Board implementation for GitHub Issues.
  *
@@ -57,7 +72,8 @@ export function createGitHubBoard(env: GitHubEnv): Board {
           key: ticket.key,
           title: ticket.title,
           description: ticket.description,
-          parentInfo: ticket.milestone ?? 'none',
+          parentInfo:
+            ticket.milestone ?? parseEpicRef(ticket.description) ?? 'none',
           blockers: 'None',
           labels: ticket.labels ?? [],
           status: 'open',
