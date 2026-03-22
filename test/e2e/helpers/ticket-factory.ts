@@ -703,7 +703,22 @@ async function resolveAzdoIdentity(
   org: string,
   auth: string,
 ): Promise<string> {
-  // Try connectionData API
+  // Try VSSPS profile API (works with most PAT types)
+  const profileResp = await fetchWithTimeout(
+    `https://vssps.dev.azure.com/${encodeURIComponent(org)}/_apis/profile/profiles/me?api-version=7.1`,
+    { headers: { Authorization: `Basic ${auth}` } },
+  );
+
+  if (profileResp.ok) {
+    const data = (await profileResp.json()) as {
+      emailAddress?: string;
+      displayName?: string;
+    };
+    if (data.emailAddress) return data.emailAddress;
+    if (data.displayName) return data.displayName;
+  }
+
+  // Try connectionData API as fallback
   const connResp = await fetchWithTimeout(
     `https://dev.azure.com/${encodeURIComponent(org)}/_apis/connectionData?api-version=7.1`,
     { headers: { Authorization: `Basic ${auth}` } },
@@ -717,7 +732,7 @@ async function resolveAzdoIdentity(
     if (name) return name;
   }
 
-  // Fallback: empty string — AzDo may auto-assign from PAT owner
+  // Last resort: empty string
   return '';
 }
 
