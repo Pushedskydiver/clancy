@@ -147,7 +147,7 @@ describe.skipIf(!canRun)('E2E: Shortcut — full pipeline', () => {
     createClancyScaffold(repo.repoPath, 'shortcut', {
       SHORTCUT_API_TOKEN: shortcutCreds.token,
       GITHUB_TOKEN: githubCreds.token,
-      GITHUB_REPO: githubCreds.repo,
+
       CLANCY_BASE_BRANCH: 'main',
       CLANCY_LABEL_BUILD: 'clancy:build',
     });

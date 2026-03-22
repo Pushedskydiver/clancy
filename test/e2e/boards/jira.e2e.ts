@@ -149,7 +149,7 @@ describe.skipIf(!canRun)('E2E: Jira — full pipeline', () => {
       JIRA_API_TOKEN: jiraCreds.apiToken,
       JIRA_PROJECT_KEY: jiraCreds.projectKey,
       GITHUB_TOKEN: githubCreds.token,
-      GITHUB_REPO: githubCreds.repo,
+
       CLANCY_BASE_BRANCH: 'main',
       CLANCY_LABEL_BUILD: 'clancy-build',
     });

@@ -150,13 +150,14 @@ describe.skipIf(!canRun)('E2E: Linear — full pipeline', () => {
       });
     }
 
-    // 3. Create Clancy scaffold with real Linear + GitHub credentials
-    // Linear personal API keys do NOT use "Bearer" prefix
+    // 3. Create Clancy scaffold with real Linear + GitHub credentials.
+    // IMPORTANT: Do NOT include GITHUB_REPO — detectBoard checks
+    // GITHUB_TOKEN + GITHUB_REPO before Linear and would detect GitHub Issues.
+    // GITHUB_TOKEN alone is used as the git host token for PR creation.
     createClancyScaffold(repo.repoPath, 'linear', {
       LINEAR_API_KEY: linearCreds.apiKey,
       LINEAR_TEAM_ID: teamUuid,
       GITHUB_TOKEN: githubCreds.token,
-      GITHUB_REPO: githubCreds.repo,
       CLANCY_BASE_BRANCH: 'main',
     });
 

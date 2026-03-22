@@ -147,7 +147,7 @@ describe.skipIf(!canRun)('E2E: Notion — full pipeline', () => {
       NOTION_TOKEN: notionCreds.token,
       NOTION_DATABASE_ID: notionCreds.databaseId,
       GITHUB_TOKEN: githubCreds.token,
-      GITHUB_REPO: githubCreds.repo,
+
       CLANCY_BASE_BRANCH: 'main',
       CLANCY_LABEL_BUILD: 'clancy:build',
     });
