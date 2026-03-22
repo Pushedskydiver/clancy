@@ -7,6 +7,18 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 ---
 
+## [0.8.9] — 2026-03-22
+
+### ✨ Features
+
+- **Board write operation integration tests (QA-002b-1)** — MSW-backed tests for all 4 Board type write methods (ensureLabel, addLabel, removeLabel, transitionTicket) across all 6 boards (GitHub Issues, Jira, Linear, Shortcut, Notion, Azure DevOps). Request spy capture pattern validates correct API calls per board's distinct protocol (REST, GraphQL, JSON Patch). Includes edge cases: cache persistence (Linear), invalid key guards (Jira, GitHub), workflow state not found (Shortcut), 422 dedup handling (GitHub).
+
+### ✅ Tests
+
+- 1217 unit tests (unchanged) + 112 integration tests (41 new board write operation tests)
+
+---
+
 ## [0.8.8] — 2026-03-21
 
 ### ✨ Features
