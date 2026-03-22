@@ -7,6 +7,14 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 ---
 
+## [0.8.21] — 2026-03-22
+
+### ✅ Tests
+
+- **Fixture feedback loop (QA-003d)** — two validation scripts that detect drift between MSW fixtures, Zod schemas, and real API responses. **Offline fixture validation** (`npm run test:fixtures:validate`) reads each happy-path fixture in `test/integration/mocks/fixtures/` and validates it against the corresponding Zod schema — no credentials needed, safe for CI. Covers all 6 boards including Azure DevOps composite (WIQL + batch). **Live schema validation** (`npm run test:fixtures:live`) hits each board's auth/health endpoint with real credentials and validates the response shape — catches API drift faster than full E2E (no ticket creation, no Git ops). Skips boards without credentials. Added `test/e2e/captured-responses/` directory (gitignored) for optional raw response capture. 2 new npm scripts.
+
+---
+
 ## [0.8.20] — 2026-03-22
 
 ### ✅ Tests
