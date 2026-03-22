@@ -29,7 +29,7 @@ Autonomous, board-driven development for Claude Code. npm package: `chief-clancy
 | `src/agents/verification-gate.md` | Verification gate agent — interprets lint/test/type errors, applies targeted fixes |
 | `hooks/` | 8 Node.js hooks + 1 agent hook (credential guard, branch guard, context monitor, statusline, update check, post-compact, notification, drift detector, verification gate) |
 | `registry/boards.json` | Board registry for community board integrations |
-| `test/integration/` | Integration tests — MSW-backed flow tests (helpers, mocks/handlers, mocks/fixtures, flows) |
+| `test/integration/` | Integration tests — MSW-backed flow tests (helpers, mocks/handlers, mocks/fixtures, flows, flows/board/) |
 
 ## Key documentation
 

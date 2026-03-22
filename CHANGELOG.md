@@ -7,6 +7,14 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 ---
 
+## [0.8.10] — 2026-03-22
+
+### ♻️ Refactors
+
+- **Split integration tests into per-board files** — `implementer.test.ts` (796 lines) and `board-api.test.ts` (1135 lines) replaced by 6 per-board files under `flows/board/` with shared helpers. Each board file contains both implementer lifecycle and write operation tests. 112 integration tests unchanged.
+
+---
+
 ## [0.8.9] — 2026-03-22
 
 ### ✨ Features
