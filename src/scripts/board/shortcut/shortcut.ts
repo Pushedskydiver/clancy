@@ -237,8 +237,8 @@ export async function fetchStories(
 
   const body: Record<string, unknown> = {};
 
-  // Filter by workflow state. Try both field names for API compat —
-  // Shortcut removed workflow_state_ids in favor of workflow_state_id (singular).
+  // Filter by workflow state. Shortcut removed workflow_state_ids (plural) and
+  // now expects workflow_state_id (singular); we always send the singular field.
   if (workflowStateIds.length === 1) {
     body.workflow_state_id = workflowStateIds[0];
   } else if (workflowStateIds.length > 1) {

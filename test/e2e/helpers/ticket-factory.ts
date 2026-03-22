@@ -287,7 +287,7 @@ export async function resolveLinearTeamUuid(
   teamIdOrKey: string,
 ): Promise<string> {
   // If it looks like a UUID, use it directly
-  if (/^[0-9a-f]{8}-/.test(teamIdOrKey)) return teamIdOrKey;
+  if (/^[0-9a-f]{8}-/i.test(teamIdOrKey)) return teamIdOrKey;
 
   // Otherwise look up by key
   const data = await linearGraphql<{
@@ -488,7 +488,7 @@ async function resolveShortcutMemberId(token: string): Promise<string> {
     // Fall through to /members if no ID found
   }
 
-  // Fallback: list all members and find the one whose token matches
+  // Fallback: list all members and pick the first owner
   // (API tokens can't use /member-info — use /members list instead)
   const membersResp = await fetchWithTimeout(`${SHORTCUT_API}/members`, {
     headers: shortcutHeaders(token),
@@ -503,7 +503,7 @@ async function resolveShortcutMemberId(token: string): Promise<string> {
     role: string;
   }>;
 
-  // Return the first owner/admin member as best guess for the token owner
+  // Return the first owner member as best guess for the token owner
   const owner = members.find((m) => m.role === 'owner') ?? members[0];
   if (!owner) throw new Error('No members found in Shortcut workspace');
   return owner.id;
@@ -681,8 +681,8 @@ async function createNotionTicket(
 // ---------------------------------------------------------------------------
 
 /** Resolve the authenticated Azure DevOps user's identity.
- * Tries connectionData first, falls back to creating without assignment
- * (AzDo WIQL @Me resolves server-side from the PAT). */
+ * Tries the VSSPS profile API first, then falls back to the connectionData API.
+ * Throws if no identity can be resolved from either endpoint. */
 async function resolveAzdoIdentity(
   org: string,
   auth: string,
