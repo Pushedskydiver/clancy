@@ -446,13 +446,14 @@ describe('Board write operations — linear', () => {
   });
 
   describe('addLabel', () => {
-    it('resolves issue UUID then sends issueUpdate with appended label ID', async () => {
+    it('skips issueUpdate when label already on issue', async () => {
       await board.addLabel('TEAM-1', TEST_LABEL);
 
       const updates = spy.captured.filter(
         (r) => (r.body as { query: string }).query?.includes('issueUpdate'),
       );
 
+      // Label is already present on the issue — no update needed
       expect(updates).toHaveLength(0);
     });
 

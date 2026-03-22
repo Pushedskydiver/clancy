@@ -17,13 +17,11 @@ import { createGitHubBoard } from '~/scripts/board/github/github-board.js';
 
 import {
   type BoardTestConfig,
-  type CapturedRequest,
   type TempRepoResult,
   createIntegrationServer,
   createRequestSpy,
   githubConfig,
   githubEnv,
-  githubPrHandlers,
   resetMocks,
   setupTestRepo,
   simulateClaudeSuccess,
