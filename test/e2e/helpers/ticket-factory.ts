@@ -206,7 +206,7 @@ async function createJiraTicket(
             ],
           },
           issuetype: { name: 'Task' },
-          labels: ['clancy:build'],
+          labels: ['clancy-build'],
           assignee: { accountId },
         },
       }),
