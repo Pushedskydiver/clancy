@@ -151,6 +151,7 @@ describe.skipIf(!canRun)('E2E: Azure DevOps — full pipeline', () => {
 
       CLANCY_BASE_BRANCH: 'main',
       CLANCY_LABEL_BUILD: 'clancy:build',
+      CLANCY_AZDO_STATUS: 'To Do',
     });
 
     writeFileSync(
