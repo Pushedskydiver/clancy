@@ -743,12 +743,14 @@ describe('context monitor — time guard', () => {
     if (existsSync(ctxProjectDir)) rmSync(ctxProjectDir, { recursive: true });
   });
 
+  const TIME_ENV = { CLANCY_TIME_LIMIT: '30' };
+
   it('emits TIME WARNING at 80% of CLANCY_TIME_LIMIT', () => {
     writeBridge(50, 50); // no context warning
     // 25 min ago with 30 min limit = 83%
     writeLock(new Date(Date.now() - 25 * 60000).toISOString());
 
-    const ctx = getContextOutput();
+    const ctx = getContextOutput(TIME_ENV);
     expect(ctx).toContain('TIME WARNING');
     expect(ctx).toContain('25min of 30min');
     expect(ctx).not.toContain('CONTEXT');
@@ -759,7 +761,7 @@ describe('context monitor — time guard', () => {
     // 32 min ago with 30 min limit = 106%
     writeLock(new Date(Date.now() - 32 * 60000).toISOString());
 
-    const ctx = getContextOutput();
+    const ctx = getContextOutput(TIME_ENV);
     expect(ctx).toContain('TIME CRITICAL');
     expect(ctx).toContain('32min of 30min');
   });
@@ -769,7 +771,7 @@ describe('context monitor — time guard', () => {
     // 10 min ago with 30 min limit = 33%
     writeLock(new Date(Date.now() - 10 * 60000).toISOString());
 
-    expect(getContextOutput()).toBe('');
+    expect(getContextOutput(TIME_ENV)).toBe('');
   });
 
   it('time severity escalation bypasses debounce', () => {
@@ -777,12 +779,12 @@ describe('context monitor — time guard', () => {
 
     // First call at ~83% — warning fires
     writeLock(new Date(Date.now() - 25 * 60000).toISOString());
-    const ctx1 = getContextOutput();
+    const ctx1 = getContextOutput(TIME_ENV);
     expect(ctx1).toContain('TIME WARNING');
 
     // Escalate to 100%+ — should fire despite debounce
     writeLock(new Date(Date.now() - 35 * 60000).toISOString());
-    const ctx2 = getContextOutput();
+    const ctx2 = getContextOutput(TIME_ENV);
     expect(ctx2).toContain('TIME CRITICAL');
   });
 });
