@@ -624,19 +624,12 @@ function writeLock(startedAt: string): void {
 
 function runContextMonitor(env: Record<string, string> = {}): string {
   const payload = JSON.stringify({ session_id: CTX_SESSION, cwd: ctxProjectDir });
-  try {
-    return execFileSync('node', [CONTEXT_MONITOR], {
-      input: payload,
-      encoding: 'utf8',
-      env: { ...process.env, ...env },
-      timeout: 5000,
-    });
-  } catch (err: unknown) {
-    // process.exit(0) with no stdout throws in execFileSync — that's "silent exit"
-    const e = err as { status?: number; stdout?: string };
-    if (e.status === 0 && typeof e.stdout === 'string') return e.stdout;
-    throw err;
-  }
+  return execFileSync('node', [CONTEXT_MONITOR], {
+    input: payload,
+    encoding: 'utf8',
+    env: { ...process.env, ...env },
+    timeout: 5000,
+  });
 }
 
 function getContextOutput(env: Record<string, string> = {}): string {
@@ -802,18 +795,11 @@ const POST_COMPACT = resolve(
 );
 
 function runPostCompact(payload: Record<string, unknown>): string {
-  try {
-    return execFileSync('node', [POST_COMPACT], {
-      input: JSON.stringify(payload),
-      encoding: 'utf8',
-      timeout: 5000,
-    });
-  } catch (err: unknown) {
-    // process.exit(0) with no stdout throws in execFileSync — that's "silent exit"
-    const e = err as { status?: number; stdout?: string };
-    if (e.status === 0 && typeof e.stdout === 'string') return e.stdout;
-    throw err;
-  }
+  return execFileSync('node', [POST_COMPACT], {
+    input: JSON.stringify(payload),
+    encoding: 'utf8',
+    timeout: 5000,
+  });
 }
 
 describe('post-compact re-injection', () => {
