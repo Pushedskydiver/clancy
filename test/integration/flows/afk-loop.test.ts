@@ -114,9 +114,16 @@ function createInProcessRunner(
     const originalWarn = console.warn;
     let captured = '';
 
-    // Capture all stdout/console output
-    process.stdout.write = ((chunk: string | Uint8Array) => {
+    // Capture all stdout/console output. Preserve the full write() signature
+    // (chunk, encoding?, cb?) so callbacks aren't dropped.
+    process.stdout.write = ((
+      chunk: string | Uint8Array,
+      encodingOrCb?: BufferEncoding | ((err?: Error) => void),
+      cb?: (err?: Error) => void,
+    ) => {
       captured += typeof chunk === 'string' ? chunk : chunk.toString();
+      const callback = typeof encodingOrCb === 'function' ? encodingOrCb : cb;
+      if (callback) callback();
       return true;
     }) as typeof process.stdout.write;
     console.log = (...args: unknown[]) => {
@@ -153,8 +160,10 @@ function createInProcessRunner(
           cwd: repoPath,
           stdio: 'pipe',
         });
-      } catch {
-        // No stash to pop on first iteration
+      } catch (err) {
+        // Only ignore "no stash" — rethrow merge conflicts or other errors
+        const msg = err instanceof Error ? err.message : String(err);
+        if (!msg.includes('No stash entries')) throw err;
       }
 
       process.chdir(repoPath);
