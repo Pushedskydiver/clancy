@@ -121,7 +121,12 @@ function createInProcessRunner(
       encodingOrCb?: BufferEncoding | ((err?: Error) => void),
       cb?: (err?: Error) => void,
     ) => {
-      captured += typeof chunk === 'string' ? chunk : chunk.toString();
+      const encoding =
+        typeof encodingOrCb === 'string' ? encodingOrCb : undefined;
+      captured +=
+        typeof chunk === 'string'
+          ? chunk
+          : Buffer.from(chunk).toString(encoding);
       const callback = typeof encodingOrCb === 'function' ? encodingOrCb : cb;
       if (callback) callback();
       return true;

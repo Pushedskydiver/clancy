@@ -11,7 +11,7 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 ### ✨ Features
 
-- **AFK loop integration tests (QA-002a-5)** — in-process runner injection tests for `runAfkLoop`: processes N tickets then exits at MAX_ITERATIONS, exits cleanly on empty queue (stop condition), stops on preflight failure. Added GitHub PR list handler for PR retry phase.
+- **AFK loop integration tests (QA-002a-5)** — in-process runner injection tests for `runAfkLoop`: processes N tickets then exits at MAX_ITERATIONS, exits cleanly on empty queue (stop condition), stops on preflight failure. Added GitHub PR list handler for PR review state checking (rework detection).
 
 ### ✅ Tests
 
