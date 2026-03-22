@@ -954,8 +954,8 @@ describe('run', () => {
     await run([]);
     log.mockRestore();
 
-    // Epic completion (4: PR_CREATED, REWORK, PUSHED, EPIC_PR_CREATED) + prRetry (2: PUSHED, PR_CREATED) + rework detection (4)
-    expect(mockFindEntriesWithStatus).toHaveBeenCalledTimes(10);
+    // Epic context (4: DELIVERED_STATUSES — PR_CREATED, PUSHED, REWORK, RESUMED) + epic completion (4: PR_CREATED, DONE, REWORK, PUSHED) + prRetry (2: PUSHED, PR_CREATED) + rework detection (4)
+    expect(mockFindEntriesWithStatus).toHaveBeenCalledTimes(14);
     expect(mockFindEntriesWithStatus).toHaveBeenCalledWith(
       expect.any(String),
       'PR_CREATED',

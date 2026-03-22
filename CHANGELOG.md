@@ -7,6 +7,20 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 ---
 
+## [0.8.21] — 2026-03-22
+
+### 🐛 Fixes
+
+- **Child PR bodies now include epic context** — when a child ticket targets an epic/milestone branch, the PR body shows the parent epic key, how many siblings have already been delivered, and a note that this targets an intermediate branch. Gives reviewers and downstream tooling (e.g., Ralph-o-bot) full context on where the PR sits in the epic flow. Fixes #75 (issue 1).
+- **GitHub epic PR: add build label to parent issue** — after creating the final epic PR (`milestone/N` → `main`), Clancy now adds the `clancy:build` label (or `CLANCY_LABEL` fallback) to the parent GitHub issue. This enables downstream tooling that drives merge queues by label (e.g., Ralph-o-bot) to discover and merge the epic PR. Non-GitHub boards continue to use `transitionTicket` as before. Fixes #75 (issue 2).
+
+### ✅ Tests
+
+- **Fixture feedback loop (QA-003d)** — two validation scripts that detect drift between MSW fixtures, Zod schemas, and real API responses. **Offline fixture validation** (`npm run test:fixtures:validate`) reads each happy-path fixture in `test/integration/mocks/fixtures/` and validates it against the corresponding Zod schema — no credentials needed, safe for CI. Covers all 6 boards including Azure DevOps composite (WIQL + batch). **Live schema validation** (`npm run test:fixtures:live`) hits each board's auth/health endpoint with real credentials and validates the response shape — catches API drift faster than full E2E (no ticket creation, no Git ops). Skips boards without credentials. Added `test/e2e/captured-responses/` directory (gitignored) for optional raw response capture. 2 new npm scripts.
+- 11 new unit tests: 7 for epic context in PR body (banner content, singular/plural, first-child, non-epic target, Jira boards) + 4 for GitHub label in `deliverEpicToBase` (label addition, fallback, non-GitHub transition, error resilience). 1246 unit + 238 integration + 6 E2E = 1490 total.
+
+---
+
 ## [0.8.20] — 2026-03-22
 
 ### ✅ Tests

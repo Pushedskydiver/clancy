@@ -1,6 +1,6 @@
 {
   "name": "chief-clancy",
-  "version": "0.8.20",
+  "version": "0.8.21",
   "description": "Autonomous, board-driven development for Claude Code — scaffolds docs, integrates Kanban boards, runs tickets in a loop.",
   "keywords": [
     "claude",
@@ -50,6 +50,8 @@
     "test:all": "npm test && npm run test:integration",
     "test:e2e": "vitest run --config test/e2e/vitest.config.e2e.ts",
     "test:e2e:gc": "npx tsx test/e2e/helpers/gc.ts",
+    "test:fixtures:validate": "npx tsx test/integration/validate-fixtures.ts",
+    "test:fixtures:live": "npx tsx test/e2e/validate-live-schemas.ts",
     "test:coverage": "vitest run --coverage",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
