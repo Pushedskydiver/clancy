@@ -288,7 +288,7 @@ export async function fetchStories(
     const wrapped = shortcutStorySearchResponseSchema.safeParse({ data: json });
     if (!wrapped.success) {
       console.warn(
-        `⚠ Unexpected Shortcut response shape: ${parsed.error.message}`,
+        `⚠ Unexpected Shortcut response shape: ${wrapped.error.message}`,
       );
       return [];
     }

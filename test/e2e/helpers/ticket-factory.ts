@@ -483,7 +483,9 @@ async function resolveShortcutMemberId(token: string): Promise<string> {
       member?: { id: string };
     };
     // Response may nest under .member or be flat
-    return data.member?.id ?? data.id ?? '';
+    const memberId = data.member?.id ?? data.id;
+    if (memberId) return memberId;
+    // Fall through to /members if no ID found
   }
 
   // Fallback: list all members and find the one whose token matches
@@ -571,7 +573,7 @@ function notionHeaders(token: string): Record<string, string> {
 export async function discoverNotionSchema(
   token: string,
   databaseId: string,
-): Promise<{ statusOptionName: string; statusPropName: string; labelsPropName?: string }> {
+): Promise<{ titlePropName: string; statusOptionName: string; statusPropName: string; labelsPropName?: string }> {
   const dbResp = await fetchWithTimeout(
     `${NOTION_API}/databases/${databaseId}`,
     { headers: notionHeaders(token) },
@@ -602,6 +604,9 @@ export async function discoverNotionSchema(
     statusProp?.status?.options?.[0]?.name ??
     'To-do';
 
+  const titlePropName =
+    Object.entries(dbData.properties).find(([, v]) => v.type === 'title')?.[0] ?? 'Name';
+
   const multiSelectProps = Object.entries(dbData.properties).filter(
     ([, v]) => v.type === 'multi_select',
   );
@@ -609,7 +614,7 @@ export async function discoverNotionSchema(
     multiSelectProps.find(([k]) => /tags|labels/i.test(k))?.[0] ??
     multiSelectProps[0]?.[0];
 
-  return { statusOptionName, statusPropName, labelsPropName };
+  return { titlePropName, statusOptionName, statusPropName, labelsPropName };
 }
 
 async function createNotionTicket(
@@ -621,30 +626,9 @@ async function createNotionTicket(
 
   const title = `[QA] E2E test — notion — ${runId}${options.titleSuffix ? ` — ${options.titleSuffix}` : ''}`;
 
-  // Discover database schema
-  const dbResp = await fetchWithTimeout(
-    `${NOTION_API}/databases/${creds.databaseId}`,
-    { headers: notionHeaders(creds.token) },
-  );
-  if (!dbResp.ok) {
-    throw new Error(`Failed to fetch Notion database: ${dbResp.status}`);
-  }
-  const dbData = (await dbResp.json()) as {
-    properties: Record<string, { type: string }>;
-  };
-
-  const titlePropName =
-    Object.entries(dbData.properties).find(([, v]) => v.type === 'title')?.[0] ?? 'Name';
-  const { statusOptionName, statusPropName } = await discoverNotionSchema(
-    creds.token,
-    creds.databaseId,
-  );
-  const multiSelectProps = Object.entries(dbData.properties).filter(
-    ([, v]) => v.type === 'multi_select',
-  );
-  const tagsPropName =
-    multiSelectProps.find(([k]) => /tags|labels/i.test(k))?.[0] ??
-    multiSelectProps[0]?.[0];
+  // Discover database schema (single fetch for all property lookups)
+  const schema = await discoverNotionSchema(creds.token, creds.databaseId);
+  const { titlePropName, statusOptionName, statusPropName, labelsPropName: tagsPropName } = schema;
 
   // Build properties object dynamically
   const pageProperties: Record<string, unknown> = {

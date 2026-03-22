@@ -215,18 +215,16 @@ export function createNotionBoard(env: NotionEnv): Board {
 // ─── Internal helpers ───────────────────────────────────────────────────────
 
 /** Build a status filter for "To-do" or custom status.
- * Uses `status` type filter (Notion's native status property).
- * For databases using `select` type, set CLANCY_NOTION_STATUS_TYPE=select. */
+ * Uses `status` type filter (Notion's native status property). */
 function buildStatusFilter(
   statusProp: string,
   customStatus?: string,
-  statusType: 'status' | 'select' = 'status',
 ): Record<string, unknown> {
   const statusName = customStatus ?? 'To-do';
 
   return {
     property: statusProp,
-    [statusType]: { equals: statusName },
+    status: { equals: statusName },
   };
 }
 
