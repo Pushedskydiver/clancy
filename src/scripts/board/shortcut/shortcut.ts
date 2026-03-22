@@ -63,9 +63,15 @@ export async function pingShortcut(
   let response: Response;
 
   try {
+    // /member-info may 404 for some API token types — fall back to /members
     response = await fetch(`${SHORTCUT_API}/member-info`, {
       headers: shortcutHeaders(token),
     });
+    if (response.status === 404) {
+      response = await fetch(`${SHORTCUT_API}/members`, {
+        headers: shortcutHeaders(token),
+      });
+    }
   } catch {
     return {
       ok: false,
