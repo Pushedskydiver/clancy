@@ -28,11 +28,11 @@ concurrency:
   group: e2e-tests
   cancel-in-progress: false
 
-# Note: All board credentials are exposed to every matrix job because every
-# board's E2E test pushes to the GitHub sandbox repo (needs GITHUB_TOKEN +
-# GITHUB_REPO for git auth). Board detection interference is avoided because
-# each test creates its own .clancy/.env scaffold with only the target board's
-# credentials — process.env vars are not read by detectBoard at runtime.
+# Note: Each E2E board step only receives the target board's credentials plus
+# the GitHub sandbox creds (needed for git push auth by all boards). The GC job
+# needs all credentials because it cleans up orphans across all boards.
+# detectBoard reads .clancy/.env (not process.env), so env var presence doesn't
+# cause board detection interference.
 
 jobs:
   # ── Garbage collection ────────────────────────────────────────────────────
@@ -72,6 +72,7 @@ jobs:
 
   # ── E2E test matrix ───────────────────────────────────────────────────────
   # Each board runs independently. One failure doesn't skip others.
+  # Each step scopes credentials to only the target board + GitHub sandbox.
 
   e2e:
     name: E2E — ${{ matrix.board }}
@@ -99,38 +100,68 @@ jobs:
       - name: Install dependencies
         run: rm -rf node_modules package-lock.json && npm install
 
-      - name: Run E2E — ${{ matrix.board }}
+      - name: Run E2E — GitHub Issues
+        if: matrix.board == 'github'
         env:
-          # GitHub — uses QA_ prefix to avoid collision with built-in GITHUB_TOKEN
           GITHUB_TOKEN: ${{ secrets.QA_GITHUB_TOKEN }}
           GITHUB_REPO: ${{ secrets.QA_GITHUB_REPO }}
-          # Jira
+        run: npm run test:e2e -- github
+
+      - name: Run E2E — Jira
+        if: matrix.board == 'jira'
+        env:
+          GITHUB_TOKEN: ${{ secrets.QA_GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ secrets.QA_GITHUB_REPO }}
           JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
           JIRA_USER: ${{ secrets.JIRA_USER }}
           JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
           JIRA_PROJECT_KEY: ${{ secrets.JIRA_PROJECT_KEY }}
-          # Linear
+        run: npm run test:e2e -- jira
+
+      - name: Run E2E — Linear
+        if: matrix.board == 'linear'
+        env:
+          GITHUB_TOKEN: ${{ secrets.QA_GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ secrets.QA_GITHUB_REPO }}
           LINEAR_API_KEY: ${{ secrets.LINEAR_API_KEY }}
           LINEAR_TEAM_ID: ${{ secrets.LINEAR_TEAM_ID }}
-          # Shortcut
+        run: npm run test:e2e -- linear
+
+      - name: Run E2E — Shortcut
+        if: matrix.board == 'shortcut'
+        env:
+          GITHUB_TOKEN: ${{ secrets.QA_GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ secrets.QA_GITHUB_REPO }}
           SHORTCUT_TOKEN: ${{ secrets.SHORTCUT_TOKEN }}
-          # Notion
+        run: npm run test:e2e -- shortcut
+
+      - name: Run E2E — Notion
+        if: matrix.board == 'notion'
+        env:
+          GITHUB_TOKEN: ${{ secrets.QA_GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ secrets.QA_GITHUB_REPO }}
           NOTION_TOKEN: ${{ secrets.NOTION_TOKEN }}
           NOTION_DATABASE_ID: ${{ secrets.NOTION_DATABASE_ID }}
-          # Azure DevOps
+        run: npm run test:e2e -- notion
+
+      - name: Run E2E — Azure DevOps
+        if: matrix.board == 'azure-devops'
+        env:
+          GITHUB_TOKEN: ${{ secrets.QA_GITHUB_TOKEN }}
+          GITHUB_REPO: ${{ secrets.QA_GITHUB_REPO }}
           AZURE_ORG: ${{ secrets.AZURE_ORG }}
           AZURE_PROJECT: ${{ secrets.AZURE_PROJECT }}
           AZURE_PAT: ${{ secrets.AZURE_PAT }}
-        run: npm run test:e2e -- ${{ matrix.board }}
+        run: npm run test:e2e -- azure-devops
 
   # ── Live schema check ─────────────────────────────────────────────────────
   # Lighter than full E2E — hits auth endpoints, validates against Zod schemas.
   # Catches API drift faster (no ticket creation, no Git ops).
-  # Runs after GC to avoid competing for API rate limits.
+  # Runs after E2E to avoid competing for API rate limits.
 
   schema-check:
     name: Live schema validation
-    needs: gc
+    needs: e2e
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
