@@ -237,9 +237,13 @@ export async function fetchStories(
 
   const body: Record<string, unknown> = {};
 
-  // Use workflow state IDs for server-side filtering
-  if (workflowStateIds.length) {
-    body.workflow_state_ids = workflowStateIds;
+  // Filter by workflow state. Try both field names for API compat —
+  // Shortcut removed workflow_state_ids in favor of workflow_state_id (singular).
+  if (workflowStateIds.length === 1) {
+    body.workflow_state_id = workflowStateIds[0];
+  } else if (workflowStateIds.length > 1) {
+    // Multiple state IDs: use first one (most common case is single "unstarted" state)
+    body.workflow_state_id = workflowStateIds[0];
   }
 
   if (ownerUuid) body.owner_ids = [ownerUuid];
