@@ -125,33 +125,6 @@ describe.skipIf(!canRun)('E2E: Linear — full pipeline', () => {
     // Linear keys are like "CLA-5" → branch is "feature/cla-5"
     ticketBranch = `feature/${ticket.key.toLowerCase()}`;
 
-    // Debug: verify the issue is visible via viewer.assignedIssues
-    const debugResp = await fetchWithTimeout('https://api.linear.app/graphql', {
-      method: 'POST',
-      headers: {
-        Authorization: linearCreds.apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        query: `{
-          issue(id: "${ticket.id}") {
-            id identifier title
-            state { name type }
-            assignee { id name }
-            team { id key }
-          }
-          viewer {
-            id name
-            assignedIssues(filter: { state: { type: { eq: "unstarted" } }, team: { id: { eq: "${teamUuid}" } } }, first: 10) {
-              nodes { id identifier title state { type } assignee { id } }
-            }
-          }
-        }`,
-      }),
-    });
-    const debugJson = await debugResp.json();
-    console.log('DEBUG Linear issue:', JSON.stringify(debugJson, null, 2));
-
     // 3. Set up temp repo with real remote pointing to sandbox
     repo = createTempRepo();
     const remoteUrl = `https://github.com/${githubCreds.repo}.git`;
