@@ -280,9 +280,9 @@ async function linearGraphql<T>(
   return json.data;
 }
 
-/** Resolve the Linear team UUID from a key or UUID.
+/** Resolve the Linear team UUID from a key or UUID. Exported for E2E scaffold setup.
  * LINEAR_TEAM_ID may be a key (e.g. "clancy-qa") or UUID — resolve to UUID. */
-async function resolveLinearTeamUuid(
+export async function resolveLinearTeamUuid(
   apiKey: string,
   teamIdOrKey: string,
 ): Promise<string> {
