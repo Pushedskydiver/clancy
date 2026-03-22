@@ -632,23 +632,20 @@ function runContextMonitor(env: Record<string, string> = {}): string {
       timeout: 5000,
     });
   } catch (err: unknown) {
+    // process.exit(0) with no stdout throws in execFileSync — that's "silent exit"
     const e = err as { status?: number; stdout?: string };
-    if (e.status === 0) return e.stdout || '';
-    return '';
+    if (e.status === 0 && typeof e.stdout === 'string') return e.stdout;
+    throw err;
   }
 }
 
 function getContextOutput(env: Record<string, string> = {}): string {
   const raw = runContextMonitor(env).trim();
   if (!raw) return '';
-  try {
-    const result = JSON.parse(raw) as {
-      hookSpecificOutput?: { additionalContext?: string };
-    };
-    return result?.hookSpecificOutput?.additionalContext ?? '';
-  } catch {
-    return '';
-  }
+  const result = JSON.parse(raw) as {
+    hookSpecificOutput?: { additionalContext?: string };
+  };
+  return result?.hookSpecificOutput?.additionalContext ?? '';
 }
 
 describe('context monitor — threshold + debounce logic', () => {
@@ -812,9 +809,10 @@ function runPostCompact(payload: Record<string, unknown>): string {
       timeout: 5000,
     });
   } catch (err: unknown) {
+    // process.exit(0) with no stdout throws in execFileSync — that's "silent exit"
     const e = err as { status?: number; stdout?: string };
-    if (e.status === 0) return e.stdout || '';
-    return '';
+    if (e.status === 0 && typeof e.stdout === 'string') return e.stdout;
+    throw err;
   }
 }
 
