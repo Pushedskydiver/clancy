@@ -11,7 +11,12 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 ### ✅ Tests
 
-- **E2E tests for Notion and Azure DevOps (QA-003c)** — ticket factory, cleanup, and orphan GC implementations for the final 2 boards, completing Layer 2 E2E coverage across all 6 supported boards. Notion: `POST /v1/pages` creation, archive cleanup, paginated database query GC. Azure DevOps: `POST /_apis/wit/workitems/$Task` with JSON Patch, hard-delete cleanup (fallback to close), WIQL-based orphan GC. Shared `azdo-auth.ts` helper for consistent auth across E2E files. 2 new E2E tests (6 total). 1235 unit + 238 integration + 6 E2E = 1479 total tests.
+- **E2E tests for Notion and Azure DevOps (QA-003c)** — ticket factory, cleanup, and orphan GC implementations for the final 2 boards, completing Layer 2 E2E coverage across all 6 supported boards. Notion: `POST /v1/pages` creation, archive cleanup, paginated database query GC. Azure DevOps: `POST /_apis/wit/workitems/$Task` with JSON Patch, hard-delete cleanup (fallback to close), WIQL-based orphan GC. Shared `azdo-auth.ts` helper for consistent auth across E2E files. E2E scaffold fix: non-GitHub boards must not include `GITHUB_REPO` (causes `detectBoard` to detect GitHub Issues instead). 2 new E2E tests (6 total). 1235 unit + 238 integration + 6 E2E = 1479 total tests.
+
+### 🐛 Fixes
+
+- **Linear API compatibility** — Linear's GraphQL schema now requires `ID!` (not `String!`) for the `$teamId` variable in `viewer.assignedIssues` filter, and removed `priority` from the `PaginationOrderBy` enum. Both changes caused the production `fetchTickets` query to silently return HTTP 400 (swallowed by `linearGraphql`), resulting in "No tickets found". Fixed `$teamId` type and changed `orderBy: priority` to `orderBy: createdAt`.
+- **Jira E2E label** — `clancy:build` contains a colon which fails Jira's `isSafeJqlValue` validation. Jira E2E now uses `clancy-build`.
 
 ---
 
