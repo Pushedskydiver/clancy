@@ -25,6 +25,7 @@ import {
 import type { EpicContext } from '~/scripts/shared/pull-request/pr-body/pr-body.js';
 import { detectRemote } from '~/scripts/shared/remote/remote.js';
 import type { FetchedTicket } from '~/types/board.js';
+import { DELIVERED_STATUSES } from '~/types/remote.js';
 import { dim, green, red, yellow } from '~/utils/ansi/ansi.js';
 
 import { resolveBuildLabel } from '../fetch-ticket/fetch-ticket.js';
@@ -184,12 +185,9 @@ export async function deliverViaPullRequest(
   // Build epic context for child PRs targeting epic/milestone branches
   let epicContext: EpicContext | undefined;
   if (parent && isEpicBranch(targetBranch)) {
-    const siblingEntries = [
-      ...findEntriesWithStatus(process.cwd(), 'PR_CREATED'),
-      ...findEntriesWithStatus(process.cwd(), 'DONE'),
-      ...findEntriesWithStatus(process.cwd(), 'REWORK'),
-      ...findEntriesWithStatus(process.cwd(), 'PUSHED'),
-    ].filter((e) => e.parent === parent && e.key !== ticket.key);
+    const siblingEntries = [...DELIVERED_STATUSES]
+      .flatMap((s) => findEntriesWithStatus(process.cwd(), s))
+      .filter((e) => e.parent === parent && e.key !== ticket.key);
     epicContext = {
       parentKey: parent,
       siblingsDelivered: siblingEntries.length,

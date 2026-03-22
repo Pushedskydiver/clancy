@@ -96,8 +96,10 @@ const {
   pushBranch,
   remoteBranchExists,
 } = await import('~/scripts/shared/git-ops/git-ops.js');
-const { appendProgress } =
+const { appendProgress, findEntriesWithStatus } =
   await import('~/scripts/shared/progress/progress.js');
+const { buildPrBody } =
+  await import('~/scripts/shared/pull-request/pr-body/pr-body.js');
 
 // ─── Fixtures ────────────────────────────────────────────────────────────────
 
@@ -261,6 +263,85 @@ describe('deliverViaPullRequest', () => {
     log.mockRestore();
 
     expect(checkout).toHaveBeenCalledWith('main');
+  });
+
+  it('passes epicContext to buildPrBody when targeting epic branch with parent', async () => {
+    vi.mocked(pushBranch).mockReturnValue(true);
+    // Simulate 2 siblings already delivered
+    vi.mocked(findEntriesWithStatus).mockImplementation((_cwd, status) => {
+      if (status === 'PR_CREATED') {
+        return [
+          {
+            timestamp: '2026-01-01 00:00',
+            key: 'PROJ-2',
+            summary: 'Sibling A',
+            status: 'PR_CREATED',
+            parent: 'PROJ-100',
+          },
+        ];
+      }
+      if (status === 'PUSHED') {
+        return [
+          {
+            timestamp: '2026-01-01 01:00',
+            key: 'PROJ-3',
+            summary: 'Sibling B',
+            status: 'PUSHED',
+            parent: 'PROJ-100',
+          },
+        ];
+      }
+      return [];
+    });
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await deliverViaPullRequest(
+      jiraConfig,
+      ticket,
+      'feature/proj-1',
+      'epic/proj-100',
+      Date.now(),
+      false,
+      'PROJ-100',
+    );
+    log.mockRestore();
+
+    expect(buildPrBody).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      'epic/proj-100',
+      undefined,
+      undefined,
+      expect.objectContaining({
+        parentKey: 'PROJ-100',
+        siblingsDelivered: 2,
+        epicBranch: 'epic/proj-100',
+      }),
+    );
+  });
+
+  it('does not pass epicContext when targeting non-epic branch', async () => {
+    vi.mocked(pushBranch).mockReturnValue(true);
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await deliverViaPullRequest(
+      jiraConfig,
+      ticket,
+      'feature/proj-1',
+      'main',
+      Date.now(),
+      false,
+      'PROJ-100',
+    );
+    log.mockRestore();
+
+    expect(buildPrBody).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.anything(),
+      'main',
+      undefined,
+      undefined,
+      undefined,
+    );
   });
 });
 

@@ -99,7 +99,14 @@ async function validateBasicShape(
         error: `HTTP ${res.status} ${res.statusText}`,
       };
     }
-    const body = (await res.json()) as Record<string, unknown>;
+    const body: unknown = await res.json();
+    if (body == null || typeof body !== 'object' || Array.isArray(body)) {
+      return {
+        success: false,
+        endpoint,
+        error: `Expected JSON object, got ${Array.isArray(body) ? 'array' : typeof body}`,
+      };
+    }
     if (!(requiredField in body)) {
       return {
         success: false,
