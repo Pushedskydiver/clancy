@@ -189,9 +189,8 @@ async function cleanupJiraOrphans(): Promise<number> {
 
   let cleaned = 0;
 
-  // Search for [QA] issues created > 24h ago
-  const cutoff = new Date(Date.now() - ONE_DAY_MS).toISOString().split('T')[0]!;
-  const jql = `project = ${creds.projectKey} AND summary ~ "[QA]" AND created < "${cutoff}" AND status != Done`;
+  // Search for [QA] issues created > 24h ago (relative JQL avoids timezone truncation)
+  const jql = `project = ${creds.projectKey} AND summary ~ "[QA]" AND created <= -1d AND status != Done`;
 
   const searchResp = await fetch(
     `${creds.baseUrl}/rest/api/3/search/jql`,
@@ -316,8 +315,27 @@ async function cleanupLinearOrphans(): Promise<number> {
       }),
     });
 
-    if (delResp.ok) cleaned++;
-    else console.log(`    ⚠ Failed to delete Linear issue: ${delResp.status}`);
+    if (!delResp.ok) {
+      console.log(`    ⚠ Failed to delete Linear issue: HTTP ${delResp.status}`);
+      continue;
+    }
+
+    const delJson = (await delResp.json()) as {
+      data?: { issueDelete?: { success?: boolean } };
+      errors?: Array<{ message: string }>;
+    };
+
+    if (delJson.errors?.length) {
+      console.log(`    ⚠ Linear delete GraphQL error: ${delJson.errors[0]!.message}`);
+      continue;
+    }
+
+    if (!delJson.data?.issueDelete?.success) {
+      console.log('    ⚠ Linear delete unsuccessful (success=false in payload)');
+      continue;
+    }
+
+    cleaned++;
   }
 
   return cleaned;

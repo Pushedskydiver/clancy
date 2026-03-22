@@ -269,7 +269,13 @@ async function linearGraphql<T>(
     throw new Error(`Linear GraphQL error: ${json.errors[0]!.message}`);
   }
 
-  return json.data as T;
+  if (json.data == null) {
+    throw new Error(
+      `Linear GraphQL error: missing data in response: ${JSON.stringify(json)}`,
+    );
+  }
+
+  return json.data;
 }
 
 /** Look up the first "unstarted" workflow state ID for the team. */
@@ -305,12 +311,12 @@ async function resolveLinearLabelId(
     issueLabels: { nodes: Array<{ id: string; name: string }> };
   }>(
     apiKey,
-    `query($teamId: String!) {
-      issueLabels(filter: { team: { id: { eq: $teamId } } }) {
+    `query($teamId: String!, $name: String!) {
+      issueLabels(filter: { team: { id: { eq: $teamId } }, name: { eq: $name } }) {
         nodes { id name }
       }
     }`,
-    { teamId },
+    { teamId, name: labelName },
   );
 
   const existing = data.issueLabels.nodes.find((l) => l.name === labelName);

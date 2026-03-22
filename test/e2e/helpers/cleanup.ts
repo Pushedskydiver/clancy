@@ -40,7 +40,8 @@ export async function cleanupTicket(
 /**
  * Close a PR on the git host by PR number.
  *
- * For non-GitHub boards that use GitHub as git host, pass 'github' as the board.
+ * For boards that use GitHub as the git host (`github`, `jira`, `linear`, `shortcut`),
+ * pass the corresponding board value; all route to the shared GitHub sandbox repo.
  */
 export async function cleanupPullRequest(
   board: E2EBoard,
