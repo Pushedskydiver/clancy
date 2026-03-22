@@ -590,9 +590,21 @@ async function createNotionTicket(
   // Find the title property (always exactly one per database)
   const titlePropName =
     Object.entries(dbData.properties).find(([, v]) => v.type === 'title')?.[0] ?? 'Name';
-  // Find the status property
-  const statusPropName =
-    Object.entries(dbData.properties).find(([, v]) => v.type === 'status')?.[0] ?? 'Status';
+  // Find the status property and its first "To-do" group option
+  const statusEntry = Object.entries(dbData.properties).find(
+    ([, v]) => v.type === 'status',
+  );
+  const statusPropName = statusEntry?.[0] ?? 'Status';
+  const statusProp = statusEntry?.[1] as
+    | { status?: { groups?: Array<{ name: string; option_ids: string[] }>; options?: Array<{ id: string; name: string }> } }
+    | undefined;
+  // Find the first option in the "To-do" group, or fall back to first option
+  const todoGroup = statusProp?.status?.groups?.find((g) => g.name === 'To-do');
+  const firstTodoOptionId = todoGroup?.option_ids?.[0];
+  const statusOptionName =
+    statusProp?.status?.options?.find((o) => o.id === firstTodoOptionId)?.name ??
+    statusProp?.status?.options?.[0]?.name ??
+    'To-do';
   // Find a multi_select property for labels (prefer "Tags" or "Labels")
   const multiSelectProps = Object.entries(dbData.properties).filter(
     ([, v]) => v.type === 'multi_select',
@@ -607,7 +619,7 @@ async function createNotionTicket(
       title: [{ text: { content: title } }],
     },
     [statusPropName]: {
-      status: { name: 'To-do' },
+      status: { name: statusOptionName },
     },
   };
   if (tagsPropName) {
