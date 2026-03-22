@@ -271,6 +271,7 @@ describe('github-board', () => {
         'ghp_test123',
         'owner/repo',
         50,
+        undefined,
       );
       expect(result).toEqual({ total: 2, incomplete: 0 });
     });

@@ -40,6 +40,7 @@ export async function branchSetup(ctx: RunContext): Promise<boolean> {
     const childrenStatus = await board.fetchChildrenStatus(
       ticket.parentInfo,
       ticket.linearIssueId,
+      ticket.key,
     );
     if (childrenStatus && childrenStatus.total === 1) {
       skipEpicBranch = true;

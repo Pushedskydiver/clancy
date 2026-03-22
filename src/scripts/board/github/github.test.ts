@@ -219,6 +219,51 @@ describe('github', () => {
 
       expect(result).toEqual({ total: 0, incomplete: 0 });
     });
+
+    it('falls back to at least 1 child when search returns 0 but currentTicketKey is provided', async () => {
+      vi.stubGlobal(
+        'fetch',
+        vi.fn(() =>
+          Promise.resolve({
+            ok: true,
+            json: () => Promise.resolve({ total_count: 0 }),
+          }),
+        ),
+      );
+
+      const result = await fetchChildrenStatus(
+        'ghp_test',
+        'owner/repo',
+        50,
+        '#51',
+      );
+
+      expect(result).toEqual({ total: 1, incomplete: 1 });
+    });
+
+    it('does not fall back when search returns results even with currentTicketKey', async () => {
+      const mockFetch = vi.fn();
+      // First call: Epic: search returns 2
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ total_count: 2 }),
+      });
+      // Second call: open Epic: children
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: () => Promise.resolve({ total_count: 1 }),
+      });
+      vi.stubGlobal('fetch', mockFetch);
+
+      const result = await fetchChildrenStatus(
+        'ghp_test',
+        'owner/repo',
+        50,
+        '#51',
+      );
+
+      expect(result).toEqual({ total: 2, incomplete: 1 });
+    });
   });
 
   describe('fetchBlockerStatus', () => {
