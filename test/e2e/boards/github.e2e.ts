@@ -117,6 +117,10 @@ describe.skipIf(!canRun)('E2E: GitHub Issues — full pipeline', () => {
     ticket = await createTestTicket('github', runId);
     ticketBranch = `feature/issue-${ticket.id}`;
 
+    // Brief pause — GitHub's Issues list API has eventual consistency.
+    // A newly created issue may not appear in filtered queries immediately.
+    await new Promise((r) => setTimeout(r, 2000));
+
     // 2. Set up temp repo with real remote pointing to sandbox
     repo = createTempRepo();
     const remoteUrl = `https://github.com/${creds.repo}.git`;
