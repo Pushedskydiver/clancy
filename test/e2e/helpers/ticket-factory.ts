@@ -571,7 +571,7 @@ function notionHeaders(token: string): Record<string, string> {
 export async function discoverNotionSchema(
   token: string,
   databaseId: string,
-): Promise<{ statusOptionName: string; statusPropName: string }> {
+): Promise<{ statusOptionName: string; statusPropName: string; labelsPropName?: string }> {
   const dbResp = await fetchWithTimeout(
     `${NOTION_API}/databases/${databaseId}`,
     { headers: notionHeaders(token) },
@@ -602,7 +602,14 @@ export async function discoverNotionSchema(
     statusProp?.status?.options?.[0]?.name ??
     'To-do';
 
-  return { statusOptionName, statusPropName };
+  const multiSelectProps = Object.entries(dbData.properties).filter(
+    ([, v]) => v.type === 'multi_select',
+  );
+  const labelsPropName =
+    multiSelectProps.find(([k]) => /tags|labels/i.test(k))?.[0] ??
+    multiSelectProps[0]?.[0];
+
+  return { statusOptionName, statusPropName, labelsPropName };
 }
 
 async function createNotionTicket(

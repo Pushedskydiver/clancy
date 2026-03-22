@@ -157,6 +157,10 @@ describe.skipIf(!canRun)('E2E: Notion — full pipeline', () => {
       GITHUB_TOKEN: githubCreds.token,
       CLANCY_BASE_BRANCH: 'main',
       CLANCY_NOTION_TODO: schema.statusOptionName,
+      ...(schema.labelsPropName && {
+        CLANCY_NOTION_LABELS: schema.labelsPropName,
+        CLANCY_LABEL_BUILD: 'clancy:build',
+      }),
     });
 
     writeFileSync(
