@@ -10,6 +10,7 @@ node_modules/
 # Credentials — never commit
 .env*
 !.env.example
+!.env.e2e.example
 
 # Yarn 4
 .yarn/cache
