@@ -153,11 +153,12 @@ describe('Pipeline label transitions', () => {
   describe('Brief → Plan → Build full pipeline', () => {
     let spy: ReturnType<typeof createRequestSpy>;
     let board: Board;
-    let server: SetupServer;
+    let server: SetupServer | undefined;
     let repo: TempRepoResult | undefined;
 
     afterEach(() => {
       server?.close();
+      server = undefined;
       resetAllMocks();
       repo?.cleanup();
       repo = undefined;
@@ -336,11 +337,12 @@ describe('Pipeline label transitions', () => {
   // ── Plan-label guard ──────────────────────────────────────────────────
 
   describe('Plan-label guard (dual-label race condition)', () => {
-    let server: SetupServer;
+    let server: SetupServer | undefined;
     let repo: TempRepoResult | undefined;
 
     afterEach(() => {
       server?.close();
+      server = undefined;
       resetAllMocks();
       repo?.cleanup();
       repo = undefined;
@@ -635,10 +637,11 @@ describe('Pipeline label transitions', () => {
   describe('Label crash safety', () => {
     let spy: ReturnType<typeof createRequestSpy>;
     let board: Board;
-    let server: SetupServer;
+    let server: SetupServer | undefined;
 
     afterEach(() => {
       server?.close();
+      server = undefined;
       resetAllMocks();
     });
 
