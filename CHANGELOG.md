@@ -7,6 +7,14 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 ---
 
+## [0.8.22] — 2026-03-22
+
+### 📦 Chores
+
+- **GitHub Actions E2E workflow (QA-003e)** — `.github/workflows/e2e-tests.yml` with weekly schedule (Monday 6am UTC), manual dispatch with per-board selection, orphan GC job before test matrix, per-board matrix (6 boards, `fail-fast: false`, 30min timeout), live schema validation job, and concurrency group to prevent overlapping runs. All board credentials mapped from GitHub Actions secrets. GitHub uses `QA_GITHUB_TOKEN` / `QA_GITHUB_REPO` to avoid collision with the built-in `GITHUB_TOKEN`.
+
+---
+
 ## [0.8.21] — 2026-03-22
 
 ### 🐛 Fixes
