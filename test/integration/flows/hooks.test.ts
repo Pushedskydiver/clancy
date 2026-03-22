@@ -438,6 +438,20 @@ describe('branch guard — protected branches', () => {
     expect(result.decision).toBe('approve');
   });
 
+  it('blocks git push -u origin main (flag before remote)', () => {
+    const result = runBranchGuard(bashPayload('git push -u origin main'));
+    expect(result.decision).toBe('block');
+    expect(result.reason).toContain('main');
+  });
+
+  it('blocks git push --set-upstream origin main', () => {
+    const result = runBranchGuard(
+      bashPayload('git push --set-upstream origin main'),
+    );
+    expect(result.decision).toBe('block');
+    expect(result.reason).toContain('main');
+  });
+
   it('allows git push origin main-feature (partial match, not protected)', () => {
     const result = runBranchGuard(
       bashPayload('git push origin main-feature'),
