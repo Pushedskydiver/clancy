@@ -6,6 +6,11 @@ export type {
   ProgressStatus,
   RemoteInfo,
 } from './remote.js';
+export {
+  COMPLETED_STATUSES,
+  DELIVERED_STATUSES,
+  FAILED_STATUSES,
+} from './remote.js';
 export type {
   BoardConfig,
   GitHubEnv,

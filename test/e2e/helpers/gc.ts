@@ -10,9 +10,15 @@
  *
  * Usage: npx tsx test/e2e/helpers/gc.ts
  */
-import { githubHeaders } from '~/scripts/shared/http/http.js';
+import { githubHeaders, jiraHeaders } from '~/scripts/shared/http/http.js';
 
-import { getGitHubCredentials, type E2EBoard } from './env.js';
+import {
+  type E2EBoard,
+  getGitHubCredentials,
+  getJiraCredentials,
+  getLinearCredentials,
+  getShortcutCredentials,
+} from './env.js';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -24,8 +30,11 @@ export async function cleanupOrphanTickets(board: E2EBoard): Promise<number> {
     case 'github':
       return cleanupGitHubOrphans();
     case 'jira':
+      return cleanupJiraOrphans();
     case 'linear':
+      return cleanupLinearOrphans();
     case 'shortcut':
+      return cleanupShortcutOrphans();
     case 'notion':
     case 'azdo':
       console.log(`  ⏭ GC not implemented for ${board} — skipping`);
@@ -156,6 +165,218 @@ async function cleanupGitHubOrphans(): Promise<number> {
         }
       }
     }
+  }
+
+  return cleaned;
+}
+
+// ---------------------------------------------------------------------------
+// Jira — orphan cleanup
+// ---------------------------------------------------------------------------
+
+async function cleanupJiraOrphans(): Promise<number> {
+  const creds = getJiraCredentials();
+  if (!creds) {
+    console.log('  ⏭ Jira credentials not available — skipping');
+    return 0;
+  }
+
+  const auth = Buffer.from(`${creds.user}:${creds.apiToken}`).toString('base64');
+  const headers = {
+    ...jiraHeaders(auth),
+    'Content-Type': 'application/json',
+  };
+
+  let cleaned = 0;
+
+  // Search for [QA] issues created > 24h ago
+  const cutoff = new Date(Date.now() - ONE_DAY_MS).toISOString().split('T')[0]!;
+  const jql = `project = ${creds.projectKey} AND summary ~ "[QA]" AND created < "${cutoff}" AND status != Done`;
+
+  const searchResp = await fetch(
+    `${creds.baseUrl}/rest/api/3/search/jql`,
+    {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        jql,
+        maxResults: 100,
+        fields: ['summary'],
+      }),
+    },
+  );
+
+  if (!searchResp.ok) {
+    console.log(`  ⚠ Jira search failed: ${searchResp.status}`);
+    return 0;
+  }
+
+  const data = (await searchResp.json()) as {
+    issues: Array<{ key: string; fields: { summary: string } }>;
+  };
+
+  for (const issue of data.issues) {
+    console.log(`  🧹 Transitioning orphan ${issue.key}: ${issue.fields.summary}`);
+
+    // Fetch transitions to find "Done"
+    const transResp = await fetch(
+      `${creds.baseUrl}/rest/api/3/issue/${issue.key}/transitions`,
+      { headers },
+    );
+
+    if (transResp.ok) {
+      const transData = (await transResp.json()) as {
+        transitions: Array<{ id: string; name: string }>;
+      };
+      const done = transData.transitions.find((t) =>
+        t.name.toLowerCase().includes('done'),
+      );
+      if (done) {
+        const closeResp = await fetch(
+          `${creds.baseUrl}/rest/api/3/issue/${issue.key}/transitions`,
+          {
+            method: 'POST',
+            headers,
+            body: JSON.stringify({ transition: { id: done.id } }),
+          },
+        );
+        if (closeResp.ok) cleaned++;
+        else console.log(`    ⚠ Failed to transition ${issue.key}: ${closeResp.status}`);
+      }
+    }
+  }
+
+  return cleaned;
+}
+
+// ---------------------------------------------------------------------------
+// Linear — orphan cleanup
+// ---------------------------------------------------------------------------
+
+async function cleanupLinearOrphans(): Promise<number> {
+  const creds = getLinearCredentials();
+  if (!creds) {
+    console.log('  ⏭ Linear credentials not available — skipping');
+    return 0;
+  }
+
+  const linearHeaders = {
+    Authorization: creds.apiKey,
+    'Content-Type': 'application/json',
+  };
+
+  let cleaned = 0;
+
+  // Search for issues with [QA] in title
+  const searchResp = await fetch('https://api.linear.app/graphql', {
+    method: 'POST',
+    headers: linearHeaders,
+    body: JSON.stringify({
+      query: `query($teamId: String!) {
+        issues(first: 100, filter: {
+          team: { id: { eq: $teamId } },
+          title: { contains: "[QA]" }
+        }) {
+          nodes { id title createdAt }
+        }
+      }`,
+      variables: { teamId: creds.teamId },
+    }),
+  });
+
+  if (!searchResp.ok) {
+    console.log(`  ⚠ Linear search failed: ${searchResp.status}`);
+    return 0;
+  }
+
+  const json = (await searchResp.json()) as {
+    data?: { issues: { nodes: Array<{ id: string; title: string; createdAt: string }> } };
+    errors?: Array<{ message: string }>;
+  };
+
+  if (json.errors?.length) {
+    console.log(`  ⚠ Linear GraphQL error: ${json.errors[0]!.message}`);
+    return 0;
+  }
+
+  const issues = json.data?.issues.nodes ?? [];
+  const cutoff = Date.now() - ONE_DAY_MS;
+
+  for (const issue of issues) {
+    if (new Date(issue.createdAt).getTime() > cutoff) continue;
+
+    console.log(`  🧹 Deleting orphan: ${issue.title}`);
+
+    const delResp = await fetch('https://api.linear.app/graphql', {
+      method: 'POST',
+      headers: linearHeaders,
+      body: JSON.stringify({
+        query: `mutation($id: String!) { issueDelete(id: $id) { success } }`,
+        variables: { id: issue.id },
+      }),
+    });
+
+    if (delResp.ok) cleaned++;
+    else console.log(`    ⚠ Failed to delete Linear issue: ${delResp.status}`);
+  }
+
+  return cleaned;
+}
+
+// ---------------------------------------------------------------------------
+// Shortcut — orphan cleanup
+// ---------------------------------------------------------------------------
+
+async function cleanupShortcutOrphans(): Promise<number> {
+  const creds = getShortcutCredentials();
+  if (!creds) {
+    console.log('  ⏭ Shortcut credentials not available — skipping');
+    return 0;
+  }
+
+  const scHeaders = {
+    'Shortcut-Token': creds.token,
+    'Content-Type': 'application/json',
+  };
+
+  let cleaned = 0;
+
+  // Search for stories with [QA] in name
+  const searchResp = await fetch(
+    'https://api.app.shortcut.com/api/v3/search/stories',
+    {
+      method: 'POST',
+      headers: scHeaders,
+      body: JSON.stringify({ query: '[QA]', page_size: 25 }),
+    },
+  );
+
+  if (!searchResp.ok) {
+    console.log(`  ⚠ Shortcut search failed: ${searchResp.status}`);
+    return 0;
+  }
+
+  const data = (await searchResp.json()) as {
+    data: Array<{ id: number; name: string; created_at: string }>;
+  };
+
+  const cutoff = Date.now() - ONE_DAY_MS;
+
+  for (const story of data.data) {
+    if (new Date(story.created_at).getTime() > cutoff) continue;
+
+    console.log(`  🧹 Deleting orphan: sc-${story.id} ${story.name}`);
+
+    const delResp = await fetch(
+      `https://api.app.shortcut.com/api/v3/stories/${story.id}`,
+      {
+        method: 'DELETE',
+        headers: { 'Shortcut-Token': creds.token },
+      },
+    );
+
+    if (delResp.ok) cleaned++;
+    else console.log(`    ⚠ Failed to delete Shortcut story sc-${story.id}: ${delResp.status}`);
   }
 
   return cleaned;
