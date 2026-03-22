@@ -469,18 +469,42 @@ async function resolveShortcutUnstartedStateId(
   throw new Error('No unstarted workflow state found in Shortcut');
 }
 
-/** Resolve the authenticated member's ID. */
+/** Resolve the authenticated member's UUID.
+ * Tries /member-info first (user tokens), falls back to /members (API tokens). */
 async function resolveShortcutMemberId(token: string): Promise<string> {
-  const response = await fetchWithTimeout(`${SHORTCUT_API}/member-info`, {
+  // Try /member-info (works with user tokens)
+  const infoResp = await fetchWithTimeout(`${SHORTCUT_API}/member-info`, {
     headers: shortcutHeaders(token),
   });
 
-  if (!response.ok) {
-    throw new Error(`Failed to resolve Shortcut member: ${response.status}`);
+  if (infoResp.ok) {
+    const data = (await infoResp.json()) as {
+      id?: string;
+      member?: { id: string };
+    };
+    // Response may nest under .member or be flat
+    return data.member?.id ?? data.id ?? '';
   }
 
-  const data = (await response.json()) as { id: string };
-  return data.id;
+  // Fallback: list all members and find the one whose token matches
+  // (API tokens can't use /member-info — use /members list instead)
+  const membersResp = await fetchWithTimeout(`${SHORTCUT_API}/members`, {
+    headers: shortcutHeaders(token),
+  });
+
+  if (!membersResp.ok) {
+    throw new Error(`Failed to resolve Shortcut member: ${membersResp.status}`);
+  }
+
+  const members = (await membersResp.json()) as Array<{
+    id: string;
+    role: string;
+  }>;
+
+  // Return the first owner/admin member as best guess for the token owner
+  const owner = members.find((m) => m.role === 'owner') ?? members[0];
+  if (!owner) throw new Error('No members found in Shortcut workspace');
+  return owner.id;
 }
 
 async function createShortcutTicket(
