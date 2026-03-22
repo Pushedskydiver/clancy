@@ -10,13 +10,18 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { http, HttpResponse, type RequestHandler } from 'msw';
 import type { SetupServer } from 'msw/node';
 
-import { createBoard } from '~/scripts/board/factory/factory.js';
 import type { Board } from '~/scripts/board/board.js';
+import { createGitHubBoard } from '~/scripts/board/github/github-board.js';
 import { resetUsernameCache } from '~/scripts/board/github/github.js';
+import { createJiraBoard } from '~/scripts/board/jira/jira-board.js';
+import { createLinearBoard } from '~/scripts/board/linear/linear-board.js';
+import { createShortcutBoard } from '~/scripts/board/shortcut/shortcut-board.js';
 import {
   resetLabelCache as resetShortcutLabelCache,
   resetWorkflowCache as resetShortcutWorkflowCache,
 } from '~/scripts/board/shortcut/shortcut.js';
+import { createNotionBoard } from '~/scripts/board/notion/notion-board.js';
+import { createAzdoBoard } from '~/scripts/board/azdo/azdo-board.js';
 
 import {
   githubEnv,
@@ -350,7 +355,7 @@ describe('QA-002b-1: Board write operations', () => {
       spy = createRequestSpy();
       server = createIntegrationServer(...createGitHubHandlers(spy));
       startServer(server);
-      board = createBoard({ provider: 'github', env: githubEnv as never });
+      board = createGitHubBoard(githubEnv);
     });
 
     afterEach(() => {
@@ -453,7 +458,7 @@ describe('QA-002b-1: Board write operations', () => {
     });
 
     describe('addLabel — edge cases', () => {
-      it('makes no HTTP calls for invalid issue key (NaN)', async () => {
+      it('does not POST to issue labels endpoint for invalid issue key', async () => {
         await board.addLabel('not-a-number', TEST_LABEL);
 
         const issueLabels = spy.captured.filter(
@@ -486,7 +491,7 @@ describe('QA-002b-1: Board write operations', () => {
       spy = createRequestSpy();
       server = createIntegrationServer(...createJiraHandlers(spy));
       startServer(server);
-      board = createBoard({ provider: 'jira', env: jiraEnv as never });
+      board = createJiraBoard(jiraEnv);
     });
 
     afterEach(() => {
@@ -598,7 +603,7 @@ describe('QA-002b-1: Board write operations', () => {
       spy = createRequestSpy();
       server = createIntegrationServer(...createLinearHandlers(spy));
       startServer(server);
-      board = createBoard({ provider: 'linear', env: linearEnv as never });
+      board = createLinearBoard(linearEnv);
     });
 
     afterEach(() => {
@@ -844,7 +849,7 @@ describe('QA-002b-1: Board write operations', () => {
       spy = createRequestSpy();
       server = createIntegrationServer(...createShortcutHandlers(spy));
       startServer(server);
-      board = createBoard({ provider: 'shortcut', env: shortcutEnv as never });
+      board = createShortcutBoard(shortcutEnv);
     });
 
     afterEach(() => {
@@ -952,7 +957,7 @@ describe('QA-002b-1: Board write operations', () => {
       spy = createRequestSpy();
       server = createIntegrationServer(...createNotionHandlers(spy));
       startServer(server);
-      board = createBoard({ provider: 'notion', env: notionEnv as never });
+      board = createNotionBoard(notionEnv);
     });
 
     afterEach(() => {
@@ -1045,7 +1050,7 @@ describe('QA-002b-1: Board write operations', () => {
       spy = createRequestSpy();
       server = createIntegrationServer(...createAzdoHandlers(spy));
       startServer(server);
-      board = createBoard({ provider: 'azdo', env: azdoEnv as never });
+      board = createAzdoBoard(azdoEnv);
     });
 
     afterEach(() => {
