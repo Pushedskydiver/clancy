@@ -158,7 +158,6 @@ describe.skipIf(!canRun)('E2E: Linear — full pipeline', () => {
       GITHUB_TOKEN: githubCreds.token,
       GITHUB_REPO: githubCreds.repo,
       CLANCY_BASE_BRANCH: 'main',
-      CLANCY_LABEL_BUILD: 'clancy:build',
     });
 
     writeFileSync(
