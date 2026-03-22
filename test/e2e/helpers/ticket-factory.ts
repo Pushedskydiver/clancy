@@ -291,13 +291,24 @@ async function resolveLinearTeamUuid(
 
   // Otherwise look up by key
   const data = await linearGraphql<{
-    teams: { nodes: Array<{ id: string; key: string }> };
-  }>(apiKey, `{ teams { nodes { id key } } }`);
+    teams: { nodes: Array<{ id: string; key: string; name: string }> };
+  }>(apiKey, `{ teams { nodes { id key name } } }`);
 
+  const needle = teamIdOrKey.toLowerCase();
   const team = data.teams.nodes.find(
-    (t) => t.key.toLowerCase() === teamIdOrKey.toLowerCase(),
+    (t) =>
+      t.key.toLowerCase() === needle ||
+      t.name.toLowerCase() === needle ||
+      t.id === teamIdOrKey,
   );
-  if (!team) throw new Error(`Linear team not found for key: ${teamIdOrKey}`);
+  if (!team) {
+    const available = data.teams.nodes
+      .map((t) => `${t.key} (${t.name}) [${t.id}]`)
+      .join(', ');
+    throw new Error(
+      `Linear team not found for "${teamIdOrKey}". Available: ${available}`,
+    );
+  }
   return team.id;
 }
 
