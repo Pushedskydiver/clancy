@@ -1,5 +1,7 @@
 # QA-002b: Integration tests — Board API interactions, pipeline labels, installer, and hooks
 
+> **Status: Shipped** — v0.8.9–v0.8.15, PRs #64–#68. 167 integration tests across 5 sub-tickets. Layer 1 complete.
+
 ## Summary
 
 Write MSW-backed integration tests for the remaining flows: board API write operations (the functions that prompt-driven commands call), cross-role pipeline label transitions, installer sub-modules, and expanded hook scenarios. This completes Layer 1.

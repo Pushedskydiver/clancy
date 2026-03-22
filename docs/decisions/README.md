@@ -45,7 +45,7 @@ docs/decisions/v0.8.0/
 
 | Directory | Purpose |
 |---|---|
-| `qa-strategy/` | 2-layer QA plan (integration tests + E2E). 5 tickets: infrastructure, implementer flows, board API/pipeline/hooks, E2E real platforms, CI wiring. Ships incrementally as v0.8.x patches before v0.9.0. |
+| `qa-strategy/` | 2-layer QA plan (integration tests + E2E). Layer 1 shipped (QA-001 through QA-002b, v0.8.3–v0.8.15). Layer 2 broken into 8 tickets (QA-003-prereq through QA-004b). See [00-QA-STRATEGY.md](qa-strategy/00-QA-STRATEGY.md) for status. |
 
 ## What does NOT belong here
 

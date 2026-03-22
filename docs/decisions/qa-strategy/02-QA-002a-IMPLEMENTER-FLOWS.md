@@ -1,5 +1,7 @@
 # QA-002a: Integration tests — Implementer lifecycle and AFK loop (all 6 boards)
 
+> **Status: Shipped** — v0.8.4–v0.8.8, PRs #59–#63. 38 integration tests across 5 sub-tickets.
+
 ## Summary
 
 Write MSW-backed integration tests for the Implementer role flows: the `once` single-ticket lifecycle and the `afk` loop runner. Cover all 6 boards with core scenarios: happy path, empty queue, auth failure, blocked ticket, epic branch targeting, verification gate failure with self-healing, crash recovery, and resume detection.

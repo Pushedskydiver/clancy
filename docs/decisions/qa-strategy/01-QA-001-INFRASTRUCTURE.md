@@ -1,5 +1,7 @@
 # QA-001: Gap analysis + integration test infrastructure
 
+> **Status: Shipped** — v0.8.3, PR #58. Infrastructure used by all subsequent QA tickets.
+
 ## Summary
 
 Audit existing test coverage for specific scenario gaps (not file existence — we know the files exist), then build the shared integration test infrastructure: Claude output simulator, temp git repo with shared `node_modules`, MSW server with smoke handlers for all 6 boards and 3 git hosts, environment variable fixtures, and the Vitest integration config.
