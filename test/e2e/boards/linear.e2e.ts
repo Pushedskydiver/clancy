@@ -18,6 +18,8 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
 import { githubHeaders } from '~/scripts/shared/http/http.js';
 
+import { fetchWithTimeout } from '../helpers/fetch-timeout.js';
+
 import { simulateClaudeSuccess } from '../../integration/helpers/claude-simulator.js';
 import {
   createClancyScaffold,
@@ -197,7 +199,7 @@ describe.skipIf(!canRun)('E2E: Linear — full pipeline', () => {
 
     // 8. Verify via real GitHub API: PR exists on sandbox repo
     {
-      const prResponse = await fetch(
+      const prResponse = await fetchWithTimeout(
         `https://api.github.com/repos/${githubCreds.repo}/pulls/${prNumber}`,
         {
           headers: githubHeaders(githubCreds.token),

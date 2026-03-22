@@ -15,6 +15,7 @@ import {
   getShortcutCredentials,
 } from './env.js';
 import { fetchWithTimeout } from './fetch-timeout.js';
+import { buildJiraAuth } from './jira-auth.js';
 
 /**
  * Clean up a test ticket by closing it and adding a qa-cleanup label.
@@ -134,7 +135,7 @@ async function cleanupJiraTicket(issueIdOrKey: string): Promise<void> {
   const creds = getJiraCredentials();
   if (!creds) return;
 
-  const auth = Buffer.from(`${creds.user}:${creds.apiToken}`).toString('base64');
+  const auth = buildJiraAuth(creds.user, creds.apiToken);
   const headers = {
     ...jiraHeaders(auth),
     'Content-Type': 'application/json',

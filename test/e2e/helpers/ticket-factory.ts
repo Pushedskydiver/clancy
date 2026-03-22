@@ -14,6 +14,7 @@ import {
   getShortcutCredentials,
 } from './env.js';
 import { fetchWithTimeout } from './fetch-timeout.js';
+import { buildJiraAuth } from './jira-auth.js';
 
 export interface CreateTicketOptions {
   /** Override the default ticket title suffix. */
@@ -142,10 +143,6 @@ async function createGitHubTicket(
 // ---------------------------------------------------------------------------
 // Jira
 // ---------------------------------------------------------------------------
-
-function buildJiraAuth(user: string, apiToken: string): string {
-  return Buffer.from(`${user}:${apiToken}`).toString('base64');
-}
 
 /** Resolve the authenticated Jira user's account ID via GET /myself. */
 async function resolveJiraAccountId(

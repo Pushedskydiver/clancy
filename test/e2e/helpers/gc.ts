@@ -20,6 +20,7 @@ import {
   getShortcutCredentials,
 } from './env.js';
 import { fetchWithTimeout } from './fetch-timeout.js';
+import { buildJiraAuth } from './jira-auth.js';
 
 const ONE_DAY_MS = 24 * 60 * 60 * 1000;
 
@@ -149,7 +150,7 @@ async function cleanupGitHubOrphans(): Promise<number> {
       };
       const branchName = prDetail.head.ref;
 
-      if (branchName.startsWith('feature/issue-')) {
+      if (branchName.startsWith('feature/')) {
         // Check if branch still exists before attempting delete
         const branchResp = await fetchWithTimeout(
           `https://api.github.com/repos/${creds.repo}/git/refs/heads/${branchName}`,
@@ -182,7 +183,7 @@ async function cleanupJiraOrphans(): Promise<number> {
     return 0;
   }
 
-  const auth = Buffer.from(`${creds.user}:${creds.apiToken}`).toString('base64');
+  const auth = buildJiraAuth(creds.user, creds.apiToken);
   const headers = {
     ...jiraHeaders(auth),
     'Content-Type': 'application/json',
