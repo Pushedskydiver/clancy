@@ -149,6 +149,7 @@ describe.skipIf(!canRun)('E2E: Shortcut — full pipeline', () => {
       GITHUB_TOKEN: githubCreds.token,
 
       CLANCY_BASE_BRANCH: 'main',
+      CLANCY_LABEL_BUILD: 'clancy:build',
     });
 
     writeFileSync(
