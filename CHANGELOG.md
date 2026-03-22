@@ -7,6 +7,14 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 ---
 
+## [0.8.15] — 2026-03-22
+
+### ✅ Tests
+
+- **Context monitor + post-compact hook integration tests (QA-002b-5)** — completes Layer 1 hook coverage. Context monitor: threshold boundary tests (40% no warning, 35% WARNING, 25% CRITICAL), debounce suppression across 5 calls, severity escalation bypasses debounce (WARNING→CRITICAL). Time guard: 80% WARNING, 100%+ CRITICAL, below-threshold silence, time escalation bypass. PostCompact: full ticket context re-injection (hookEventName, key, title, branch, target, parent, description), missing lock file silence, missing required fields silence, corrupt lock file fail-open, empty parentKey omission, 2000-char description truncation. 1223 unit tests (unchanged) + 238 integration tests (17 new). **Layer 1 integration testing complete.**
+
+---
+
 ## [0.8.14] — 2026-03-22
 
 ### ✅ Tests
