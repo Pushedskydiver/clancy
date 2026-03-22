@@ -346,7 +346,7 @@ async function resolveLinearLabelId(
     team: { labels: { nodes: Array<{ id: string; name: string }> } };
   }>(
     apiKey,
-    `query($teamId: ID!) {
+    `query($teamId: String!) {
       team(id: $teamId) {
         labels { nodes { id name } }
       }
@@ -362,7 +362,7 @@ async function resolveLinearLabelId(
     issueLabelCreate: { issueLabel: { id: string } };
   }>(
     apiKey,
-    `mutation($teamId: ID!, $name: String!) {
+    `mutation($teamId: String!, $name: String!) {
       issueLabelCreate(input: { teamId: $teamId, name: $name, color: "#0075ca" }) {
         issueLabel { id }
       }
@@ -408,7 +408,7 @@ async function createLinearTicket(
     };
   }>(
     creds.apiKey,
-    `mutation($teamId: ID!, $title: String!, $stateId: ID!, $labelIds: [ID!], $assigneeId: ID!) {
+    `mutation($teamId: String!, $title: String!, $stateId: String!, $labelIds: [String!], $assigneeId: String!) {
       issueCreate(input: {
         teamId: $teamId,
         title: $title,
