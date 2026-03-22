@@ -7,6 +7,20 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 ---
 
+## [0.8.13] — 2026-03-22
+
+### ✅ Tests
+
+- **Installer sub-module integration tests (QA-002b-3)** — real filesystem tests for installer sub-modules: file-ops (copyDir recursive copy, symlink rejection, parent auto-creation, overwrite), manifest (buildManifest SHA-256 hashes, detectModifiedFiles change detection, backupModifiedFiles with metadata, end-to-end build→modify→detect→backup), hook-installer (file copying, CommonJS package.json, settings.json merge, existing config preservation, idempotent re-install, verification gate agent hook, statusLine preservation), role filtering (null=all, empty=core-only, selective optional roles, core always included).
+
+### 🐛 Fixes
+
+- **GitHub Issues: parse `Epic: #N` from description for parent detection** — when a child issue has no milestone but contains `Epic: #N` (or `Parent: #N`) in its description, the parent relationship is now detected. Previously `parentInfo` was always `ticket.milestone ?? 'none'`, so strategist-created child issues under a parent issue (not a milestone) had no parent, breaking single-child epic skip and `Closes` auto-close in PR bodies.
+
+1223 unit tests (3 new) + 152 integration tests (34 new).
+
+---
+
 ## [0.8.12] — 2026-03-22
 
 ### ✅ Tests

@@ -104,7 +104,7 @@ describe('github-board', () => {
       ]);
     });
 
-    it('sets parentInfo to none when no milestone', async () => {
+    it('sets parentInfo to none when no milestone and no Epic ref', async () => {
       const { fetchIssues } = await import('./github.js');
       vi.mocked(fetchIssues).mockResolvedValueOnce([
         {
@@ -119,6 +119,58 @@ describe('github-board', () => {
       const results = await board.fetchTickets({ excludeHitl: false });
 
       expect(results[0].parentInfo).toBe('none');
+    });
+
+    it('parses Epic: #N from description when no milestone', async () => {
+      const { fetchIssues } = await import('./github.js');
+      vi.mocked(fetchIssues).mockResolvedValueOnce([
+        {
+          key: '#13',
+          title: 'Child ticket',
+          description: 'Epic: #7\n\n## Implement feature\n\nDetails here.',
+          provider: 'github',
+        },
+      ]);
+
+      const board = createGitHubBoard(baseEnv);
+      const results = await board.fetchTickets({ excludeHitl: false });
+
+      expect(results[0].parentInfo).toBe('#7');
+    });
+
+    it('parses Parent: #N from description when no milestone', async () => {
+      const { fetchIssues } = await import('./github.js');
+      vi.mocked(fetchIssues).mockResolvedValueOnce([
+        {
+          key: '#14',
+          title: 'Legacy child',
+          description: 'Parent: #5\n\nSome description.',
+          provider: 'github',
+        },
+      ]);
+
+      const board = createGitHubBoard(baseEnv);
+      const results = await board.fetchTickets({ excludeHitl: false });
+
+      expect(results[0].parentInfo).toBe('#5');
+    });
+
+    it('prefers milestone over Epic: ref in description', async () => {
+      const { fetchIssues } = await import('./github.js');
+      vi.mocked(fetchIssues).mockResolvedValueOnce([
+        {
+          key: '#15',
+          title: 'Both milestone and epic ref',
+          description: 'Epic: #7\n\nDetails.',
+          provider: 'github',
+          milestone: 'v2.0',
+        },
+      ]);
+
+      const board = createGitHubBoard(baseEnv);
+      const results = await board.fetchTickets({ excludeHitl: false });
+
+      expect(results[0].parentInfo).toBe('v2.0');
     });
 
     it('resolves username before fetching', async () => {
