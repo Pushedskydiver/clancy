@@ -147,7 +147,7 @@ function resetAllMocks(): void {
 
 // ─── Test suite ─────────────────────────────────────────────────────────────
 
-describe('QA-002b-2: Pipeline label transitions', () => {
+describe('Pipeline label transitions', () => {
   // ── Full pipeline: Brief → Plan → Build ───────────────────────────────
 
   describe('Brief → Plan → Build full pipeline', () => {
