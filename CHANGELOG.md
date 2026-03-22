@@ -7,6 +7,18 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 ---
 
+## [0.8.14] — 2026-03-22
+
+### ✅ Tests
+
+- **Credential guard + branch guard hook integration tests (QA-002b-4)** — expanded hook scenario coverage via argv JSON contract: all 14 credential pattern categories (generic key/secret/token/password, AWS access+secret, GitHub PAT classic+fine-grained+OAuth, Slack xoxb+xoxp, Stripe live+test, RSA/EC/DSA/OPENSSH private keys, Atlassian, Linear, MongoDB/PostgreSQL/MySQL/Redis connection strings), all 5 allowed paths, edge cases (comments, test files, short strings, fail-open), Edit+MultiEdit tool support. Branch guard: force push, protected branches (main/master/develop + custom CLANCY_BASE_BRANCH), destructive ops (reset --hard, clean -fd, checkout --, restore ., branch -D), allowed ops, disabled guard, fail-open. 1223 unit tests (unchanged) + 221 integration tests (69 new).
+
+### 🐛 Fixes
+
+- **Branch guard: flag-before-remote bypass** — `git push -u origin main` and `git push --set-upstream origin main` were not blocked because the regex consumed the flag as the remote token. Updated pattern to skip flags (`-\S+`) before matching remote and branch.
+
+---
+
 ## [0.8.13] — 2026-03-22
 
 ### ✅ Tests

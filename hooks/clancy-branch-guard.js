@@ -30,16 +30,15 @@ function checkCommand(cmd) {
     }
 
     // --- git push to protected branches ---
-    // Pattern: git push <remote> <protected-branch>
-    // We look for "git push" followed by any remote name, then a protected branch.
-    // The branch must be a standalone token — \b treats hyphens as word boundaries,
-    // so we match the branch as a complete whitespace-delimited token instead.
+    // Pattern: git push [flags...] <remote> <protected-branch>
+    // Skip any flags (tokens starting with -) to find the remote and branch.
+    // The branch must be a standalone token — not a prefix of a longer name.
     for (const branch of PROTECTED_BRANCHES) {
-      // Matches: git push origin main, git push origin main:main, etc.
+      // Matches: git push origin main, git push -u origin main, git push --set-upstream origin main:main
       // Does NOT match: git push origin main-feature
       // Escape regex metacharacters in branch name (e.g. release/1.0 → release\/1\.0)
       const escaped = branch.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-      const pattern = new RegExp(`\\bgit\\s+push\\s+\\S+\\s+${escaped}(?:\\s|$|:)`);
+      const pattern = new RegExp(`\\bgit\\s+push\\s+(?:-\\S+\\s+)*\\S+\\s+${escaped}(?:\\s|$|:)`);
       if (pattern.test(cmd)) {
         return `Blocked: direct push to protected branch '${branch}'. Create a PR instead.`;
       }
