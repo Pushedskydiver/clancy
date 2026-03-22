@@ -235,6 +235,7 @@ Posts to Slack or Teams when a ticket completes. The payload format (Slack vs Te
 | `NOTION_TOKEN` | Notion | Yes | — | Notion integration token |
 | `NOTION_DATABASE_ID` | Notion | Yes | — | Notion database ID (32-char hex) |
 | `CLANCY_NOTION_STATUS` | Notion | No | `Status` | Status property name |
+| `CLANCY_NOTION_TODO` | Notion | No | `To-do` | Status value name for the implementation queue (e.g. `Not started`) |
 | `CLANCY_NOTION_ASSIGNEE` | Notion | No | `Assignee` | Assignee property name |
 | `CLANCY_NOTION_LABELS` | Notion | No | — | Labels property name |
 | `CLANCY_NOTION_PARENT` | Notion | No | — | Parent relation property name |

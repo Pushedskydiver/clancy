@@ -11,6 +11,11 @@ For architecture overview, see [ARCHITECTURE.md](ARCHITECTURE.md). For code conv
 - Jira uses the new `POST /rest/api/3/search/jql` endpoint (old GET `/search` removed Aug 2025)
 - Linear personal API keys do NOT use "Bearer" prefix (OAuth tokens do)
 - Linear filters by `state.type: "unstarted"` (enum), not state name (team-specific)
+- Linear `viewer.assignedIssues` requires `$teamId: ID!` (not `String!`) and `orderBy: createdAt` (not `priority`)
+- Shortcut `/stories/search` uses `workflow_state_id` (singular, not plural) and may return a bare array instead of `{ data: [...] }`
+- Shortcut `/member-info` returns 404 for some API token types — ping falls back to `/workflows`
+- Notion status filter uses `status` type only (not `or(status, select)` — Notion returns 400 for mismatched filter types). `CLANCY_NOTION_TODO` overrides the default `"To-do"` status value
+- `detectBoard` checks `GITHUB_TOKEN + GITHUB_REPO` before other boards — non-GitHub board configs must not include `GITHUB_REPO` (use `GITHUB_TOKEN` alone as git host token)
 - Setup workflows support 6 boards: Jira, GitHub Issues, Linear, Shortcut, Notion, Azure DevOps
 - `fetchChildrenStatus` uses dual-mode: `Epic: {key}` text convention in ticket descriptions + native API fallback (Jira JQL, GitHub body search, Linear relations)
 - `fetchBlockerStatus` checks blockers before ticket pickup — Jira issueLinks, GitHub body parsing (`Blocked by #N`), Linear relations
