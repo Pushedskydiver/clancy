@@ -335,7 +335,7 @@ async function resolveLinearUnstartedStateId(
 }
 
 /** Look up the label ID for a given label name, creating it if needed.
- * Mirrors production pattern: query team labels, then create if missing. */
+ * Queries team labels first; creates on the team if not found. */
 async function resolveLinearLabelId(
   apiKey: string,
   teamId: string,

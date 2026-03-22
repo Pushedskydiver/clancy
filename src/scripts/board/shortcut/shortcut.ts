@@ -17,6 +17,7 @@ import {
 } from '~/schemas/shortcut.js';
 import type {
   ShortcutLabelsResponse,
+  ShortcutStoryNode,
   ShortcutWorkflowsResponse,
 } from '~/schemas/shortcut.js';
 import type { Ticket } from '~/types/index.js';
@@ -279,7 +280,7 @@ export async function fetchStories(
   // Shortcut may return { data: [...] } (paginated) or a bare array
   const parsed = shortcutStorySearchResponseSchema.safeParse(json);
 
-  let stories;
+  let stories: ShortcutStoryNode[];
 
   if (parsed.success) {
     stories = parsed.data.data;
