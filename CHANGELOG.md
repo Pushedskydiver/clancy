@@ -7,6 +7,19 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 ---
 
+## [0.8.21] — 2026-03-22
+
+### 🐛 Fixes
+
+- **Child PR bodies now include epic context** — when a child ticket targets an epic/milestone branch, the PR body shows the parent epic key, how many siblings have already been merged, and a note that this targets an intermediate branch (not `main`). Gives reviewers and downstream tooling (e.g., Ralph-o-bot) full context on where the PR sits in the epic flow. Fixes #75 (issue 1).
+- **GitHub epic PR: add build label to parent issue** — after creating the final epic PR (`milestone/N` → `main`), Clancy now adds the `clancy:build` label (or `CLANCY_LABEL` fallback) to the parent GitHub issue. This enables downstream tooling that drives merge queues by label (e.g., Ralph-o-bot) to discover and merge the epic PR. Non-GitHub boards continue to use `transitionTicket` as before. Fixes #75 (issue 2).
+
+### ✅ Tests
+
+- 11 new unit tests: 7 for epic context in PR body (banner content, singular/plural, first-child, non-epic target, Jira boards) + 4 for GitHub label in `deliverEpicToBase` (label addition, fallback, non-GitHub transition, error resilience). 1246 total.
+
+---
+
 ## [0.8.20] — 2026-03-22
 
 ### ✅ Tests

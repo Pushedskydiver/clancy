@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
+import type { Board } from '~/scripts/board/board.js';
 import type { BoardConfig } from '~/scripts/shared/env-schema/env-schema.js';
 import type { FetchedTicket } from '~/types/board.js';
 
@@ -287,6 +288,121 @@ describe('deliverEpicToBase', () => {
       'EPIC_PR_CREATED',
       1,
     );
+  });
+
+  it('adds build label to GitHub parent issue after epic PR creation', async () => {
+    const githubConfig: BoardConfig = {
+      provider: 'github',
+      env: {
+        GITHUB_TOKEN: 'ghp_test',
+        GITHUB_REPO: 'owner/repo',
+        CLANCY_LABEL_BUILD: 'clancy:build',
+      },
+    };
+    const mockBoard = {
+      addLabel: vi.fn(() => Promise.resolve()),
+      removeLabel: vi.fn(() => Promise.resolve()),
+      ensureLabel: vi.fn(() => Promise.resolve()),
+      transitionTicket: vi.fn(() => Promise.resolve(true)),
+    };
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const result = await deliverEpicToBase(
+      githubConfig,
+      '#49',
+      'Implement redesign',
+      'milestone/49',
+      'main',
+      mockBoard as unknown as Board,
+    );
+    log.mockRestore();
+
+    expect(result).toBe(true);
+    expect(mockBoard.addLabel).toHaveBeenCalledWith('#49', 'clancy:build');
+    expect(mockBoard.transitionTicket).not.toHaveBeenCalled();
+  });
+
+  it('falls back to CLANCY_LABEL when CLANCY_LABEL_BUILD is not set', async () => {
+    const githubConfig: BoardConfig = {
+      provider: 'github',
+      env: {
+        GITHUB_TOKEN: 'ghp_test',
+        GITHUB_REPO: 'owner/repo',
+        CLANCY_LABEL: 'clancy',
+      },
+    };
+    const mockBoard = {
+      addLabel: vi.fn(() => Promise.resolve()),
+      removeLabel: vi.fn(() => Promise.resolve()),
+      ensureLabel: vi.fn(() => Promise.resolve()),
+      transitionTicket: vi.fn(() => Promise.resolve(true)),
+    };
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await deliverEpicToBase(
+      githubConfig,
+      '#49',
+      'Implement redesign',
+      'milestone/49',
+      'main',
+      mockBoard as unknown as Board,
+    );
+    log.mockRestore();
+
+    expect(mockBoard.addLabel).toHaveBeenCalledWith('#49', 'clancy');
+  });
+
+  it('transitions to Review for non-GitHub boards (not addLabel)', async () => {
+    const mockBoard = {
+      addLabel: vi.fn(() => Promise.resolve()),
+      removeLabel: vi.fn(() => Promise.resolve()),
+      ensureLabel: vi.fn(() => Promise.resolve()),
+      transitionTicket: vi.fn(() => Promise.resolve(true)),
+    };
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    await deliverEpicToBase(
+      jiraConfig,
+      'PROJ-100',
+      'Customer portal',
+      'epic/proj-100',
+      'main',
+      mockBoard as unknown as Board,
+    );
+    log.mockRestore();
+
+    expect(mockBoard.transitionTicket).toHaveBeenCalled();
+    expect(mockBoard.addLabel).not.toHaveBeenCalled();
+  });
+
+  it('does not crash if addLabel fails on GitHub', async () => {
+    const githubConfig: BoardConfig = {
+      provider: 'github',
+      env: {
+        GITHUB_TOKEN: 'ghp_test',
+        GITHUB_REPO: 'owner/repo',
+        CLANCY_LABEL_BUILD: 'clancy:build',
+      },
+    };
+    const mockBoard = {
+      addLabel: vi.fn(() => Promise.reject(new Error('API error'))),
+      removeLabel: vi.fn(() => Promise.resolve()),
+      ensureLabel: vi.fn(() => Promise.resolve()),
+      transitionTicket: vi.fn(() => Promise.resolve(true)),
+    };
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const result = await deliverEpicToBase(
+      githubConfig,
+      '#49',
+      'Implement redesign',
+      'milestone/49',
+      'main',
+      mockBoard as unknown as Board,
+    );
+    log.mockRestore();
+
+    expect(result).toBe(true);
   });
 });
 

@@ -7,6 +7,16 @@
 import type { ProgressEntry } from '~/scripts/shared/progress/progress.js';
 import type { BoardConfig, Ticket } from '~/types/index.js';
 
+/** Epic context for child PRs targeting an epic/milestone branch. */
+export type EpicContext = {
+  /** Parent epic key (e.g., `'#49'`, `'PROJ-100'`). */
+  parentKey: string;
+  /** Number of sibling tickets already delivered to the epic branch. */
+  siblingsDelivered: number;
+  /** Target epic branch name (e.g., `'milestone/49'`). */
+  epicBranch: string;
+};
+
 /**
  * Check whether a target branch is an epic or milestone branch.
  *
@@ -31,6 +41,7 @@ export function isEpicBranch(targetBranch: string): boolean {
  * @param targetBranch - The branch the PR targets (used to determine `Closes` vs `Part of`).
  * @param verificationWarning - Optional warning text when verification checks failed after max retries. Included as a `## Verification Warning` section before the footer.
  * @param singleChildParent - Optional parent issue key (e.g. `#7`) when single-child skip is active. GitHub-only: adds `Closes {parent}` to the PR body so the parent issue auto-closes on merge. Ignored for non-GitHub boards and when targeting an epic branch.
+ * @param epicContext - Optional epic context when this PR targets an epic/milestone branch. Adds a banner showing the parent epic, sibling progress, and a note that this targets an intermediate branch.
  * @returns The PR body as a markdown string.
  */
 export function buildPrBody(
@@ -39,9 +50,26 @@ export function buildPrBody(
   targetBranch?: string,
   verificationWarning?: string,
   singleChildParent?: string,
+  epicContext?: EpicContext,
 ): string {
   const lines: string[] = [];
   const isEpic = targetBranch ? isEpicBranch(targetBranch) : false;
+
+  // Epic context banner — shown when this child PR targets an epic/milestone branch
+  if (epicContext && isEpic) {
+    lines.push(`## Part of epic ${epicContext.parentKey}`);
+    const delivered = epicContext.siblingsDelivered;
+    const deliveredText =
+      delivered === 0
+        ? 'No siblings delivered yet'
+        : `${delivered} sibling${delivered === 1 ? '' : 's'} previously delivered to \`${epicContext.epicBranch}\``;
+    lines.push(deliveredText);
+    lines.push('');
+    lines.push(
+      `> This PR targets \`${epicContext.epicBranch}\`. A final epic PR will be created when all children are complete.`,
+    );
+    lines.push('');
+  }
 
   switch (config.provider) {
     case 'github':
