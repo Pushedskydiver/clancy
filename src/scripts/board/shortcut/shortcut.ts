@@ -67,7 +67,7 @@ export async function pingShortcut(
     response = await fetch(`${SHORTCUT_API}/member-info`, {
       headers: shortcutHeaders(token),
     });
-    if (response.status === 404) {
+    if (!response.ok) {
       response = await fetch(`${SHORTCUT_API}/workflows`, {
         headers: shortcutHeaders(token),
       });
@@ -92,10 +92,14 @@ export async function pingShortcut(
     };
   }
 
+  // /member-info returns { id, ... } — validate if available.
+  // /workflows returns an array — just check response.ok (already done above).
   try {
     const json: unknown = await response.json();
     const parsed = shortcutMemberInfoResponseSchema.safeParse(json);
     if (parsed.success && parsed.data.id) return { ok: true };
+    // If schema doesn't match (e.g. /workflows fallback), OK response is sufficient
+    if (Array.isArray(json)) return { ok: true };
   } catch {
     // Invalid JSON — treat as auth issue
   }
