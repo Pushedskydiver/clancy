@@ -1,7 +1,7 @@
 /**
  * QA-002b-4: Credential guard and branch guard hook integration tests.
  *
- * Tests hooks via their stdin/stdout JSON contract — pipes JSON payloads to
+ * Tests hooks via their JSON contract — passes JSON payloads as argv[2] to
  * the hook process and asserts on stdout JSON. Expanded coverage beyond
  * co-located unit tests: every credential pattern category, all allowed
  * paths, edge cases, and all branch guard protected operations.
