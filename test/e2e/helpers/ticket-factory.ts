@@ -431,7 +431,7 @@ async function resolveShortcutUnstartedStateId(
 
 /** Resolve the authenticated member's ID. */
 async function resolveShortcutMemberId(token: string): Promise<string> {
-  const response = await fetchWithTimeout(`${SHORTCUT_API}/member`, {
+  const response = await fetchWithTimeout(`${SHORTCUT_API}/member-info`, {
     headers: shortcutHeaders(token),
   });
 

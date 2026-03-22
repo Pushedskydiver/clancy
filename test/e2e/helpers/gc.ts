@@ -363,7 +363,7 @@ async function cleanupShortcutOrphans(): Promise<number> {
 
   // Search for stories with [QA] in name
   const searchResp = await fetchWithTimeout(
-    'https://api.app.shortcut.com/api/v3/search/stories',
+    'https://api.app.shortcut.com/api/v3/stories/search',
     {
       method: 'POST',
       headers: scHeaders,
