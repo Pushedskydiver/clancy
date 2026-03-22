@@ -1,10 +1,11 @@
 /**
  * Shared Azure DevOps auth helpers for E2E tests.
  *
- * Mirrors the runtime buildAzdoAuth in src/scripts/board/azdo/azdo.ts.
+ * Returns the Base64-encoded payload only (no "Basic " prefix).
+ * Callers pass the result to azdoHeaders/azdoPatchHeaders which add the prefix.
  */
 
-/** Build a Base64-encoded Basic auth string for Azure DevOps (empty username + PAT). */
+/** Build the Base64-encoded `:<PAT>` payload for Azure DevOps Basic auth. */
 export function buildAzdoAuth(pat: string): string {
   return Buffer.from(`:${pat}`).toString('base64');
 }

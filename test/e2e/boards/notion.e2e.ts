@@ -8,7 +8,7 @@
  * Prerequisites:
  * - .env.e2e with NOTION_TOKEN and NOTION_DATABASE_ID
  * - .env.e2e with GITHUB_TOKEN and GITHUB_REPO (for git push + PR creation)
- * - Sandbox Notion database exists with Name (title), Status (status), Tags (multi_select) properties
+ * - Sandbox Notion database exists with a title, status, and multi_select property (names auto-discovered)
  * - Notion rate limit: 3 req/s — retryFetch handles Retry-After at runtime
  */
 import { execFileSync } from 'node:child_process';

@@ -518,7 +518,7 @@ async function cleanupAzdoOrphans(): Promise<number> {
 
   // WIQL query for [QA] work items created > 24h ago
   // Defence-in-depth: validate project name before interpolation (mirrors runtime isSafeWiqlValue)
-  if (!/^[a-zA-Z0-9 _\-'.]+$/.test(creds.project)) {
+  if (!/^[a-zA-Z0-9 _\-.]+$/.test(creds.project) || /--|;|\/\*/.test(creds.project)) {
     console.log(`  ⚠ Azure DevOps project name contains unsafe characters — skipping`);
     return 0;
   }

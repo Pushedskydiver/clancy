@@ -732,8 +732,7 @@ async function resolveAzdoIdentity(
     if (name) return name;
   }
 
-  // Last resort: empty string
-  return '';
+  throw new Error('Failed to resolve AzDo identity: no profile or connectionData available');
 }
 
 async function createAzdoTicket(
