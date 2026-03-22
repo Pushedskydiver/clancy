@@ -21,10 +21,14 @@ let cleanupRegistered = false;
  * it via `cat`. This avoids shell injection if the token contains
  * special characters ($, ", `, \).
  *
+ * The script inspects the prompt argument to distinguish between
+ * username and password prompts — git calls GIT_ASKPASS for both.
+ *
  * @returns The path to the askpass script.
  */
 export function createGitAskpass(token: string): string {
-  if (askpassPath) return askpassPath;
+  // Always recreate — token may differ between calls
+  cleanupGitAuth();
 
   const timestamp = Date.now();
   tokenPath = join(tmpdir(), `clancy-e2e-token-${timestamp}`);
@@ -34,8 +38,22 @@ export function createGitAskpass(token: string): string {
   writeFileSync(tokenPath, token);
   chmodSync(tokenPath, 0o600);
 
-  // Askpass script reads token from file — no interpolation
-  writeFileSync(askpassPath, `#!/bin/sh\ncat "${tokenPath}"\n`);
+  // Askpass script inspects the prompt to return the correct value.
+  // Git calls GIT_ASKPASS with a prompt string like "Username for ..."
+  // or "Password for ...". For GitHub HTTPS, the username is
+  // "x-access-token" and the password is the PAT.
+  const script = [
+    '#!/bin/sh',
+    'prompt="$1"',
+    'if echo "$prompt" | grep -qi "username"; then',
+    '  printf "%s\\n" "x-access-token"',
+    'else',
+    `  cat "${tokenPath}"`,
+    'fi',
+    '',
+  ].join('\n');
+
+  writeFileSync(askpassPath, script);
   chmodSync(askpassPath, 0o500);
 
   // Register cleanup on process exit

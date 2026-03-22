@@ -1,4 +1,3 @@
-#!/usr/bin/env npx tsx
 /**
  * Orphan ticket garbage collector for E2E tests.
  *

@@ -11,7 +11,7 @@
  * - clancy:build label exists on the sandbox repo
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, readFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
 
@@ -141,13 +141,20 @@ describe.skipIf(!canRun)('E2E: GitHub Issues — full pipeline', () => {
       });
     }
 
-    // Create Clancy scaffold with real credentials
+    // Create Clancy scaffold with real credentials.
+    // The .clancy/.env contains the real token, so we gitignore it
+    // to prevent it being committed and pushed to the sandbox repo.
     createClancyScaffold(repo.repoPath, 'github', {
       GITHUB_TOKEN: creds.token,
       GITHUB_REPO: creds.repo,
       CLANCY_BASE_BRANCH: 'main',
       CLANCY_LABEL_BUILD: 'clancy:build',
     });
+
+    writeFileSync(
+      join(repo.repoPath, '.clancy', '.gitignore'),
+      '.env\n',
+    );
 
     execFileSync('git', ['add', '-A'], {
       cwd: repo.repoPath,
