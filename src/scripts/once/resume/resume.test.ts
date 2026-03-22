@@ -8,7 +8,10 @@ import {
   hasUncommittedChanges,
   pushBranch,
 } from '~/scripts/shared/git-ops/git-ops.js';
-import { appendProgress } from '~/scripts/shared/progress/progress.js';
+import {
+  appendProgress,
+  findLastEntry,
+} from '~/scripts/shared/progress/progress.js';
 import { detectRemote } from '~/scripts/shared/remote/remote.js';
 
 import type { LockData } from '../lock/lock.js';
@@ -34,6 +37,7 @@ vi.mock('../pr-creation/pr-creation.js', () => ({
 
 vi.mock('~/scripts/shared/progress/progress.js', () => ({
   appendProgress: vi.fn(),
+  findLastEntry: vi.fn(),
 }));
 
 vi.mock('~/scripts/shared/pull-request/pr-body/pr-body.js', () => ({
@@ -68,6 +72,7 @@ const mockPushBranch = vi.mocked(pushBranch);
 const mockExecFileSync = vi.mocked(execFileSync);
 const mockAttemptPrCreation = vi.mocked(attemptPrCreation);
 const mockAppendProgress = vi.mocked(appendProgress);
+const mockFindLastEntry = vi.mocked(findLastEntry);
 const mockDetectRemote = vi.mocked(detectRemote);
 const mockSharedEnv = vi.mocked(sharedEnv);
 
@@ -143,6 +148,7 @@ describe('detectResume', () => {
       branch: 'feature/proj-42',
       hasUncommitted: true,
       hasUnpushed: false,
+      alreadyDelivered: false,
     });
   });
 
@@ -159,6 +165,7 @@ describe('detectResume', () => {
       branch: 'feature/proj-42',
       hasUncommitted: false,
       hasUnpushed: true,
+      alreadyDelivered: false,
     });
   });
 
@@ -175,6 +182,7 @@ describe('detectResume', () => {
       branch: 'feature/proj-42',
       hasUncommitted: true,
       hasUnpushed: true,
+      alreadyDelivered: false,
     });
   });
 
@@ -241,7 +249,117 @@ describe('detectResume', () => {
       branch: 'feature/proj-42',
       hasUncommitted: false,
       hasUnpushed: true,
+      alreadyDelivered: false,
     });
+  });
+
+  it('returns alreadyDelivered when branch exists with no local changes but progress shows PR_CREATED', () => {
+    mockBranchExists.mockReturnValue(true);
+    mockHasUncommittedChanges.mockReturnValue(false);
+    mockExecFileSync.mockImplementation(makeExecMock('main', () => ''));
+    mockFindLastEntry.mockReturnValue({
+      timestamp: '2026-03-22T10:00:00Z',
+      key: 'PROJ-42',
+      summary: 'Add login page',
+      status: 'PR_CREATED',
+      prNumber: 5,
+    });
+
+    const result = detectResume(makeLock());
+
+    expect(result).toEqual({
+      branch: 'feature/proj-42',
+      hasUncommitted: false,
+      hasUnpushed: false,
+      alreadyDelivered: true,
+    });
+  });
+
+  it('returns alreadyDelivered for PUSHED status in progress', () => {
+    mockBranchExists.mockReturnValue(true);
+    mockHasUncommittedChanges.mockReturnValue(false);
+    mockExecFileSync.mockImplementation(makeExecMock('main', () => ''));
+    mockFindLastEntry.mockReturnValue({
+      timestamp: '2026-03-22T10:00:00Z',
+      key: 'PROJ-42',
+      summary: 'Add login page',
+      status: 'PUSHED',
+    });
+
+    const result = detectResume(makeLock());
+
+    expect(result).toEqual({
+      branch: 'feature/proj-42',
+      hasUncommitted: false,
+      hasUnpushed: false,
+      alreadyDelivered: true,
+    });
+  });
+
+  it('returns alreadyDelivered for REWORK status in progress', () => {
+    mockBranchExists.mockReturnValue(true);
+    mockHasUncommittedChanges.mockReturnValue(false);
+    mockExecFileSync.mockImplementation(makeExecMock('main', () => ''));
+    mockFindLastEntry.mockReturnValue({
+      timestamp: '2026-03-22T10:00:00Z',
+      key: 'PROJ-42',
+      summary: 'Add login page',
+      status: 'REWORK',
+      prNumber: 7,
+    });
+
+    const result = detectResume(makeLock());
+
+    expect(result).toEqual({
+      branch: 'feature/proj-42',
+      hasUncommitted: false,
+      hasUnpushed: false,
+      alreadyDelivered: true,
+    });
+  });
+
+  it('returns alreadyDelivered for RESUMED status in progress', () => {
+    mockBranchExists.mockReturnValue(true);
+    mockHasUncommittedChanges.mockReturnValue(false);
+    mockExecFileSync.mockImplementation(makeExecMock('main', () => ''));
+    mockFindLastEntry.mockReturnValue({
+      timestamp: '2026-03-22T10:00:00Z',
+      key: 'PROJ-42',
+      summary: 'Add login page',
+      status: 'RESUMED',
+    });
+
+    const result = detectResume(makeLock());
+
+    expect(result).toEqual({
+      branch: 'feature/proj-42',
+      hasUncommitted: false,
+      hasUnpushed: false,
+      alreadyDelivered: true,
+    });
+  });
+
+  it('returns undefined when branch has no changes and no delivery in progress', () => {
+    mockBranchExists.mockReturnValue(true);
+    mockHasUncommittedChanges.mockReturnValue(false);
+    mockExecFileSync.mockImplementation(makeExecMock('main', () => ''));
+    mockFindLastEntry.mockReturnValue(undefined);
+
+    expect(detectResume(makeLock())).toBeUndefined();
+  });
+
+  it('returns undefined when last progress entry is non-delivery status', () => {
+    mockBranchExists.mockReturnValue(true);
+    mockHasUncommittedChanges.mockReturnValue(false);
+    mockExecFileSync.mockImplementation(makeExecMock('main', () => ''));
+    mockFindLastEntry.mockReturnValue({
+      timestamp: '2026-03-22T10:00:00Z',
+      key: 'PROJ-42',
+      summary: 'Add login page',
+      status: 'PUSH_FAILED',
+    });
+
+    expect(detectResume(makeLock())).toBeUndefined();
   });
 });
 
@@ -254,6 +372,7 @@ describe('executeResume', () => {
       branch: 'feature/proj-42',
       hasUncommitted: true,
       hasUnpushed: false,
+      alreadyDelivered: false,
     };
     mockAttemptPrCreation.mockResolvedValue({
       ok: true,
@@ -287,6 +406,7 @@ describe('executeResume', () => {
       branch: 'feature/proj-42',
       hasUncommitted: false,
       hasUnpushed: true,
+      alreadyDelivered: false,
     };
     mockAttemptPrCreation.mockResolvedValue({
       ok: true,
@@ -318,6 +438,7 @@ describe('executeResume', () => {
       branch: 'feature/proj-42',
       hasUncommitted: false,
       hasUnpushed: true,
+      alreadyDelivered: false,
     };
 
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -340,6 +461,7 @@ describe('executeResume', () => {
       branch: 'feature/proj-42',
       hasUncommitted: true,
       hasUnpushed: false,
+      alreadyDelivered: false,
     };
 
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -359,6 +481,7 @@ describe('executeResume', () => {
       branch: 'feature/proj-42',
       hasUncommitted: false,
       hasUnpushed: true,
+      alreadyDelivered: false,
     };
     mockAttemptPrCreation.mockResolvedValue({
       ok: true,
@@ -390,6 +513,7 @@ describe('executeResume', () => {
       branch: 'feature/proj-42',
       hasUncommitted: false,
       hasUnpushed: true,
+      alreadyDelivered: false,
     };
     mockAttemptPrCreation.mockResolvedValue({
       ok: false,
@@ -421,6 +545,7 @@ describe('executeResume', () => {
       branch: 'feature/proj-42',
       hasUncommitted: false,
       hasUnpushed: true,
+      alreadyDelivered: false,
     };
 
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -452,6 +577,7 @@ describe('executeResume', () => {
       branch: 'feature/proj-42',
       hasUncommitted: false,
       hasUnpushed: true,
+      alreadyDelivered: false,
     };
 
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
@@ -471,6 +597,7 @@ describe('executeResume', () => {
       branch: 'feature/proj-42',
       hasUncommitted: false,
       hasUnpushed: true,
+      alreadyDelivered: false,
     };
     mockAttemptPrCreation.mockResolvedValue({
       ok: false,
@@ -496,6 +623,7 @@ describe('executeResume', () => {
       branch: 'feature/proj-42',
       hasUncommitted: false,
       hasUnpushed: true,
+      alreadyDelivered: false,
     };
     mockAttemptPrCreation.mockResolvedValue({
       ok: true,

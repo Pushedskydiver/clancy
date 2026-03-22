@@ -1142,6 +1142,7 @@ describe('run', () => {
       branch: 'feature/proj-888',
       hasUncommitted: false,
       hasUnpushed: true,
+      alreadyDelivered: false,
     });
     mockExecuteResume.mockResolvedValue(true);
 
@@ -1185,6 +1186,7 @@ describe('run', () => {
       branch: 'feature/proj-777',
       hasUncommitted: true,
       hasUnpushed: false,
+      alreadyDelivered: false,
     });
 
     // Ensure AFK mode is OFF

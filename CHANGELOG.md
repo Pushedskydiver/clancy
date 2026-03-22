@@ -7,6 +7,14 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 ---
 
+## [0.8.18] — 2026-03-22
+
+### 🐛 Fixes
+
+- **Resume module: detect already-delivered work from stale lock** — when a session crashes after pushing branch + creating PR but before lock deletion, the AFK runner no longer picks up the same ticket and enters a PUSH_FAILED loop. `detectResume` now checks `progress.txt` for delivery statuses (PR_CREATED, PUSHED, REWORK, RESUMED) when the branch exists but has no local work to recover. `lockCheck` skips already-delivered tickets and continues to fresh ticket fetch. 8 new unit tests (1235 total).
+
+---
+
 ## [0.8.17] — 2026-03-22
 
 ### 🐛 Fixes

@@ -135,6 +135,7 @@ describe('lockCheck', () => {
       branch: 'feature/proj-3',
       hasUncommitted: false,
       hasUnpushed: true,
+      alreadyDelivered: false,
     });
     mockExecuteResume.mockResolvedValue(true);
 
@@ -166,6 +167,67 @@ describe('lockCheck', () => {
       branch: 'feature/proj-4',
       hasUncommitted: true,
       hasUnpushed: false,
+      alreadyDelivered: false,
+    });
+
+    const ctx = createContext([]);
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const result = await lockCheck(ctx);
+    log.mockRestore();
+
+    expect(result).toBe(true);
+    expect(mockExecuteResume).not.toHaveBeenCalled();
+  });
+
+  it('returns true and skips re-processing when ticket was already delivered', async () => {
+    const staleLock = {
+      pid: 44444,
+      ticketKey: 'PROJ-6',
+      ticketTitle: 'Already delivered',
+      ticketBranch: 'feature/proj-6',
+      targetBranch: 'main',
+      parentKey: 'none',
+      startedAt: new Date().toISOString(),
+    };
+    mockReadLock.mockReturnValue(staleLock);
+    mockIsLockStale.mockReturnValue(true);
+    mockDetectResume.mockReturnValue({
+      branch: 'feature/proj-6',
+      hasUncommitted: false,
+      hasUnpushed: false,
+      alreadyDelivered: true,
+    });
+
+    const ctx = createContext([]);
+    (ctx as { isAfk: boolean }).isAfk = true;
+
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const result = await lockCheck(ctx);
+    log.mockRestore();
+
+    // Should return true (continue to fresh ticket fetch) without executing resume
+    expect(result).toBe(true);
+    expect(mockExecuteResume).not.toHaveBeenCalled();
+  });
+
+  it('returns true for already-delivered in interactive mode too', async () => {
+    const staleLock = {
+      pid: 55555,
+      ticketKey: 'PROJ-7',
+      ticketTitle: 'Already delivered interactive',
+      ticketBranch: 'feature/proj-7',
+      targetBranch: 'main',
+      parentKey: 'none',
+      startedAt: new Date().toISOString(),
+    };
+    mockReadLock.mockReturnValue(staleLock);
+    mockIsLockStale.mockReturnValue(true);
+    mockDetectResume.mockReturnValue({
+      branch: 'feature/proj-7',
+      hasUncommitted: false,
+      hasUnpushed: false,
+      alreadyDelivered: true,
     });
 
     const ctx = createContext([]);
