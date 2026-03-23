@@ -80,6 +80,22 @@ clancy/
 │   └── clancy-drift-detector.js    — PostToolUse: warns when runtime files are outdated (debounced)
 ├── registry/
 │   └── boards.json             — board definitions for community extensions
+├── test/
+│   ├── integration/            — MSW-backed integration tests
+│   │   ├── helpers/            — Claude simulator, temp repo, env fixtures, MSW server
+│   │   ├── mocks/handlers/     — MSW request handlers per board
+│   │   ├── mocks/fixtures/     — JSON response fixtures per board
+│   │   ├── flows/board/        — per-board flow tests (6 boards + shared)
+│   │   ├── flows/              — hooks, pipeline, installer, AFK loop tests
+│   │   └── validate-fixtures.ts — offline fixture → Zod schema validation
+│   └── e2e/                    — real-API E2E tests
+│       ├── boards/             — per-board E2E tests (6 files)
+│       ├── helpers/            — ticket factory, cleanup, GC, auth helpers
+│       └── validate-live-schemas.ts — live API → Zod schema validation
+├── .github/workflows/
+│   ├── ci.yml                  — unit + integration tests (push/PR)
+│   ├── e2e-tests.yml           — weekly E2E + manual dispatch + live schema check
+│   └── release.yml             — auto-tag + GitHub Release on version bump
 └── docs/                       — project documentation (this directory)
 ```
 
