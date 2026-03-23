@@ -64,7 +64,7 @@ export function computeDeliveryOutcome(
     };
   }
 
-  // No token available — couldn't attempt PR creation
+  // PR creation not attempted (e.g., missing token or API base URL)
   return {
     type: 'not_attempted',
     manualUrl: buildManualPrUrl(remote, ticketBranch, targetBranch),
