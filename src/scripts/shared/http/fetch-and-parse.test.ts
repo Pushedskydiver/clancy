@@ -222,7 +222,11 @@ describe('fetchAndParse', () => {
   });
 
   it('does not call global fetch when custom fetcher is provided', async () => {
-    const globalFetch = vi.spyOn(globalThis, 'fetch');
+    const globalFetch = vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
+      throw new Error(
+        'global fetch should not be called when custom fetcher is provided',
+      );
+    });
     const customFetcher = vi
       .fn<typeof fetch>()
       .mockResolvedValue(

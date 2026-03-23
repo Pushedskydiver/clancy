@@ -76,14 +76,10 @@ export async function linearGraphql(
   let response: Response;
 
   try {
-    response = await fetch(LINEAR_API_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ query, variables }),
-    });
+    response = await fetch(
+      LINEAR_API_URL,
+      linearInit(apiKey, query, variables),
+    );
   } catch (err) {
     console.warn(
       `⚠ Linear API request failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -116,14 +112,10 @@ export async function pingLinear(
   let response: Response;
 
   try {
-    response = await fetch(LINEAR_API_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ query: '{ viewer { id } }' }),
-    });
+    response = await fetch(
+      LINEAR_API_URL,
+      linearInit(apiKey, '{ viewer { id } }'),
+    );
   } catch {
     return { ok: false, error: '✗ Could not reach Linear — check network' };
   }
