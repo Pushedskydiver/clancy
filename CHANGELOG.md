@@ -25,6 +25,7 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 - **Board label CRUD consolidation** — shared `modifyLabelList<T>()` (generic read-modify-write with idempotence) and `safeLabel()` (try-catch + warn wrapper) in `src/scripts/board/label-helpers/`. Applied to Jira, Shortcut, Notion, Azure DevOps. Works with both string labels and numeric IDs. 13 new unit tests.
 - **Rework platform handler map** — replaced 3 switch statements in `rework.ts` with `PlatformReworkHandlers` type and `resolvePlatformHandlers()` factory in `rework-handlers.ts`. Single switch creates a handler object; main functions call uniform methods (`checkReviewState`, `fetchComments`, `postComment`, `resolveThreads`, `reRequestReview`). Platform-specific no-ops for GitLab-only and GitHub-only actions.
 - **Remote parsing deduplication** — extracted `buildRemoteInfo()` in `remote.ts` to consolidate the platform-specific path extraction that was duplicated between `parseRemote()` and `overrideRemotePlatform()`. Single switch for all path parsing; `overrideRemotePlatform` reduced to 5 lines.
+- **Housekeeping** — renamed `retry.ts` → `retry-fetch.ts` (matches primary export `retryFetch`). Added 5 co-located unit tests for `copyRoleFiles`. Extended `docs/CONVENTIONS.md` with error handling, import style, and v0.8.24 patterns sections.
 
 ---
 

@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { retryFetch } from './retry.js';
+import { retryFetch } from './retry-fetch.js';
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
