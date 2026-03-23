@@ -8,6 +8,7 @@ import type { ShortcutEnv } from '~/schemas/env.js';
 import type { FetchedTicket } from '~/types/board.js';
 
 import type { Board, FetchTicketOpts } from '../board.js';
+import { modifyLabelList, safeLabel } from '../label-helpers/label-helpers.js';
 import {
   createLabel,
   fetchLabels,
@@ -120,21 +121,16 @@ export function createShortcutBoard(env: ShortcutEnv): Board {
     },
 
     async ensureLabel(label: string) {
-      try {
+      await safeLabel(async () => {
         const labels = await fetchLabels(env.SHORTCUT_API_TOKEN);
         const existing = labels.find((l) => l.name === label);
         if (existing) return;
-
         await createLabel(env.SHORTCUT_API_TOKEN, label);
-      } catch (err) {
-        console.warn(
-          `⚠ ensureLabel failed: ${err instanceof Error ? err.message : String(err)}`,
-        );
-      }
+      }, 'ensureLabel');
     },
 
     async addLabel(issueKey: string, label: string) {
-      try {
+      await safeLabel(async () => {
         await this.ensureLabel(label);
 
         const storyId = parseStoryId(issueKey);
@@ -144,26 +140,19 @@ export function createShortcutBoard(env: ShortcutEnv): Board {
         const target = labels.find((l) => l.name === label);
         if (!target) return;
 
-        const currentIds = await getStoryLabelIds(
-          env.SHORTCUT_API_TOKEN,
-          storyId,
-        );
-        if (!currentIds) return;
-        if (currentIds.includes(target.id)) return;
-
-        await updateStoryLabelIds(env.SHORTCUT_API_TOKEN, storyId, [
-          ...currentIds,
+        await modifyLabelList(
+          () => getStoryLabelIds(env.SHORTCUT_API_TOKEN, storyId),
+          async (ids) => {
+            await updateStoryLabelIds(env.SHORTCUT_API_TOKEN, storyId, ids);
+          },
           target.id,
-        ]);
-      } catch (err) {
-        console.warn(
-          `⚠ addLabel failed: ${err instanceof Error ? err.message : String(err)}`,
+          'add',
         );
-      }
+      }, 'addLabel');
     },
 
     async removeLabel(issueKey: string, label: string) {
-      try {
+      await safeLabel(async () => {
         const storyId = parseStoryId(issueKey);
         if (storyId === undefined) return;
 
@@ -171,23 +160,15 @@ export function createShortcutBoard(env: ShortcutEnv): Board {
         const target = labels.find((l) => l.name === label);
         if (!target) return;
 
-        const currentIds = await getStoryLabelIds(
-          env.SHORTCUT_API_TOKEN,
-          storyId,
+        await modifyLabelList(
+          () => getStoryLabelIds(env.SHORTCUT_API_TOKEN, storyId),
+          async (ids) => {
+            await updateStoryLabelIds(env.SHORTCUT_API_TOKEN, storyId, ids);
+          },
+          target.id,
+          'remove',
         );
-        if (!currentIds) return;
-        if (!currentIds.includes(target.id)) return;
-
-        await updateStoryLabelIds(
-          env.SHORTCUT_API_TOKEN,
-          storyId,
-          currentIds.filter((id) => id !== target.id),
-        );
-      } catch (err) {
-        console.warn(
-          `⚠ removeLabel failed: ${err instanceof Error ? err.message : String(err)}`,
-        );
-      }
+      }, 'removeLabel');
     },
 
     sharedEnv() {

@@ -13,6 +13,7 @@ import type { NotionPage } from '~/schemas/notion.js';
 import type { FetchedTicket } from '~/types/board.js';
 
 import type { Board, FetchTicketOpts } from '../board.js';
+import { modifyLabelList, safeLabel } from '../label-helpers/label-helpers.js';
 import {
   fetchBlockerStatus as fetchNotionBlockerStatus,
   fetchChildrenStatus as fetchNotionChildrenStatus,
@@ -155,55 +156,49 @@ export function createNotionBoard(env: NotionEnv): Board {
     },
 
     async addLabel(issueKey: string, label: string) {
-      try {
+      await safeLabel(async () => {
         const page = await resolvePageFromKey(
           env.NOTION_TOKEN,
           env.NOTION_DATABASE_ID,
           issueKey,
         );
         if (!page) return;
-
-        const currentLabels =
-          getPropertyValue(page, labelsProp, 'multi_select') ?? [];
-        if (currentLabels.includes(label)) return;
-
-        const newLabels = [...currentLabels, label].map((name) => ({ name }));
-
-        await updatePage(env.NOTION_TOKEN, page.id, {
-          [labelsProp]: { multi_select: newLabels },
-        });
-      } catch (err) {
-        console.warn(
-          `⚠ addLabel failed: ${err instanceof Error ? err.message : String(err)}`,
+        await modifyLabelList(
+          async () => getPropertyValue(page, labelsProp, 'multi_select') ?? [],
+          async (labels) => {
+            await updatePage(env.NOTION_TOKEN, page.id, {
+              [labelsProp]: {
+                multi_select: labels.map((name) => ({ name })),
+              },
+            });
+          },
+          label,
+          'add',
         );
-      }
+      }, 'addLabel');
     },
 
     async removeLabel(issueKey: string, label: string) {
-      try {
+      await safeLabel(async () => {
         const page = await resolvePageFromKey(
           env.NOTION_TOKEN,
           env.NOTION_DATABASE_ID,
           issueKey,
         );
         if (!page) return;
-
-        const currentLabels =
-          getPropertyValue(page, labelsProp, 'multi_select') ?? [];
-        if (!currentLabels.includes(label)) return;
-
-        const newLabels = currentLabels
-          .filter((name) => name !== label)
-          .map((name) => ({ name }));
-
-        await updatePage(env.NOTION_TOKEN, page.id, {
-          [labelsProp]: { multi_select: newLabels },
-        });
-      } catch (err) {
-        console.warn(
-          `⚠ removeLabel failed: ${err instanceof Error ? err.message : String(err)}`,
+        await modifyLabelList(
+          async () => getPropertyValue(page, labelsProp, 'multi_select') ?? [],
+          async (labels) => {
+            await updatePage(env.NOTION_TOKEN, page.id, {
+              [labelsProp]: {
+                multi_select: labels.map((name) => ({ name })),
+              },
+            });
+          },
+          label,
+          'remove',
         );
-      }
+      }, 'removeLabel');
     },
 
     sharedEnv() {
