@@ -118,3 +118,7 @@ Ubiquitous language for the Clancy project. Use these terms consistently in code
 | **Drift detector** | PostToolUse hook (`clancy-drift-detector.js`) that compares `.clancy/version.json` against the installed package VERSION file. Warns once per session when versions differ. (v0.8.0) |
 | **Desktop notification** | Notification hook (`clancy-notification.js`) that sends native OS desktop notifications. macOS: osascript, Linux: notify-send, Windows: PowerShell. Controllable via `CLANCY_DESKTOP_NOTIFY`. (v0.8.0) |
 | **Version tracking** | `.clancy/version.json` written by the installer on install/update. Contains `{ version, installedAt }`. Used by the drift detector hook. (v0.8.0) |
+| **Fixture feedback loop** | Cycle for keeping MSW fixtures fresh: E2E failure → update Zod schema → validate fixtures offline → update MSW fixture → Layer 2 stays accurate. Two scripts: `test:fixtures:validate` (offline) and `test:fixtures:live` (online). (v0.8.21) |
+| **Orphan GC** | Garbage collection script (`test:e2e:gc`) that finds `[QA]` tickets >24h old across all 6 boards and deletes/closes them. Runs before E2E tests in CI. (v0.8.16) |
+| **EpicContext** | Type in `buildPrBody` for child PRs targeting epic branches. Contains parent key, sibling delivery count (from `DELIVERED_STATUSES`), and epic branch name. Renders as a banner in the PR body. (v0.8.21) |
+| **DELIVERED_STATUSES** | Shared constant set in `src/types/remote.ts`: PR_CREATED, PUSHED, REWORK, RESUMED. Used by crash recovery (`resume.ts`) and epic context (`deliver.ts`). (v0.8.19) |

@@ -43,6 +43,8 @@ For architecture overview, see [ARCHITECTURE.md](ARCHITECTURE.md). For code conv
 ## Delivery & Git
 
 - PR-based flow: all tickets create PRs — parented tickets target the epic branch (`epic/{key}` or `milestone/{slug}`), standalone tickets target the base branch. When all children are done, Clancy auto-creates the epic PR to the base branch
+- Epic context in child PRs: when a child PR targets an epic branch, the PR body includes a banner with the parent epic key, sibling delivery count (derived from `DELIVERED_STATUSES`), and a note about the intermediate branch. Computed via `EpicContext` type in `buildPrBody`
+- GitHub epic completion: after creating the epic PR, Clancy adds the build label (`CLANCY_LABEL_BUILD` or `CLANCY_LABEL` fallback) to the parent GitHub issue so downstream tooling can discover it. Best-effort via `board.addLabel` (errors swallowed). Non-GitHub boards use `transitionTicket` instead
 - Single-child parent auto-close: when single-child skip is active, the child PR body includes `Closes #{parent}` (GitHub only, valid issue refs only) so the parent auto-closes on merge
 - PR retry phase (2a): retries PR creation for tickets that were pushed but failed to create a PR (network recovery). Scans progress.txt for PUSHED entries without PR_CREATED
 - Remote detection: `parseRemote()` handles GitHub, GitLab, Bitbucket Cloud/Server, Azure DevOps, GHE, and self-hosted instances
@@ -73,3 +75,11 @@ For architecture overview, see [ARCHITECTURE.md](ARCHITECTURE.md). For code conv
 
 - `Epic: {key}` description convention: child tickets include this text for cross-platform epic completion detection
 - `CLANCY_BRIEF_ISSUE_TYPE`, `CLANCY_BRIEF_EPIC`, `CLANCY_COMPONENT` env vars configure strategist ticket creation
+
+## Testing & CI
+
+- 3-layer QA: unit tests (co-located, `vi.mock()`), integration tests (MSW + Claude simulator), E2E tests (real APIs). See [TESTING.md](TESTING.md) for full details
+- Progress status constants in `src/types/remote.ts`: `DELIVERED_STATUSES` (PR_CREATED, PUSHED, REWORK, RESUMED), `COMPLETED_STATUSES` (DONE, PR_CREATED, PUSHED, EPIC_PR_CREATED, RESUMED), `FAILED_STATUSES` (SKIPPED, PUSH_FAILED, TIME_LIMIT). Used by resume, deliver, and session reports
+- Fixture feedback loop: offline validation (`npm run test:fixtures:validate`) maps MSW fixtures → Zod schemas. Live validation (`npm run test:fixtures:live`) hits board auth endpoints. Catches API drift between E2E runs
+- E2E CI workflow (`.github/workflows/e2e-tests.yml`): weekly Monday 6am UTC + manual dispatch. GC job → per-board matrix (credentials scoped per board) → live schema validation. `QA_GITHUB_TOKEN`/`QA_GITHUB_REPO` secrets avoid built-in `GITHUB_TOKEN` collision
+- GitHub E2E tests need a 2s delay after ticket creation — GitHub's Issues list API has eventual consistency for filtered queries
