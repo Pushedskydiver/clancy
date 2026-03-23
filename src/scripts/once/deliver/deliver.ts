@@ -459,5 +459,9 @@ export async function deliverEpicToBase(
     case 'local':
     case 'unsupported':
       return false;
+    default: {
+      const _exhaustive: never = outcome;
+      return _exhaustive;
+    }
   }
 }

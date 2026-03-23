@@ -94,5 +94,9 @@ export function progressForOutcome(outcome: DeliveryOutcome): {
     case 'not_attempted':
     case 'unsupported':
       return { status: 'PUSHED' };
+    default: {
+      const _exhaustive: never = outcome;
+      return _exhaustive;
+    }
   }
 }
