@@ -84,12 +84,6 @@ jobs:
       matrix:
         board: [github, jira, linear, shortcut, notion, azure-devops]
 
-    # Skip boards that don't match the manual dispatch filter
-    if: >-
-      github.event_name != 'workflow_dispatch' ||
-      github.event.inputs.board == 'all' ||
-      github.event.inputs.board == matrix.board
-
     steps:
       - uses: actions/checkout@v4
 
@@ -101,14 +95,14 @@ jobs:
         run: rm -rf node_modules package-lock.json && npm install
 
       - name: Run E2E — GitHub Issues
-        if: matrix.board == 'github'
+        if: matrix.board == 'github' && (github.event_name != 'workflow_dispatch' || github.event.inputs.board == 'all' || github.event.inputs.board == 'github')
         env:
           GITHUB_TOKEN: ${{ secrets.QA_GITHUB_TOKEN }}
           GITHUB_REPO: ${{ secrets.QA_GITHUB_REPO }}
         run: npm run test:e2e -- github
 
       - name: Run E2E — Jira
-        if: matrix.board == 'jira'
+        if: matrix.board == 'jira' && (github.event_name != 'workflow_dispatch' || github.event.inputs.board == 'all' || github.event.inputs.board == 'jira')
         env:
           GITHUB_TOKEN: ${{ secrets.QA_GITHUB_TOKEN }}
           GITHUB_REPO: ${{ secrets.QA_GITHUB_REPO }}
@@ -119,7 +113,7 @@ jobs:
         run: npm run test:e2e -- jira
 
       - name: Run E2E — Linear
-        if: matrix.board == 'linear'
+        if: matrix.board == 'linear' && (github.event_name != 'workflow_dispatch' || github.event.inputs.board == 'all' || github.event.inputs.board == 'linear')
         env:
           GITHUB_TOKEN: ${{ secrets.QA_GITHUB_TOKEN }}
           GITHUB_REPO: ${{ secrets.QA_GITHUB_REPO }}
@@ -128,7 +122,7 @@ jobs:
         run: npm run test:e2e -- linear
 
       - name: Run E2E — Shortcut
-        if: matrix.board == 'shortcut'
+        if: matrix.board == 'shortcut' && (github.event_name != 'workflow_dispatch' || github.event.inputs.board == 'all' || github.event.inputs.board == 'shortcut')
         env:
           GITHUB_TOKEN: ${{ secrets.QA_GITHUB_TOKEN }}
           GITHUB_REPO: ${{ secrets.QA_GITHUB_REPO }}
@@ -136,7 +130,7 @@ jobs:
         run: npm run test:e2e -- shortcut
 
       - name: Run E2E — Notion
-        if: matrix.board == 'notion'
+        if: matrix.board == 'notion' && (github.event_name != 'workflow_dispatch' || github.event.inputs.board == 'all' || github.event.inputs.board == 'notion')
         env:
           GITHUB_TOKEN: ${{ secrets.QA_GITHUB_TOKEN }}
           GITHUB_REPO: ${{ secrets.QA_GITHUB_REPO }}
@@ -145,7 +139,7 @@ jobs:
         run: npm run test:e2e -- notion
 
       - name: Run E2E — Azure DevOps
-        if: matrix.board == 'azure-devops'
+        if: matrix.board == 'azure-devops' && (github.event_name != 'workflow_dispatch' || github.event.inputs.board == 'all' || github.event.inputs.board == 'azure-devops')
         env:
           GITHUB_TOKEN: ${{ secrets.QA_GITHUB_TOKEN }}
           GITHUB_REPO: ${{ secrets.QA_GITHUB_REPO }}
