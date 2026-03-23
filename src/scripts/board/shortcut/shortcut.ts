@@ -20,6 +20,7 @@ import type {
   ShortcutStoryNode,
   ShortcutWorkflowsResponse,
 } from '~/schemas/shortcut.js';
+import { fetchAndParse } from '~/scripts/shared/http/fetch-and-parse.js';
 import type { Ticket } from '~/types/index.js';
 
 const SHORTCUT_API = 'https://api.app.shortcut.com/api/v3';
@@ -122,34 +123,14 @@ export async function fetchWorkflows(
 ): Promise<ShortcutWorkflowsResponse> {
   if (cachedWorkflows) return cachedWorkflows;
 
-  try {
-    const response = await fetch(`${SHORTCUT_API}/workflows`, {
-      headers: shortcutHeaders(token),
-    });
+  const data = await fetchAndParse(
+    `${SHORTCUT_API}/workflows`,
+    { headers: shortcutHeaders(token) },
+    { schema: shortcutWorkflowsResponseSchema, label: 'Shortcut workflows' },
+  );
 
-    if (!response.ok) {
-      console.warn(`⚠ Shortcut /workflows returned HTTP ${response.status}`);
-      return [];
-    }
-
-    const json: unknown = await response.json();
-    const parsed = shortcutWorkflowsResponseSchema.safeParse(json);
-
-    if (!parsed.success) {
-      console.warn(
-        `⚠ Unexpected Shortcut workflows response: ${parsed.error.message}`,
-      );
-      return [];
-    }
-
-    cachedWorkflows = parsed.data;
-    return cachedWorkflows;
-  } catch (err) {
-    console.warn(
-      `⚠ Shortcut /workflows request failed: ${err instanceof Error ? err.message : String(err)}`,
-    );
-    return [];
-  }
+  if (data) cachedWorkflows = data;
+  return data ?? [];
 }
 
 /**
@@ -332,33 +313,25 @@ export async function fetchStory(
   token: string,
   storyId: number,
 ): Promise<ShortcutTicket | undefined> {
-  try {
-    const response = await fetch(`${SHORTCUT_API}/stories/${storyId}`, {
-      headers: shortcutHeaders(token),
-    });
+  const story = await fetchAndParse(
+    `${SHORTCUT_API}/stories/${storyId}`,
+    { headers: shortcutHeaders(token) },
+    { schema: shortcutStoryDetailResponseSchema, label: 'Shortcut story' },
+  );
 
-    if (!response.ok) return undefined;
+  if (!story) return undefined;
 
-    const json: unknown = await response.json();
-    const parsed = shortcutStoryDetailResponseSchema.safeParse(json);
-
-    if (!parsed.success) return undefined;
-
-    const story = parsed.data;
-    return {
-      key: `sc-${story.id}`,
-      title: story.name,
-      description: story.description ?? '',
-      provider: 'shortcut' as const,
-      storyId: story.id,
-      epicId: story.epic_id ?? undefined,
-      labels: story.labels
-        ?.map((l) => l.name)
-        .filter((n): n is string => Boolean(n)),
-    };
-  } catch {
-    return undefined;
-  }
+  return {
+    key: `sc-${story.id}`,
+    title: story.name,
+    description: story.description ?? '',
+    provider: 'shortcut' as const,
+    storyId: story.id,
+    epicId: story.epic_id ?? undefined,
+    labels: story.labels
+      ?.map((l) => l.name)
+      .filter((n): n is string => Boolean(n)),
+  };
 }
 
 /**
@@ -616,34 +589,14 @@ export async function fetchLabels(
 ): Promise<ShortcutLabelsResponse> {
   if (cachedLabels) return cachedLabels;
 
-  try {
-    const response = await fetch(`${SHORTCUT_API}/labels`, {
-      headers: shortcutHeaders(token),
-    });
+  const data = await fetchAndParse(
+    `${SHORTCUT_API}/labels`,
+    { headers: shortcutHeaders(token) },
+    { schema: shortcutLabelsResponseSchema, label: 'Shortcut labels' },
+  );
 
-    if (!response.ok) {
-      console.warn(`⚠ Shortcut /labels returned HTTP ${response.status}`);
-      return [];
-    }
-
-    const json: unknown = await response.json();
-    const parsed = shortcutLabelsResponseSchema.safeParse(json);
-
-    if (!parsed.success) {
-      console.warn(
-        `⚠ Unexpected Shortcut labels response: ${parsed.error.message}`,
-      );
-      return [];
-    }
-
-    cachedLabels = parsed.data;
-    return cachedLabels;
-  } catch (err) {
-    console.warn(
-      `⚠ Shortcut /labels request failed: ${err instanceof Error ? err.message : String(err)}`,
-    );
-    return [];
-  }
+  if (data) cachedLabels = data;
+  return data ?? [];
 }
 
 /**
@@ -657,33 +610,23 @@ export async function createLabel(
   token: string,
   name: string,
 ): Promise<number | undefined> {
-  try {
-    const response = await fetch(`${SHORTCUT_API}/labels`, {
+  const data = await fetchAndParse(
+    `${SHORTCUT_API}/labels`,
+    {
       method: 'POST',
       headers: shortcutHeaders(token),
       body: JSON.stringify({ name, color: '#0075ca' }),
-    });
+    },
+    {
+      schema: shortcutLabelCreateResponseSchema,
+      label: 'Shortcut label create',
+    },
+  );
 
-    if (!response.ok) {
-      console.warn(`⚠ Shortcut label create returned HTTP ${response.status}`);
-      return undefined;
-    }
+  // Invalidate label cache so next fetchLabels picks up the new label
+  if (data) cachedLabels = undefined;
 
-    const json: unknown = await response.json();
-    const parsed = shortcutLabelCreateResponseSchema.safeParse(json);
-
-    if (!parsed.success) return undefined;
-
-    // Invalidate label cache so next fetchLabels picks up the new label
-    cachedLabels = undefined;
-
-    return parsed.data.id;
-  } catch (err) {
-    console.warn(
-      `⚠ Shortcut label create failed: ${err instanceof Error ? err.message : String(err)}`,
-    );
-    return undefined;
-  }
+  return data?.id;
 }
 
 /**
@@ -697,22 +640,13 @@ export async function getStoryLabelIds(
   token: string,
   storyId: number,
 ): Promise<number[] | undefined> {
-  try {
-    const response = await fetch(`${SHORTCUT_API}/stories/${storyId}`, {
-      headers: shortcutHeaders(token),
-    });
+  const data = await fetchAndParse(
+    `${SHORTCUT_API}/stories/${storyId}`,
+    { headers: shortcutHeaders(token) },
+    { schema: shortcutStoryDetailResponseSchema, label: 'Shortcut story' },
+  );
 
-    if (!response.ok) return undefined;
-
-    const json: unknown = await response.json();
-    const parsed = shortcutStoryDetailResponseSchema.safeParse(json);
-
-    if (!parsed.success) return undefined;
-
-    return parsed.data.label_ids ?? [];
-  } catch {
-    return undefined;
-  }
+  return data ? (data.label_ids ?? []) : undefined;
 }
 
 /**

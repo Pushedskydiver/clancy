@@ -14,6 +14,11 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 - **`fetchAndParse<T>()` shared utility** — generic fetch → JSON → Zod validation helper in `src/scripts/shared/http/fetch-and-parse.ts`. Eliminates the repeated try/fetch/check-ok/parse-json/validate-zod boilerplate. Returns parsed data or `undefined` on any failure (network, HTTP status, invalid JSON, schema mismatch). All failures logged with a configurable label. 8 new unit tests.
 - **GitHub board: use `fetchAndParse`** — converted `fetchIssues()` to use the shared utility. Removed ~25 lines of boilerplate.
 - **Jira board: use `fetchAndParse`** — converted `fetchTickets()` and `lookupTransitionId()` to use the shared utility. Removed ~45 lines of boilerplate.
+- **`fetchAndParse` custom fetcher** — optional `fetcher` param for boards that need custom fetch functions (e.g., Notion's `retryFetch` for rate limits). 3 new unit tests.
+- **Linear board: use `fetchAndParse`** — converted `fetchIssues()`, `fetchBlockerStatus()`, `lookupWorkflowStateId()`, `executeStateTransition()`, `fetchChildrenByDescription()`. Added `linearInit()` helper to build GraphQL requests. Removed ~35 lines of boilerplate.
+- **Shortcut board: use `fetchAndParse`** — converted `fetchWorkflows()`, `fetchLabels()`, `createLabel()`, `fetchStory()`, `getStoryLabelIds()`. Removed ~75 lines of boilerplate.
+- **Notion board: use `fetchAndParse`** — converted `queryDatabase()` and `fetchPage()` using the custom `fetcher` param with `retryFetch`. Removed ~30 lines of boilerplate.
+- **Azure DevOps board: use `fetchAndParse`** — converted `runWiql()`, `fetchWorkItem()`, `fetchChildrenByLinks()`. Removed ~40 lines of boilerplate.
 
 ---
 

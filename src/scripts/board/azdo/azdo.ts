@@ -15,6 +15,7 @@ import {
   azdoWorkItemsBatchResponseSchema,
 } from '~/schemas/azdo.js';
 import type { AzdoWorkItem } from '~/schemas/azdo.js';
+import { fetchAndParse } from '~/scripts/shared/http/fetch-and-parse.js';
 import type { Ticket } from '~/types/index.js';
 
 const API_VERSION = '7.1';
@@ -160,38 +161,17 @@ export async function runWiql(
   pat: string,
   query: string,
 ): Promise<number[]> {
-  try {
-    const response = await fetch(
-      `${apiBase(org, project)}/wit/wiql?api-version=${API_VERSION}`,
-      {
-        method: 'POST',
-        headers: azdoHeaders(pat),
-        body: JSON.stringify({ query }),
-      },
-    );
+  const data = await fetchAndParse(
+    `${apiBase(org, project)}/wit/wiql?api-version=${API_VERSION}`,
+    {
+      method: 'POST',
+      headers: azdoHeaders(pat),
+      body: JSON.stringify({ query }),
+    },
+    { schema: azdoWiqlResponseSchema, label: 'Azure DevOps WIQL' },
+  );
 
-    if (!response.ok) {
-      console.warn(`⚠ Azure DevOps WIQL returned HTTP ${response.status}`);
-      return [];
-    }
-
-    const json: unknown = await response.json();
-    const parsed = azdoWiqlResponseSchema.safeParse(json);
-
-    if (!parsed.success) {
-      console.warn(
-        `⚠ Unexpected Azure DevOps WIQL response: ${parsed.error.message}`,
-      );
-      return [];
-    }
-
-    return parsed.data.workItems.map((wi) => wi.id);
-  } catch (err) {
-    console.warn(
-      `⚠ Azure DevOps WIQL request failed: ${err instanceof Error ? err.message : String(err)}`,
-    );
-    return [];
-  }
+  return data ? data.workItems.map((wi) => wi.id) : [];
 }
 
 /**
@@ -267,23 +247,11 @@ export async function fetchWorkItem(
   pat: string,
   id: number,
 ): Promise<AzdoWorkItem | undefined> {
-  try {
-    const response = await fetch(
-      `${apiBase(org, project)}/wit/workitems/${id}?$expand=relations&api-version=${API_VERSION}`,
-      { headers: azdoHeaders(pat) },
-    );
-
-    if (!response.ok) return undefined;
-
-    const json: unknown = await response.json();
-    const parsed = azdoWorkItemSchema.safeParse(json);
-
-    if (!parsed.success) return undefined;
-
-    return parsed.data;
-  } catch {
-    return undefined;
-  }
+  return await fetchAndParse(
+    `${apiBase(org, project)}/wit/workitems/${id}?$expand=relations&api-version=${API_VERSION}`,
+    { headers: azdoHeaders(pat) },
+    { schema: azdoWorkItemSchema, label: 'Azure DevOps work item' },
+  );
 }
 
 /** A JSON Patch operation for Azure DevOps work item updates. */
@@ -612,23 +580,19 @@ async function fetchChildrenByLinks(
     if (Number.isNaN(parentId)) return undefined;
     const wiql = `SELECT [System.Id] FROM WorkItemLinks WHERE [Source].[System.Id] = ${parentId} AND [System.Links.LinkType] = 'System.LinkTypes.Hierarchy-Forward' MODE (MustContain)`;
 
-    const response = await fetch(
+    const data = await fetchAndParse(
       `${apiBase(org, project)}/wit/wiql?api-version=${API_VERSION}`,
       {
         method: 'POST',
         headers: azdoHeaders(pat),
         body: JSON.stringify({ query: wiql }),
       },
+      { schema: azdoWiqlLinkResponseSchema, label: 'Azure DevOps WIQL links' },
     );
 
-    if (!response.ok) return undefined;
+    if (!data) return undefined;
 
-    const json: unknown = await response.json();
-    const parsed = azdoWiqlLinkResponseSchema.safeParse(json);
-
-    if (!parsed.success) return undefined;
-
-    const relations = parsed.data.workItemRelations ?? [];
+    const relations = data.workItemRelations ?? [];
     // Filter out the source item itself (target is null for the source row)
     const childIds = relations
       .filter((r) => r.target?.id !== undefined && r.target.id !== parentId)

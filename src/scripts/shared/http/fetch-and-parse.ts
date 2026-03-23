@@ -17,6 +17,8 @@ export type FetchAndParseOptions<T> = {
   schema: ZodMiniType<T>;
   /** Human-readable label for error messages (e.g., `'Jira API'`). */
   label: string;
+  /** Custom fetch function (e.g., `retryFetch` for Notion rate limits). Defaults to global `fetch`. */
+  fetcher?: (url: string, init?: RequestInit) => Promise<Response>;
 };
 
 /**
@@ -36,11 +38,11 @@ export async function fetchAndParse<T>(
   init: RequestInit | undefined,
   opts: FetchAndParseOptions<T>,
 ): Promise<T | undefined> {
-  const { schema, label } = opts;
+  const { schema, label, fetcher = fetch } = opts;
 
   let response: Response;
   try {
-    response = await fetch(url, init);
+    response = await fetcher(url, init);
   } catch (err) {
     console.warn(
       `⚠ ${label} request failed: ${err instanceof Error ? err.message : String(err)}`,
