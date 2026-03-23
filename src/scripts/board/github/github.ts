@@ -10,6 +10,7 @@
 import { z } from 'zod/mini';
 
 import { githubIssuesResponseSchema } from '~/schemas/github.js';
+import { fetchAndParse } from '~/scripts/shared/http/fetch-and-parse.js';
 import {
   GITHUB_API,
   githubHeaders,
@@ -162,8 +163,6 @@ export async function fetchIssues(
   excludeHitl?: boolean,
   limit = 5,
 ): Promise<GitHubTicket[]> {
-  let response: Response;
-
   const params = new URLSearchParams({
     state: 'open',
     assignee: username ?? '@me',
@@ -172,40 +171,16 @@ export async function fetchIssues(
 
   if (label) params.set('labels', label);
 
-  try {
-    response = await fetch(`${GITHUB_API}/repos/${repo}/issues?${params}`, {
-      headers: githubHeaders(token),
-    });
-  } catch (err) {
-    console.warn(
-      `⚠ GitHub API request failed: ${err instanceof Error ? err.message : String(err)}`,
-    );
-    return [];
-  }
+  const data = await fetchAndParse(
+    `${GITHUB_API}/repos/${repo}/issues?${params}`,
+    { headers: githubHeaders(token) },
+    { schema: githubIssuesResponseSchema, label: 'GitHub Issues API' },
+  );
 
-  if (!response.ok) {
-    console.warn(`⚠ GitHub API returned HTTP ${response.status}`);
-    return [];
-  }
-
-  let json: unknown;
-
-  try {
-    json = await response.json();
-  } catch {
-    console.warn('⚠ GitHub API returned invalid JSON');
-    return [];
-  }
-
-  const parsed = githubIssuesResponseSchema.safeParse(json);
-
-  if (!parsed.success) {
-    console.warn(`⚠ Unexpected GitHub response shape: ${parsed.error.message}`);
-    return [];
-  }
+  if (!data) return [];
 
   // Filter out pull requests
-  let issues = parsed.data.filter((item) => !item.pull_request);
+  let issues = data.filter((item) => !item.pull_request);
 
   // HITL/AFK filtering: exclude issues with clancy:hitl label
   // GitHub Issues API doesn't support label exclusion natively, so filter client-side.

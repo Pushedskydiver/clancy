@@ -12,6 +12,7 @@ import {
   jiraSearchResponseSchema,
   jiraTransitionsResponseSchema,
 } from '~/schemas/jira.js';
+import { fetchAndParse } from '~/scripts/shared/http/fetch-and-parse.js';
 import { jiraHeaders, pingEndpoint } from '~/scripts/shared/http/http.js';
 import type { PingResult } from '~/scripts/shared/http/http.js';
 import type { Ticket } from '~/types/index.js';
@@ -205,10 +206,9 @@ export async function fetchTickets(
 ): Promise<JiraTicket[]> {
   const jql = buildJql(projectKey, status, sprint, label, excludeHitl);
 
-  let response: Response;
-
-  try {
-    response = await fetch(`${baseUrl}/rest/api/3/search/jql`, {
+  const data = await fetchAndParse(
+    `${baseUrl}/rest/api/3/search/jql`,
+    {
       method: 'POST',
       headers: {
         ...jiraHeaders(auth),
@@ -226,36 +226,13 @@ export async function fetchTickets(
           'labels',
         ],
       }),
-    });
-  } catch (err) {
-    console.warn(
-      `⚠ Jira API request failed: ${err instanceof Error ? err.message : String(err)}`,
-    );
-    return [];
-  }
+    },
+    { schema: jiraSearchResponseSchema, label: 'Jira API' },
+  );
 
-  if (!response.ok) {
-    console.warn(`⚠ Jira API returned HTTP ${response.status}`);
-    return [];
-  }
+  if (!data) return [];
 
-  let json: unknown;
-
-  try {
-    json = await response.json();
-  } catch {
-    console.warn('⚠ Jira API returned invalid JSON');
-    return [];
-  }
-
-  const parsed = jiraSearchResponseSchema.safeParse(json);
-
-  if (!parsed.success) {
-    console.warn(`⚠ Unexpected Jira response shape: ${parsed.error.message}`);
-    return [];
-  }
-
-  return parsed.data.issues.map((issue) => {
+  return data.issues.map((issue) => {
     const fields = issue.fields;
 
     // Extract blockers
@@ -439,43 +416,13 @@ export async function lookupTransitionId(
 ): Promise<string | undefined> {
   if (!ISSUE_KEY_PATTERN.test(issueKey)) return undefined;
 
-  let response: Response;
+  const data = await fetchAndParse(
+    `${baseUrl}/rest/api/3/issue/${issueKey}/transitions`,
+    { headers: jiraHeaders(auth) },
+    { schema: jiraTransitionsResponseSchema, label: 'Jira transitions' },
+  );
 
-  try {
-    response = await fetch(
-      `${baseUrl}/rest/api/3/issue/${issueKey}/transitions`,
-      { headers: jiraHeaders(auth) },
-    );
-  } catch (err) {
-    console.warn(
-      `⚠ Jira transitions request failed: ${err instanceof Error ? err.message : String(err)}`,
-    );
-    return undefined;
-  }
-
-  if (!response.ok) return undefined;
-
-  let json: unknown;
-
-  try {
-    json = await response.json();
-  } catch {
-    console.warn('⚠ Jira transitions returned invalid JSON');
-    return undefined;
-  }
-
-  const parsed = jiraTransitionsResponseSchema.safeParse(json);
-
-  if (!parsed.success) {
-    console.warn(
-      `⚠ Unexpected Jira transitions response: ${parsed.error.message}`,
-    );
-    return undefined;
-  }
-
-  const transition = parsed.data.transitions.find((t) => t.name === statusName);
-
-  return transition?.id;
+  return data?.transitions.find((t) => t.name === statusName)?.id;
 }
 
 /**

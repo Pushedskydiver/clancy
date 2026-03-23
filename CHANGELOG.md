@@ -7,6 +7,16 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 ---
 
+## [0.8.24] — 2026-03-23
+
+### ♻️ Refactors
+
+- **`fetchAndParse<T>()` shared utility** — generic fetch → JSON → Zod validation helper in `src/scripts/shared/http/fetch-and-parse.ts`. Eliminates the repeated try/fetch/check-ok/parse-json/validate-zod boilerplate. Returns parsed data or `undefined` on any failure (network, HTTP status, invalid JSON, schema mismatch). All failures logged with a configurable label. 8 new unit tests.
+- **GitHub board: use `fetchAndParse`** — converted `fetchIssues()` to use the shared utility. Removed ~25 lines of boilerplate.
+- **Jira board: use `fetchAndParse`** — converted `fetchTickets()` and `lookupTransitionId()` to use the shared utility. Removed ~45 lines of boilerplate.
+
+---
+
 ## [0.8.23] — 2026-03-23
 
 ### 📝 Docs
