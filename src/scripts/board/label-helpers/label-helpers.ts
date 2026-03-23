@@ -41,7 +41,7 @@ export async function safeLabel(
  * @param target - The label (or ID) to add or remove.
  * @param mode - Whether to add or remove the target.
  */
-export async function modifyLabelList<T>(
+export async function modifyLabelList<T extends string | number>(
   fetchCurrent: () => Promise<T[] | undefined>,
   writeUpdated: (updated: T[]) => Promise<void>,
   target: T,

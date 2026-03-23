@@ -37,7 +37,7 @@ export function createJiraBoard(env: JiraEnv): Board {
       { headers: { Authorization: auth, Accept: 'application/json' } },
     );
     if (!res.ok) {
-      console.warn(`⚠ label GET failed: HTTP ${res.status}`);
+      console.warn(`⚠ label GET ${issueKey} failed: HTTP ${res.status}`);
       return undefined;
     }
     const json = jiraIssueLabelsResponseSchema.parse(await res.json());
@@ -57,7 +57,7 @@ export function createJiraBoard(env: JiraEnv): Board {
       },
     );
     if (!putRes.ok) {
-      console.warn(`⚠ label PUT returned HTTP ${putRes.status}`);
+      console.warn(`⚠ label PUT ${issueKey} returned HTTP ${putRes.status}`);
     }
   }
 
