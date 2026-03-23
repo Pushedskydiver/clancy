@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import { retryFetch } from '~/scripts/shared/http/retry.js';
+import { retryFetch } from '~/scripts/shared/http/retry-fetch.js';
 
 import {
   fetchBlockerStatus,
@@ -12,8 +12,8 @@ import {
   updatePage,
 } from './notion.js';
 
-// Mock retryFetch before importing the module under test
-vi.mock('~/scripts/shared/http/retry.js', () => ({
+// Mock retryFetch (Vitest hoists vi.mock calls above imports)
+vi.mock('~/scripts/shared/http/retry-fetch.js', () => ({
   retryFetch: vi.fn(),
 }));
 

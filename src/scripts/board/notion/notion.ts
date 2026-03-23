@@ -13,7 +13,7 @@ import {
 } from '~/schemas/notion.js';
 import type { NotionPage } from '~/schemas/notion.js';
 import { fetchAndParse } from '~/scripts/shared/http/fetch-and-parse.js';
-import { retryFetch } from '~/scripts/shared/http/retry.js';
+import { retryFetch } from '~/scripts/shared/http/retry-fetch.js';
 
 const NOTION_API = 'https://api.notion.com/v1';
 const NOTION_VERSION = '2022-06-28';

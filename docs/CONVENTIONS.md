@@ -58,3 +58,28 @@
 - Agent prompts in `src/agents/` — one per specialist
 - Board modules and shared utilities in `src/scripts/`
 - All hooks in `hooks/` at the project root
+
+## Error Handling
+
+- **Board operations are best-effort** — label CRUD, transitions, and PR actions catch errors and `console.warn`. Never throw from a board method.
+- **`safeLabel(fn, operation)`** — shared try-catch + warn wrapper for label operations (`src/scripts/board/label-helpers/`).
+- **`fetchAndParse<T>()`** — returns `undefined` on any failure (network, HTTP status, invalid JSON, schema mismatch). Caller checks for `undefined`.
+- **Delivery is push-first** — `deliverViaPullRequest` considers push success as delivery success. PR creation is best-effort.
+
+## Patterns Introduced in v0.8.24
+
+| Pattern | Location | Purpose |
+|---|---|---|
+| `fetchAndParse<T>()` | `src/scripts/shared/http/fetch-and-parse.ts` | Single-request + JSON + Zod validation. Optional `fetcher` param for custom fetch (e.g., Notion's `retryFetch`). |
+| `DeliveryOutcome` | `src/scripts/once/deliver/outcome.ts` | Discriminated union for PR delivery results. `computeDeliveryOutcome()` is pure; `logOutcome()` and `progressForOutcome()` handle side effects. |
+| `DeliveryParams` | `src/scripts/once/deliver/deliver.ts` | Options object replacing 9 positional parameters on `deliverViaPullRequest()`. |
+| `PlatformReworkHandlers` | `src/scripts/once/rework/rework-handlers.ts` | Handler map replacing dual switches. Factory creates per-platform handler; callers use uniform methods. |
+| `modifyLabelList<T>()` | `src/scripts/board/label-helpers/label-helpers.ts` | Generic read-modify-write with idempotence. `T extends string \| number`. |
+| `buildRemoteInfo()` | `src/scripts/shared/remote/remote.ts` | Consolidated platform path extraction (was duplicated in `parseRemote` and `overrideRemotePlatform`). |
+
+## Import Style
+
+- ESM with `.js` extensions in all imports (TypeScript `NodeNext` resolution)
+- Path alias `~/` → `src/` (resolved by `tsc-alias` at build time)
+- Type imports use `import type { ... }` — enforced by `consistent-type-imports` ESLint rule
+- Group imports: external packages first, then `~/` aliases, then relative paths
