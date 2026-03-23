@@ -200,4 +200,62 @@ describe('fetchAndParse', () => {
     expect(result).toBeUndefined();
     expect(warn).toHaveBeenCalledWith(expect.stringContaining('string error'));
   });
+
+  it('uses custom fetcher when provided', async () => {
+    const customFetcher = vi.fn<typeof fetch>().mockResolvedValue(
+      new Response(JSON.stringify({ id: 1, name: 'Custom' }), {
+        status: 200,
+      }),
+    );
+
+    const result = await fetchAndParse(
+      'https://api.example.com/custom',
+      { method: 'POST' },
+      { schema: testSchema, label, fetcher: customFetcher },
+    );
+
+    expect(result).toEqual({ id: 1, name: 'Custom' });
+    expect(customFetcher).toHaveBeenCalledWith(
+      'https://api.example.com/custom',
+      expect.objectContaining({ method: 'POST' }),
+    );
+  });
+
+  it('does not call global fetch when custom fetcher is provided', async () => {
+    const globalFetch = vi.spyOn(globalThis, 'fetch').mockImplementation(() => {
+      throw new Error(
+        'global fetch should not be called when custom fetcher is provided',
+      );
+    });
+    const customFetcher = vi
+      .fn<typeof fetch>()
+      .mockResolvedValue(
+        new Response(JSON.stringify({ id: 1, name: 'Test' }), { status: 200 }),
+      );
+
+    await fetchAndParse('https://api.example.com', undefined, {
+      schema: testSchema,
+      label,
+      fetcher: customFetcher,
+    });
+
+    expect(globalFetch).not.toHaveBeenCalled();
+    expect(customFetcher).toHaveBeenCalled();
+  });
+
+  it('handles custom fetcher errors the same as global fetch', async () => {
+    const customFetcher = vi
+      .fn<typeof fetch>()
+      .mockRejectedValue(new Error('rate limited'));
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    const result = await fetchAndParse('https://api.example.com', undefined, {
+      schema: testSchema,
+      label,
+      fetcher: customFetcher,
+    });
+
+    expect(result).toBeUndefined();
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('rate limited'));
+  });
 });

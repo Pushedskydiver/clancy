@@ -15,10 +15,27 @@ import {
   linearViewerResponseSchema,
   linearWorkflowStatesResponseSchema,
 } from '~/schemas/linear.js';
+import { fetchAndParse } from '~/scripts/shared/http/fetch-and-parse.js';
 import type { Ticket } from '~/types/index.js';
 
 const SAFE_ID_PATTERN = /^[a-zA-Z0-9_-]+$/;
 const LINEAR_API_URL = 'https://api.linear.app/graphql';
+
+/** Build standard Linear GraphQL request init. */
+function linearInit(
+  apiKey: string,
+  query: string,
+  variables?: Record<string, unknown>,
+): RequestInit {
+  return {
+    method: 'POST',
+    headers: {
+      Authorization: apiKey,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ query, variables }),
+  };
+}
 
 type LinearEnv = {
   LINEAR_API_KEY: string;
@@ -59,14 +76,10 @@ export async function linearGraphql(
   let response: Response;
 
   try {
-    response = await fetch(LINEAR_API_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ query, variables }),
-    });
+    response = await fetch(
+      LINEAR_API_URL,
+      linearInit(apiKey, query, variables),
+    );
   } catch (err) {
     console.warn(
       `⚠ Linear API request failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -99,14 +112,10 @@ export async function pingLinear(
   let response: Response;
 
   try {
-    response = await fetch(LINEAR_API_URL, {
-      method: 'POST',
-      headers: {
-        Authorization: apiKey,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ query: '{ viewer { id } }' }),
-    });
+    response = await fetch(
+      LINEAR_API_URL,
+      linearInit(apiKey, '{ viewer { id } }'),
+    );
   } catch {
     return { ok: false, error: '✗ Could not reach Linear — check network' };
   }
@@ -219,15 +228,13 @@ export async function fetchIssues(
 
   if (hasLabel) variables.label = label;
 
-  const raw = await linearGraphql(env.LINEAR_API_KEY, query, variables);
-  const parsed = linearIssuesResponseSchema.safeParse(raw);
+  const data = await fetchAndParse(
+    LINEAR_API_URL,
+    linearInit(env.LINEAR_API_KEY, query, variables),
+    { schema: linearIssuesResponseSchema, label: 'Linear issues' },
+  );
 
-  if (!parsed.success) {
-    console.warn(`⚠ Unexpected Linear response shape: ${parsed.error.message}`);
-    return [];
-  }
-
-  let nodes = parsed.data.data?.viewer?.assignedIssues?.nodes;
+  let nodes = data?.data?.viewer?.assignedIssues?.nodes;
 
   if (!nodes?.length) return [];
 
@@ -283,12 +290,16 @@ export async function fetchBlockerStatus(
     }
   `;
 
-  const raw = await linearGraphql(apiKey, query, { issueId });
-  const parsed = linearIssueRelationsResponseSchema.safeParse(raw);
+  const data = await fetchAndParse(
+    LINEAR_API_URL,
+    linearInit(apiKey, query, { issueId }),
+    {
+      schema: linearIssueRelationsResponseSchema,
+      label: 'Linear issue relations',
+    },
+  );
 
-  if (!parsed.success) return false;
-
-  const relations = parsed.data.data?.issue?.relations?.nodes ?? [];
+  const relations = data?.data?.issue?.relations?.nodes ?? [];
   const doneTypes = new Set(['completed', 'canceled']);
 
   return relations.some((rel) => {
@@ -359,12 +370,15 @@ async function fetchChildrenByDescription(
     }
   `;
 
-  const raw = await linearGraphql(apiKey, query, { filter: descriptionRef });
-  const parsed = linearIssueSearchResponseSchema.safeParse(raw);
+  const data = await fetchAndParse(
+    LINEAR_API_URL,
+    linearInit(apiKey, query, { filter: descriptionRef }),
+    { schema: linearIssueSearchResponseSchema, label: 'Linear issue search' },
+  );
 
-  if (!parsed.success) return undefined;
+  if (!data) return undefined;
 
-  const nodes = parsed.data.data?.issueSearch?.nodes ?? [];
+  const nodes = data.data?.issueSearch?.nodes ?? [];
   const total = nodes.length;
   const doneTypes = new Set(['completed', 'canceled']);
   const incomplete = nodes.filter(
@@ -447,17 +461,16 @@ export async function lookupWorkflowStateId(
     }
   `;
 
-  const raw = await linearGraphql(apiKey, query, { teamId, name: stateName });
-  const parsed = linearWorkflowStatesResponseSchema.safeParse(raw);
+  const data = await fetchAndParse(
+    LINEAR_API_URL,
+    linearInit(apiKey, query, { teamId, name: stateName }),
+    {
+      schema: linearWorkflowStatesResponseSchema,
+      label: 'Linear workflowStates',
+    },
+  );
 
-  if (!parsed.success) {
-    console.warn(
-      `⚠ Unexpected Linear workflowStates response: ${parsed.error.message}`,
-    );
-    return undefined;
-  }
-
-  return parsed.data.data?.workflowStates?.nodes?.[0]?.id;
+  return data?.data?.workflowStates?.nodes?.[0]?.id;
 }
 
 /**
@@ -481,17 +494,13 @@ export async function executeStateTransition(
     }
   `;
 
-  const raw = await linearGraphql(apiKey, mutation, { issueId, stateId });
-  const parsed = linearIssueUpdateResponseSchema.safeParse(raw);
+  const data = await fetchAndParse(
+    LINEAR_API_URL,
+    linearInit(apiKey, mutation, { issueId, stateId }),
+    { schema: linearIssueUpdateResponseSchema, label: 'Linear issueUpdate' },
+  );
 
-  if (!parsed.success) {
-    console.warn(
-      `⚠ Unexpected Linear issueUpdate response: ${parsed.error.message}`,
-    );
-    return false;
-  }
-
-  return parsed.data.data?.issueUpdate?.success === true;
+  return data?.data?.issueUpdate?.success === true;
 }
 
 /**

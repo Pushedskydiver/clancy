@@ -12,6 +12,7 @@ import {
   notionUserResponseSchema,
 } from '~/schemas/notion.js';
 import type { NotionPage } from '~/schemas/notion.js';
+import { fetchAndParse } from '~/scripts/shared/http/fetch-and-parse.js';
 import { retryFetch } from '~/scripts/shared/http/retry.js';
 
 const NOTION_API = 'https://api.notion.com/v1';
@@ -105,43 +106,19 @@ export async function queryDatabase(
   if (sorts) body.sorts = sorts;
   if (startCursor) body.start_cursor = startCursor;
 
-  let response: Response;
-
-  try {
-    response = await retryFetch(`${NOTION_API}/databases/${databaseId}/query`, {
+  return await fetchAndParse(
+    `${NOTION_API}/databases/${databaseId}/query`,
+    {
       method: 'POST',
       headers: notionHeaders(token),
       body: JSON.stringify(body),
-    });
-  } catch (err) {
-    console.warn(
-      `⚠ Notion API request failed: ${err instanceof Error ? err.message : String(err)}`,
-    );
-    return undefined;
-  }
-
-  if (!response.ok) {
-    console.warn(`⚠ Notion API returned HTTP ${response.status}`);
-    return undefined;
-  }
-
-  let json: unknown;
-
-  try {
-    json = await response.json();
-  } catch {
-    console.warn('⚠ Notion API returned invalid JSON');
-    return undefined;
-  }
-
-  const parsed = notionDatabaseQueryResponseSchema.safeParse(json);
-
-  if (!parsed.success) {
-    console.warn(`⚠ Unexpected Notion response shape: ${parsed.error.message}`);
-    return undefined;
-  }
-
-  return parsed.data;
+    },
+    {
+      schema: notionDatabaseQueryResponseSchema,
+      label: 'Notion API',
+      fetcher: retryFetch,
+    },
+  );
 }
 
 /**
@@ -193,22 +170,11 @@ export async function fetchPage(
   token: string,
   pageId: string,
 ): Promise<NotionPage | undefined> {
-  try {
-    const response = await retryFetch(`${NOTION_API}/pages/${pageId}`, {
-      headers: notionHeaders(token),
-    });
-
-    if (!response.ok) return undefined;
-
-    const json: unknown = await response.json();
-    const parsed = notionPageSchema.safeParse(json);
-
-    if (!parsed.success) return undefined;
-
-    return parsed.data;
-  } catch {
-    return undefined;
-  }
+  return await fetchAndParse(
+    `${NOTION_API}/pages/${pageId}`,
+    { headers: notionHeaders(token) },
+    { schema: notionPageSchema, label: 'Notion page', fetcher: retryFetch },
+  );
 }
 
 /**
