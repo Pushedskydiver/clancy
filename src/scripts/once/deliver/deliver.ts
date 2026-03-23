@@ -33,6 +33,22 @@ import {
   attemptPrCreation,
   buildManualPrUrl,
 } from '../pr-creation/pr-creation.js';
+import { computeDeliveryOutcome } from './outcome.js';
+
+// ─── Delivery parameter types ────────────────────────────────────────────────
+
+/** Parameters for {@link deliverViaPullRequest}. */
+export type DeliveryParams = {
+  config: BoardConfig;
+  ticket: FetchedTicket;
+  ticketBranch: string;
+  targetBranch: string;
+  startTime: number;
+  skipLog?: boolean;
+  parent?: string;
+  board?: Board;
+  singleChildParent?: string;
+};
 
 /**
  * Ensure the epic branch exists locally and on the remote.
@@ -120,20 +136,24 @@ export function ensureEpicBranch(
 /**
  * PR flow: push branch to remote, create PR/MR, transition to In Review.
  *
- * @param parent - Optional parent key for progress logging (epic branch flow).
  * @returns `false` if the push failed (caller should handle early return).
  */
 export async function deliverViaPullRequest(
-  config: BoardConfig,
-  ticket: FetchedTicket,
-  ticketBranch: string,
-  targetBranch: string,
-  startTime: number,
-  skipLog = false,
-  parent?: string,
-  board?: Board, // Required in practice — all phase callers pass ctx.board
-  singleChildParent?: string, // Parent key when single-child skip is active
+  params: DeliveryParams,
 ): Promise<boolean> {
+  const {
+    config,
+    ticket,
+    ticketBranch,
+    targetBranch,
+    startTime,
+    skipLog = false,
+    parent,
+    board,
+    singleChildParent,
+  } = params;
+
+  // ── Push ──────────────────────────────────────────────────────────────────
   const pushed = pushBranch(ticketBranch);
 
   if (!pushed) {
@@ -162,27 +182,24 @@ export async function deliverViaPullRequest(
 
   console.log(green(`  ✓ Pushed ${ticketBranch}`));
 
-  // Check for verification warnings (file exists when verification didn't fully pass)
+  // ── Verification warning ──────────────────────────────────────────────────
   let verificationWarning: string | undefined;
   try {
     const attemptPath = join(process.cwd(), '.clancy', 'verify-attempt.txt');
     const attempt = readFileSync(attemptPath, 'utf8').trim();
     const attemptNum = parseInt(attempt, 10);
     if (attemptNum > 0) {
-      // The file exists = verification didn't fully pass. The number is
-      // the attempt counter (1 = ran once and failed, 2 = ran twice, etc.)
       verificationWarning = `Verification checks did not fully pass (${attemptNum} attempt(s)). Review carefully.`;
     }
   } catch {
     // No verify-attempt file — verification passed or wasn't run
   }
 
-  // Attempt PR/MR creation
+  // ── PR body + epic context ────────────────────────────────────────────────
   const platformOverride = sharedEnv(config).CLANCY_GIT_PLATFORM;
   const remote = detectRemote(platformOverride);
   const prTitle = `feat(${ticket.key}): ${ticket.title}`;
 
-  // Build epic context for child PRs targeting epic/milestone branches
   let epicContext: EpicContext | undefined;
   if (parent && isEpicBranch(targetBranch)) {
     const siblingEntries = [...DELIVERED_STATUSES]
@@ -209,32 +226,46 @@ export async function deliverViaPullRequest(
     epicContext,
   );
 
-  if (
+  // ── PR creation + outcome ─────────────────────────────────────────────────
+  const canCreatePr =
     remote.host !== 'none' &&
     remote.host !== 'unknown' &&
-    remote.host !== 'azure'
-  ) {
-    const pr = await attemptPrCreation(
-      config,
-      remote,
-      ticketBranch,
-      targetBranch,
-      prTitle,
-      prBody,
-    );
+    remote.host !== 'azure';
 
-    if (pr?.ok) {
-      console.log(green(`  ✓ PR created: ${pr.url}`));
+  const pr = canCreatePr
+    ? await attemptPrCreation(
+        config,
+        remote,
+        ticketBranch,
+        targetBranch,
+        prTitle,
+        prBody,
+      )
+    : undefined;
+
+  const outcome = computeDeliveryOutcome(
+    pr,
+    remote,
+    ticketBranch,
+    targetBranch,
+  );
+
+  // ── Log + progress based on outcome ───────────────────────────────────────
+  switch (outcome.type) {
+    case 'created':
+      console.log(green(`  ✓ PR created: ${outcome.url}`));
       if (!skipLog)
         appendProgress(
           process.cwd(),
           ticket.key,
           ticket.title,
           'PR_CREATED',
-          pr.number,
+          outcome.number,
           parent,
         );
-    } else if (pr && !pr.ok && pr.alreadyExists) {
+      break;
+
+    case 'exists':
       console.log(
         yellow(
           `  ⚠ A PR/MR already exists for ${ticketBranch}. Branch pushed.`,
@@ -249,11 +280,12 @@ export async function deliverViaPullRequest(
           undefined,
           parent,
         );
-    } else if (pr && !pr.ok) {
-      console.log(yellow(`  ⚠ PR/MR creation failed: ${pr.error}`));
-      const manualUrl = buildManualPrUrl(remote, ticketBranch, targetBranch);
-      if (manualUrl) {
-        console.log(dim(`  Create one manually: ${manualUrl}`));
+      break;
+
+    case 'failed':
+      console.log(yellow(`  ⚠ PR/MR creation failed: ${outcome.error}`));
+      if (outcome.manualUrl) {
+        console.log(dim(`  Create one manually: ${outcome.manualUrl}`));
       } else {
         console.log(dim('  Branch pushed — create a PR/MR manually.'));
       }
@@ -266,11 +298,11 @@ export async function deliverViaPullRequest(
           undefined,
           parent,
         );
-    } else {
-      // No token available for this platform
-      const manualUrl = buildManualPrUrl(remote, ticketBranch, targetBranch);
-      if (manualUrl) {
-        console.log(dim(`  Create a PR: ${manualUrl}`));
+      break;
+
+    case 'not_attempted':
+      if (outcome.manualUrl) {
+        console.log(dim(`  Create a PR: ${outcome.manualUrl}`));
       } else {
         console.log(dim('  Branch pushed to remote. Create a PR/MR manually.'));
       }
@@ -283,38 +315,41 @@ export async function deliverViaPullRequest(
           undefined,
           parent,
         );
-    }
-  } else if (remote.host === 'none') {
-    console.log(
-      yellow(
-        `⚠ No git remote configured. Branch available locally: ${ticketBranch}`,
-      ),
-    );
-    if (!skipLog)
-      appendProgress(
-        process.cwd(),
-        ticket.key,
-        ticket.title,
-        'LOCAL',
-        undefined,
-        parent,
+      break;
+
+    case 'local':
+      console.log(
+        yellow(
+          `⚠ No git remote configured. Branch available locally: ${ticketBranch}`,
+        ),
       );
-  } else {
-    // Unknown or Azure remote — just note the push
-    console.log(dim('  Branch pushed to remote. Create a PR/MR manually.'));
-    if (!skipLog)
-      appendProgress(
-        process.cwd(),
-        ticket.key,
-        ticket.title,
-        'PUSHED',
-        undefined,
-        parent,
-      );
+      if (!skipLog)
+        appendProgress(
+          process.cwd(),
+          ticket.key,
+          ticket.title,
+          'LOCAL',
+          undefined,
+          parent,
+        );
+      break;
+
+    case 'unsupported':
+      console.log(dim('  Branch pushed to remote. Create a PR/MR manually.'));
+      if (!skipLog)
+        appendProgress(
+          process.cwd(),
+          ticket.key,
+          ticket.title,
+          'PUSHED',
+          undefined,
+          parent,
+        );
+      break;
   }
 
-  // Transition to In Review (not Done — PR hasn't been merged yet)
-  // For GitHub Issues: do NOT close — PR body has "Closes #N" (or "Part of") for auto-close on merge
+  // ── Board transition ──────────────────────────────────────────────────────
+  // For GitHub Issues: do NOT close — PR body has "Closes #N" for auto-close on merge
   if (config.provider !== 'github' && board) {
     const statusReview =
       config.env.CLANCY_STATUS_REVIEW ?? config.env.CLANCY_STATUS_DONE;
@@ -323,7 +358,6 @@ export async function deliverViaPullRequest(
     }
   }
 
-  // Switch back to target branch
   checkout(targetBranch);
   return true;
 }

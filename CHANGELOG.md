@@ -19,6 +19,8 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 - **Shortcut board: use `fetchAndParse`** — converted `fetchWorkflows()`, `fetchLabels()`, `createLabel()`, `fetchStory()`, `getStoryLabelIds()`. Removed ~75 lines of boilerplate.
 - **Notion board: use `fetchAndParse`** — converted `queryDatabase()` and `fetchPage()` using the custom `fetcher` param with `retryFetch`. Removed ~30 lines of boilerplate.
 - **Azure DevOps board: use `fetchAndParse`** — converted `runWiql()`, `fetchWorkItem()`, `fetchChildrenByLinks()`. Removed ~40 lines of boilerplate.
+- **`DeliveryParams` options object** — replaced 9 positional parameters on `deliverViaPullRequest()` with a single `DeliveryParams` type. Named properties make call sites self-documenting.
+- **`computeDeliveryOutcome()` pure function** — extracted PR outcome logic from the 103-line if/else chain in `deliverViaPullRequest()` into a testable pure function. Returns a `DeliveryOutcome` discriminated union (`created`, `exists`, `failed`, `not_attempted`, `local`, `unsupported`). Orchestrator switches on outcome type for logging and progress. 8 new unit tests.
 
 ---
 
