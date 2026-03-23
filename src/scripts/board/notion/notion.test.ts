@@ -12,7 +12,7 @@ import {
   updatePage,
 } from './notion.js';
 
-// Mock retryFetch before importing the module under test
+// Mock retryFetch (Vitest hoists vi.mock calls above imports)
 vi.mock('~/scripts/shared/http/retry-fetch.js', () => ({
   retryFetch: vi.fn(),
 }));
