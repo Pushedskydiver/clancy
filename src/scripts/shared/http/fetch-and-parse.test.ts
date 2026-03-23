@@ -63,6 +63,55 @@ describe('fetchAndParse', () => {
     );
   });
 
+  it('includes response body snippet in non-OK warning', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('Bad credentials', { status: 401 }),
+    );
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await fetchAndParse('https://api.example.com/auth', undefined, {
+      schema: testSchema,
+      label,
+    });
+
+    const message = warn.mock.calls[0][0] as string;
+    expect(message).toContain('returned HTTP 401');
+    expect(message).toContain('Bad credentials');
+  });
+
+  it('truncates long response bodies to 200 chars', async () => {
+    const longBody = 'X'.repeat(1000);
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(longBody, { status: 500 }),
+    );
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await fetchAndParse('https://api.example.com/error', undefined, {
+      schema: testSchema,
+      label,
+    });
+
+    const message = warn.mock.calls[0][0] as string;
+    expect(message).toContain('returned HTTP 500');
+    expect(message).not.toContain(longBody);
+    expect(message.length).toBeLessThan(300);
+  });
+
+  it('omits body segment when response body is empty', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('', { status: 404 }),
+    );
+    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+    await fetchAndParse('https://api.example.com/empty', undefined, {
+      schema: testSchema,
+      label,
+    });
+
+    const message = warn.mock.calls[0][0] as string;
+    expect(message).toBe(`⚠ ${label} returned HTTP 404`);
+  });
+
   it('returns undefined on invalid JSON', async () => {
     vi.spyOn(globalThis, 'fetch').mockResolvedValue(
       new Response('not json', {
