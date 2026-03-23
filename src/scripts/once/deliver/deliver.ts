@@ -300,7 +300,7 @@ export async function deliverViaPullRequest(
         );
       break;
 
-    case 'no_token':
+    case 'not_attempted':
       if (outcome.manualUrl) {
         console.log(dim(`  Create a PR: ${outcome.manualUrl}`));
       } else {

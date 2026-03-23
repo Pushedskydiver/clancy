@@ -77,7 +77,7 @@ describe('computeDeliveryOutcome', () => {
     }
   });
 
-  it('returns "no_token" with manual URL when pr is undefined', () => {
+  it('returns "not_attempted" with manual URL when pr is undefined', () => {
     const result = computeDeliveryOutcome(
       undefined,
       githubRemote,
@@ -85,14 +85,14 @@ describe('computeDeliveryOutcome', () => {
       'main',
     );
 
-    expect(result.type).toBe('no_token');
-    if (result.type === 'no_token') {
+    expect(result.type).toBe('not_attempted');
+    if (result.type === 'not_attempted') {
       expect(result.manualUrl).toBeDefined();
     }
   });
 
   it('returns "local" when remote host is "none"', () => {
-    const noneRemote: RemoteInfo = { host: 'none' } as RemoteInfo;
+    const noneRemote: RemoteInfo = { host: 'none' };
 
     const result = computeDeliveryOutcome(
       undefined,
@@ -105,7 +105,10 @@ describe('computeDeliveryOutcome', () => {
   });
 
   it('returns "unsupported" when remote host is "unknown"', () => {
-    const unknownRemote: RemoteInfo = { host: 'unknown' } as RemoteInfo;
+    const unknownRemote: RemoteInfo = {
+      host: 'unknown',
+      url: 'https://example.invalid',
+    };
 
     const result = computeDeliveryOutcome(
       undefined,
@@ -118,7 +121,10 @@ describe('computeDeliveryOutcome', () => {
   });
 
   it('returns "unsupported" when remote host is "azure"', () => {
-    const azureRemote: RemoteInfo = { host: 'azure' } as RemoteInfo;
+    const azureRemote: RemoteInfo = {
+      host: 'azure',
+      url: 'https://dev.azure.com/org/project/_git/repo',
+    };
 
     const result = computeDeliveryOutcome(
       undefined,

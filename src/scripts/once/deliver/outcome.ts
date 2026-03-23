@@ -14,7 +14,7 @@ export type DeliveryOutcome =
   | { type: 'created'; url: string; number: number }
   | { type: 'exists' }
   | { type: 'failed'; error: string; manualUrl?: string }
-  | { type: 'no_token'; manualUrl?: string }
+  | { type: 'not_attempted'; manualUrl?: string }
   | { type: 'local' }
   | { type: 'unsupported' };
 
@@ -24,7 +24,8 @@ export type DeliveryOutcome =
  * Pure function — no side effects, no I/O. The caller handles logging
  * and progress based on the returned outcome type.
  *
- * @param pr - The PR creation result, or `undefined` if no token was available.
+ * @param pr - The PR creation result, or `undefined` if PR creation was not attempted
+ *   (e.g., no token available, no API base URL, or unsupported platform).
  * @param remote - The detected remote info.
  * @param ticketBranch - The branch that was pushed (for manual URL construction).
  * @param targetBranch - The target branch (for manual URL construction).
@@ -65,7 +66,7 @@ export function computeDeliveryOutcome(
 
   // No token available — couldn't attempt PR creation
   return {
-    type: 'no_token',
+    type: 'not_attempted',
     manualUrl: buildManualPrUrl(remote, ticketBranch, targetBranch),
   };
 }
