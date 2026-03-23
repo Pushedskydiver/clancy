@@ -11,7 +11,7 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 
 ### 📝 Docs
 
-- **TESTING.md rewrite (QA-004b)** — complete rewrite documenting the 3-layer QA architecture (unit, integration, E2E). Quick reference with all 10 npm test scripts. Layer 1: co-located unit tests with file tree and patterns for adding board/utility tests. Layer 2: MSW + Claude simulator integration tests with fixture freshness feedback cycle. Layer 3: real-API E2E tests with credential table, CI schedule, no-retry policy, and orphan GC. Contributor requirements section.
+- **TESTING.md rewrite (QA-004b)** — complete rewrite documenting the 3-layer QA architecture (unit, integration, E2E). Quick reference with all npm test scripts. Layer 1: co-located unit tests with file tree and patterns for adding board/utility tests. Layer 2: MSW + Claude simulator integration tests with fixture freshness feedback cycle. Layer 3: real-API E2E tests with credential table, CI schedule, no-retry policy, and orphan GC. Contributor requirements section.
 
 ---
 

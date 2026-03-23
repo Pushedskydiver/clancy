@@ -15,6 +15,7 @@ npm run test:e2e -- github      # E2E for a single board
 npm run test:e2e:gc             # orphan ticket cleanup
 npm run test:fixtures:validate  # validate MSW fixtures against Zod schemas (offline)
 npm run test:fixtures:live      # validate real API auth endpoints against Zod schemas
+npm run test:coverage           # unit tests with coverage report
 npm run typecheck               # tsc --noEmit
 npm run lint                    # eslint
 ```
@@ -130,7 +131,7 @@ test/integration/
 1. **MSW** intercepts all HTTP requests — board APIs return fixture data, no real network calls
 2. **Claude simulator** writes a dummy file and commits it (simulates a successful Claude session)
 3. **Temp repos** are real git repos in `/tmp` with Clancy scaffold (`.clancy/.env`, `package.json`)
-4. **Global setup** pre-installs `node_modules` once, then copies for each test (fast repo creation)
+4. **Global setup** pre-installs `node_modules` once, then symlinks them into each test repo (fast repo creation)
 5. Tests call the real orchestrator (`run()`) or real hook functions and verify outcomes
 
 ### Fixture freshness
@@ -212,7 +213,7 @@ Copy `.env.e2e.example` (repo root) to `.env.e2e` and fill in real values. Tests
 | Board | Required secrets |
 |---|---|
 | GitHub | `GITHUB_TOKEN`, `GITHUB_REPO` |
-| Jira | `JIRA_BASE_URL`, `JIRA_USER`, `JIRA_API_TOKEN`, `JIRA_PROJECT_KEY` |
+| Jira | `JIRA_BASE_URL`, `JIRA_USER`, `JIRA_API_TOKEN` (+ optional `JIRA_PROJECT_KEY`, defaults to `CLANCYQA`) |
 | Linear | `LINEAR_API_KEY`, `LINEAR_TEAM_ID` |
 | Shortcut | `SHORTCUT_TOKEN` |
 | Notion | `NOTION_TOKEN`, `NOTION_DATABASE_ID` |
