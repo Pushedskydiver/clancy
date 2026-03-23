@@ -22,6 +22,7 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 - **`DeliveryParams` options object** — replaced 9 positional parameters on `deliverViaPullRequest()` with a single `DeliveryParams` type. Named properties make call sites self-documenting.
 - **`computeDeliveryOutcome()` pure function** — extracted PR outcome logic from the 103-line if/else chain in `deliverViaPullRequest()` into a testable pure function. Returns a `DeliveryOutcome` discriminated union (`created`, `exists`, `failed`, `not_attempted`, `local`, `unsupported`). Orchestrator switches on outcome type for logging and progress. 8 new unit tests.
 - **Delivery orchestrator simplification** — extracted `readVerificationWarning()`, `buildEpicContext()`, `logOutcome()`, and `progressForOutcome()` helpers. Replaced 6 duplicated `appendProgress` calls in the switch with a single call using `progressForOutcome()`. Applied `computeDeliveryOutcome` to `deliverEpicToBase`. Removed unnecessary `else` in `ensureEpicBranch`. 6 new unit tests.
+- **Board label CRUD consolidation** — shared `modifyLabelList<T>()` (generic read-modify-write with idempotence) and `safeLabel()` (try-catch + warn wrapper) in `src/scripts/board/label-helpers/`. Applied to Jira, Shortcut, Notion, Azure DevOps. Works with both string labels and numeric IDs. 10 new unit tests.
 
 ---
 

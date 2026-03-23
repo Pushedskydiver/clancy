@@ -8,6 +8,7 @@ import type { AzdoEnv } from '~/schemas/env.js';
 import type { FetchedTicket } from '~/types/board.js';
 
 import type { Board, FetchTicketOpts } from '../board.js';
+import { modifyLabelList, safeLabel } from '../label-helpers/label-helpers.js';
 import {
   buildTagsString,
   fetchBlockerStatus as fetchAzdoBlockerStatus,
@@ -128,57 +129,51 @@ export function createAzdoBoard(env: AzdoEnv): Board {
     },
 
     async addLabel(issueKey: string, label: string) {
-      try {
+      await safeLabel(async () => {
         const workItemId = parseWorkItemId(issueKey);
         if (workItemId === undefined) return;
-
-        const item = await fetchWorkItem(org, project, pat, workItemId);
-        if (!item) return;
-
-        const currentTags = parseTags(item.fields['System.Tags']);
-        if (currentTags.includes(label)) return;
-
-        const newTags = [...currentTags, label];
-
-        await updateWorkItem(org, project, pat, workItemId, [
-          {
-            op: 'replace',
-            path: '/fields/System.Tags',
-            value: buildTagsString(newTags),
+        await modifyLabelList(
+          async () => {
+            const item = await fetchWorkItem(org, project, pat, workItemId);
+            return item ? parseTags(item.fields['System.Tags']) : undefined;
           },
-        ]);
-      } catch (err) {
-        console.warn(
-          `⚠ addLabel failed: ${err instanceof Error ? err.message : String(err)}`,
+          async (tags) => {
+            await updateWorkItem(org, project, pat, workItemId, [
+              {
+                op: 'replace',
+                path: '/fields/System.Tags',
+                value: buildTagsString(tags),
+              },
+            ]);
+          },
+          label,
+          'add',
         );
-      }
+      }, 'addLabel');
     },
 
     async removeLabel(issueKey: string, label: string) {
-      try {
+      await safeLabel(async () => {
         const workItemId = parseWorkItemId(issueKey);
         if (workItemId === undefined) return;
-
-        const item = await fetchWorkItem(org, project, pat, workItemId);
-        if (!item) return;
-
-        const currentTags = parseTags(item.fields['System.Tags']);
-        if (!currentTags.includes(label)) return;
-
-        const newTags = currentTags.filter((t) => t !== label);
-
-        await updateWorkItem(org, project, pat, workItemId, [
-          {
-            op: 'replace',
-            path: '/fields/System.Tags',
-            value: buildTagsString(newTags),
+        await modifyLabelList(
+          async () => {
+            const item = await fetchWorkItem(org, project, pat, workItemId);
+            return item ? parseTags(item.fields['System.Tags']) : undefined;
           },
-        ]);
-      } catch (err) {
-        console.warn(
-          `⚠ removeLabel failed: ${err instanceof Error ? err.message : String(err)}`,
+          async (tags) => {
+            await updateWorkItem(org, project, pat, workItemId, [
+              {
+                op: 'replace',
+                path: '/fields/System.Tags',
+                value: buildTagsString(tags),
+              },
+            ]);
+          },
+          label,
+          'remove',
         );
-      }
+      }, 'removeLabel');
     },
 
     sharedEnv() {
