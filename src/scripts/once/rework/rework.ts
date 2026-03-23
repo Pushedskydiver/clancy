@@ -1,35 +1,10 @@
 import { computeTicketBranch } from '~/scripts/shared/branch/branch.js';
 import type { BoardConfig } from '~/scripts/shared/env-schema/env-schema.js';
-import { sharedEnv } from '~/scripts/shared/env-schema/env-schema.js';
 import { findEntriesWithStatus } from '~/scripts/shared/progress/progress.js';
-import {
-  checkPrReviewState as checkBitbucketPrReviewState,
-  checkServerPrReviewState as checkBitbucketServerPrReviewState,
-  fetchPrReviewComments as fetchBitbucketPrReviewComments,
-  fetchServerPrReviewComments as fetchBitbucketServerPrReviewComments,
-  postCloudPrComment,
-  postServerPrComment,
-} from '~/scripts/shared/pull-request/bitbucket/bitbucket.js';
-import {
-  checkPrReviewState as checkGitHubPrReviewState,
-  fetchPrReviewComments as fetchGitHubPrReviewComments,
-  postPrComment as postGitHubPrComment,
-  requestReview as requestGitHubReview,
-} from '~/scripts/shared/pull-request/github/github.js';
-import {
-  checkMrReviewState as checkGitLabMrReviewState,
-  fetchMrReviewComments as fetchGitLabMrReviewComments,
-  postMrNote,
-  resolveDiscussions,
-} from '~/scripts/shared/pull-request/gitlab/gitlab.js';
-import {
-  buildApiBaseUrl,
-  detectRemote,
-} from '~/scripts/shared/remote/remote.js';
 import type { FetchedTicket } from '~/types/board.js';
 import { dim } from '~/utils/ansi/ansi.js';
 
-import { resolveGitToken } from '../git-token/git-token.js';
+import { resolvePlatformHandlers } from './rework-handlers.js';
 
 // ─── PR-based rework detection ────────────────────────────────────────────────
 
@@ -60,22 +35,8 @@ export async function fetchReworkFromPrReview(config: BoardConfig): Promise<
   const candidates = [...prCreated, ...reworked, ...pushed, ...pushFailed];
   if (candidates.length === 0) return undefined;
 
-  const platformOverride = sharedEnv(config).CLANCY_GIT_PLATFORM;
-  const remote = detectRemote(platformOverride);
-
-  if (
-    remote.host === 'none' ||
-    remote.host === 'unknown' ||
-    remote.host === 'azure'
-  ) {
-    return undefined;
-  }
-
-  const creds = resolveGitToken(config, remote);
-  if (!creds) return undefined;
-
-  const apiBase = buildApiBaseUrl(remote, sharedEnv(config).CLANCY_GIT_API_URL);
-  if (!apiBase) return undefined;
+  const handlers = resolvePlatformHandlers(config);
+  if (!handlers) return undefined;
 
   // Limit to first 5 candidates to avoid rate limits
   const toCheck = candidates.slice(0, 5);
@@ -86,114 +47,19 @@ export async function fetchReworkFromPrReview(config: BoardConfig): Promise<
     // Convert progress timestamp (YYYY-MM-DD HH:MM) to ISO 8601 for API filtering.
     // Only comments created AFTER this timestamp should trigger rework,
     // preventing stale inline comments from causing infinite rework loops.
-    // Parse UTC timestamp (YYYY-MM-DD HH:MM) to ISO 8601.
-    // Falls back to undefined if timestamp is invalid (skips filtering).
     let since: string | undefined;
     if (entry.timestamp) {
       const date = new Date(entry.timestamp.replace(' ', 'T') + 'Z');
       since = Number.isNaN(date.getTime()) ? undefined : date.toISOString();
     }
 
-    let reviewState:
-      | {
-          changesRequested: boolean;
-          prNumber: number;
-          prUrl: string;
-          reviewers?: string[];
-        }
-      | undefined;
-
-    switch (remote.host) {
-      case 'github':
-        reviewState = await checkGitHubPrReviewState(
-          creds.token,
-          `${remote.owner}/${remote.repo}`,
-          branch,
-          remote.owner,
-          apiBase,
-          since,
-        );
-        break;
-      case 'gitlab':
-        reviewState = await checkGitLabMrReviewState(
-          creds.token,
-          apiBase,
-          remote.projectPath,
-          branch,
-          since,
-        );
-        break;
-      case 'bitbucket':
-        reviewState = await checkBitbucketPrReviewState(
-          creds.username!,
-          creds.token,
-          remote.workspace,
-          remote.repoSlug,
-          branch,
-          since,
-        );
-        break;
-      case 'bitbucket-server':
-        reviewState = await checkBitbucketServerPrReviewState(
-          creds.token,
-          apiBase,
-          remote.projectKey,
-          remote.repoSlug,
-          branch,
-          since,
-        );
-        break;
-    }
+    const reviewState = await handlers.checkReviewState(branch, since);
 
     if (reviewState?.changesRequested) {
-      // Fetch review comments for the PR
-      let feedback: string[] = [];
-
-      let discussionIds: string[] | undefined;
-
-      switch (remote.host) {
-        case 'github':
-          feedback = await fetchGitHubPrReviewComments(
-            creds.token,
-            `${remote.owner}/${remote.repo}`,
-            reviewState.prNumber,
-            apiBase,
-            since,
-          );
-          break;
-        case 'gitlab': {
-          const mrResult = await fetchGitLabMrReviewComments(
-            creds.token,
-            apiBase,
-            remote.projectPath,
-            reviewState.prNumber,
-            since,
-          );
-          feedback = mrResult.comments;
-          discussionIds = mrResult.discussionIds;
-          break;
-        }
-        case 'bitbucket':
-          feedback = await fetchBitbucketPrReviewComments(
-            creds.username!,
-            creds.token,
-            remote.workspace,
-            remote.repoSlug,
-            reviewState.prNumber,
-            since,
-          );
-          break;
-        case 'bitbucket-server':
-          feedback = await fetchBitbucketServerPrReviewComments(
-            creds.token,
-            apiBase,
-            remote.projectKey,
-            remote.repoSlug,
-            reviewState.prNumber,
-            since,
-          );
-          break;
-      }
+      const { comments, discussionIds } = await handlers.fetchComments(
+        reviewState.prNumber,
+        since,
+      );
 
       const ticket: FetchedTicket = {
         key: entry.key,
@@ -205,7 +71,7 @@ export async function fetchReworkFromPrReview(config: BoardConfig): Promise<
 
       return {
         ticket,
-        feedback,
+        feedback: comments,
         prNumber: reviewState.prNumber,
         discussionIds,
         reviewers: reviewState.reviewers ?? [],
@@ -248,70 +114,14 @@ export async function postReworkActions(
   discussionIds?: string[],
   reviewers?: string[],
 ): Promise<void> {
-  const platformOverride = sharedEnv(config).CLANCY_GIT_PLATFORM;
-  const remote = detectRemote(platformOverride);
-
-  if (
-    remote.host === 'none' ||
-    remote.host === 'unknown' ||
-    remote.host === 'azure'
-  ) {
-    return;
-  }
-
-  const creds = resolveGitToken(config, remote);
-  if (!creds) return;
-
-  const apiBase = buildApiBaseUrl(remote, sharedEnv(config).CLANCY_GIT_API_URL);
-  if (!apiBase) return;
+  const handlers = resolvePlatformHandlers(config);
+  if (!handlers) return;
 
   const comment = buildReworkComment(feedback);
 
   // 1. Post rework comment
   try {
-    let posted = false;
-
-    switch (remote.host) {
-      case 'github':
-        posted = await postGitHubPrComment(
-          creds.token,
-          `${remote.owner}/${remote.repo}`,
-          prNumber,
-          comment,
-          apiBase,
-        );
-        break;
-      case 'gitlab':
-        posted = await postMrNote(
-          creds.token,
-          apiBase,
-          remote.projectPath,
-          prNumber,
-          comment,
-        );
-        break;
-      case 'bitbucket':
-        posted = await postCloudPrComment(
-          creds.username!,
-          creds.token,
-          remote.workspace,
-          remote.repoSlug,
-          prNumber,
-          comment,
-        );
-        break;
-      case 'bitbucket-server':
-        posted = await postServerPrComment(
-          creds.token,
-          apiBase,
-          remote.projectKey,
-          remote.repoSlug,
-          prNumber,
-          comment,
-        );
-        break;
-    }
-
+    const posted = await handlers.postComment(prNumber, comment);
     if (posted) {
       console.log(dim('  ✓ Posted rework comment'));
     }
@@ -319,16 +129,10 @@ export async function postReworkActions(
     // Best-effort
   }
 
-  // 2. GitLab: resolve addressed discussion threads
-  if (remote.host === 'gitlab' && discussionIds && discussionIds.length > 0) {
+  // 2. Resolve addressed discussion threads (GitLab — no-op on others)
+  if (discussionIds && discussionIds.length > 0) {
     try {
-      const resolved = await resolveDiscussions(
-        creds.token,
-        apiBase,
-        remote.projectPath,
-        prNumber,
-        discussionIds,
-      );
+      const resolved = await handlers.resolveThreads(prNumber, discussionIds);
       if (resolved > 0) {
         console.log(
           dim(
@@ -341,16 +145,10 @@ export async function postReworkActions(
     }
   }
 
-  // 3. GitHub: re-request review from reviewers who requested changes
-  if (remote.host === 'github' && reviewers && reviewers.length > 0) {
+  // 3. Re-request review from reviewers who requested changes (GitHub — no-op on others)
+  if (reviewers && reviewers.length > 0) {
     try {
-      const ok = await requestGitHubReview(
-        creds.token,
-        `${remote.owner}/${remote.repo}`,
-        prNumber,
-        reviewers,
-        apiBase,
-      );
+      const ok = await handlers.reRequestReview(prNumber, reviewers);
       if (ok) {
         console.log(
           dim(`  ✓ Re-requested review from ${reviewers.join(', ')}`),

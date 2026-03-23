@@ -23,6 +23,7 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 - **`computeDeliveryOutcome()` pure function** — extracted PR outcome logic from the 103-line if/else chain in `deliverViaPullRequest()` into a testable pure function. Returns a `DeliveryOutcome` discriminated union (`created`, `exists`, `failed`, `not_attempted`, `local`, `unsupported`). Orchestrator switches on outcome type for logging and progress. 8 new unit tests.
 - **Delivery orchestrator simplification** — extracted `readVerificationWarning()`, `buildEpicContext()`, `logOutcome()`, and `progressForOutcome()` helpers. Replaced 6 duplicated `appendProgress` calls in the switch with a single call using `progressForOutcome()`. Applied `computeDeliveryOutcome` to `deliverEpicToBase`. Removed unnecessary `else` in `ensureEpicBranch`. 6 new unit tests.
 - **Board label CRUD consolidation** — shared `modifyLabelList<T>()` (generic read-modify-write with idempotence) and `safeLabel()` (try-catch + warn wrapper) in `src/scripts/board/label-helpers/`. Applied to Jira, Shortcut, Notion, Azure DevOps. Works with both string labels and numeric IDs. 13 new unit tests.
+- **Rework platform handler map** — replaced 3 switch statements in `rework.ts` with `PlatformReworkHandlers` type and `resolvePlatformHandlers()` factory in `rework-handlers.ts`. Single switch creates a handler object; main functions call uniform methods (`checkReviewState`, `fetchComments`, `postComment`, `resolveThreads`, `reRequestReview`). Platform-specific no-ops for GitLab-only and GitHub-only actions.
 
 ---
 
