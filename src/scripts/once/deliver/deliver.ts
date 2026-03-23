@@ -29,10 +29,7 @@ import { DELIVERED_STATUSES } from '~/types/remote.js';
 import { dim, green, red, yellow } from '~/utils/ansi/ansi.js';
 
 import { resolveBuildLabel } from '../fetch-ticket/fetch-ticket.js';
-import {
-  attemptPrCreation,
-  buildManualPrUrl,
-} from '../pr-creation/pr-creation.js';
+import { attemptPrCreation } from '../pr-creation/pr-creation.js';
 import { computeDeliveryOutcome, progressForOutcome } from './outcome.js';
 import type { DeliveryOutcome } from './outcome.js';
 
@@ -455,14 +452,12 @@ export async function deliverEpicToBase(
       console.log(yellow(`⚠ Epic PR creation failed: ${error}`));
       console.log(dim(`  Create it manually:`));
       console.log(dim(`    Branch: ${epicBranch} → ${baseBranch}`));
-      const manualUrl =
-        outcome.manualUrl ?? buildManualPrUrl(remote, epicBranch, baseBranch);
-      if (manualUrl) console.log(dim(`    ${manualUrl}`));
+      if (outcome.manualUrl) console.log(dim(`    ${outcome.manualUrl}`));
       return false;
     }
 
-    // local/unsupported are unreachable — canCreatePr guard exits early
-    default:
+    case 'local':
+    case 'unsupported':
       return false;
   }
 }
