@@ -21,6 +21,7 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 - **Azure DevOps board: use `fetchAndParse`** — converted `runWiql()`, `fetchWorkItem()`, `fetchChildrenByLinks()`. Removed ~40 lines of boilerplate.
 - **`DeliveryParams` options object** — replaced 9 positional parameters on `deliverViaPullRequest()` with a single `DeliveryParams` type. Named properties make call sites self-documenting.
 - **`computeDeliveryOutcome()` pure function** — extracted PR outcome logic from the 103-line if/else chain in `deliverViaPullRequest()` into a testable pure function. Returns a `DeliveryOutcome` discriminated union (`created`, `exists`, `failed`, `not_attempted`, `local`, `unsupported`). Orchestrator switches on outcome type for logging and progress. 8 new unit tests.
+- **Delivery orchestrator simplification** — extracted `readVerificationWarning()`, `buildEpicContext()`, `logOutcome()`, and `progressForOutcome()` helpers. Replaced 6 duplicated `appendProgress` calls in the switch with a single call using `progressForOutcome()`. Applied `computeDeliveryOutcome` to `deliverEpicToBase`. Removed unnecessary `else` in `ensureEpicBranch`. 6 new unit tests.
 
 ---
 
