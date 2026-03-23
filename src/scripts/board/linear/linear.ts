@@ -376,7 +376,9 @@ async function fetchChildrenByDescription(
     { schema: linearIssueSearchResponseSchema, label: 'Linear issue search' },
   );
 
-  const nodes = data?.data?.issueSearch?.nodes ?? [];
+  if (!data) return undefined;
+
+  const nodes = data.data?.issueSearch?.nodes ?? [];
   const total = nodes.length;
   const doneTypes = new Set(['completed', 'canceled']);
   const incomplete = nodes.filter(
