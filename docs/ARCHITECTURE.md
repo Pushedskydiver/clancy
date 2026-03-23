@@ -83,8 +83,8 @@ clancy/
 ├── test/
 │   ├── integration/            — MSW-backed integration tests
 │   │   ├── helpers/            — Claude simulator, temp repo, env fixtures, MSW server
-│   │   ├── mocks/handlers/     — MSW request handlers per board
-│   │   ├── mocks/fixtures/     — JSON response fixtures per board
+│   │   ├── mocks/handlers/     — MSW request handlers for boards + git-host PRs
+│   │   ├── mocks/fixtures/     — JSON response fixtures for boards + git-host PRs
 │   │   ├── flows/board/        — per-board flow tests (6 boards + shared)
 │   │   ├── flows/              — hooks, pipeline, installer, AFK loop tests
 │   │   └── validate-fixtures.ts — offline fixture → Zod schema validation

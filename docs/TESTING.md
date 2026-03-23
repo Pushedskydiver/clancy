@@ -2,7 +2,7 @@
 
 Clancy uses a 3-layer QA architecture: unit tests, integration tests, and E2E tests. All layers use Vitest.
 
-**Current counts:** 1247 unit · 238 integration · 6 E2E = 1491 total tests.
+Run `npm run test:all` and `npm run test:e2e` to see current counts.
 
 ## Quick reference
 
@@ -109,8 +109,8 @@ test/integration/
 │   ├── msw-server.ts             — shared MSW server setup
 │   └── scaffold-content.ts       — Clancy scaffold content for temp repos
 ├── mocks/
-│   ├── handlers/                 — MSW request handlers per board
-│   └── fixtures/                 — JSON response fixtures per board
+│   ├── handlers/                 — MSW request handlers for boards + git-host PRs
+│   └── fixtures/                 — JSON response fixtures for boards + git-host PRs
 └── flows/
     ├── board/
     │   ├── shared.ts             — parameterised describe.each for all 6 boards

@@ -79,7 +79,7 @@ For architecture overview, see [ARCHITECTURE.md](ARCHITECTURE.md). For code conv
 ## Testing & CI
 
 - 3-layer QA: unit tests (co-located, `vi.mock()`), integration tests (MSW + Claude simulator), E2E tests (real APIs). See [TESTING.md](TESTING.md) for full details
-- Progress status constants in `src/types/remote.ts`: `DELIVERED_STATUSES` (PR_CREATED, PUSHED, REWORK, RESUMED), `COMPLETED_STATUSES` (DONE), `FAILED_STATUSES` (PUSH_FAILED, LOCAL). Used by resume, deliver, and session reports
+- Progress status constants in `src/types/remote.ts`: `DELIVERED_STATUSES` (PR_CREATED, PUSHED, REWORK, RESUMED), `COMPLETED_STATUSES` (DONE, PR_CREATED, PUSHED, EPIC_PR_CREATED, RESUMED), `FAILED_STATUSES` (SKIPPED, PUSH_FAILED, TIME_LIMIT). Used by resume, deliver, and session reports
 - Fixture feedback loop: offline validation (`npm run test:fixtures:validate`) maps MSW fixtures → Zod schemas. Live validation (`npm run test:fixtures:live`) hits board auth endpoints. Catches API drift between E2E runs
 - E2E CI workflow (`.github/workflows/e2e-tests.yml`): weekly Monday 6am UTC + manual dispatch. GC job → per-board matrix (credentials scoped per board) → live schema validation. `QA_GITHUB_TOKEN`/`QA_GITHUB_REPO` secrets avoid built-in `GITHUB_TOKEN` collision
 - GitHub E2E tests need a 2s delay after ticket creation — GitHub's Issues list API has eventual consistency for filtered queries
