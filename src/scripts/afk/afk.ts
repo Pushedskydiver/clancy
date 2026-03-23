@@ -304,5 +304,5 @@ if (
 ) {
   const scriptDir = dirname(fileURLToPath(import.meta.url));
   const maxIterations = parseInt(process.env.MAX_ITERATIONS ?? '5', 10) || 5;
-  runAfkLoop(scriptDir, maxIterations);
+  void runAfkLoop(scriptDir, maxIterations);
 }

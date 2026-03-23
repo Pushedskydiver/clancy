@@ -75,7 +75,9 @@ export async function attemptPrCreation(
         body,
       );
 
-    default:
+    case 'none':
+    case 'unknown':
+    case 'azure':
       return undefined;
   }
 }

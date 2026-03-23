@@ -18,6 +18,32 @@ export default tseslint.config(
         'error',
         { argsIgnorePattern: '^_' },
       ],
+
+      // ── Complexity rules (v0.8.24) ──────────────────────────────────────
+      'max-lines-per-function': [
+        'warn',
+        { max: 60, skipComments: true, skipBlankLines: true },
+      ],
+      'max-depth': ['warn', 3],
+      complexity: ['warn', 10],
+      'max-lines': [
+        'warn',
+        { max: 300, skipComments: true, skipBlankLines: true },
+      ],
+      'prefer-const': 'error',
+    },
+  },
+  // Typed rules require parserOptions.project
+  {
+    files: ['src/**/*.ts'],
+    languageOptions: {
+      parserOptions: {
+        project: './tsconfig.json',
+      },
+    },
+    rules: {
+      '@typescript-eslint/no-floating-promises': 'error',
+      '@typescript-eslint/switch-exhaustiveness-check': 'error',
     },
   },
   {

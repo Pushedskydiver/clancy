@@ -109,5 +109,5 @@ if (
   process.argv[1] &&
   fileURLToPath(import.meta.url) === resolve(process.argv[1])
 ) {
-  run(process.argv);
+  void run(process.argv);
 }

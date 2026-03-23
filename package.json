@@ -53,7 +53,7 @@
     "test:fixtures:validate": "npx tsx test/integration/validate-fixtures.ts",
     "test:fixtures:live": "npx tsx test/e2e/validate-live-schemas.ts",
     "test:coverage": "vitest run --coverage",
-    "lint": "eslint .",
+    "lint": "eslint . --max-warnings 234",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",

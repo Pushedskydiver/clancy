@@ -26,6 +26,7 @@ Headers: `✨ Features`, `🐛 Fixes`, `♻️ Refactors`, `✅ Tests`, `📝 Do
 - **Rework platform handler map** — replaced 3 switch statements in `rework.ts` with `PlatformReworkHandlers` type and `resolvePlatformHandlers()` factory in `rework-handlers.ts`. Single switch creates a handler object; main functions call uniform methods (`checkReviewState`, `fetchComments`, `postComment`, `resolveThreads`, `reRequestReview`). Platform-specific no-ops for GitLab-only and GitHub-only actions.
 - **Remote parsing deduplication** — extracted `buildRemoteInfo()` in `remote.ts` to consolidate the platform-specific path extraction that was duplicated between `parseRemote()` and `overrideRemotePlatform()`. Single switch for all path parsing; `overrideRemotePlatform` reduced to 5 lines.
 - **Housekeeping** — renamed `retry.ts` → `retry-fetch.ts` (matches primary export `retryFetch`). Added 5 co-located unit tests for `copyRoleFiles`. Extended `docs/CONVENTIONS.md` with error handling, import style, and v0.8.24 patterns sections.
+- **ESLint complexity enforcement** — added 8 rules: `max-lines-per-function` (60), `max-depth` (3), `complexity` (10), `max-lines` (300), `prefer-const`, `no-floating-promises`, `switch-exhaustiveness-check`. Fixed 6 errors (2 floating promises, 4 non-exhaustive switches). Ratchet strategy: `--max-warnings 234` enforced in lint script — any new code must not increase the warning count.
 
 ---
 

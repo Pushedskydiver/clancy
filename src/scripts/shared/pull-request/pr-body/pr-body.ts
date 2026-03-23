@@ -87,6 +87,11 @@ export function buildPrBody(
     case 'linear':
       lines.push(`**Linear:** ${ticket.key}`);
       break;
+    case 'shortcut':
+    case 'notion':
+    case 'azdo':
+      lines.push(`**Ticket:** ${ticket.key}`);
+      break;
   }
 
   lines.push('');

@@ -28,6 +28,10 @@ export function resolveGitToken(
     case 'bitbucket-server':
       if (env.BITBUCKET_TOKEN) return { token: env.BITBUCKET_TOKEN };
       break;
+    case 'none':
+    case 'unknown':
+    case 'azure':
+      break;
   }
   return undefined;
 }

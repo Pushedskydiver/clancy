@@ -238,7 +238,9 @@ export function buildApiBaseUrl(
       return 'https://api.bitbucket.org/2.0';
     case 'bitbucket-server':
       return `https://${remote.hostname}/rest/api/1.0`;
-    default:
+    case 'none':
+    case 'unknown':
+    case 'azure':
       return undefined;
   }
 }
