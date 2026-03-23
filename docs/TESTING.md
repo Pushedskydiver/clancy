@@ -42,7 +42,7 @@ Tests are co-located: `<name>/<name>.ts` + `<name>/<name>.test.ts`.
 src/
 ├── scripts/
 │   ├── once/
-│   │   ├── once.test.ts                      — orchestrator lifecycle (37 tests)
+│   │   ├── once.test.ts                      — orchestrator lifecycle
 │   │   ├── deliver/deliver.test.ts           — PR delivery + epic completion
 │   │   ├── fetch-ticket/fetch-ticket.test.ts — label resolution + ticket fetch
 │   │   ├── lock/lock.test.ts                 — lock file management
@@ -240,7 +240,7 @@ E2E tests do not retry (Vitest default) because they create real external resour
 ### All PRs must pass CI
 
 ```bash
-npm test && npm run test:integration && npm run typecheck && npm run lint
+npm test && npm run test:integration && npm run build && npm run typecheck && npm run lint
 ```
 
 ### PRs adding new boards must include
