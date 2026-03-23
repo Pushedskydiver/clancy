@@ -67,7 +67,7 @@ export function parseRemote(rawUrl: string): RemoteInfo {
  * duplicated in `parseRemote` and `overrideRemotePlatform`.
  */
 function buildRemoteInfo(
-  platform: string,
+  platform: GitPlatform | string,
   hostname: string,
   path: string,
   rawUrl: string,
@@ -85,16 +85,9 @@ function buildRemoteInfo(
       return { host: 'gitlab', projectPath: path, hostname };
 
     case 'bitbucket': {
-      // Bitbucket Server uses /scm/<projectKey>/<repo> format
-      const scmMatch = path.match(/^scm\/([^/]+)\/(.+)$/);
-      if (scmMatch) {
-        return {
-          host: 'bitbucket-server',
-          projectKey: scmMatch[1],
-          repoSlug: scmMatch[2],
-          hostname,
-        };
-      }
+      // Bitbucket Server uses /scm/<projectKey>/<repo> format — detect and redirect
+      const serverInfo = parseBitbucketServerPath(path, hostname);
+      if (serverInfo) return serverInfo;
 
       // Bitbucket Cloud: <workspace>/<repo>
       const parts = path.split('/');
@@ -110,16 +103,10 @@ function buildRemoteInfo(
     }
 
     case 'bitbucket-server': {
-      // Strip leading scm/ prefix used in Bitbucket Server URLs
-      const scmMatch = path.match(/^scm\/([^/]+)\/(.+)$/);
-      if (scmMatch) {
-        return {
-          host: 'bitbucket-server',
-          projectKey: scmMatch[1],
-          repoSlug: scmMatch[2],
-          hostname,
-        };
-      }
+      const serverInfo = parseBitbucketServerPath(path, hostname);
+      if (serverInfo) return serverInfo;
+
+      // Plain <projectKey>/<repo> without scm/ prefix
       const parts = path.split('/');
       if (parts.length >= 2) {
         return {
@@ -135,9 +122,25 @@ function buildRemoteInfo(
     case 'azure':
       return { host: 'azure', url: rawUrl };
 
+    case 'unknown':
     default:
       return { host: 'unknown', url: rawUrl };
   }
+}
+
+/** Parse Bitbucket Server /scm/<projectKey>/<repo> path format. */
+function parseBitbucketServerPath(
+  path: string,
+  hostname: string,
+): RemoteInfo | undefined {
+  const scmMatch = path.match(/^scm\/([^/]+)\/(.+)$/);
+  if (!scmMatch) return undefined;
+  return {
+    host: 'bitbucket-server',
+    projectKey: scmMatch[1],
+    repoSlug: scmMatch[2],
+    hostname,
+  };
 }
 
 /**

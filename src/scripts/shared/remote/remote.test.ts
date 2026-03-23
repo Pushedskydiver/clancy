@@ -277,6 +277,32 @@ describe('remote', () => {
         hostname: 'github.com',
       });
     });
+
+    it('applies bitbucket-server override with scm/ path', () => {
+      execImpl = () => 'https://bb.acme.com/scm/PROJ/repo.git\n';
+
+      const result = detectRemote('bitbucket-server');
+
+      expect(result).toEqual({
+        host: 'bitbucket-server',
+        projectKey: 'PROJ',
+        repoSlug: 'repo',
+        hostname: 'bb.acme.com',
+      });
+    });
+
+    it('applies bitbucket-server override without scm/ prefix', () => {
+      execImpl = () => 'https://bb.acme.com/PROJ/repo.git\n';
+
+      const result = detectRemote('bitbucket-server');
+
+      expect(result).toEqual({
+        host: 'bitbucket-server',
+        projectKey: 'PROJ',
+        repoSlug: 'repo',
+        hostname: 'bb.acme.com',
+      });
+    });
   });
 
   describe('buildApiBaseUrl', () => {
