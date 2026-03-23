@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { PrCreationResult, RemoteInfo } from '~/types/index.js';
 
-import { computeDeliveryOutcome } from './outcome.js';
+import { computeDeliveryOutcome, progressForOutcome } from './outcome.js';
 import type { DeliveryOutcome } from './outcome.js';
 
 const githubRemote: RemoteInfo = {
@@ -154,4 +154,27 @@ describe('computeDeliveryOutcome', () => {
       expect(result.manualUrl).toBeDefined();
     }
   });
+});
+
+describe('progressForOutcome', () => {
+  it('maps "created" to PR_CREATED with PR number', () => {
+    expect(
+      progressForOutcome({ type: 'created', url: 'https://x', number: 42 }),
+    ).toEqual({ status: 'PR_CREATED', prNumber: 42 });
+  });
+
+  it('maps "local" to LOCAL', () => {
+    expect(progressForOutcome({ type: 'local' })).toEqual({ status: 'LOCAL' });
+  });
+
+  it.each(['exists', 'failed', 'not_attempted', 'unsupported'] as const)(
+    'maps "%s" to PUSHED',
+    (type) => {
+      const outcome =
+        type === 'failed' ? { type, error: 'err' as const } : { type };
+      expect(progressForOutcome(outcome as DeliveryOutcome)).toEqual({
+        status: 'PUSHED',
+      });
+    },
+  );
 });

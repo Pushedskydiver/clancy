@@ -5,7 +5,11 @@
  * discriminated union. The orchestrator switches on `type` for
  * logging and progress, keeping side effects separate from decisions.
  */
-import type { PrCreationResult, RemoteInfo } from '~/types/index.js';
+import type {
+  PrCreationResult,
+  ProgressStatus,
+  RemoteInfo,
+} from '~/types/index.js';
 
 import { buildManualPrUrl } from '../pr-creation/pr-creation.js';
 
@@ -69,4 +73,26 @@ export function computeDeliveryOutcome(
     type: 'not_attempted',
     manualUrl: buildManualPrUrl(remote, ticketBranch, targetBranch),
   };
+}
+
+/**
+ * Map a delivery outcome to the progress status and optional PR number.
+ *
+ * Pure function — used by the orchestrator to log progress after delivery.
+ */
+export function progressForOutcome(outcome: DeliveryOutcome): {
+  status: ProgressStatus;
+  prNumber?: number;
+} {
+  switch (outcome.type) {
+    case 'created':
+      return { status: 'PR_CREATED', prNumber: outcome.number };
+    case 'local':
+      return { status: 'LOCAL' };
+    case 'exists':
+    case 'failed':
+    case 'not_attempted':
+    case 'unsupported':
+      return { status: 'PUSHED' };
+  }
 }

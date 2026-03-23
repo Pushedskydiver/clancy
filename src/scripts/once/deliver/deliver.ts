@@ -33,7 +33,8 @@ import {
   attemptPrCreation,
   buildManualPrUrl,
 } from '../pr-creation/pr-creation.js';
-import { computeDeliveryOutcome } from './outcome.js';
+import { computeDeliveryOutcome, progressForOutcome } from './outcome.js';
+import type { DeliveryOutcome } from './outcome.js';
 
 // ─── Delivery parameter types ────────────────────────────────────────────────
 
@@ -117,9 +118,8 @@ export function ensureEpicBranch(
         yellow(`⚠ Created ${epicBranch} locally but could not push to origin.`),
       );
       return false;
-    } else {
-      console.log(green(`  ✓ Created epic branch ${epicBranch}`));
     }
+    console.log(green(`  ✓ Created epic branch ${epicBranch}`));
     return true;
   } catch (err) {
     console.log(
@@ -128,6 +128,83 @@ export function ensureEpicBranch(
       ),
     );
     return false;
+  }
+}
+
+// ─── Helpers ─────────────────────────────────────────────────────────────────
+
+/** Read the verification attempt counter (0 = passed or not run). */
+function readVerificationWarning(): string | undefined {
+  try {
+    const attemptPath = join(process.cwd(), '.clancy', 'verify-attempt.txt');
+    const attempt = readFileSync(attemptPath, 'utf8').trim();
+    const attemptNum = parseInt(attempt, 10);
+    if (attemptNum > 0) {
+      return `Verification checks did not fully pass (${attemptNum} attempt(s)). Review carefully.`;
+    }
+  } catch {
+    // No verify-attempt file — verification passed or wasn't run
+  }
+  return undefined;
+}
+
+/** Compute epic context for child PRs targeting epic/milestone branches. */
+function buildEpicContext(
+  parent: string | undefined,
+  targetBranch: string,
+  ticketKey: string,
+): EpicContext | undefined {
+  if (!parent || !isEpicBranch(targetBranch)) return undefined;
+
+  const siblingEntries = [...DELIVERED_STATUSES]
+    .flatMap((s) => findEntriesWithStatus(process.cwd(), s))
+    .filter((e) => e.parent === parent && e.key !== ticketKey);
+
+  return {
+    parentKey: parent,
+    siblingsDelivered: siblingEntries.length,
+    epicBranch: targetBranch,
+  };
+}
+
+/** Log console output for a delivery outcome. */
+function logOutcome(outcome: DeliveryOutcome, ticketBranch: string): void {
+  switch (outcome.type) {
+    case 'created':
+      console.log(green(`  ✓ PR created: ${outcome.url}`));
+      break;
+    case 'exists':
+      console.log(
+        yellow(
+          `  ⚠ A PR/MR already exists for ${ticketBranch}. Branch pushed.`,
+        ),
+      );
+      break;
+    case 'failed':
+      console.log(yellow(`  ⚠ PR/MR creation failed: ${outcome.error}`));
+      if (outcome.manualUrl) {
+        console.log(dim(`  Create one manually: ${outcome.manualUrl}`));
+      } else {
+        console.log(dim('  Branch pushed — create a PR/MR manually.'));
+      }
+      break;
+    case 'not_attempted':
+      if (outcome.manualUrl) {
+        console.log(dim(`  Create a PR: ${outcome.manualUrl}`));
+      } else {
+        console.log(dim('  Branch pushed to remote. Create a PR/MR manually.'));
+      }
+      break;
+    case 'local':
+      console.log(
+        yellow(
+          `⚠ No git remote configured. Branch available locally: ${ticketBranch}`,
+        ),
+      );
+      break;
+    case 'unsupported':
+      console.log(dim('  Branch pushed to remote. Create a PR/MR manually.'));
+      break;
   }
 }
 
@@ -182,35 +259,10 @@ export async function deliverViaPullRequest(
 
   console.log(green(`  ✓ Pushed ${ticketBranch}`));
 
-  // ── Verification warning ──────────────────────────────────────────────────
-  let verificationWarning: string | undefined;
-  try {
-    const attemptPath = join(process.cwd(), '.clancy', 'verify-attempt.txt');
-    const attempt = readFileSync(attemptPath, 'utf8').trim();
-    const attemptNum = parseInt(attempt, 10);
-    if (attemptNum > 0) {
-      verificationWarning = `Verification checks did not fully pass (${attemptNum} attempt(s)). Review carefully.`;
-    }
-  } catch {
-    // No verify-attempt file — verification passed or wasn't run
-  }
-
-  // ── PR body + epic context ────────────────────────────────────────────────
+  // ── PR creation + outcome ─────────────────────────────────────────────────
   const platformOverride = sharedEnv(config).CLANCY_GIT_PLATFORM;
   const remote = detectRemote(platformOverride);
   const prTitle = `feat(${ticket.key}): ${ticket.title}`;
-
-  let epicContext: EpicContext | undefined;
-  if (parent && isEpicBranch(targetBranch)) {
-    const siblingEntries = [...DELIVERED_STATUSES]
-      .flatMap((s) => findEntriesWithStatus(process.cwd(), s))
-      .filter((e) => e.parent === parent && e.key !== ticket.key);
-    epicContext = {
-      parentKey: parent,
-      siblingsDelivered: siblingEntries.length,
-      epicBranch: targetBranch,
-    };
-  }
 
   const prBody = buildPrBody(
     config,
@@ -221,12 +273,11 @@ export async function deliverViaPullRequest(
       provider: config.provider,
     },
     targetBranch,
-    verificationWarning,
+    readVerificationWarning(),
     singleChildParent,
-    epicContext,
+    buildEpicContext(parent, targetBranch, ticket.key),
   );
 
-  // ── PR creation + outcome ─────────────────────────────────────────────────
   const canCreatePr =
     remote.host !== 'none' &&
     remote.host !== 'unknown' &&
@@ -250,102 +301,19 @@ export async function deliverViaPullRequest(
     targetBranch,
   );
 
-  // ── Log + progress based on outcome ───────────────────────────────────────
-  switch (outcome.type) {
-    case 'created':
-      console.log(green(`  ✓ PR created: ${outcome.url}`));
-      if (!skipLog)
-        appendProgress(
-          process.cwd(),
-          ticket.key,
-          ticket.title,
-          'PR_CREATED',
-          outcome.number,
-          parent,
-        );
-      break;
+  // ── Log + progress ────────────────────────────────────────────────────────
+  logOutcome(outcome, ticketBranch);
 
-    case 'exists':
-      console.log(
-        yellow(
-          `  ⚠ A PR/MR already exists for ${ticketBranch}. Branch pushed.`,
-        ),
-      );
-      if (!skipLog)
-        appendProgress(
-          process.cwd(),
-          ticket.key,
-          ticket.title,
-          'PUSHED',
-          undefined,
-          parent,
-        );
-      break;
-
-    case 'failed':
-      console.log(yellow(`  ⚠ PR/MR creation failed: ${outcome.error}`));
-      if (outcome.manualUrl) {
-        console.log(dim(`  Create one manually: ${outcome.manualUrl}`));
-      } else {
-        console.log(dim('  Branch pushed — create a PR/MR manually.'));
-      }
-      if (!skipLog)
-        appendProgress(
-          process.cwd(),
-          ticket.key,
-          ticket.title,
-          'PUSHED',
-          undefined,
-          parent,
-        );
-      break;
-
-    case 'not_attempted':
-      if (outcome.manualUrl) {
-        console.log(dim(`  Create a PR: ${outcome.manualUrl}`));
-      } else {
-        console.log(dim('  Branch pushed to remote. Create a PR/MR manually.'));
-      }
-      if (!skipLog)
-        appendProgress(
-          process.cwd(),
-          ticket.key,
-          ticket.title,
-          'PUSHED',
-          undefined,
-          parent,
-        );
-      break;
-
-    case 'local':
-      console.log(
-        yellow(
-          `⚠ No git remote configured. Branch available locally: ${ticketBranch}`,
-        ),
-      );
-      if (!skipLog)
-        appendProgress(
-          process.cwd(),
-          ticket.key,
-          ticket.title,
-          'LOCAL',
-          undefined,
-          parent,
-        );
-      break;
-
-    case 'unsupported':
-      console.log(dim('  Branch pushed to remote. Create a PR/MR manually.'));
-      if (!skipLog)
-        appendProgress(
-          process.cwd(),
-          ticket.key,
-          ticket.title,
-          'PUSHED',
-          undefined,
-          parent,
-        );
-      break;
+  if (!skipLog) {
+    const { status, prNumber } = progressForOutcome(outcome);
+    appendProgress(
+      process.cwd(),
+      ticket.key,
+      ticket.title,
+      status,
+      prNumber,
+      parent,
+    );
   }
 
   // ── Board transition ──────────────────────────────────────────────────────
@@ -412,11 +380,12 @@ export async function deliverEpicToBase(
     config.provider,
   );
 
-  if (
-    remote.host === 'none' ||
-    remote.host === 'unknown' ||
-    remote.host === 'azure'
-  ) {
+  const canCreatePr =
+    remote.host !== 'none' &&
+    remote.host !== 'unknown' &&
+    remote.host !== 'azure';
+
+  if (!canCreatePr) {
     console.log(
       yellow(`⚠ Cannot create epic PR — no supported git remote detected.`),
     );
@@ -434,61 +403,66 @@ export async function deliverEpicToBase(
     prBody,
   );
 
-  if (pr?.ok) {
-    console.log(green(`  ✓ Epic PR created: ${pr.url}`));
-    appendProgress(
-      process.cwd(),
-      epicKey,
-      epicTitle,
-      'EPIC_PR_CREATED',
-      pr.number,
-    );
+  const outcome = computeDeliveryOutcome(pr, remote, epicBranch, baseBranch);
 
-    // Transition epic ticket to Review / add build label
-    if (config.provider === 'github' && board) {
-      // GitHub: add build label so downstream tooling (e.g., Ralph) can find the epic PR
-      const buildLabel = resolveBuildLabel(config.env);
-      if (buildLabel) {
-        await board.addLabel(epicKey, buildLabel);
-        console.log(
-          dim(`  Requested ${buildLabel} on ${epicKey} (best-effort)`),
-        );
+  switch (outcome.type) {
+    case 'created':
+      console.log(green(`  ✓ Epic PR created: ${outcome.url}`));
+      appendProgress(
+        process.cwd(),
+        epicKey,
+        epicTitle,
+        'EPIC_PR_CREATED',
+        outcome.number,
+      );
+
+      // Transition epic ticket to Review / add build label
+      if (config.provider === 'github' && board) {
+        const buildLabel = resolveBuildLabel(config.env);
+        if (buildLabel) {
+          await board.addLabel(epicKey, buildLabel);
+          console.log(
+            dim(`  Requested ${buildLabel} on ${epicKey} (best-effort)`),
+          );
+        }
+      } else if (board) {
+        const statusReview =
+          config.env.CLANCY_STATUS_REVIEW ?? config.env.CLANCY_STATUS_DONE;
+        if (statusReview) {
+          await board.transitionTicket(
+            {
+              key: epicKey,
+              title: epicTitle,
+              description: '',
+              parentInfo: 'none',
+              blockers: 'None',
+            },
+            statusReview,
+          );
+        }
       }
-    } else if (board) {
-      const statusReview =
-        config.env.CLANCY_STATUS_REVIEW ?? config.env.CLANCY_STATUS_DONE;
-      if (statusReview) {
-        await board.transitionTicket(
-          {
-            key: epicKey,
-            title: epicTitle,
-            description: '',
-            parentInfo: 'none',
-            blockers: 'None',
-          },
-          statusReview,
-        );
-      }
+
+      return true;
+
+    case 'exists':
+      console.log(yellow(`  ⚠ An epic PR already exists for ${epicBranch}.`));
+      appendProgress(process.cwd(), epicKey, epicTitle, 'EPIC_PR_CREATED');
+      return true;
+
+    case 'failed':
+    case 'not_attempted': {
+      const error = outcome.type === 'failed' ? outcome.error : 'unknown error';
+      console.log(yellow(`⚠ Epic PR creation failed: ${error}`));
+      console.log(dim(`  Create it manually:`));
+      console.log(dim(`    Branch: ${epicBranch} → ${baseBranch}`));
+      const manualUrl =
+        outcome.manualUrl ?? buildManualPrUrl(remote, epicBranch, baseBranch);
+      if (manualUrl) console.log(dim(`    ${manualUrl}`));
+      return false;
     }
 
-    return true;
+    // local/unsupported are unreachable — canCreatePr guard exits early
+    default:
+      return false;
   }
-
-  if (pr && !pr.ok && pr.alreadyExists) {
-    console.log(yellow(`  ⚠ An epic PR already exists for ${epicBranch}.`));
-    appendProgress(process.cwd(), epicKey, epicTitle, 'EPIC_PR_CREATED');
-    return true;
-  }
-
-  console.log(
-    yellow(`⚠ Epic PR creation failed: ${pr?.error ?? 'unknown error'}`),
-  );
-  console.log(dim(`  Create it manually:`));
-  console.log(dim(`    Branch: ${epicBranch} → ${baseBranch}`));
-  const manualUrl = buildManualPrUrl(remote, epicBranch, baseBranch);
-  if (manualUrl) {
-    console.log(dim(`    ${manualUrl}`));
-  }
-
-  return false;
 }
