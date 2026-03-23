@@ -25,27 +25,22 @@ docs/decisions/v0.8.0/
 
 ## Version directories
 
-### Shipped (decisions only)
-
-| Directory | Feature | Version |
-|---|---|---|
-| `v0.5.12/` | PR-based delivery, epic branches, epic completion detection | v0.5.12 |
-| `v0.7.0/` | Verification gates, safety hooks, crash recovery, Claude Code hook API research | v0.7.0 |
-| `v0.7.1/` | Phase pipeline, Board type abstraction, switch elimination | v0.7.1 |
-| `v0.7.4/` | Pipeline stage labels (clancy:brief, clancy:plan, clancy:build), Board label methods, backward compatibility | v0.7.4 |
-| `v0.8.0/` | Board ecosystem (6 boards), quiet hours, desktop notifications, drift detector, version tracking | v0.8.0 |
-
 ### Active
 
 | Directory | Feature | Version |
 |---|---|---|
 | `v0.9.0/` | Design sub-phase in planner, Google Stitch integration, Playwright/axe-core/Lighthouse verification. Has `brief.md` + `design.md`. | v0.9.0 |
 
-### Cross-cutting
+### Archived (deleted after shipping)
 
-| Directory | Purpose |
-|---|---|
-| `qa-strategy/` | 2-layer QA plan (integration tests + E2E). Layer 1 shipped (QA-001 through QA-002b, v0.8.3–v0.8.15). Layer 2 broken into 8 tickets (QA-003-prereq through QA-004b). See [00-QA-STRATEGY.md](qa-strategy/00-QA-STRATEGY.md) for status. |
+Shipped decision docs are deleted per the lifecycle above. For historical context, check git history.
+
+- v0.5.12 — PR-based delivery, epic branches
+- v0.7.0 — Verification gates, safety hooks, crash recovery
+- v0.7.1 — Phase pipeline, Board type abstraction
+- v0.7.4 — Pipeline stage labels, Board label methods
+- v0.8.0 — Board ecosystem (6 boards), quiet hours, notifications
+- qa-strategy — 3-layer QA (unit + integration + E2E). Completed v0.8.23.
 
 ## What does NOT belong here
 
