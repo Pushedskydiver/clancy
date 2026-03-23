@@ -168,13 +168,13 @@ describe('deliverViaPullRequest', () => {
 
   it('pushes branch and creates PR, logs PR_CREATED', async () => {
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-    const result = await deliverViaPullRequest(
-      jiraConfig,
+    const result = await deliverViaPullRequest({
+      config: jiraConfig,
       ticket,
-      'feature/proj-1',
-      'main',
-      Date.now(),
-    );
+      ticketBranch: 'feature/proj-1',
+      targetBranch: 'main',
+      startTime: Date.now(),
+    });
     log.mockRestore();
 
     expect(result).toBe(true);
@@ -191,15 +191,14 @@ describe('deliverViaPullRequest', () => {
 
   it('passes parent key to appendProgress', async () => {
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-    await deliverViaPullRequest(
-      jiraConfig,
+    await deliverViaPullRequest({
+      config: jiraConfig,
       ticket,
-      'feature/proj-1',
-      'epic/proj-100',
-      Date.now(),
-      false,
-      'PROJ-100',
-    );
+      ticketBranch: 'feature/proj-1',
+      targetBranch: 'epic/proj-100',
+      startTime: Date.now(),
+      parent: 'PROJ-100',
+    });
     log.mockRestore();
 
     expect(appendProgress).toHaveBeenCalledWith(
@@ -216,13 +215,13 @@ describe('deliverViaPullRequest', () => {
     vi.mocked(pushBranch).mockReturnValue(false);
 
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-    const result = await deliverViaPullRequest(
-      jiraConfig,
+    const result = await deliverViaPullRequest({
+      config: jiraConfig,
       ticket,
-      'feature/proj-1',
-      'main',
-      Date.now(),
-    );
+      ticketBranch: 'feature/proj-1',
+      targetBranch: 'main',
+      startTime: Date.now(),
+    });
     log.mockRestore();
 
     expect(result).toBe(false);
@@ -238,14 +237,14 @@ describe('deliverViaPullRequest', () => {
 
   it('skips progress log when skipLog is true', async () => {
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-    await deliverViaPullRequest(
-      jiraConfig,
+    await deliverViaPullRequest({
+      config: jiraConfig,
       ticket,
-      'feature/proj-1',
-      'main',
-      Date.now(),
-      true,
-    );
+      ticketBranch: 'feature/proj-1',
+      targetBranch: 'main',
+      startTime: Date.now(),
+      skipLog: true,
+    });
     log.mockRestore();
 
     expect(appendProgress).not.toHaveBeenCalled();
@@ -253,13 +252,13 @@ describe('deliverViaPullRequest', () => {
 
   it('checks out target branch after delivery', async () => {
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-    await deliverViaPullRequest(
-      jiraConfig,
+    await deliverViaPullRequest({
+      config: jiraConfig,
       ticket,
-      'feature/proj-1',
-      'main',
-      Date.now(),
-    );
+      ticketBranch: 'feature/proj-1',
+      targetBranch: 'main',
+      startTime: Date.now(),
+    });
     log.mockRestore();
 
     expect(checkout).toHaveBeenCalledWith('main');
@@ -295,15 +294,14 @@ describe('deliverViaPullRequest', () => {
     });
 
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-    await deliverViaPullRequest(
-      jiraConfig,
+    await deliverViaPullRequest({
+      config: jiraConfig,
       ticket,
-      'feature/proj-1',
-      'epic/proj-100',
-      Date.now(),
-      false,
-      'PROJ-100',
-    );
+      ticketBranch: 'feature/proj-1',
+      targetBranch: 'epic/proj-100',
+      startTime: Date.now(),
+      parent: 'PROJ-100',
+    });
     log.mockRestore();
 
     expect(buildPrBody).toHaveBeenCalledWith(
@@ -323,15 +321,14 @@ describe('deliverViaPullRequest', () => {
   it('does not pass epicContext when targeting non-epic branch', async () => {
     vi.mocked(pushBranch).mockReturnValue(true);
     const log = vi.spyOn(console, 'log').mockImplementation(() => {});
-    await deliverViaPullRequest(
-      jiraConfig,
+    await deliverViaPullRequest({
+      config: jiraConfig,
       ticket,
-      'feature/proj-1',
-      'main',
-      Date.now(),
-      false,
-      'PROJ-100',
-    );
+      ticketBranch: 'feature/proj-1',
+      targetBranch: 'main',
+      startTime: Date.now(),
+      parent: 'PROJ-100',
+    });
     log.mockRestore();
 
     expect(buildPrBody).toHaveBeenCalledWith(

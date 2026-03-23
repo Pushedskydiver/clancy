@@ -56,17 +56,12 @@ describe('deliver', () => {
     const result = await deliver(makeCtx());
 
     expect(result).toBe(true);
-    expect(mockDeliver).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.anything(),
-      'feature/proj-1',
-      'main',
-      expect.any(Number),
-      false,
-      undefined,
-      undefined,
-      undefined, // singleChildParent
-    );
+    const call = mockDeliver.mock.calls[0][0];
+    expect(call.ticketBranch).toBe('feature/proj-1');
+    expect(call.targetBranch).toBe('main');
+    expect(call.skipLog).toBeUndefined();
+    expect(call.parent).toBeUndefined();
+    expect(call.singleChildParent).toBeUndefined();
   });
 
   it('returns false when fresh delivery fails', async () => {
@@ -90,14 +85,11 @@ describe('deliver', () => {
 
     expect(result).toBe(true);
     expect(mockDeliver).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.anything(),
-      'feature/proj-1',
-      'main',
-      expect.any(Number),
-      true,
-      undefined,
-      undefined,
+      expect.objectContaining({
+        ticketBranch: 'feature/proj-1',
+        targetBranch: 'main',
+        skipLog: true,
+      }),
     );
     expect(mockAppendProgress).toHaveBeenCalledWith(
       expect.any(String),
@@ -134,15 +126,11 @@ describe('deliver', () => {
     await deliver(ctx);
 
     expect(mockDeliver).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.anything(),
-      'feature/proj-1',
-      'main',
-      expect.any(Number),
-      false,
-      'EPIC-10',
-      undefined,
-      undefined, // singleChildParent (not active when epic branch is used)
+      expect.objectContaining({
+        ticketBranch: 'feature/proj-1',
+        targetBranch: 'main',
+        parent: 'EPIC-10',
+      }),
     );
   });
 

@@ -38,16 +38,16 @@ export async function deliver(ctx: RunContext): Promise<boolean> {
 
   if (isRework) {
     // PR-flow rework: push to existing branch, PR updates automatically
-    const delivered = await deliverViaPullRequest(
+    const delivered = await deliverViaPullRequest({
       config,
       ticket,
       ticketBranch,
-      effectiveTarget,
-      ctx.startTime,
-      true,
-      parentKey,
-      ctx.board,
-    );
+      targetBranch: effectiveTarget,
+      startTime: ctx.startTime,
+      skipLog: true,
+      parent: parentKey,
+      board: ctx.board,
+    });
     if (!delivered) {
       appendProgress(
         ctx.cwd,
@@ -85,17 +85,16 @@ export async function deliver(ctx: RunContext): Promise<boolean> {
     }
   } else {
     // Fresh ticket: deliver via PR (to epic branch or base branch)
-    const delivered = await deliverViaPullRequest(
+    const delivered = await deliverViaPullRequest({
       config,
       ticket,
       ticketBranch,
-      effectiveTarget,
-      ctx.startTime,
-      false,
-      parentKey,
-      ctx.board,
+      targetBranch: effectiveTarget,
+      startTime: ctx.startTime,
+      parent: parentKey,
+      board: ctx.board,
       singleChildParent,
-    );
+    });
     if (!delivered) return false;
 
     // Quality tracking (best-effort)
